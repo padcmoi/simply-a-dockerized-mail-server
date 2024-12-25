@@ -1,3 +1,7 @@
 node_modules
 dist
 .env
+docker/___keep
+docker/volumes/mail
+docker/volumes/mysql
+docker/volumes/log

@@ -1,0 +1,5 @@
+!include_try _mysql-connect.conf
+
+driver = mysql
+
+user_query = SELECT concat('/var/mail/vhosts/', maildir) AS home, uid, gid, CONCAT('*:bytes=', quota) AS quota_rule FROM VirtualUsers WHERE email='%u' AND VirtualUsers.active = '1' 

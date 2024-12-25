@@ -1,10 +1,12 @@
+# Distribution tests:
+# bullseye (debian11) = OK, All services work except clamav-daemon, but antivirus works on emails
+# bookworm (debian12) = ERROR, issues with dovecot quota domain, amavis
 FROM debian:bullseye
 
 ARG HOSTNAME
 
-# Installation
-RUN apt update
-RUN apt install -y git nano curl sudo net-tools vim nano curl htop procps findutils
+# Installation packages
+RUN apt update && apt install -y git curl sudo net-tools nano htop procps findutils wget zip inotify-tools iptables systemctl rsyslog
 
 # download repository
 RUN mkdir -p /opt/source
@@ -13,32 +15,27 @@ RUN git clone https://github.com/padcmoi/simply-docker-sql-mailserver
 RUN mv simply-docker-sql-mailserver/webadmin/* .
 RUN rm -R simply-docker-sql-mailserver
 
-# nodejs
+# Webadmin & API
+RUN apt install -y apache2
 RUN curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 RUN apt install -y nodejs
 RUN npm install -g pnpm
 
-# web admin
-RUN apt install -y apache2
-RUN a2enmod ssl
+# TODO Account management is done with PhpMyAdmin while waiting for the API to be created, and will be removed at a later date.
+RUN apt install -y libapache2-mod-php php-mbstring php-zip php-gd php-json php-curl
+WORKDIR /var/www/
+RUN wget https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip
+RUN unzip /var/www/phpMyAdmin-5.2.1-all-languages.zip -d /var/www/
+RUN rm -R /var/www/html/
+RUN rm phpMyAdmin*.zip
+RUN mv /var/www/phpMyAdmin* /var/www/html/
 
-# database
-RUN apt install -y mariadb-server
-
-# mail daemons ...
-RUN apt install -y dovecot-antispam dovecot-dev dovecot-ldap dovecot-managesieved dovecot-pgsql dovecot-solr dovecot-core dovecot-gssapi dovecot-lmtpd dovecot-pop3d dovecot-sqlite dovecot-imapd dovecot-lucene dovecot-mysql dovecot-sieve
-RUN { \
-    echo postfix postfix/main_mailer_type select Internet Site; \
-    echo postfix postfix/mailname string ${HOSTNAME}; \
-    } | debconf-set-selections \
-    && apt install --assume-yes postfix postfix-mysql
-RUN apt install -y rspamd amavis spamassassin clamav opendkim fail2ban fetchmail getmail6 postgrey letsencrypt
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install opendmarc
-
-# Executes actions in the container
+# Copy config files
 WORKDIR /opt
+COPY .env /.env
+COPY ./conf/ ./conf/
+COPY ./exports/ ./exports/
+RUN chmod +x ./exports/*.sh
+RUN mv ./exports/*.sh /usr/local/bin/
 
-COPY run.sh .
-RUN chmod +x ./run.sh
-
-CMD ["./run.sh"]
+ENTRYPOINT ["docker-entrypoint.sh"]

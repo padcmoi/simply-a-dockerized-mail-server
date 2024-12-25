@@ -1,0 +1,8 @@
+
+# Certificates note
+
+The container is not accessible from the outside on port 80, so certificates will have to be updated from the host machine
+
+## NOTE
+
+Certificates can be hot-swapped without rebooting, changing certificates will automatically update dovecot and postfix

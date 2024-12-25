@@ -1,18 +1,26 @@
-
 services:
-  testmailserver:
-    # restart: always
+  mailserver:
+    stdin_open: true
+    tty: true
+    restart: always
+    container_name: simply-mailserver
     build:
       context: .
       args:
         HOSTNAME: ${HOSTNAME}
     env_file: .env
     ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+      - "993:993"
       - "4000:80"
-      - "4003:3000"
-    environment:
-      - MYSQL_HOST=mysql_db
-    stdin_open: true
-    tty: true
-    # volumes:
-    #   - ./webadmin:/webadmin
+      - "4001:3000"
+      - "4190:4190"
+    extra_hosts:
+      - "${HOSTNAME}:${ADRESSIP}"
+    volumes:
+      - ./volumes/log:/var/_log
+      - ./volumes/ssl:/etc/_private
+      - ./volumes/mail:/var/mail
+      - ./volumes/mysql:/var/lib/mysql

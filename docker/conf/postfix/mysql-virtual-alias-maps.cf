@@ -1,0 +1,5 @@
+user = root
+password = ____mailRootPass
+hosts = 127.0.0.1
+dbname = mailserver
+query = SELECT destination FROM VirtualAliases WHERE source='%s' AND TO_DAYS(now()) >= TO_DAYS(user_start_date) AND (TO_DAYS(now()) <= TO_DAYS(user_end_date) OR user_end_date IS NULL)
