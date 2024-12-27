@@ -32,7 +32,7 @@ source /.mysql-root-pw
 if [ ! -f /.package-installed ]; then
     {
         echo postfix postfix/main_mailer_type select Internet Site
-        echo postfix postfix/mailname string $HOSTNAME
+        echo postfix postfix/mailname string $DOMAIN_FQDN
     } | debconf-set-selections && apt install --assume-yes postfix postfix-mysql
 fi
 
@@ -47,7 +47,7 @@ if [ ! -f /.package-installed ]; then
     cp -R -f /opt/conf/dovecot/* /etc/dovecot/
 
     # postfix changes
-    sed -i "s/____hostName/${HOSTNAME}/g" /etc/postfix/main.cf
+    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/postfix/main.cf
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-alias-maps.cf
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-email2email.cf
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-mailbox-domains.cf
@@ -61,7 +61,7 @@ if [ ! -f /.package-installed ]; then
     chown -R vmail:dovecot /etc/dovecot
     chmod -R o-rwx /etc/dovecot
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/dovecot/db-sql/_mysql-connect.conf
-    sed -i "s/____hostName/${HOSTNAME}/g" /etc/dovecot/dovecot.conf
+    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/dovecot/dovecot.conf
 
 fi
 
@@ -78,8 +78,8 @@ if [ ! -f /.package-installed ]; then
     apt -y install clamav-base clamav-daemon clamav-freshclam clamav-testfiles amavisd-new
     cp -R -f /opt/conf/amavis/* /etc/amavis/
     usermod -a -G amavis clamav
-    sed -i "s/____hostName/${HOSTNAME}/g" /etc/amavis/conf.d/05-node_id
-    sed -i "s/____hostName/${HOSTNAME}/g" /etc/amavis/conf.d/20-debian_defaults
+    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/amavis/conf.d/05-node_id
+    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/amavis/conf.d/20-debian_defaults
 fi
 
 # Roundcube
@@ -94,7 +94,7 @@ if [ ! -f /.package-installed ]; then
     cat /opt/conf/roundcube/apache.conf >>/etc/roundcube/apache.conf
 
     sed -i "s/____ROUNDCUBE_DES_KEY/$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)/g" /etc/roundcube/config.inc.php
-    sed -i "s/____hostName/${HOSTNAME}/g" /etc/roundcube/config.inc.php
+    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/roundcube/config.inc.php
 fi
 
 # start services
@@ -136,7 +136,7 @@ pnpm run build
 
 clear
 netstat -tulpn | grep -E -w 'tcp|udp'
-echo "Hostname: ${HOSTNAME} (${ADRESSIP})"
+echo "Hostname: ${DOMAIN_FQDN} (${ADRESSIP})"
 echo "MYSQL ROOT PASSWORD: ${MYSQL_ROOT_PASSWORD}"
 
 node dist/main

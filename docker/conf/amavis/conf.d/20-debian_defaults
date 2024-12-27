@@ -146,9 +146,9 @@ $banned_filename_re = new_RE(
                         # results from all matching recipient tables are summed
 
 # ## per-recipient personal tables  (NOTE: positive: black, negative: white)
-# 'user1@____hostName'  => [{'bla-mobile.press@____hostName' => 10.0}],
-# 'user3@____hostName'  => [{'.ebay.com'                 => -3.0}],
-# 'user4@____hostName'  => [{'cleargreen@cleargreen.com' => -7.0,
+# 'user1@____domainFQDN'  => [{'bla-mobile.press@____domainFQDN' => 10.0}],
+# 'user3@____domainFQDN'  => [{'.ebay.com'                 => -3.0}],
+# 'user4@____domainFQDN'  => [{'cleargreen@cleargreen.com' => -7.0,
 #                           '.cleargreen.com'           => -5.0}],
 
   ## site-wide opinions about senders (the '.' matches any recipient)

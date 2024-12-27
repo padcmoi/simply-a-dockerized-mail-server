@@ -3,7 +3,7 @@
 # bookworm (debian12) = ERROR, issues with dovecot quota domain, amavis
 FROM debian:bullseye
 
-ARG HOSTNAME
+ARG DOMAIN_FQDN
 
 # Installation packages
 RUN apt update && apt install -y git curl sudo net-tools nano htop procps findutils wget zip inotify-tools iptables systemctl rsyslog

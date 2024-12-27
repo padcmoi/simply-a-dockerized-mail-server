@@ -7,7 +7,7 @@ services:
     build:
       context: .
       args:
-        HOSTNAME: ${HOSTNAME}
+        DOMAIN_FQDN: ${DOMAIN_FQDN}
     env_file: .env
     ports:
       - "25:25"
@@ -21,7 +21,7 @@ services:
       - "4190:4190"
       - "4443:4443"
     extra_hosts:
-      - "${HOSTNAME}:${ADRESSIP}"
+      - "${DOMAIN_FQDN}:${ADRESSIP}"
     volumes:
       - ./volumes/log:/var/_log
       - ./volumes/ssl:/etc/_private

@@ -92,11 +92,11 @@ $config['default_port'] = 143;
 $config['smtp_auth_type'] = 'LOGIN';
 
 # specify SMTP HELO host
-$config['smtp_helo_host'] = '____hostName';
+$config['smtp_helo_host'] = '____domainFQDN';
 
 # specify domain name
 // TODO should be an array, to be defined later
-// $config['mail_domain'] = '____hostName';
+// $config['mail_domain'] = '____domainFQDN';
 
 # specify UserAgent
 $config['useragent'] = 'Roundcube Webmail/' . RCUBE_VERSION;
@@ -105,7 +105,7 @@ $config['useragent'] = 'Roundcube Webmail/' . RCUBE_VERSION;
 $config['imap_conn_options'] = array(
     'ssl' => array(
         'verify_peer' => true,
-        'CN_match' => '____hostName',
+        'CN_match' => '____domainFQDN',
         'allow_self_signed' => true,
         'ciphers' => 'HIGH:!SSLv2:!SSLv3',
     ),
@@ -113,7 +113,7 @@ $config['imap_conn_options'] = array(
 $config['smtp_conn_options'] = array(
     'ssl' => array(
         'verify_peer' => true,
-        'CN_match' => '____hostName',
+        'CN_match' => '____domainFQDN',
         'allow_self_signed' => true,
         'ciphers' => 'HIGH:!SSLv2:!SSLv3',
     ),
