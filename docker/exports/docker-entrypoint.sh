@@ -63,6 +63,10 @@ if [ ! -f /.package-installed ]; then
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/dovecot/db-sql/_mysql-connect.conf
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/dovecot/dovecot.conf
 
+    # dovecot sieve
+    mkdir -p /var/lib/dovecot/sieve/
+    chmod -R 777 /var/lib/dovecot/sieve/
+    cp -R -f /opt/conf/sieve/* /var/lib/dovecot/sieve/
 fi
 
 # Amavis Clamav

@@ -32,7 +32,7 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
 - [x] [Postfix](http://www.postfix.org) with SASL Dovecot-LMTP authentication
 - [x] [Dovecot](https://www.dovecot.org) with SASL, IMAPS only
   - [x] Quota enabled managed by MySQL database
-  - [ ] Sieve support and quota enabled managed by MySQL database
+  - [x] Sieve support with basic configuration (see docker/conf/sieve/)
 - [ ] [Rspamd](https://rspamd.com/)
 - [x] [Amavis](https://www.amavis.org/)
 - [ ] [SpamAssassin](http://spamassassin.apache.org/) supporting custom rules
