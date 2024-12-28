@@ -39,4 +39,7 @@ COPY ./exports/ ./exports/
 RUN chmod +x ./exports/*.sh
 RUN mv ./exports/*.sh /usr/local/bin/
 
+RUN cp -R -f /opt/conf/cron.d/* /etc/cron.d/
+RUN chmod 644 /etc/cron.d/*
+
 ENTRYPOINT ["docker-entrypoint.sh"]

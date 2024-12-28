@@ -102,6 +102,7 @@ if [ ! -f /.package-installed ]; then
 fi
 
 # start services
+service cron restart
 service amavis restart
 service mariadb restart
 service spamd restart

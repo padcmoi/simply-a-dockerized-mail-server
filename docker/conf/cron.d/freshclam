@@ -1,0 +1,6 @@
+#
+#  Freshclam
+#
+# m h dom mon dow user  command
+  0 5  21  *   *  root  freshclam-update.sh
+
