@@ -103,7 +103,7 @@ fi
 
 # start services
 service cron restart
-service amavis restart
+handle-antivirus.sh </dev/null &>/dev/null &
 service mariadb restart
 service spamd restart
 service dovecot restart
