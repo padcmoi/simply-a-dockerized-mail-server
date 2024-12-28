@@ -27,3 +27,4 @@ services:
       - ./volumes/ssl:/etc/_private
       - ./volumes/mail:/var/mail
       - ./volumes/mysql:/var/lib/mysql
+      - ./volumes/postfix:/var/spool/postfix
