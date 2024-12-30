@@ -33,7 +33,7 @@ include_once "/etc/roundcube/debian-db-roundcube.php";
 // %d - domain (http hostname $_SERVER['HTTP_HOST'] without the first part)
 // %s - domain name after the '@' from e-mail address provided at login screen
 // For example %n = mail.domain.tld, %t = domain.tld
-$config['default_host'] = 'tls://localhost'; // TODO issues with localdev machine, this should be the hostname defined in .env
+$config['default_host'] = 'tls://____domainFQDN';
 
 // SMTP server host (for sending mails).
 // Enter hostname with prefix ssl:// to use Implicit TLS, or use
@@ -45,7 +45,7 @@ $config['default_host'] = 'tls://localhost'; // TODO issues with localdev machin
 // %d - domain (http hostname $_SERVER['HTTP_HOST'] without the first part)
 // %z - IMAP domain (IMAP hostname without the first part)
 // For example %n = mail.domain.tld, %t = domain.tld
-$config['smtp_server'] = 'tls://localhost'; // TODO issues with localdev machine, this should be the hostname defined in .env
+$config['smtp_server'] = 'tls://____domainFQDN';
 
 // SMTP port. Use 25 for cleartext, 465 for Implicit TLS, or 587 for STARTTLS (default)
 $config['smtp_port'] = 587;
