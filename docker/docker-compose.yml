@@ -23,9 +23,8 @@ services:
     extra_hosts:
       - "${DOMAIN_FQDN}:${ADRESSIP}"
     volumes:
-      - ./volumes/log:/var/_log
-      - ./volumes/ssl:/etc/_private
-      - ./volumes/mail:/var/mail
-      - ./volumes/mysql:/var/lib/mysql
-      - ./volumes/postscreen:/etc/_postscreen
-      - ./volumes/postfix/spool:/var/spool/postfix
+      - ../volumes/log:/var/_log
+      - ../volumes/ssl:/etc/_private
+      - ../volumes/mail:/var/mail
+      - ../volumes/mysql:/var/lib/mysql
+      - ../volumes/postfix:/var/spool/postfix
