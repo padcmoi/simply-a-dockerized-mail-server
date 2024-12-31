@@ -5,11 +5,11 @@ if [ $1 ]; then
 
         echo $1
 
-        cp /etc/letsencrypt/live/$1/*.pem ./volumes/ssl/
+        cp /etc/letsencrypt/live/$1/*.pem ../volumes/ssl/
 
         inotifywait -m -e modify /etc/letsencrypt/live/$1/*.pem |
             while read file_path event file_name; do
-                cp -f $file_path$file_name ./volumes/ssl/
+                cp -f $file_path$file_name ../volumes/ssl/
             done
     }
 
