@@ -53,6 +53,17 @@ if [ ! -f /.package-installed ]; then
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-mailbox-domains.cf
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-mailbox-maps.cf
 
+    if [ ! -f /etc/_postscreen/postscreen_access.cidr ]; then
+        cp -f /opt/conf/postfix/postscreen_access.cidr /etc/_postscreen/postscreen_access.cidr
+        chmod 777 /etc/_postscreen/postscreen_access.cidr
+    fi
+
+    if [ $DISABLE_POSTCREEN_DEEP_PROTOCOL_TESTS == true ]; then
+        sed -i "s/____postscreenDeepProtocolTests/no/g" /etc/postfix/main.cf
+    else
+        sed -i "s/____postscreenDeepProtocolTests/yes/g" /etc/postfix/main.cf
+    fi
+
     # dovecot changes
     mkdir -p /var/mail/vhosts/
     groupadd -g 5000 vmail
@@ -144,9 +155,11 @@ netstat -tulpn | grep -E -w 'tcp|udp'
 echo "Hostname: ${DOMAIN_FQDN} (${ADRESSIP})"
 echo "MYSQL ROOT PASSWORD: ${MYSQL_ROOT_PASSWORD}"
 
-node dist/main
-
+node dist/main </dev/null &>/dev/null &
 ## NodeJS API
 ## check package to encrypt mail password
 # https://github.com/mvo5/sha512crypt-node
 # https://stackoverflow.com/questions/37732331/execute-bash-command-in-node-js-and-get-exit-code
+
+echo "Postfix log: /var/log/postfix.log"
+tail -f /var/log/postfix.log

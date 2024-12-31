@@ -1,0 +1,7 @@
+# Rules are evaluated in the order as specified.
+# Blacklist 192.168.* except 192.168.0.1.
+# Example:
+# 192.168.0.1       permit
+# 192.168.0.0/16    reject
+
+209.85.0.0/16       permit

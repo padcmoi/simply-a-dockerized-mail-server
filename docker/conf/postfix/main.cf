@@ -121,3 +121,27 @@ unverified_sender_reject_code = 550
 
 # Additional option for filtering
 content_filter=smtp-amavis:[127.0.0.1]:10024
+
+# Postscreen, doc https://www.postfix.org/postconf.5.html#postscreen_dnsbl_sites
+postscreen_access_list = permit_mynetworks, cidr:/etc/_postscreen/postscreen_access.cidr
+
+postscreen_blacklist_action = drop
+
+postscreen_greet_wait = 3s
+postscreen_greet_banner = Please wait ...
+postscreen_greet_action = enforce
+
+postscreen_dnsbl_threshold = 3
+postscreen_dnsbl_action = enforce
+postscreen_dnsbl_sites = b.barracudacentral.org*3, bl.spamcop.net*2, all.s5h.net, db.wpbl.info, relays.nether.net, z.mailspike.net
+
+postscreen_dnsbl_whitelist_threshold = -2
+
+postscreen_non_smtp_command_enable = ____postscreenDeepProtocolTests
+postscreen_non_smtp_command_action = enforce
+
+postscreen_pipelining_enable = ____postscreenDeepProtocolTests
+postscreen_pipelining_action = enforce
+
+postscreen_bare_newline_enable = ____postscreenDeepProtocolTests
+postscreen_bare_newline_action = enforce
