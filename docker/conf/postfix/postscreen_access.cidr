@@ -4,4 +4,5 @@
 # 192.168.0.1       permit
 # 192.168.0.0/16    reject
 
+# Gmail servers
 209.85.0.0/16       permit
