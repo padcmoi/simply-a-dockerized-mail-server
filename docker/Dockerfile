@@ -17,7 +17,7 @@ RUN rm -R simply-docker-sql-mailserver
 
 # Webadmin & API
 RUN apt install -y apache2
-RUN a2enmod ssl rewrite
+RUN a2enmod ssl rewrite proxy proxy_http
 RUN curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 RUN apt install -y nodejs
 RUN npm install -g pnpm

@@ -40,6 +40,7 @@ fi
 if [ ! -f /.package-installed ]; then
     apt -y install redis-server redis rspamd
     cp -R -f /opt/conf/rspamd/* /etc/rspamd/
+    echo password="`rspamadm pw -q -p ${MYSQL_USERMAIL_PASSWORD}`" > /etc/rspamd/local.d/worker-controller.inc
 fi
 
 # Dovecot
@@ -126,9 +127,9 @@ fi
 # apache2
 if [ ! -f /.package-installed ]; then
     cp -R -f /opt/conf/apache2/* /etc/apache2/
-    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/apache2/sites-available/port.*.conf
+    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/apache2/sites-available/*.conf
     a2ensite port.4000.conf
-    a2ensite port.4001.conf
+    a2ensite rspamd-web-interface.conf
     a2ensite port.4002.conf
 fi
 
