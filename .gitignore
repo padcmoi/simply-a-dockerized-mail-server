@@ -7,3 +7,4 @@ volumes/mysql
 volumes/log
 volumes/postfix
 volumes/postscreen
+volumes/redis

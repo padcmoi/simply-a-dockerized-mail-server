@@ -31,3 +31,4 @@ services:
       - ../volumes/mysql:/var/lib/mysql
       - ../volumes/postfix:/var/spool/postfix
       - ../volumes/postscreen:/etc/_postscreen
+      - ../volumes/redis:/var/lib/redis
