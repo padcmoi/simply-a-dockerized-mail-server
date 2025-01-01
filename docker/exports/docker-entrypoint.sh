@@ -123,6 +123,15 @@ if [ ! -f /.package-installed ]; then
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/roundcube/config.inc.php
 fi
 
+# apache2
+if [ ! -f /.package-installed ]; then
+    cp -R -f /opt/conf/apache2/* /etc/apache2/
+    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/apache2/sites-available/port.*.conf
+    a2ensite port.4000.conf
+    a2ensite port.4001.conf
+    a2ensite port.4002.conf
+fi
+
 # start services
 service cron restart
 handle-antivirus.sh </dev/null &>/dev/null &

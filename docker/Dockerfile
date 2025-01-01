@@ -27,9 +27,9 @@ RUN apt install -y libapache2-mod-php php-mbstring php-zip php-gd php-json php-c
 WORKDIR /var/www/
 RUN wget https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip
 RUN unzip /var/www/phpMyAdmin-5.2.1-all-languages.zip -d /var/www/
-RUN rm -R /var/www/html/
 RUN rm phpMyAdmin*.zip
-RUN mv /var/www/phpMyAdmin* /var/www/html/
+RUN mv /var/www/phpMyAdmin* /var/www/mysql
+RUN chmod -R 755 /var/www/mysql
 
 # Copy config files
 WORKDIR /opt
