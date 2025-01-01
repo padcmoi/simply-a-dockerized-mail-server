@@ -36,6 +36,12 @@ if [ ! -f /.package-installed ]; then
     } | debconf-set-selections && apt install --assume-yes postfix postfix-mysql
 fi
 
+# Rspam
+if [ ! -f /.package-installed ]; then
+    apt -y install redis-server redis rspamd
+    cp -R -f /opt/conf/rspamd/* /etc/rspamd/
+fi
+
 # Dovecot
 if [ ! -f /.package-installed ]; then
     apt install -y dovecot-core dovecot-imapd dovecot-pop3d dovecot-lmtpd dovecot-mysql dovecot-sieve dovecot-managesieved mailutils
@@ -65,6 +71,16 @@ if [ ! -f /.package-installed ]; then
     fi
 
     # dovecot changes
+    sievec /etc/dovecot/sieve-before/10-spam.sieve
+    sievec /etc/dovecot/sieve-after/10-spam.sieve
+    sievec /etc/dovecot/sieve/default.sieve
+    sievec /etc/dovecot/sieve/report-spam.sieve
+    sievec /etc/dovecot/sieve/report-ham.sieve
+    chmod u=rw,go= /etc/dovecot/sieve/report-{spam,ham}.{sieve,svbin}
+    chown vmail:vmail /etc/dovecot/sieve/report-{spam,ham}.{sieve,svbin}
+    chmod u=rwx,go= /etc/dovecot/sieve/sa-learn-{spam,ham}.sh
+    chown vmail:vmail /etc/dovecot/sieve/sa-learn-{spam,ham}.sh
+
     mkdir -p /var/mail/vhosts/
     groupadd -g 5000 vmail
     useradd -g vmail -u 5000 vmail -d /var/mail
@@ -73,11 +89,6 @@ if [ ! -f /.package-installed ]; then
     chmod -R o-rwx /etc/dovecot
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/dovecot/db-sql/_mysql-connect.conf
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/dovecot/dovecot.conf
-
-    # dovecot sieve
-    mkdir -p /var/lib/dovecot/sieve/
-    chmod -R 777 /var/lib/dovecot/sieve/
-    cp -R -f /opt/conf/sieve/* /var/lib/dovecot/sieve/
 fi
 
 # Amavis Clamav
@@ -116,11 +127,13 @@ fi
 service cron restart
 handle-antivirus.sh </dev/null &>/dev/null &
 service mariadb restart
-service spamd restart
+service redis-server restart
+service rspamd restart
 service dovecot restart
 service postfix restart
 service apache2 restart
 
+echo "Configuration rspam: $(rspamadm configtest)"
 service dovecot status
 service postfix status
 
@@ -149,17 +162,15 @@ cd /opt/api
 cp .env.sample .env
 pnpm install
 pnpm run build
-
-clear
-netstat -tulpn | grep -E -w 'tcp|udp'
-echo "Hostname: ${DOMAIN_FQDN} (${ADRESSIP})"
-echo "MYSQL ROOT PASSWORD: ${MYSQL_ROOT_PASSWORD}"
-
 node dist/main </dev/null &>/dev/null &
 ## NodeJS API
 ## check package to encrypt mail password
 # https://github.com/mvo5/sha512crypt-node
 # https://stackoverflow.com/questions/37732331/execute-bash-command-in-node-js-and-get-exit-code
 
+clear
+netstat -tulpn | grep -E -w 'tcp|udp'
+echo "Hostname: ${DOMAIN_FQDN} (${ADRESSIP})"
+echo "MYSQL ROOT PASSWORD: ${MYSQL_ROOT_PASSWORD}"
 echo "Postfix log: /var/log/postfix.log"
 tail -f /var/log/postfix.log

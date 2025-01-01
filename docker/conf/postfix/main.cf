@@ -145,3 +145,10 @@ postscreen_pipelining_action = enforce
 
 postscreen_bare_newline_enable = ____postscreenDeepProtocolTests
 postscreen_bare_newline_action = enforce
+
+# Applications Milter (RSPAMD, ...)
+smtpd_milters = inet:127.0.0.1:11332
+non_smtpd_milters = $smtpd_milters
+milter_protocol = 6
+milter_default_action = accept
+milter_mail_macros = i {mail_addr} {client_addr} {client_name} {auth_authen}
