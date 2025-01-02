@@ -32,3 +32,4 @@ services:
       - ../volumes/postfix:/var/spool/postfix
       - ../volumes/postscreen:/etc/_postscreen
       - ../volumes/redis:/var/lib/redis
+      - ../volumes/rspamd:/var/lib/rspamd

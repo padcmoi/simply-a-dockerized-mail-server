@@ -38,9 +38,11 @@ fi
 
 # Rspam
 if [ ! -f /.package-installed ]; then
+    rm -f /var/lib/rspamd/*.hs*
+    rm -f /var/lib/rspamd/*.map
     apt -y install redis-server redis rspamd
     cp -R -f /opt/conf/rspamd/* /etc/rspamd/
-    echo password="`rspamadm pw -q -p ${MYSQL_USERMAIL_PASSWORD}`" > /etc/rspamd/local.d/worker-controller.inc
+    echo password="$(rspamadm pw -q -p ${MYSQL_USERMAIL_PASSWORD})" >/etc/rspamd/local.d/worker-controller.inc
 fi
 
 # Dovecot
