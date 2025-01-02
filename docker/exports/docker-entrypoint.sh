@@ -74,6 +74,13 @@ if [ ! -f /.package-installed ]; then
     fi
 
     # dovecot changes
+    mkdir -p /var/mail/vhosts/
+    groupadd -g 5000 vmail
+    useradd -g vmail -u 5000 vmail -d /var/mail
+    chown -R vmail:vmail /var/mail
+    chown -R vmail:dovecot /etc/dovecot
+    chmod -R o-rwx /etc/dovecot
+
     sievec /etc/dovecot/sieve-before/10-spam.sieve
     sievec /etc/dovecot/sieve-after/10-spam.sieve
     sievec /etc/dovecot/sieve/default.sieve
@@ -84,12 +91,6 @@ if [ ! -f /.package-installed ]; then
     chmod u=rwx,go= /etc/dovecot/sieve/sa-learn-{spam,ham}.sh
     chown vmail:vmail /etc/dovecot/sieve/sa-learn-{spam,ham}.sh
 
-    mkdir -p /var/mail/vhosts/
-    groupadd -g 5000 vmail
-    useradd -g vmail -u 5000 vmail -d /var/mail
-    chown -R vmail:vmail /var/mail
-    chown -R vmail:dovecot /etc/dovecot
-    chmod -R o-rwx /etc/dovecot
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/dovecot/db-sql/_mysql-connect.conf
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/dovecot/dovecot.conf
 fi
