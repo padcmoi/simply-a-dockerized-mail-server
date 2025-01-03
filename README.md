@@ -35,7 +35,7 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
   - [x] Sieve support with basic configuration (see docker/conf/sieve/)
 - [ ] [Rspamd](https://rspamd.com/)
 - [x] [Amavis](https://www.amavis.org/)
-- [ ] [SpamAssassin](http://spamassassin.apache.org/) supporting custom rules
+- [ ] ~~[SpamAssassin](http://spamassassin.apache.org/)  supporting custom rules~~
 - [x] [ClamAV](https://www.clamav.net/) with automatic updates
 - [ ] [OpenDKIM](http://www.opendkim.org)
 - [ ] [OpenDMARC](https://github.com/trusteddomainproject/OpenDMARC)

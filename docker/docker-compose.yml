@@ -15,11 +15,13 @@ services:
       - "465:465"
       - "587:587"
       - "993:993"
-      - "4000:80"
-      - "4001:3000"
-      - "4080:4080"
-      - "4190:4190"
-      - "4443:4443"
+      - "4000:4000" # front app
+      - "4001:4001" # rspamd web interface
+      - "4002:4002" # phpmyadmin
+      - "4003:3000" # nest api
+      - "4080:4080" # roundcube
+      - "4190:4190" # to delete
+      - "4443:4443" # roundcube
     extra_hosts:
       - "${DOMAIN_FQDN}:${ADRESSIP}"
     volumes:
@@ -28,3 +30,6 @@ services:
       - ../volumes/mail:/var/mail
       - ../volumes/mysql:/var/lib/mysql
       - ../volumes/postfix:/var/spool/postfix
+      - ../volumes/postscreen:/etc/_postscreen
+      - ../volumes/redis:/var/lib/redis
+      - ../volumes/rspamd:/var/lib/rspamd

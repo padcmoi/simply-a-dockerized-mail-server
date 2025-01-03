@@ -17,7 +17,7 @@ RUN rm -R simply-docker-sql-mailserver
 
 # Webadmin & API
 RUN apt install -y apache2
-RUN a2enmod ssl rewrite
+RUN a2enmod ssl rewrite proxy proxy_http
 RUN curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 RUN apt install -y nodejs
 RUN npm install -g pnpm
@@ -27,9 +27,9 @@ RUN apt install -y libapache2-mod-php php-mbstring php-zip php-gd php-json php-c
 WORKDIR /var/www/
 RUN wget https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip
 RUN unzip /var/www/phpMyAdmin-5.2.1-all-languages.zip -d /var/www/
-RUN rm -R /var/www/html/
 RUN rm phpMyAdmin*.zip
-RUN mv /var/www/phpMyAdmin* /var/www/html/
+RUN mv /var/www/phpMyAdmin* /var/www/mysql
+RUN chmod -R 755 /var/www/mysql
 
 # Copy config files
 WORKDIR /opt
