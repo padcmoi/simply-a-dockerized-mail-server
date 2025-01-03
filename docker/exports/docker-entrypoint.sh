@@ -137,6 +137,7 @@ if [ ! -f /.package-installed ]; then
 fi
 
 # start services
+service rsyslog restart
 service cron restart
 handle-antivirus.sh </dev/null &>/dev/null &
 service mariadb restart
