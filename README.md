@@ -33,16 +33,15 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
 - [x] [Dovecot](https://www.dovecot.org) with SASL, IMAPS only
   - [x] Quota enabled managed by MySQL database
   - [x] Sieve support with basic configuration (see docker/conf/sieve/)
-- [ ] [Rspamd](https://rspamd.com/)
+- [x] [Rspamd](https://rspamd.com/)
 - [x] [Amavis](https://www.amavis.org/)
-- [ ] ~~[SpamAssassin](http://spamassassin.apache.org/)  supporting custom rules~~
 - [x] [ClamAV](https://www.clamav.net/) with automatic updates
 - [ ] [OpenDKIM](http://www.opendkim.org)
 - [ ] [OpenDMARC](https://github.com/trusteddomainproject/OpenDMARC)
 - [ ] [Fail2ban](https://www.fail2ban.org/wiki/index.php/Main_Page)
-- [ ] [Postscreen](http://www.postfix.org/POSTSCREEN_README.html)
+- [x] [Postscreen](http://www.postfix.org/POSTSCREEN_README.html)
 - [ ] [Postgrey](https://postgrey.schweikert.ch/)
-- [ ] [Fetchmail](http://www.fetchmail.info/fetchmail-man.html)
+- [ ] ~~[Fetchmail](http://www.fetchmail.info/fetchmail-man.html)~~
 - [x] [Roundcube](https://docs.roundcube.net/doc/help/1.1/fr_FR/)
 - [x] SSL certificate to be updated on host, letsencrypt compatible, but server doesn't have port 80 to update itself
 - [x] MySQL database support
