@@ -48,8 +48,8 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
 - [x] [Roundcube](https://docs.roundcube.net/doc/help/1.1/fr_FR/)
 - [x] SSL certificate to be updated on host, letsencrypt compatible, but server doesn't have port 80 to update itself
 - [x] MySQL database support
-- [ ] API Nest.js written with typescript
-- [ ] React front application with ACL support for multiple domains and recipients
+- [ ] API Nest.js with ACL support for multiple domains, recipients and business plan
+- [ ] React front application
 
 ## FAQ
 
