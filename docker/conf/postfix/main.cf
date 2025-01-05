@@ -120,7 +120,7 @@ unverified_recipient_reject_code = 550
 unverified_sender_reject_code = 550
 
 # Additional option for filtering
-content_filter=smtp-amavis:[127.0.0.1]:10024
+# Antivirus scanning is no longer done with content_filter but with RSPAMD rules, viruses are rejected
 
 # Postscreen, doc https://www.postfix.org/postconf.5.html#postscreen_dnsbl_sites
 postscreen_access_list = permit_mynetworks, cidr:/etc/_postscreen/postscreen_access.cidr
