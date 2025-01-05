@@ -169,12 +169,12 @@ touch /.package-installed
 # /etc/init.d/./apache2 start
 
 # # case api
-mv /opt/source/api /opt/api
-cd /opt/api
-cp .env.sample .env
-pnpm install
-pnpm run build
-node dist/main </dev/null &>/dev/null &
+# mv /opt/source/api /opt/api
+# cd /opt/api
+# cp .env.sample .env
+# pnpm install
+# pnpm run build
+# node dist/main </dev/null &>/dev/null &
 ## NodeJS API
 ## check package to encrypt mail password
 # https://github.com/mvo5/sha512crypt-node
