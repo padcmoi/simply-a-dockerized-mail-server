@@ -33,3 +33,4 @@ services:
       - ../volumes/postscreen:/etc/_postscreen
       - ../volumes/redis:/var/lib/redis
       - ../volumes/rspamd:/var/lib/rspamd
+      - ../volumes/clamav:/var/lib/clamav
