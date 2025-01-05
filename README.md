@@ -36,6 +36,7 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
 - [x] [Rspamd](https://rspamd.com/)
   - [x] auto bayesian HAM & SPAM
   - [x] Web interface on port 4001 with full spam module configuration
+  - [x] filtering virus with clamav dedicated module
 - [x] [Amavis](https://www.amavis.org/)
 - [x] [ClamAV](https://www.clamav.net/) with automatic updates
 - [ ] [OpenDKIM](http://www.opendkim.org)

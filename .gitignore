@@ -9,3 +9,4 @@ volumes/postfix
 volumes/postscreen
 volumes/redis
 volumes/rspamd
+volumes/clamav
