@@ -39,7 +39,7 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
   - [x] filtering virus with clamav dedicated module
 - [x] [Amavis](https://www.amavis.org/)
 - [x] [ClamAV](https://www.clamav.net/) with automatic updates
-- [ ] [OpenDKIM](http://www.opendkim.org)
+- [x] [OpenDKIM](http://www.opendkim.org)
 - [ ] [OpenDMARC](https://github.com/trusteddomainproject/OpenDMARC)
 - [ ] [Fail2ban](https://www.fail2ban.org/wiki/index.php/Main_Page)
 - [x] [Postscreen](http://www.postfix.org/POSTSCREEN_README.html)
