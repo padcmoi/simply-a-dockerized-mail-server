@@ -43,6 +43,7 @@ if [ ! -f /.package-installed ]; then
     apt -y install redis-server redis rspamd
     cp -R -f /opt/conf/rspamd/* /etc/rspamd/
     echo password="$(rspamadm pw -q -p ${MYSQL_USERMAIL_PASSWORD})" >/etc/rspamd/local.d/worker-controller.inc
+    service rspamd restart
 fi
 
 # Dovecot
@@ -95,21 +96,15 @@ if [ ! -f /.package-installed ]; then
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/dovecot/dovecot.conf
 fi
 
-# Amavis Clamav
+# Clamav
 if [ ! -f /.package-installed ]; then
-    apt -y install clamav
+    apt -y install clamav-daemon clamav-freshclam clamav clamav-freshclam clamav-testfiles clamav-base
+
     cp -R -f /opt/conf/clamav/* /etc/clamav/
     sed -i -e "s/^NotifyClamd/#NotifyClamd/g" /etc/clamav/freshclam.conf
-    service clamav-freshclam stop
-    rm /var/log/clamav/freshclam.log
-    freshclam
-    service clamav-freshclam start
 
-    apt -y install clamav-base clamav-daemon clamav-freshclam clamav-testfiles amavisd-new
-    cp -R -f /opt/conf/amavis/* /etc/amavis/
-    usermod -a -G amavis clamav
-    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/amavis/conf.d/05-node_id
-    sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/amavis/conf.d/20-debian_defaults
+    service clamav-freshclam stop
+    service clamav-daemon stop
 fi
 
 # Roundcube
@@ -139,17 +134,12 @@ fi
 # start services
 service rsyslog restart
 service cron restart
-handle-antivirus.sh </dev/null &>/dev/null &
 service mariadb restart
 service redis-server restart
-service rspamd restart
+handle-antivirus.sh </dev/null &>/dev/null &
 service dovecot restart
 service postfix restart
 service apache2 restart
-
-echo "Configuration rspam: $(rspamadm configtest)"
-service dovecot status
-service postfix status
 
 # exec some scripts ...
 ## check in background changes in ssl certs /etc/_private/fullchain.*
@@ -184,6 +174,8 @@ node dist/main </dev/null &>/dev/null &
 
 clear
 netstat -tulpn | grep -E -w 'tcp|udp'
+[ $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV DISABLED !!!"
+[ ! $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV ENABLED !!!"
 echo "Hostname: ${DOMAIN_FQDN} (${ADRESSIP})"
 echo "MYSQL ROOT PASSWORD: ${MYSQL_ROOT_PASSWORD}"
 echo "Postfix log: /var/log/postfix.log"

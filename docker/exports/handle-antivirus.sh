@@ -1,15 +1,33 @@
 #!/bin/bash
 source /.env
 
-sed -i "s/#content_filter=smtp-amavis/content_filter=smtp-amavis/g" /etc/postfix/main.cf
+echo "Configuration rspam: $(rspamadm configtest)"
 
 if [ $DISABLE_ANTIVIRUS == true ]; then
-    sed -i "s/content_filter=smtp-amavis/#content_filter=smtp-amavis/g" /etc/postfix/main.cf
-    service amavis stop
-    echo "disable antivirus and in postfix"
+    service clamav-freshclam stop
+    service clamav-daemon stop
+
+    sed -i "s/enabled = true/enabled = false/g" /etc/rspamd/local.d/antivirus.conf
+
+    service rspamd reload
+
+    echo "ANTIVIRUS CLAMAV DISABLED !!!"
 else
-    service amavis restart
-    echo "enable antivirus and in postfix"
+    # update then start
+    service clamav-daemon stop
+    service clamav-freshclam stop
+    rm /var/log/clamav/freshclam.log
+    freshclam
+    service clamav-freshclam start
+
+    service clamav-daemon start
+
+    sed -i "s/enabled = false/enabled = true/g" /etc/rspamd/local.d/antivirus.conf
+
+    service rspamd reload
+
+    echo "ANTIVIRUS CLAMAV ENABLED !!!"
 fi
 
-service postfix restart
+# TODO remove mail test
+sleep 10 && swaks --to julien@example.local --attach - --server 127.0.0.1:25 </opt/eicar.com
