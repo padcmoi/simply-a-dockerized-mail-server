@@ -1,5 +1,6 @@
 #!/bin/bash
 source /.env
+source /_VARIABLES
 
 # Installation packages after volume mount
 if [ ! -f /.package-installed ]; then
@@ -34,6 +35,49 @@ if [ ! -f /.package-installed ]; then
         echo postfix postfix/main_mailer_type select Internet Site
         echo postfix postfix/mailname string $DOMAIN_FQDN
     } | debconf-set-selections && apt install --assume-yes postfix postfix-mysql
+    service postfix stop
+fi
+
+# openDKIM
+if [ ! -f /.package-installed ]; then
+    # SPF / OpenDKIM
+    # Inspired by this tutorial https://www.linuxbabe.com/mail-server/spf-dkim-postfix-debian-server
+    apt -y install postfix-policyd-spf-python opendkim opendkim-tools
+
+    killall -w opendkim # opendkim must stopped before configuration
+
+    sudo gpasswd -a postfix opendkim
+    cp -f /opt/conf/opendkim/opendkim.conf /etc/
+
+    sed -i "/SOCKET=./d" $OPENDKIM_DEFAULT
+    echo "SOCKET=inet:12301@localhost" >>$OPENDKIM_DEFAULT
+
+    mkdir -p $OPENDKIM_KEYS_PATH
+
+    [ ! -f $OPENDKIM_SIGNING_TABLE ] && touch $OPENDKIM_SIGNING_TABLE
+    [ ! -f $OPENDKIM_KEY_TABLE ] && touch $OPENDKIM_KEY_TABLE
+    if [ ! -f $OPENDKIM_TRUSTED_HOSTS ]; then
+        echo "127.0.0.1" >>$OPENDKIM_TRUSTED_HOSTS
+        echo "localhost" >>$OPENDKIM_TRUSTED_HOSTS
+        echo "${ADRESSIP}/24" >>$OPENDKIM_TRUSTED_HOSTS
+        echo "" >>$OPENDKIM_TRUSTED_HOSTS
+    fi
+    # the API must use these scripts when creating or deleting the domain
+    # - dkim-create.sh <domain>
+    # - dkim-delete.sh <domain>
+    # - dkim-update.sh <domain> # just update private key
+
+    # permissions
+    chown -R $OPENDKIM_OWNER_FILE $OPENDKIM_CONFIG_TABLES
+    chmod -R 655 $OPENDKIM_CONFIG_TABLES
+
+    # force permissions on private keys
+    chmod 600 $OPENDKIM_KEYS_PATH/*/*.private_key
+    chown -R $OPENDKIM_OWNER_FILE $OPENDKIM_KEYS_PATH/*/*.private_key
+
+    # if you use the socket instead of the port
+    [ ! -d $OPENDKIM_SOCKET_FOLDER ] && mkdir -p $OPENDKIM_SOCKET_FOLDER
+    [ ! -d $OPENDKIM_SOCKET_FOLDER ] && chown opendkim:postfix $OPENDKIM_SOCKET_FOLDER
 fi
 
 # Rspam
@@ -145,6 +189,7 @@ service cron restart
 service mariadb restart
 service redis-server restart
 handle-antivirus.sh </dev/null &>/dev/null &
+opendkim -x $OPENDKIM_CONFIG
 service dovecot restart
 service postfix restart
 service apache2 restart
@@ -190,4 +235,4 @@ fi
 echo "Hostname: ${DOMAIN_FQDN} (${ADRESSIP})"
 echo "MYSQL ROOT PASSWORD: ${MYSQL_ROOT_PASSWORD}"
 echo "Postfix log: /var/log/postfix.log"
-tail -f /var/log/postfix.log
+tail -f /var/log/syslog

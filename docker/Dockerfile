@@ -46,4 +46,7 @@ RUN mv ./exports/bin/* /usr/local/bin/
 RUN cp -R -f /opt/conf/cron.d/* /etc/cron.d/
 RUN chmod 644 /etc/cron.d/*
 
+RUN cp /opt/conf/_VARIABLES /_VARIABLES
+RUN chmod 444 /_VARIABLES
+
 ENTRYPOINT ["docker-entrypoint.sh"]

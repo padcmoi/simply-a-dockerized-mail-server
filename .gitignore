@@ -10,3 +10,4 @@ volumes/postscreen
 volumes/redis
 volumes/rspamd
 volumes/clamav
+volumes/opendkim
