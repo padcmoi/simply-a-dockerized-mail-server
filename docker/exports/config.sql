@@ -9,3 +9,5 @@ GRANT ALL PRIVILEGES ON mailserver.* TO mailuser@localhost IDENTIFIED BY '____ma
 GRANT ALL PRIVILEGES ON opendmarc.* TO mailuser@localhost IDENTIFIED BY '____mailUserPass';
 
 FLUSH PRIVILEGES;
+
+SET GLOBAL general_log = 'OFF';
