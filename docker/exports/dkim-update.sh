@@ -39,15 +39,15 @@ if [ $1 ]; then
         sudo opendkim-genkey -b 2048 -d $1 -D $KEYS_PATH/$1 -s $KEY_NAME -v
 
         sudo mv $KEYS_PATH/$1/$KEY_NAME.private $KEYS_PATH/$1/$KEY_NAME.private_key
-        sudo mv $KEYS_PATH/$1/$KEY_NAME.txt $KEYS_PATH/$1/$KEY_NAME.public_key
+        sudo mv $KEYS_PATH/$1/$KEY_NAME.txt $KEYS_PATH/$1/public_key-$KEY_NAME-$1.txt
 
         sudo chown $OWNER_FILE $KEYS_PATH/$1/$KEY_NAME.private_key
         sudo chmod 600 $KEYS_PATH/$1/$KEY_NAME.private_key
-        sudo chmod 777 $KEYS_PATH/$1/$KEY_NAME.public_key
+        sudo chmod 777 $KEYS_PATH/$1/public_key-$KEY_NAME-$1.txt
 
         sudo opendkim-testkey -d $1 -s $KEY_NAME -vvv
 
-        sudo cat $KEYS_PATH/$1/$KEY_NAME.public_key
+        sudo cat $KEYS_PATH/$1/public_key-$KEY_NAME-$1.txt
 
         sudo killall -w opendkim
         sudo opendkim -x /etc/opendkim.conf
