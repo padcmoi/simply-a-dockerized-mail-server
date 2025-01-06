@@ -154,3 +154,10 @@ milter_default_action = accept
 milter_mail_macros = i {mail_addr} {client_addr} {client_name} {auth_authen}
 milter_macro_defaults = dkimsign=yes
 
+# SPF
+policyd-spf_time_limit = 3600
+smtpd_recipient_restrictions =
+   permit_mynetworks,
+   permit_sasl_authenticated,
+   reject_unauth_destination,
+   check_policy_service unix:private/policyd-spf
