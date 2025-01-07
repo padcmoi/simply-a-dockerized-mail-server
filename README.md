@@ -40,7 +40,7 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
 - [x] [Amavis](https://www.amavis.org/)
 - [x] [ClamAV](https://www.clamav.net/) with automatic updates
 - [x] [OpenDKIM](http://www.opendkim.org)
-- [ ] [OpenDMARC](https://github.com/trusteddomainproject/OpenDMARC)
+- [x] [OpenDMARC](https://github.com/trusteddomainproject/OpenDMARC)
 - [ ] [Fail2ban](https://www.fail2ban.org/wiki/index.php/Main_Page)
 - [x] [Postscreen](http://www.postfix.org/POSTSCREEN_README.html)
 - [ ] [Postgrey](https://postgrey.schweikert.ch/)
