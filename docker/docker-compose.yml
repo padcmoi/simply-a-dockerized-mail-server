@@ -24,6 +24,11 @@ services:
       - "4443:4443" # roundcube
     extra_hosts:
       - "${DOMAIN_FQDN}:${ADRESSIP}"
+    cap_add:
+      - NET_ADMIN
+    networks:
+      backend:
+        ipv4_address: 172.200.0.5
     volumes:
       - ../volumes/log:/var/_log
       - ../volumes/ssl:/etc/_private
@@ -35,3 +40,12 @@ services:
       - ../volumes/rspamd:/var/lib/rspamd
       - ../volumes/clamav:/var/lib/clamav
       - ../volumes/opendkim:/etc/opendkim
+      - ../volumes/fail2ban:/var/lib/fail2ban
+
+networks:
+  backend:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.200.0.0/16"
+          gateway: "172.200.0.1"

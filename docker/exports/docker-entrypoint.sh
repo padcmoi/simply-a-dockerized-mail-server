@@ -7,6 +7,15 @@ if [ ! -f /.package-installed ]; then
     apt update
 fi
 
+# Fail2ban / firewall
+if [ ! -f /.package-installed ]; then
+    rm -R /etc/fail2ban
+    apt -y install fail2ban
+    service fail2ban stop
+    cp -f /opt/conf/fail2ban/* /etc/fail2ban/
+    echo "" >/etc/fail2ban/jail.d/defaults-debian.conf
+fi
+
 # Mysql and create if not exists database
 if [ ! -f /.package-installed ]; then
     MYSQL_ROOT_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 50)
@@ -198,6 +207,7 @@ opendkim -x $OPENDKIM_CONFIG
 service dovecot restart
 service postfix restart
 service apache2 restart
+service fail2ban start
 
 # exec some scripts ...
 ## check in background changes in ssl certs /etc/_private/fullchain.*
@@ -232,6 +242,7 @@ touch /.package-installed
 
 clear
 netstat -tulpn | grep -E -w 'tcp|udp'
+service fail2ban status
 [ $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV DISABLED !!!"
 [ ! $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV ENABLED !!!"
 if [ ! $NOTIFY_SPAM_REJECT == false ] && [ $NOTIFY_SPAM_REJECT_TO ]; then

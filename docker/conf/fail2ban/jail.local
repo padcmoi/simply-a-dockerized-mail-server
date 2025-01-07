@@ -1,0 +1,95 @@
+[DEFAULT]
+
+# The goal here is not to ban, but to repel password dictionaries / brute force attacks
+maxretry = 30
+findtime = 90
+bantime = 3600 
+
+# Several addresses can be defined using space (and/or comma) separator.
+ignoreip = 127.0.0.1/8, 172.200.0.1/16
+
+banaction = nftables-allports
+
+[dovecot]
+enabled = true
+logpath = /var/log/dovecot.log
+filter = dovecot
+
+[postfix]
+enabled = true
+logpath = /var/log/postfix.log
+filter = postfix
+
+[apache-auth]
+enabled = true
+port     = http,https
+logpath  = %(apache_error_log)s
+
+
+[apache-badbots]
+enabled = true
+port     = http,https
+logpath  = %(apache_access_log)s
+bantime  = 48h
+maxretry = 1
+
+
+[apache-noscript]
+enabled = true
+port     = http,https
+logpath  = %(apache_error_log)s
+
+
+[apache-overflows]
+enabled = true
+port     = http,https
+logpath  = %(apache_error_log)s
+maxretry = 2
+
+
+[apache-nohome]
+enabled = true
+port     = http,https
+logpath  = %(apache_error_log)s
+maxretry = 2
+
+
+[apache-botsearch]
+enabled = true
+port     = http,https
+logpath  = %(apache_error_log)s
+maxretry = 2
+
+
+[apache-fakegooglebot]
+enabled = true
+port     = http,https
+logpath  = %(apache_access_log)s
+maxretry = 1
+ignorecommand = %(ignorecommands_dir)s/apache-fakegooglebot <ip>
+
+
+[apache-modsecurity]
+enabled = true
+port     = http,https
+logpath  = %(apache_error_log)s
+maxretry = 2
+
+
+[apache-shellshock]
+enabled = true
+port    = http,https
+logpath = %(apache_error_log)s
+maxretry = 1
+
+# [roundcube-auth]
+# enabled = true
+
+# [postfix-sasl]
+# enabled = true
+
+# [phpmyadmin-syslog]
+# enabled = true
+
+# [sieve]
+# enabled = true

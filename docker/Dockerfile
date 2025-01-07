@@ -6,9 +6,10 @@ FROM debian:bullseye
 ARG DOMAIN_FQDN
 
 # Installation packages
-RUN apt update 
+RUN apt update
 RUN apt autoremove -y exim4
-RUN apt install -y git curl sudo net-tools nano htop procps findutils wget zip inotify-tools iptables systemctl rsyslog bind9-dnsutils
+RUN apt install -y git curl sudo net-tools nano htop procps findutils wget zip systemctl rsyslog \ 
+inotify-tools bind9-dnsutils kmod iptables nftables
 
 # download repository
 RUN mkdir -p /opt/source
