@@ -34,3 +34,4 @@ services:
       - ../volumes/redis:/var/lib/redis
       - ../volumes/rspamd:/var/lib/rspamd
       - ../volumes/clamav:/var/lib/clamav
+      - ../volumes/opendkim:/etc/opendkim
