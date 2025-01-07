@@ -13,3 +13,4 @@ GRANT ALL PRIVILEGES ON roundcube.* TO mailuser@localhost IDENTIFIED BY '____mai
 FLUSH PRIVILEGES;
 
 SET GLOBAL general_log = 'OFF';
+SET sql_log_bin = 0;
