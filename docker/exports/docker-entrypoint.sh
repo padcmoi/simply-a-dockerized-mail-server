@@ -15,6 +15,11 @@ if [ ! -f /.package-installed ]; then
     sed -i "s/____mailUserPass/${MYSQL_USERMAIL_PASSWORD}/g" /opt/exports/config.sql
 
     apt install -y mariadb-client mariadb-server
+
+    # separate log warn, ... in dedicated file
+    sed -i "/nice =./{N;N;d}" /etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
+    echo "log_error = /var/log/mysql/error.log" >>/etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
+
     service mariadb restart
 
     mysql -u root </opt/exports/config.sql && mysql -u root </opt/exports/build.sql
