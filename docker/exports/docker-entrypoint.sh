@@ -7,6 +7,35 @@ if [ ! -f /.package-installed ]; then
     apt update
 fi
 
+# Fail2ban / firewall
+if [ ! -f /.package-installed ]; then
+    rm -R $FAIL2BAN_CONFIG_DIR
+    apt -y install fail2ban
+    service fail2ban stop
+    cp -f /opt/conf/fail2ban/* $FAIL2BAN_CONFIG_DIR/
+    echo "" >$FAIL2BAN_CONFIG_DIR/jail.d/defaults-debian.conf
+    sed -i "s/loglevel = INFO/loglevel = NOTICE/" $FAIL2BAN_CONFIG_DIR/fail2ban.conf
+    sed -i "s/logtarget = \/var\/log\/fail2ban.log/logtarget = SYSLOG/" $FAIL2BAN_CONFIG_DIR/fail2ban.conf
+
+    if [ $FAIL2BAN_MAXRETRY -gt 0 ]; then
+        sed -i "s/____fail2BanMaxRetry/${FAIL2BAN_MAXRETRY}/g" $FAIL2BAN_CONFIG_DIR/jail.local
+    else
+        sed -i "s/____fail2BanMaxRetry/30/g" $FAIL2BAN_CONFIG_DIR/jail.local
+    fi
+
+    if [ $FAIL2BAN_FINDTIME -gt 0 ]; then
+        sed -i "s/____fail2BanFindtime/${FAIL2BAN_FINDTIME}/g" $FAIL2BAN_CONFIG_DIR/jail.local
+    else
+        sed -i "s/____fail2BanFindtime/90/g" $FAIL2BAN_CONFIG_DIR/jail.local
+    fi
+
+    if [ $FAIL2BAN_BANTIME -gt 0 ]; then
+        sed -i "s/____fail2BanBantime/${FAIL2BAN_BANTIME}/g" $FAIL2BAN_CONFIG_DIR/jail.local
+    else
+        sed -i "s/____fail2BanBantime/3600/g" $FAIL2BAN_CONFIG_DIR/jail.local
+    fi
+fi
+
 # Mysql and create if not exists database
 if [ ! -f /.package-installed ]; then
     MYSQL_ROOT_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 50)
@@ -198,6 +227,7 @@ opendkim -x $OPENDKIM_CONFIG
 service dovecot restart
 service postfix restart
 service apache2 restart
+service fail2ban start
 
 # exec some scripts ...
 ## check in background changes in ssl certs /etc/_private/fullchain.*
@@ -232,6 +262,7 @@ touch /.package-installed
 
 clear
 netstat -tulpn | grep -E -w 'tcp|udp'
+service fail2ban status
 [ $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV DISABLED !!!"
 [ ! $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV ENABLED !!!"
 if [ ! $NOTIFY_SPAM_REJECT == false ] && [ $NOTIFY_SPAM_REJECT_TO ]; then
