@@ -9,11 +9,13 @@ fi
 
 # Fail2ban / firewall
 if [ ! -f /.package-installed ]; then
-    rm -R /etc/fail2ban
+    rm -R $FAIL2BAN_CONFIG_DIR
     apt -y install fail2ban
     service fail2ban stop
-    cp -f /opt/conf/fail2ban/* /etc/fail2ban/
-    echo "" >/etc/fail2ban/jail.d/defaults-debian.conf
+    cp -f /opt/conf/fail2ban/* $FAIL2BAN_CONFIG_DIR/
+    echo "" >$FAIL2BAN_CONFIG_DIR/jail.d/defaults-debian.conf
+    sed -i "s/loglevel = INFO/loglevel = NOTICE/" $FAIL2BAN_CONFIG_DIR/fail2ban.conf 
+    sed -i "s/logtarget = \/var\/log\/fail2ban.log/logtarget = SYSLOG/" $FAIL2BAN_CONFIG_DIR/fail2ban.conf 
 fi
 
 # Mysql and create if not exists database

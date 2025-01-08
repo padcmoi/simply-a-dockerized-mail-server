@@ -13,3 +13,6 @@ OPENDKIM_SIGNING_TABLE="/etc/opendkim/signing.table"
 OPENDKIM_KEY_TABLE="/etc/opendkim/key.table"
 OPENDKIM_TRUSTED_HOSTS="/etc/opendkim/trusted.hosts"
 OPENDKIM_KEY_NAME=$(date "+dkim_%Y_%m")
+
+# Fail2ban
+FAIL2BAN_CONFIG_DIR="/etc/fail2ban"
