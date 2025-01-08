@@ -1,9 +1,9 @@
 [DEFAULT]
 
 # The goal here is not to ban, but to repel password dictionaries / brute force attacks
-maxretry = 30
-findtime = 90
-bantime = 3600 
+maxretry = ____fail2BanMaxRetry
+findtime = ____fail2BanFindtime
+bantime = ____fail2BanBantime 
 
 # Several addresses can be defined using space (and/or comma) separator.
 ignoreip = 127.0.0.1/8, 172.200.0.1/16
