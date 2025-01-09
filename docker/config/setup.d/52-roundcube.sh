@@ -24,7 +24,7 @@ build)
 container)
 
     # echo "no config"
-    
+
     ;;
 *)
     echo "please give me an argument"

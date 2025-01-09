@@ -34,10 +34,15 @@ build)
         sed -i "s/____fail2BanBantime/3600/g" $FAIL2BAN_CONFIG_DIR/jail.local
     fi
 
+    cp -Rf /var/lib/fail2ban /var/lib/fail2ban.DOCKER_TMP
+
     ;;
 container)
 
-    # echo "no config"
+    if [ -d /var/lib/fail2ban.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/fail2ban')" ]; then
+        mv -f /var/lib/fail2ban.DOCKER_TMP/* /var/lib/fail2ban/
+    fi
+    rm -R /var/lib/fail2ban.DOCKER_TMP
 
     ;;
 *)

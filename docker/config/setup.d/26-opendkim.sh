@@ -43,8 +43,15 @@ build)
     [ ! -d $OPENDKIM_SOCKET_FOLDER ] && mkdir -p $OPENDKIM_SOCKET_FOLDER
     [ ! -d $OPENDKIM_SOCKET_FOLDER ] && chown opendkim:postfix $OPENDKIM_SOCKET_FOLDER
 
+    cp -Rf /etc/opendkim /etc/opendkim.DOCKER_TMP
+
     ;;
 container)
+
+    if [ -d /etc/opendkim.DOCKER_TMP ] && [ -z "$(ls -A '/etc/opendkim')" ]; then
+        mv -f /etc/opendkim.DOCKER_TMP/* /etc/opendkim/
+    fi
+    rm -R /etc/opendkim.DOCKER_TMP
 
     # permissions
     chown -R $OPENDKIM_OWNER_FILE $OPENDKIM_CONFIG_TABLES
