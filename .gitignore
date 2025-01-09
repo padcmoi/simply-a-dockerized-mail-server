@@ -11,3 +11,4 @@ volumes/redis
 volumes/rspamd
 volumes/clamav
 volumes/opendkim
+volumes/fail2ban
