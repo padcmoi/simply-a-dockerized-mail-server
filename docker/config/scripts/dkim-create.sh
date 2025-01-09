@@ -66,9 +66,13 @@ if [ $1 ]; then
         sudo mv $KEYS_PATH/$1/$KEY_NAME.private $KEYS_PATH/$1/$KEY_NAME.private_key
         sudo mv $KEYS_PATH/$1/$KEY_NAME.txt $KEYS_PATH/$1/public_key-$KEY_NAME-$1.txt
 
-        sudo chown $OWNER_FILE $KEYS_PATH/$1/$KEY_NAME.private_key
-        sudo chmod 600 $KEYS_PATH/$1/$KEY_NAME.private_key
-        sudo chmod 777 $KEYS_PATH/$1/public_key-$KEY_NAME-$1.txt
+        # permissions
+        sudo chown -R $OPENDKIM_OWNER_FILE $OPENDKIM_CONFIG_TABLES
+        sudo chmod -R 655 $OPENDKIM_CONFIG_TABLES
+
+        # force permissions on private keys
+        sudo chmod 600 $OPENDKIM_KEYS_PATH/*/*.private_key
+        sudo chown -R $OPENDKIM_OWNER_FILE $OPENDKIM_KEYS_PATH/*/*.private_key
 
         sudo opendkim-testkey -d $1 -s $KEY_NAME -vvv
 
