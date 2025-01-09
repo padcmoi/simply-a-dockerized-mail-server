@@ -20,6 +20,7 @@ container)
 
     if [ -d /var/lib/clamav.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/clamav')" ]; then
         mv -f /var/lib/clamav.DOCKER_TMP/* /var/lib/clamav/
+        chown -R clamav:clamav /var/lib/clamav
     fi
     rm -R /var/lib/clamav.DOCKER_TMP
 

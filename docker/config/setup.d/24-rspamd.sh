@@ -26,6 +26,7 @@ container)
 
     if [ -d /var/lib/rspamd.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/rspamd')" ]; then
         mv -f /var/lib/rspamd.DOCKER_TMP/* /var/lib/rspamd/
+        chown -R _rspamd:_rspamd /var/lib/rspamd
     fi
     rm -R /var/lib/rspamd.DOCKER_TMP
 
