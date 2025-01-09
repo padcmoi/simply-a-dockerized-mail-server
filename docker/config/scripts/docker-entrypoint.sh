@@ -26,6 +26,9 @@ debug-autocopy-logs.sh </dev/null &>/dev/null &
 ## provides mail in volume/mail
 make-public-mail-volume.sh </dev/null &>/dev/null &
 
+# fix permission issue opendkim keys
+/docker-config/setup.d/26-opendkim.sh container
+
 clear
 netstat -tulpn | grep -E -w 'tcp|udp'
 service fail2ban status
