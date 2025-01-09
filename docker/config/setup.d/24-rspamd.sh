@@ -10,7 +10,7 @@ build)
 
     apt -y install rspamd
     cp -R -f /docker-config/conf.d/rspamd/* /etc/rspamd/
-    echo password="$(rspamadm pw -q -p ${MYSQL_USERMAIL_PASSWORD})" >/etc/rspamd/local.d/worker-controller.inc
+    echo password="$(rspamadm pw -q -p ${ADMIN_PASSWORD})" >/etc/rspamd/local.d/worker-controller.inc
 
     if [ ! $NOTIFY_SPAM_REJECT == false ] && [ $NOTIFY_SPAM_REJECT_TO ]; then
         sed -i "s/____notifySpamRejectTo/${NOTIFY_SPAM_REJECT_TO}/g" /etc/rspamd/local.d/metadata_exporter.conf

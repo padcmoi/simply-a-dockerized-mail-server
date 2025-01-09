@@ -11,7 +11,7 @@ build)
     echo "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" >/.mysql-root-pw
 
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /docker-config/database/config.sql
-    sed -i "s/____mailUserPass/${MYSQL_USERMAIL_PASSWORD}/g" /docker-config/database/config.sql
+    sed -i "s/____mailUserPass/${ADMIN_PASSWORD}/g" /docker-config/database/config.sql
 
     apt install -y mariadb-client mariadb-server
 
