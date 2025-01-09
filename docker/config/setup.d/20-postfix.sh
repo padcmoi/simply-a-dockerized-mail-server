@@ -35,8 +35,9 @@ container)
 
     if [ -d /var/spool/postfix.DOCKER_TMP ] && [ -z "$(ls -A '/var/spool/postfix')" ]; then
         mv -f /var/spool/postfix.DOCKER_TMP/* /var/spool/postfix/
-        chown postfix /var/spool/postfix/{active,bounce,corrupt,defer,deferred,flush,hold,incoming,maildrop,pid,private,public,saved,trace}
-        chown -R postfix: /var/spool/postfix/{active,defer,deferred,bounce,hold,incoming,flush,private}/*
+        chmod -R 777 /var/spool/postfix
+        # chown postfix /var/spool/postfix/{active,bounce,corrupt,defer,deferred,flush,hold,incoming,maildrop,pid,private,public,saved,trace}
+        # chown -R postfix: /var/spool/postfix/{active,defer,deferred,bounce,hold,incoming,flush,private}/*
     fi
     rm -R /var/spool/postfix.DOCKER_TMP
 

@@ -6,13 +6,14 @@ source /.mysql-root-pw
 /docker-config/docker-setup.sh container
 
 # start services
+service rspamd restart
 service rsyslog restart
 service cron restart
 service mariadb restart
 service redis-server restart
 handle-antivirus.sh </dev/null &>/dev/null &
 opendkim -x $OPENDKIM_CONFIG
-service rspamd restart
+
 service dovecot restart
 service postfix restart
 service apache2 restart
