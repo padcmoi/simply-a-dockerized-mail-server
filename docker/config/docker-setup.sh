@@ -2,8 +2,6 @@
 source /.env
 source /_VARIABLES
 
-# Installation packages after volume mount
-
 apt update
 
 cd $(pwd)/setup.d
