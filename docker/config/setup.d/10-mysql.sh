@@ -19,8 +19,6 @@ build)
     sed -i "/nice =./{N;N;d}" /etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
     echo "log_error = /var/log/mysql/error.log" >>/etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
 
-    cp -Rf /var/lib/mysql /var/lib/mysql.DOCKER_TMP
-
     ;;
 container)
 
