@@ -30,7 +30,7 @@ container)
         echo "roundcube-core roundcube/database-type select mysql" | debconf-set-selections &&
         echo "roundcube-core roundcube/install-error select 'ignore'" | debconf-set-selections &&
         echo "roundcube-core roundcube/missing-db-package-error select 'ignore'" | debconf-set-selections &&
-        apt --assume-yes install roundcube roundcube-core roundcube-mysql roundcube-plugins roundcube-plugins-extra
+        DEBIAN_FRONTEND=noninteractive apt --assume-yes install roundcube roundcube-core roundcube-mysql roundcube-plugins roundcube-plugins-extra
 
     # Above I reused debconf-set-selections because
     # I found a way to fix the error stipulated `Cannot find a question for`.
