@@ -12,7 +12,9 @@ build)
 
     cp -R -f /docker-config/conf.d/dovecot/* /etc/dovecot/
 
-    # dovecot changes
+    groupadd -g 5000 vmail
+    useradd -g vmail -u 5000 vmail -d /var/mail
+
     chown -R vmail:dovecot /etc/dovecot
     chmod -R o-rwx /etc/dovecot
 
@@ -40,8 +42,6 @@ container)
     rm -R /var/mail.DOCKER_TMP
 
     mkdir -p /var/mail/vhosts/
-    groupadd -g 5000 vmail
-    useradd -g vmail -u 5000 vmail -d /var/mail
     chown -R vmail:vmail /var/mail
 
     ;;
