@@ -13,10 +13,15 @@ build)
     cp -R -f /docker-config/conf.d/clamav/* /etc/clamav/
     sed -i -e "s/^NotifyClamd/#NotifyClamd/g" /etc/clamav/freshclam.conf
 
+    ;;
+
+save-volume)
+
     cp -Rf /var/lib/clamav /var/lib/clamav.DOCKER_TMP
 
     ;;
-container)
+
+retrieve-volume)
 
     if [ -d /var/lib/clamav.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/clamav')" ]; then
         mv -f /var/lib/clamav.DOCKER_TMP/* /var/lib/clamav/
@@ -24,6 +29,11 @@ container)
     fi
     rm -R /var/lib/clamav.DOCKER_TMP
 
+    ;;
+
+container)
+
+    #
     ;;
 *)
     echo "please give me an argument"

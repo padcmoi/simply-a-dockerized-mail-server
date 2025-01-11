@@ -6,6 +6,25 @@ apt update
 
 cd $(pwd)/setup.d
 
-for file in $(ls *.sh); do
-  bash $file $1
+case $1 in
+build)
+  arguments="build save-volume"
+  ;;
+container)
+  arguments="retrieve-volume container"
+  ;;
+
+*)
+  arguments=""
+  echo "Please give me an argument (build or container)"
+  exit
+  ;;
+esac
+
+for argument in $arguments; do
+
+  for script in $(ls *.sh); do
+    bash $script $argument
+  done
+
 done

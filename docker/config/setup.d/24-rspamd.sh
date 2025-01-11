@@ -19,16 +19,27 @@ build)
         sed -i "s/enabled = true/enabled = false/g" /etc/rspamd/local.d/metadata_exporter.conf
     fi
 
+    ;;
+
+save-volume)
+
     cp -Rf /var/lib/rspamd /var/lib/rspamd.DOCKER_TMP
 
     ;;
-container)
+
+retrieve-volume)
 
     if [ -d /var/lib/rspamd.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/rspamd')" ]; then
         mv -f /var/lib/rspamd.DOCKER_TMP/* /var/lib/rspamd/
         chown -R _rspamd:_rspamd /var/lib/rspamd
     fi
     rm -R /var/lib/rspamd.DOCKER_TMP
+
+    ;;
+
+container)
+
+    a2ensite rspamd-web-interface.conf
 
     rm -f /var/lib/rspamd/*.hs*
     rm -f /var/lib/rspamd/*.map

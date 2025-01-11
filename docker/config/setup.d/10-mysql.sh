@@ -19,10 +19,21 @@ build)
     sed -i "/nice =./{N;N;d}" /etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
     echo "log_error = /var/log/mysql/error.log" >>/etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
 
+    # Opens a socket to allow applications to add content to the database during the image build.
+    /bin/bash -c "/usr/bin/mysqld_safe --skip-grant-tables &" && sleep 5
+    netstat -tulpn | grep -E -w '3306'
+    mysql -u root -e "SHOW DATABASES;"
+    sleep 3
+
+    ;;
+
+save-volume)
+
     cp -Rf /var/lib/mysql /var/lib/mysql.DOCKER_TMP
 
     ;;
-container)
+
+retrieve-volume)
 
     if [ -d /var/lib/mysql.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/mysql')" ]; then
         mv -f /var/lib/mysql.DOCKER_TMP/* /var/lib/mysql/
@@ -30,6 +41,10 @@ container)
         chown -R mysql:mysql /var/lib/mysql
     fi
     rm -R /var/lib/mysql.DOCKER_TMP
+
+    ;;
+
+container)
 
     source /.mysql-root-pw
 

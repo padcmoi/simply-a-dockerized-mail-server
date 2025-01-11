@@ -12,7 +12,9 @@ build)
 
     cp -R -f /docker-config/conf.d/dovecot/* /etc/dovecot/
 
-    # dovecot changes
+    groupadd -g 5000 vmail
+    useradd -g vmail -u 5000 vmail -d /var/mail
+
     chown -R vmail:dovecot /etc/dovecot
     chmod -R o-rwx /etc/dovecot
 
@@ -29,19 +31,26 @@ build)
     sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/dovecot/db-sql/_mysql-connect.conf
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/dovecot/dovecot.conf
 
+    ;;
+
+save-volume)
+
     cp -Rf /var/mail /var/mail.DOCKER_TMP
 
     ;;
-container)
+
+retrieve-volume)
 
     if [ -d /var/mail.DOCKER_TMP ] && [ -z "$(ls -A '/var/mail')" ]; then
         mv -f /var/mail.DOCKER_TMP/* /var/mail/
     fi
     rm -R /var/mail.DOCKER_TMP
 
+    ;;
+
+container)
+
     mkdir -p /var/mail/vhosts/
-    groupadd -g 5000 vmail
-    useradd -g vmail -u 5000 vmail -d /var/mail
     chown -R vmail:vmail /var/mail
 
     ;;
