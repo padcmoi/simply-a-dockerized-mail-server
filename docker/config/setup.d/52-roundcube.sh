@@ -8,9 +8,7 @@ echo "-> $(basename "$0" .sh): $1"
 case $1 in
 build)
 
-    mysql -u root -e "SHOW DATABASES;"
-    netstat -tulpn | grep -E -w '3306'
-    sleep 5
+    #
 
     ;;
 
