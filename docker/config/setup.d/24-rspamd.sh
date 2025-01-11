@@ -39,6 +39,8 @@ retrieve-volume)
 
 container)
 
+    a2ensite rspamd-web-interface.conf
+
     rm -f /var/lib/rspamd/*.hs*
     rm -f /var/lib/rspamd/*.map
 

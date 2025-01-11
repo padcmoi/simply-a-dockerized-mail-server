@@ -13,8 +13,8 @@ build)
 
     cp -R -f /docker-config/conf.d/apache2/* /etc/apache2/
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/apache2/sites-available/*.conf
+
     a2ensite port.4000.conf
-    a2ensite rspamd-web-interface.conf
 
     ;;
 
