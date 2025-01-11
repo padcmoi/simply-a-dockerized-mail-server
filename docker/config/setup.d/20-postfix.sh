@@ -28,10 +28,15 @@ build)
         sed -i "s/____postscreenDeepProtocolTests/yes/g" /etc/postfix/main.cf
     fi
 
+    ;;
+
+save-volume)
+
     cp -Rf /var/spool/postfix /var/spool/postfix.DOCKER_TMP
 
     ;;
-container)
+
+retrieve-volume)
 
     if [ -d /var/spool/postfix.DOCKER_TMP ] && [ -z "$(ls -A '/var/spool/postfix')" ]; then
         mv -f /var/spool/postfix.DOCKER_TMP/* /var/spool/postfix/
@@ -40,6 +45,10 @@ container)
         # chown -R postfix: /var/spool/postfix/{active,defer,deferred,bounce,hold,incoming,flush,private}/*
     fi
     rm -R /var/spool/postfix.DOCKER_TMP
+
+    ;;
+
+container)
 
     if [ ! -f /etc/_postscreen/postscreen_access.cidr ]; then
         cp -f /docker-config/conf.d/postfix/postscreen_access.cidr /etc/_postscreen/postscreen_access.cidr

@@ -6,23 +6,25 @@ apt update
 
 cd $(pwd)/setup.d
 
-for file in $(ls *.sh); do
-  bash $file $1
-done
-
-#
-# Execution after build or container ...
-#
-
 case $1 in
 build)
-
-  # 10-mysql.sh build
-  cp -Rf /var/lib/mysql /var/lib/mysql.DOCKER_TMP
-
+  arguments="build save-volume"
   ;;
-container) ;;
+container)
+  arguments="retrieve-volume container"
+  ;;
+
 *)
-  echo "please give me an argument"
+  arguments=""
+  echo "Please give me an argument (build or container)"
+  exit
   ;;
 esac
+
+for argument in $arguments; do
+
+  for script in $(ls *.sh); do
+    bash $script $argument
+  done
+
+done

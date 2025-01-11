@@ -10,10 +10,15 @@ build)
 
     apt -y install redis-server redis
 
+    ;;
+
+save-volume)
+
     cp -Rf /var/lib/redis /var/lib/redis.DOCKER_TMP
 
     ;;
-container)
+
+retrieve-volume)
 
     if [ -d /var/lib/redis.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/redis')" ]; then
         mv -f /var/lib/redis.DOCKER_TMP/* /var/lib/redis/
@@ -21,6 +26,13 @@ container)
     rm -R /var/lib/redis.DOCKER_TMP
 
     ;;
+
+container)
+
+    #
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

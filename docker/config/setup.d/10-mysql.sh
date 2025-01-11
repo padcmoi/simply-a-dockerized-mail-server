@@ -20,7 +20,14 @@ build)
     echo "log_error = /var/log/mysql/error.log" >>/etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
 
     ;;
-container)
+
+save-volume)
+
+    cp -Rf /var/lib/mysql /var/lib/mysql.DOCKER_TMP
+
+    ;;
+
+retrieve-volume)
 
     if [ -d /var/lib/mysql.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/mysql')" ]; then
         mv -f /var/lib/mysql.DOCKER_TMP/* /var/lib/mysql/
@@ -28,6 +35,10 @@ container)
         chown -R mysql:mysql /var/lib/mysql
     fi
     rm -R /var/lib/mysql.DOCKER_TMP
+
+    ;;
+
+container)
 
     source /.mysql-root-pw
 
