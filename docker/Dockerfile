@@ -18,6 +18,8 @@ WORKDIR /docker-config
 COPY ./config/ .
 COPY .env /.env
 
+RUN mv ./utils /utils
+
 RUN cp -R -f ./conf.d/cron.d/* /etc/cron.d/
 RUN chmod 644 /etc/cron.d/*
 
