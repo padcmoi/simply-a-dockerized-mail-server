@@ -5,6 +5,9 @@ source /.mysql-root-pw
 
 echo "-> $(basename "$0" .sh): $1"
 
+# Required
+[ ! -f "50-apache2.sh" ] && exit
+
 case $1 in
 build)
 
@@ -53,7 +56,8 @@ container)
     sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 50M/g" /etc/php/*/apache2/php.ini
 
     cat /docker-config/conf.d/roundcube/config.inc.php >/etc/roundcube/config.inc.php
-    cat /docker-config/conf.d/roundcube/apache.conf >>/etc/roundcube/apache.conf
+    cat /docker-config/conf.d/roundcube/apache.conf >/etc/apache2/sites-available/roundcube.conf
+    a2ensite roundcube.conf
 
     sed -i "s/____ROUNDCUBE_DES_KEY/$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)/g" /etc/roundcube/config.inc.php
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/roundcube/config.inc.php
