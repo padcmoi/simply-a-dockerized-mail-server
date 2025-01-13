@@ -74,6 +74,13 @@ container)
     chown -R $OPENDKIM_OWNER_FILE $OPENDKIM_KEYS_PATH/*/*.private_key
 
     ;;
+
+run)
+
+    opendkim -x $OPENDKIM_CONFIG
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

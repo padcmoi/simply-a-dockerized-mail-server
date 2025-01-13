@@ -60,6 +60,12 @@ container)
 
     ;;
 
+run)
+
+    echo "run"
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

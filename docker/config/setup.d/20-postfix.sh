@@ -59,6 +59,13 @@ container)
     fi
 
     ;;
+
+run)
+
+    service postfix start
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

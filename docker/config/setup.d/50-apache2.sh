@@ -35,6 +35,13 @@ container)
     #
 
     ;;
+
+run)
+
+    service apache2 start
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

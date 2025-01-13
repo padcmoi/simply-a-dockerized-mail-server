@@ -11,9 +11,8 @@ build)
   arguments="build save-volume"
   ;;
 container)
-  arguments="retrieve-volume container"
+  arguments="retrieve-volume container run"
   ;;
-
 *)
   arguments=""
   echo "Please give me an argument (build or container)"

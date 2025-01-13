@@ -109,9 +109,6 @@ container)
             chown -R opendmarc:opendmarc $OPENDMARC_VAR
             chmod -R 755 $OPENDMARC_VAR
 
-            # run daemon
-            opendmarc -c $OPENDMARC_CONFIG
-
             ;;
 
         esac
@@ -119,6 +116,14 @@ container)
     fi
 
     ;;
+
+run)
+
+    # run daemon
+    opendmarc -c $OPENDMARC_CONFIG
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

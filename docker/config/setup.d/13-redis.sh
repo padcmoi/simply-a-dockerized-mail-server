@@ -33,6 +33,12 @@ container)
 
     ;;
 
+run)
+
+    service redis-server start
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

@@ -5,19 +5,6 @@ source /.mysql-root-pw
 
 /docker-config/docker-setup.sh container
 
-# start services
-service rspamd restart
-service rsyslog restart
-service cron restart
-service mariadb restart
-service redis-server restart
-handle-antivirus.sh </dev/null &>/dev/null &
-opendkim -x $OPENDKIM_CONFIG
-service dovecot restart
-service postfix restart
-service apache2 restart
-service fail2ban start
-
 # exec some scripts ...
 ## check in background changes in ssl certs /etc/_private/fullchain.*
 check-mail-ssl-files.sh </dev/null &>/dev/null &

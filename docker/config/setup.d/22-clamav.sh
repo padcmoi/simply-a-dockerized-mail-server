@@ -35,6 +35,13 @@ container)
 
     #
     ;;
+
+run)
+
+    handle-antivirus.sh </dev/null &>/dev/null &
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

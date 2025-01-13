@@ -48,11 +48,17 @@ container)
 
     source /.mysql-root-pw
 
-    service mariadb start
+    service mariadb start >/dev/null
 
     mysql -u root </docker-config/database/config.sql && mysql -u root </docker-config/database/build.sql
 
     ;;
+
+run)
+
+    # service mariadb start
+    ;;
+
 *)
     echo "please give me an argument"
     ;;

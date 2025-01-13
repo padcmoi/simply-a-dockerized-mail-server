@@ -51,7 +51,18 @@ retrieve-volume)
 
     ;;
 
-container) ;;
+container)
+
+    #
+
+    ;;
+
+run)
+
+    service fail2ban start
+
+    ;;
+
 *)
     echo "please give me an argument"
     ;;
