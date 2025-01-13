@@ -1,7 +1,11 @@
 #!/bin/bash
+# Inspired by the configuration in this tutorial
+# https://blog.ausics.net/archives/154-Email-Anti-Spoofing-DMARC.html
+
 source /.env
 source /_VARIABLES
 source /.mysql-root-pw
+source /utils/escape
 
 echo "-> $(basename "$0" .sh): $1"
 
@@ -29,9 +33,9 @@ build)
             # add to postfix milters
             if [ -f "26-opendkim.sh" ]; then
                 # Special case, should be loaded between OpenDKIM and RSPAMD (this rule does not check for RSPAMD)
-                sed -i '/inet:localhost:12301,/ s/,/, inet:localhost:12305,/' /etc/postfix/main.cf
+                sed -i '/inet:localhost:12301,/ s/,/, inet:localhost:8893,/' /etc/postfix/main.cf
             else
-                sed -i '/^smtpd_milters =/ s/=/= inet:localhost:12305,/' /etc/postfix/main.cf
+                sed -i '/^smtpd_milters =/ s/=/= inet:localhost:8893,/' /etc/postfix/main.cf
             fi
 
             ;;
@@ -90,14 +94,23 @@ container)
 
             cp -R -f /docker-config/conf.d/opendmarc/* /etc/
 
-            sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/opendmarc.conf
-            sed -i "s/____dmarcReports/${DMARC_REPORTS}/g" /etc/opendmarc.conf
-
-            # run daemon
-            opendmarc -c /etc/opendmarc.conf
+            sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" $OPENDMARC_CONFIG
+            sed -i "s/____dmarcReports/${DMARC_REPORTS}/g" $OPENDMARC_CONFIG
+            sed -i "s/____opendmarcVarFolder/$(escape_slash "$OPENDMARC_VAR")/g" $OPENDMARC_CONFIG
 
             # permission
-            chown opendmarc:opendmarc -R /var/run/opendmarc
+
+            mkdir -p $OPENDMARC_VAR
+            mkdir -p $OPENDMARC_VAR/etc
+
+            [ ! -f "${OPENDMARC_VAR}/etc/ignore.hosts" ] && cat /etc/opendmarc/ignore.hosts >$OPENDMARC_VAR/etc/ignore.hosts
+            [ ! -f "${OPENDMARC_VAR}/etc/whitelist.domains" ] && cat /etc/opendmarc/whitelist.domains >$OPENDMARC_VAR/etc/whitelist.domains
+
+            chown -R opendmarc:opendmarc $OPENDMARC_VAR
+            chmod -R 755 $OPENDMARC_VAR
+
+            # run daemon
+            opendmarc -c $OPENDMARC_CONFIG
 
             ;;
 
