@@ -78,6 +78,7 @@ container)
 run)
 
     systemctl start opendkim && service opendkim status
+    nn opendkim
 
     ;;
 

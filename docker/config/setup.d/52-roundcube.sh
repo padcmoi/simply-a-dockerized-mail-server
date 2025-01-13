@@ -64,7 +64,11 @@ container)
 
     ;;
 
-run) ;;
+run)
+
+    nn '4080|4443'
+
+    ;;
 
 *)
     echo "please give me an argument"

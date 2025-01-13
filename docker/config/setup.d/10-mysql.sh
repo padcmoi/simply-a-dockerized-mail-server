@@ -57,7 +57,7 @@ container)
 run)
 
     service mariadb start </dev/null &>/dev/null
-    service mariadb status
+    nn 3306
 
     ;;
 

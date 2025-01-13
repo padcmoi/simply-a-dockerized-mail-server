@@ -16,7 +16,7 @@ make-public-mail-volume.sh </dev/null &>/dev/null &
 # fix permission issue opendkim keys
 /docker-config/setup.d/26-opendkim.sh container </dev/null &>/dev/null &
 
-netstat -tulpn | grep -E -w 'tcp|udp'
+# netstat -tulpn | grep -E -w 'tcp|udp'
 [ $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV DISABLED !!!"
 [ ! $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV ENABLED !!!"
 if [ ! $NOTIFY_SPAM_REJECT == false ] && [ $NOTIFY_SPAM_REJECT_TO ]; then

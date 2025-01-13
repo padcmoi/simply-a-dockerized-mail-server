@@ -122,6 +122,7 @@ container)
 run)
 
     systemctl start opendmarc && systemctl status opendmarc | grep 'Active'
+    nn 8893
 
     ;;
 

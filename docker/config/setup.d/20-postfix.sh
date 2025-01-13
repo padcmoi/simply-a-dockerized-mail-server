@@ -63,7 +63,8 @@ container)
 run)
 
     service postfix start </dev/null &>/dev/null
-    service postfix status
+    sleep 2
+    nn '25|465|587'
 
     ;;
 
