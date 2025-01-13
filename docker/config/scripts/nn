@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [ $1 ]; then
+    netstat -tulpn | grep -E -w 'tcp|udp' | grep $1
+else
+    netstat -tulpn | grep -E -w 'tcp|udp'
+fi
