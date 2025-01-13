@@ -1,0 +1,9 @@
+# qsqsqs
+dodo = 123
+
+# vvfddfvdfvdfv
+smtpd_milters = inet:localhost:12301, inet:localhost:12305, inet:localhost:11332
+non_smtpd_milters = smtpd_milters
+
+# aaaa
+dido = aaa

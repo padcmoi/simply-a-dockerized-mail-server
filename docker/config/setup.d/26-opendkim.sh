@@ -43,6 +43,9 @@ build)
     [ ! -d $OPENDKIM_SOCKET_FOLDER ] && mkdir -p $OPENDKIM_SOCKET_FOLDER
     [ ! -d $OPENDKIM_SOCKET_FOLDER ] && chown opendkim:postfix $OPENDKIM_SOCKET_FOLDER
 
+    # add to postfix milters
+    sed -i '/^smtpd_milters =/ s/=/= inet:localhost:12301,/' /etc/postfix/main.cf
+
     ;;
 
 save-volume)

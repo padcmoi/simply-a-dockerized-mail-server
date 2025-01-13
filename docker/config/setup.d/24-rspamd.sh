@@ -19,6 +19,8 @@ build)
         sed -i "s/enabled = true/enabled = false/g" /etc/rspamd/local.d/metadata_exporter.conf
     fi
 
+    # add to postfix milters
+    sed -i '/^smtpd_milters =/ s/=/= inet:localhost:11332/' /etc/postfix/main.cf
     ;;
 
 save-volume)

@@ -2,7 +2,7 @@
 #
 # OpenDKIM
 OPENDKIM_SOCKET_FOLDER="/var/spool/postfix/opendkim"
-# NB about OPENDKIM_OWNER_FILE: 
+# NB about OPENDKIM_OWNER_FILE:
 # opendkim generates permissions issues on the private key even though it has chown opendkim and opendkim runs with user opendkim
 OPENDKIM_OWNER_FILE="root:root" # opendkim:opendkim
 OPENDKIM_CONFIG="/etc/opendkim.conf"
@@ -16,3 +16,7 @@ OPENDKIM_KEY_NAME=$(date "+dkim_%Y_%m")
 
 # Fail2ban
 FAIL2BAN_CONFIG_DIR="/etc/fail2ban"
+
+#OpenDMARC
+OPENDMARC_CONFIG="/etc/opendmarc.conf"
+OPENDMARC_VAR="/var/opendmarc"
