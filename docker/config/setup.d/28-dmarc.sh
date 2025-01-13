@@ -26,6 +26,14 @@ build)
 
             sed -i "s/____dmarcEnable/false/g" /etc/rspamd/local.d/dmarc.conf
 
+            # add to postfix milters
+            if [ -f "26-opendkim.sh" ]; then
+                # Special case, should be loaded between OpenDKIM and RSPAMD (this rule does not check for RSPAMD)
+                sed -i '/inet:localhost:12301,/ s/,/, inet:localhost:12305,/' /etc/postfix/main.cf
+            else
+                sed -i '/^smtpd_milters =/ s/=/= inet:localhost:12305,/' /etc/postfix/main.cf
+            fi
+
             ;;
 
         esac

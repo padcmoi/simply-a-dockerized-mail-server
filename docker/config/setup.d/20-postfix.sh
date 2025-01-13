@@ -28,6 +28,9 @@ build)
         sed -i "s/____postscreenDeepProtocolTests/yes/g" /etc/postfix/main.cf
     fi
 
+    # reset postfix milters
+    sed -i 's/\(^smtpd_milters =\).*/\1/' /etc/postfix/main.cf
+
     ;;
 
 save-volume)
