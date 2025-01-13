@@ -20,3 +20,4 @@ FAIL2BAN_CONFIG_DIR="/etc/fail2ban"
 #OpenDMARC
 OPENDMARC_CONFIG="/etc/opendmarc.conf"
 OPENDMARC_VAR="/var/opendmarc"
+OPENDMARC_RUNDIR="/var/run/opendmarc"

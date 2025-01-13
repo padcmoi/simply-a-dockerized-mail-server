@@ -15,7 +15,7 @@ container) ;;
 
 run)
 
-    service rsyslog start
+    service rsyslog start </dev/null &>/dev/null && service rsyslog status
 
     ;;
 

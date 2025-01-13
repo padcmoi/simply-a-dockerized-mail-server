@@ -38,7 +38,7 @@ container)
 
 run)
 
-    service apache2 start
+    service apache2 start </dev/null &>/dev/null && service apache2 status
 
     ;;
 

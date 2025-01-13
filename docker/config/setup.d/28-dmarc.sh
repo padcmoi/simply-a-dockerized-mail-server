@@ -108,6 +108,8 @@ container)
 
             chown -R opendmarc:opendmarc $OPENDMARC_VAR
             chmod -R 755 $OPENDMARC_VAR
+            chown -R opendmarc:opendmarc $OPENDMARC_RUNDIR
+            chmod -R 777 $OPENDMARC_RUNDIR
 
             ;;
 
@@ -119,8 +121,7 @@ container)
 
 run)
 
-    # run daemon
-    opendmarc -c $OPENDMARC_CONFIG
+    systemctl start opendmarc && systemctl status opendmarc | grep 'Active'
 
     ;;
 

@@ -57,7 +57,7 @@ container)
 
 run)
 
-    service dovecot start
+    service dovecot start </dev/null &>/dev/null && service dovecot status
 
     ;;
 

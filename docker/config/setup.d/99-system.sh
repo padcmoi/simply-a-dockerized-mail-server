@@ -11,11 +11,15 @@ save-volume) ;;
 
 retrieve-volume) ;;
 
-container) ;;
+container)
+
+    cp -Rf /docker-config/conf.d/default/* /etc/default/
+
+    ;;
 
 run)
 
-    service cron start
+    service cron start </dev/null &>/dev/null && service cron status
 
     ;;
 

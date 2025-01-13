@@ -43,11 +43,7 @@ container)
 
     ;;
 
-run)
-
-    echo "run"
-
-    ;;
+run) ;;
 
 *)
     echo "please give me an argument"

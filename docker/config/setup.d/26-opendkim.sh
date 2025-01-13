@@ -77,7 +77,7 @@ container)
 
 run)
 
-    opendkim -x $OPENDKIM_CONFIG
+    systemctl start opendkim && service opendkim status
 
     ;;
 
