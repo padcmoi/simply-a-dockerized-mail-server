@@ -62,7 +62,8 @@ container)
 
 run)
 
-    service postfix start </dev/null &>/dev/null && service postfix status
+    service postfix start </dev/null &>/dev/null
+    service postfix status
 
     ;;
 

@@ -35,7 +35,8 @@ container)
 
 run)
 
-    service redis-server start </dev/null &>/dev/null && service redis-server status
+    service redis-server start </dev/null &>/dev/null
+    service redis-server status
 
     ;;
 

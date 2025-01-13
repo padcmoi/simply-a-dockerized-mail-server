@@ -59,7 +59,8 @@ container)
 
 run)
 
-    service fail2ban start </dev/null &>/dev/null && systemctl status fail2ban | grep 'Active'
+    service fail2ban start </dev/null &>/dev/null
+    systemctl status fail2ban | grep 'Active'
 
     ;;
 

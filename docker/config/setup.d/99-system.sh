@@ -19,7 +19,8 @@ container)
 
 run)
 
-    service cron start </dev/null &>/dev/null && service cron status
+    service cron start </dev/null &>/dev/null
+    service cron status
 
     ;;
 

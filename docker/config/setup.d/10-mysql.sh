@@ -56,7 +56,8 @@ container)
 
 run)
 
-    service mariadb start </dev/null &>/dev/null && service mariadb status
+    service mariadb start </dev/null &>/dev/null
+    service mariadb status
 
     ;;
 

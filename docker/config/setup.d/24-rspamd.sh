@@ -50,7 +50,8 @@ container)
 
 run)
 
-    service rspamd start </dev/null &>/dev/null && service rspamd status
+    service rspamd start </dev/null &>/dev/null
+    service rspamd status
 
     ;;
 
