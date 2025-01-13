@@ -96,6 +96,9 @@ container)
             # run daemon
             opendmarc -c /etc/opendmarc.conf
 
+            # permission
+            chown opendmarc:opendmarc -R /var/run/opendmarc
+
             ;;
 
         esac

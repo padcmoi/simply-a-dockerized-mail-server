@@ -41,6 +41,7 @@ services:
       - ../volumes/clamav:/var/lib/clamav
       - ../volumes/opendkim:/etc/opendkim
       - ../volumes/fail2ban:/var/lib/fail2ban
+      - ../volumes/opendmarc:/var/run/opendmarc
 
 networks:
   backend:

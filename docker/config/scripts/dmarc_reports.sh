@@ -9,10 +9,10 @@
 
 # Import report data if any exists, normal to be missing in quiet periods of the day.
 
-if [ -f "/var/run/opendmarc.dat" ]; then
-	/usr/local/sbin/opendmarc-import --dbhost=localhost --dbname=opendmarc --dbpasswd=CHANGEME --dbuser=opendmarc --input=/var/run/opendmarc.dat
+if [ -f "/var/run/opendmarc/opendmarc.dat" ]; then
+	/usr/local/sbin/opendmarc-import --dbhost=localhost --dbname=opendmarc --dbpasswd=CHANGEME --dbuser=opendmarc --input=/var/run/opendmarc/opendmarc.dat
 	sleep 1
-	/usr/bin/rm /var/run/opendmarc.dat
+	/usr/bin/rm /var/run/opendmarc/opendmarc.dat
 fi
 
 # Send daily reports, once, in reality the below works at to around 00:05
