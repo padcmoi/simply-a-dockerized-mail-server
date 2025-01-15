@@ -22,10 +22,8 @@ build)
     echo "log_error = /var/log/mysql/error.log" >>/etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
 
     # Opens a socket to allow applications to add content to the database during the image build.
-    /bin/bash -c "/usr/bin/mysqld_safe --skip-grant-tables &" && sleep 5
-    netstat -tulpn | grep -E -w '3306'
-    mysql -u root -e "SHOW DATABASES;"
-    sleep 3
+    /bin/bash -c "/usr/bin/mysqld_safe --skip-grant-tables &" 
+
 
     # apt install debconf-get-selections
     apt -y install dbconfig-common dbconfig-mysql dbconfig-sqlite3
