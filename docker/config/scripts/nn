@@ -1,0 +1,13 @@
+#!/bin/bash
+
+DEFAULT_MESSAGE="Nothing to show"
+
+[ $2 ] && DEFAULT_MESSAGE=$2
+
+if [ $1 ]; then
+    netstat -tulpn | grep -E -w 'tcp|udp' | grep -E -w $1
+else
+    netstat -tulpn | grep -E -w 'tcp|udp'
+fi
+
+[ ! $? -eq 0 ] && echo $DEFAULT_MESSAGE

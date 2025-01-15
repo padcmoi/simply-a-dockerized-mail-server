@@ -1,0 +1,6 @@
+#
+#  dmarc_reports
+#
+# m h dom mon dow user  command
+*/5 * * * * root /usr/local/bin/dmarc_reports.sh
+
