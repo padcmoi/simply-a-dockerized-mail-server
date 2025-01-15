@@ -35,7 +35,7 @@ if [ -f "${OPENDMARC_VAR}/opendmarc.dat" ]; then
 	/usr/sbin/opendmarc-import --dbhost=localhost --dbname=opendmarc --dbpasswd=$MYSQL_ROOT_PASSWORD --dbuser=root --input=$OPENDMARC_VAR/opendmarc.dat
 
 	archive=$(slugify "$(cat $OPENDMARC_VAR/opendmarc.dat | grep 'mfrom')$(cat $OPENDMARC_VAR/opendmarc.dat | grep 'job')")
-	cat $OPENDMARC_VAR/opendmarc.dat >>$OPENDMARC_VAR/archives/$archive.dat
+	cat $OPENDMARC_VAR/opendmarc.dat >$OPENDMARC_VAR/archives/$archive.dat
 	chmod 755 $OPENDMARC_VAR/archives/$archive.dat
 
 	mfrom_value=$(cat $OPENDMARC_VAR/opendmarc.dat | grep 'mfrom')
