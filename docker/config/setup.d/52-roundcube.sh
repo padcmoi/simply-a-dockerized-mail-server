@@ -11,24 +11,6 @@ echo "-> $(basename "$0" .sh): $1"
 case $1 in
 build)
 
-    #
-
-    ;;
-
-save-volume)
-
-    #
-
-    ;;
-
-retrieve-volume)
-
-    #
-
-    ;;
-
-container)
-
     rm -f /etc/dbconfig-common/roundcube.conf
     rm -f /etc/roundcube
 
@@ -57,10 +39,30 @@ container)
 
     cat /docker-config/conf.d/roundcube/config.inc.php >/etc/roundcube/config.inc.php
     cat /docker-config/conf.d/roundcube/apache.conf >/etc/apache2/sites-available/roundcube.conf
-    a2ensite roundcube.conf
 
     sed -i "s/____ROUNDCUBE_DES_KEY/$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)/g" /etc/roundcube/config.inc.php
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/roundcube/config.inc.php
+
+    a2ensite roundcube.conf
+
+    ;;
+
+save-volume)
+
+    #
+
+    ;;
+
+retrieve-volume)
+
+    #
+
+    ;;
+
+container)
+
+    # check database
+    mysql -u root </docker-config/database/roundcube.sql
 
     ;;
 

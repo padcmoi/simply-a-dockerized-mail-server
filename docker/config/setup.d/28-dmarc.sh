@@ -93,8 +93,6 @@ container)
 
             # import and configure conf files
 
-            sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/dbconfig-common/opendmarc.conf
-
             cp -R -f /docker-config/conf.d/opendmarc/* /etc/
 
             sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" $OPENDMARC_CONFIG
