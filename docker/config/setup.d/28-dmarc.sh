@@ -105,6 +105,7 @@ container)
 
             mkdir -p $OPENDMARC_VAR
             mkdir -p $OPENDMARC_VAR/etc
+            mkdir -p $OPENDMARC_VAR/archives
 
             [ ! -f "${OPENDMARC_VAR}/etc/ignore.hosts" ] && cat /etc/opendmarc/ignore.hosts >$OPENDMARC_VAR/etc/ignore.hosts
             [ ! -f "${OPENDMARC_VAR}/etc/whitelist.domains" ] && cat /etc/opendmarc/whitelist.domains >$OPENDMARC_VAR/etc/whitelist.domains
