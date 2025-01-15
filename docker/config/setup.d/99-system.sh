@@ -5,7 +5,11 @@ source /_VARIABLES
 echo "-> $(basename "$0" .sh): $1"
 
 case $1 in
-build) ;;
+build)
+
+    cp -R -f /docker-config/conf.d/dbconfig-common/* /etc/dbconfig-common/
+
+    ;;
 
 save-volume) ;;
 

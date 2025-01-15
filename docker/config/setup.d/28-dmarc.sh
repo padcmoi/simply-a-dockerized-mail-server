@@ -30,6 +30,14 @@ build)
 
             sed -i "s/____dmarcEnable/false/g" /etc/rspamd/local.d/dmarc.conf
 
+            # install opendmarc
+            /usr/share/debconf/fix_db.pl &&
+                echo "opendmarc opendmarc/dbconfig-install boolean true" | debconf-set-selections &&
+                echo "opendmarc opendmarc/dbconfig-reinstall boolean true" | debconf-set-selections &&
+                echo "opendmarc opendmarc/mysql/app-pass password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
+                echo "opendmarc opendmarc/mysql/app-pass-confirm password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
+                DEBIAN_FRONTEND=noninteractive apt --assume-yes install opendmarc
+
             # add to postfix milters
             if [ -f "26-opendkim.sh" ]; then
                 # Special case, should be loaded between OpenDKIM and RSPAMD (this rule does not check for RSPAMD)
@@ -80,17 +88,12 @@ container)
 
         OpenDMARC)
 
-            apt -y install dbconfig-common dbconfig-mysql dbconfig-sqlite3
-
-            # install opendmarc
-            /usr/share/debconf/fix_db.pl &&
-                echo "opendmarc opendmarc/dbconfig-install boolean true" | debconf-set-selections &&
-                echo "opendmarc opendmarc/dbconfig-reinstall boolean true" | debconf-set-selections &&
-                echo "opendmarc opendmarc/mysql/app-pass password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
-                echo "opendmarc opendmarc/mysql/app-pass-confirm password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
-                apt --assume-yes install opendmarc
+            # check database
+            mysql -u root </docker-config/database/opendmarc.sql
 
             # import and configure conf files
+
+            sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/dbconfig-common/opendmarc.conf
 
             cp -R -f /docker-config/conf.d/opendmarc/* /etc/
 

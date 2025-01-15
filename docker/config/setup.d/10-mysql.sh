@@ -10,8 +10,10 @@ build)
     MYSQL_ROOT_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 50)
     echo "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" >/.mysql-root-pw
 
-    sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /docker-config/database/config.sql
-    sed -i "s/____mailUserPass/${ADMIN_PASSWORD}/g" /docker-config/database/config.sql
+    for fullpath in $(ls /docker-config/database/*.sql); do
+        sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" $fullpath
+        sed -i "s/____mailUserPass/${ADMIN_PASSWORD}/g" $fullpath
+    done
 
     apt install -y mariadb-client mariadb-server
 
@@ -24,6 +26,9 @@ build)
     netstat -tulpn | grep -E -w '3306'
     mysql -u root -e "SHOW DATABASES;"
     sleep 3
+
+    # apt install debconf-get-selections
+    apt -y install dbconfig-common dbconfig-mysql dbconfig-sqlite3
 
     ;;
 
