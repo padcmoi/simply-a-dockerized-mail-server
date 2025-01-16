@@ -1,4 +1,4 @@
-# Simply a full docker mail server (MySQL DB)
+# Simply a full docker mail server (All in One) (MySQL DB)
 
 ## DESCRIPTION
 
