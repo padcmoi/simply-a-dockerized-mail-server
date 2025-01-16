@@ -13,6 +13,9 @@ source /_VARIABLES
 source /.system_password
 source /utils/string
 
+# Enable or disable this script ...
+[[ ! $DMARC_ENABLE_REPORT_SENDING == true ]] && exit 1
+
 REPORT_EMAIL="dmarc-noreply@____dmarcDomain"
 REPORT_ORG="____dmarcOrgName"
 
