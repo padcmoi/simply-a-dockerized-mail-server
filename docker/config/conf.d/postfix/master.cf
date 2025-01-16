@@ -35,6 +35,18 @@ smtps     inet  n       -       -       -       -       smtpd
   -o smtpd_sasl_path=private/auth
   -o smtpd_client_restrictions=permit_sasl_authenticated,reject
   -o milter_macro_daemon_name=ORIGINATING
+# Allow DMARC reports, as OpenDMARC aggregate report generation tool is a bit limited
+# https://serverfault.com/questions/1110620/postfix-sasl-and-opendmarc-reports author Esa Jokinen
+127.0.0.1:10025 inet n - - - - smtpd
+  -o mynetworks=127.0.0.0/8
+  -o { smtpd_sender_restrictions = check_sender_access pcre:/etc/postfix/dmarc_senders.pcre, reject }
+  -o { smtpd_recipient_restrictions = permit_mynetworks, reject }
+  -o cleanup_service_name=dmarc-cleanup
+  -o milter_default_action=accept
+  -o smtpd_milters=inet:localhost:12301
+  -o non_smtpd_milters=inet:localhost:12301
+dmarc-cleanup   unix  n       -       y       -       0       cleanup
+  -o header_checks=pcre:/etc/postfix/dmarc_header.pcre
 #628       inet  n       -       y       -       -       qmqpd
 pickup    unix  n       -       y       60      1       pickup
 cleanup   unix  n       -       y       -       0       cleanup

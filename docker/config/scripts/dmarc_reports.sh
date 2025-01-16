@@ -6,11 +6,15 @@
 # This entitles you to freely share or modify this scipt providing original
 # author and copyright information is retained.
 ############################################################################
+# Updated with https://serverfault.com/questions/1110620/postfix-sasl-and-opendmarc-reports
 
 source /.env
 source /_VARIABLES
 source /.mysql-root-pw
 source /utils/string
+
+REPORT_EMAIL="dmarc-noreply@____dmarcDomain"
+REPORT_ORG="____dmarcOrgName"
 
 # Ensure OPENDMARC_VAR is defined
 if [ -z "$OPENDMARC_VAR" ]; then
@@ -52,16 +56,9 @@ currentdom=$(date +%d)
 
 if [[ "$currenttime" > "00:00" ]] && [[ "$currenttime" < "00:08" ]]; then
 	/usr/bin/logger "Sending Reports"
-	/usr/sbin/opendmarc-reports --day --dbhost=localhost --dbname=opendmarc --dbpasswd=$MYSQL_ROOT_PASSWORD --dbuser=opendmarc --report-email=$DMARC_REPORTS --smtp-port=25 --smtp-server=localhost
+	/usr/sbin/opendmarc-reports --report-email=$REPORT_EMAIL --report-org="${REPORT_ORG}" --smtp-port=10025 --day --dbhost=localhost --dbname=opendmarc --dbpasswd=$MYSQL_ROOT_PASSWORD --dbuser=opendmarc --smtp-server=localhost
 	increment reports
 
 	# Expire old reports once a month, keeping only 90 days to avoid bloated database.
-
-	if [ "$currentdom" == "01" ]; then
-		/usr/bin/logger "Expire"
-		/usr/sbin/opendmarc-expire --alltables --expire=90 --dbhost=localhost --dbname=opendmarc --dbpasswd=$MYSQL_ROOT_PASSWORD --dbuser=opendmarc
-	fi
-
+	/usr/sbin/opendmarc-expire --alltables --expire=90 --dbhost=localhost --dbname=opendmarc --dbpasswd=$MYSQL_ROOT_PASSWORD --dbuser=opendmarc
 fi
-
-increment script-executed

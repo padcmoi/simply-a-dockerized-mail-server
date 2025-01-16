@@ -12,6 +12,7 @@ build)
         echo "postfix postfix/mailname string $DOMAIN_FQDN" | debconf-set-selections &&
         apt install --assume-yes postfix postfix-mysql &&
         service postfix stop
+    apt -y install postfix-pcre
 
     cp -R -f /docker-config/conf.d/postfix/* /etc/postfix/
 
