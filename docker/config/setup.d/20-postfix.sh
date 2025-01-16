@@ -1,7 +1,7 @@
 #!/bin/bash
 source /.env
 source /_VARIABLES
-source /.mysql-root-pw
+source /.system_password
 
 echo "-> $(basename "$0" .sh): $1"
 
@@ -18,10 +18,10 @@ build)
 
     # postfix changes
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/postfix/main.cf
-    sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-alias-maps.cf
-    sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-email2email.cf
-    sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-mailbox-domains.cf
-    sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/postfix/mysql-virtual-mailbox-maps.cf
+    sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" /etc/postfix/mysql-virtual-alias-maps.cf
+    sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" /etc/postfix/mysql-virtual-email2email.cf
+    sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" /etc/postfix/mysql-virtual-mailbox-domains.cf
+    sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" /etc/postfix/mysql-virtual-mailbox-maps.cf
 
     if [ $DISABLE_POSTCREEN_DEEP_PROTOCOL_TESTS == true ]; then
         sed -i "s/____postscreenDeepProtocolTests/no/g" /etc/postfix/main.cf

@@ -1,7 +1,7 @@
 #!/bin/bash
 source /.env
 source /_VARIABLES
-source /.mysql-root-pw
+source /.system_password
 
 /docker-config/docker-setup.sh container
 
@@ -23,5 +23,5 @@ if [ ! $NOTIFY_SPAM_REJECT == false ] && [ $NOTIFY_SPAM_REJECT_TO ]; then
     echo "*** Notification for each spam rejection enabled ***"
 fi
 echo "Hostname: ${DOMAIN_FQDN} (${ADRESSIP})"
-echo "MYSQL ROOT PASSWORD: ${MYSQL_ROOT_PASSWORD}"
+echo "AUTOMATICALLY GENERATED PASSWORD: ${SYSTEM_PASSWORD}"
 tail -f /var/log/syslog

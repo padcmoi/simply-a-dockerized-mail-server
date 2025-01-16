@@ -10,7 +10,7 @@
 
 source /.env
 source /_VARIABLES
-source /.mysql-root-pw
+source /.system_password
 source /utils/string
 
 REPORT_EMAIL="dmarc-noreply@____dmarcDomain"
@@ -36,7 +36,7 @@ increment() {
 # Import report data if any exists, normal to be missing in quiet periods of the day.
 
 if [ -f "${OPENDMARC_VAR}/opendmarc.dat" ]; then
-	/usr/sbin/opendmarc-import --dbhost=localhost --dbname=opendmarc --dbpasswd=$MYSQL_ROOT_PASSWORD --dbuser=root --input=$OPENDMARC_VAR/opendmarc.dat
+	/usr/sbin/opendmarc-import --dbhost=localhost --dbname=opendmarc --dbpasswd=$SYSTEM_PASSWORD --dbuser=root --input=$OPENDMARC_VAR/opendmarc.dat
 
 	archive=$(slugify "$(cat $OPENDMARC_VAR/opendmarc.dat | grep 'mfrom')$(cat $OPENDMARC_VAR/opendmarc.dat | grep 'job')")
 	cat $OPENDMARC_VAR/opendmarc.dat >$OPENDMARC_VAR/archives/$archive.dat
@@ -56,9 +56,9 @@ currentdom=$(date +%d)
 
 if [[ "$currenttime" > "00:00" ]] && [[ "$currenttime" < "00:08" ]]; then
 	/usr/bin/logger "Sending Reports"
-	/usr/sbin/opendmarc-reports --report-email=$REPORT_EMAIL --report-org="${REPORT_ORG}" --smtp-port=10025 --day --dbhost=localhost --dbname=opendmarc --dbpasswd=$MYSQL_ROOT_PASSWORD --dbuser=opendmarc --smtp-server=localhost
+	/usr/sbin/opendmarc-reports --report-email=$REPORT_EMAIL --report-org="${REPORT_ORG}" --smtp-port=10025 --day --dbhost=localhost --dbname=opendmarc --dbpasswd=$SYSTEM_PASSWORD --dbuser=opendmarc --smtp-server=localhost
 	increment reports
 
 	# Expire old reports once a month, keeping only 90 days to avoid bloated database.
-	/usr/sbin/opendmarc-expire --alltables --expire=90 --dbhost=localhost --dbname=opendmarc --dbpasswd=$MYSQL_ROOT_PASSWORD --dbuser=opendmarc
+	/usr/sbin/opendmarc-expire --alltables --expire=90 --dbhost=localhost --dbname=opendmarc --dbpasswd=$SYSTEM_PASSWORD --dbuser=opendmarc
 fi

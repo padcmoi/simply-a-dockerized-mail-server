@@ -4,7 +4,7 @@
 
 source /.env
 source /_VARIABLES
-source /.mysql-root-pw
+source /.system_password
 source /utils/escape
 
 echo "-> $(basename "$0" .sh): $1"
@@ -35,8 +35,8 @@ build)
             /usr/share/debconf/fix_db.pl &&
                 echo "opendmarc opendmarc/dbconfig-install boolean true" | debconf-set-selections &&
                 echo "opendmarc opendmarc/dbconfig-reinstall boolean true" | debconf-set-selections &&
-                echo "opendmarc opendmarc/mysql/app-pass password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
-                echo "opendmarc opendmarc/mysql/app-pass-confirm password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
+                echo "opendmarc opendmarc/mysql/app-pass password ${SYSTEM_PASSWORD}" | debconf-set-selections &&
+                echo "opendmarc opendmarc/mysql/app-pass-confirm password ${SYSTEM_PASSWORD}" | debconf-set-selections &&
                 DEBIAN_FRONTEND=noninteractive apt --assume-yes install opendmarc
 
             # add to postfix milters
