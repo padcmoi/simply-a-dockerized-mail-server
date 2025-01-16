@@ -15,7 +15,8 @@ echo "-> $(basename "$0" .sh): $1"
 case $1 in
 build)
 
-    if [ ! $DMARC_ENABLE == false ] && [ $DMARC_REPORTS ] && ([ $DMARC_SELECT == "RSPAMD" ] || [ $DMARC_SELECT == "OpenDMARC" ]); then
+    if [ "$DMARC_ENABLE" != "false" ] && [ "$DMARC_REPORTS" ] && [ "$DMARC_DOMAIN" ] && [ "$DMARC_ORG_NAME" ] &&
+        ([ "$DMARC_SELECT" == "RSPAMD" ] || [ "$DMARC_SELECT" == "OpenDMARC" ]); then
 
         case $DMARC_SELECT in
 
@@ -45,6 +46,9 @@ build)
             else
                 sed -i '/^smtpd_milters =/ s/=/= inet:localhost:8893,/' /etc/postfix/main.cf
             fi
+
+            sed -i "s/____dmarcDomain/${DMARC_DOMAIN}/g" /usr/local/bin/dmarc_reports.sh
+            sed -i "s/____dmarcOrgName/${DMARC_ORG_NAME}/g" /usr/local/bin/dmarc_reports.sh
 
             ;;
 
@@ -76,7 +80,8 @@ retrieve-volume)
 
 container)
 
-    if [ ! $DMARC_ENABLE == false ] && [ $DMARC_REPORTS ] && ([ $DMARC_SELECT == "RSPAMD" ] || [ $DMARC_SELECT == "OpenDMARC" ]); then
+    if [ "$DMARC_ENABLE" != "false" ] && [ "$DMARC_REPORTS" ] && [ "$DMARC_DOMAIN" ] && [ "$DMARC_ORG_NAME" ] &&
+        ([ "$DMARC_SELECT" == "RSPAMD" ] || [ "$DMARC_SELECT" == "OpenDMARC" ]); then
 
         case $DMARC_SELECT in
 
