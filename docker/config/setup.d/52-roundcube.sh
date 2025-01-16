@@ -1,7 +1,7 @@
 #!/bin/bash
 source /.env
 source /_VARIABLES
-source /.mysql-root-pw
+source /.system_password
 
 echo "-> $(basename "$0" .sh): $1"
 
@@ -19,9 +19,9 @@ build)
     # Can sometimes occur when using debconf-set-selections
     # This error was reported on debian in 2008 and is now an official fix.
     /usr/share/debconf/fix_db.pl &&
-        echo "roundcube-core roundcube/mysql/admin-pass password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
-        echo "roundcube-core roundcube/mysql/app-pass password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
-        echo "roundcube-core roundcube/app-password-confirm password ${MYSQL_ROOT_PASSWORD}" | debconf-set-selections &&
+        echo "roundcube-core roundcube/mysql/admin-pass password ${SYSTEM_PASSWORD}" | debconf-set-selections &&
+        echo "roundcube-core roundcube/mysql/app-pass password ${SYSTEM_PASSWORD}" | debconf-set-selections &&
+        echo "roundcube-core roundcube/app-password-confirm password ${SYSTEM_PASSWORD}" | debconf-set-selections &&
         echo "roundcube-core roundcube/dbconfig-install boolean true" | debconf-set-selections &&
         echo "roundcube-core roundcube/database-type select mysql" | debconf-set-selections &&
         echo "roundcube-core roundcube/install-error select 'ignore'" | debconf-set-selections &&

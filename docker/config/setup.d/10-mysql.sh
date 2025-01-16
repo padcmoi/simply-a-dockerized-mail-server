@@ -1,17 +1,15 @@
 #!/bin/bash
 source /.env
 source /_VARIABLES
+source /.system_password
 
 echo "-> $(basename "$0" .sh): $1"
 
 case $1 in
 build)
 
-    MYSQL_ROOT_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 50)
-    echo "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}" >/.mysql-root-pw
-
     for fullpath in $(ls /docker-config/database/*.sql); do
-        sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" $fullpath
+        sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" $fullpath
         sed -i "s/____mailUserPass/${ADMIN_PASSWORD}/g" $fullpath
     done
 
@@ -22,8 +20,7 @@ build)
     echo "log_error = /var/log/mysql/error.log" >>/etc/mysql/mariadb.conf.d/50-mysqld_safe.cnf
 
     # Opens a socket to allow applications to add content to the database during the image build.
-    /bin/bash -c "/usr/bin/mysqld_safe --skip-grant-tables &" 
-
+    /bin/bash -c "/usr/bin/mysqld_safe --skip-grant-tables &"
 
     # apt install debconf-get-selections
     apt -y install dbconfig-common dbconfig-mysql dbconfig-sqlite3
@@ -49,7 +46,7 @@ retrieve-volume)
 
 container)
 
-    source /.mysql-root-pw
+    source /.system_password
 
     service mariadb start >/dev/null
 

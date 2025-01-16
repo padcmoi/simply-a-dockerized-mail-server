@@ -1,7 +1,7 @@
 #!/bin/bash
 source /.env
 source /_VARIABLES
-source /.mysql-root-pw
+source /.system_password
 
 echo "-> $(basename "$0" .sh): $1"
 
@@ -28,7 +28,7 @@ build)
     chmod u=rwx,go= /etc/dovecot/sieve/sa-learn-{spam,ham}.sh
     chown vmail:vmail /etc/dovecot/sieve/sa-learn-{spam,ham}.sh
 
-    sed -i "s/____mailRootPass/${MYSQL_ROOT_PASSWORD}/g" /etc/dovecot/db-sql/_mysql-connect.conf
+    sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" /etc/dovecot/db-sql/_mysql-connect.conf
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/dovecot/dovecot.conf
 
     ;;

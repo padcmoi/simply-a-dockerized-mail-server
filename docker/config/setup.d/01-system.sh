@@ -5,7 +5,12 @@ source /_VARIABLES
 echo "-> $(basename "$0" .sh): $1"
 
 case $1 in
-build) ;;
+build)
+
+    SYSTEM_PASSWORD=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 50)
+    echo "SYSTEM_PASSWORD=${SYSTEM_PASSWORD}" >/.system_password
+
+    ;;
 
 save-volume) ;;
 

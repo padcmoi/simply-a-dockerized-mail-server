@@ -1,7 +1,7 @@
 #!/bin/bash
 source /.env
 source /_VARIABLES
-source /.mysql-root-pw
+source /.system_password
 
 echo "-> $(basename "$0" .sh): $1"
 
