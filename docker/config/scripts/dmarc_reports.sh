@@ -14,7 +14,7 @@ source /.system_password
 source /utils/string
 
 # Enable or disable this script ...
-[[ ! $DMARC_ENABLE_REPORT_SENDING == true ]] && exit 1
+[[ ! $DMARC_ENABLE_REPORT_SENDING == true ]] && exit
 
 REPORT_EMAIL="dmarc-noreply@____dmarcDomain"
 REPORT_ORG="____dmarcOrgName"
