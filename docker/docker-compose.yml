@@ -30,18 +30,18 @@ services:
       backend:
         ipv4_address: 172.200.0.5
     volumes:
-      - ../volumes/log:/var/_log
-      - ../volumes/ssl:/etc/_private
-      - ../volumes/mail:/var/mail
-      - ../volumes/mysql:/var/lib/mysql
-      - ../volumes/postfix:/var/spool/postfix
-      - ../volumes/postscreen:/etc/_postscreen
-      - ../volumes/redis:/var/lib/redis
-      - ../volumes/rspamd:/var/lib/rspamd
-      - ../volumes/clamav:/var/lib/clamav
-      - ../volumes/opendkim:/etc/opendkim
-      - ../volumes/fail2ban:/var/lib/fail2ban
-      - ../volumes/opendmarc:/var/opendmarc
+      - $DOCKER_VOLUMES/log:/var/_log
+      - $DOCKER_VOLUMES/ssl:/etc/_private
+      - $DOCKER_VOLUMES/mail:/var/mail
+      - $DOCKER_VOLUMES/mysql:/var/lib/mysql
+      - $DOCKER_VOLUMES/postfix:/var/spool/postfix
+      - $DOCKER_VOLUMES/postscreen:/etc/_postscreen
+      - $DOCKER_VOLUMES/redis:/var/lib/redis
+      - $DOCKER_VOLUMES/rspamd:/var/lib/rspamd
+      - $DOCKER_VOLUMES/clamav:/var/lib/clamav
+      - $DOCKER_VOLUMES/opendkim:/etc/opendkim
+      - $DOCKER_VOLUMES/fail2ban:/var/lib/fail2ban
+      - $DOCKER_VOLUMES/opendmarc:/var/opendmarc
 
 networks:
   backend:
