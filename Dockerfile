@@ -4,7 +4,7 @@ FROM debian:bullseye
 RUN apt update
 RUN apt autoremove -y exim4
 RUN apt install -y git curl sudo net-tools nano htop procps findutils wget zip systemctl rsyslog \ 
-inotify-tools bind9-dnsutils kmod iptables nftables
+inotify-tools bind9-dnsutils kmod
 
 # Copy the entire docker-build folder into the image and select this folder
 COPY ./docker-build docker-build
