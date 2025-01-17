@@ -37,8 +37,8 @@ build)
     sed -i "s/post_max_size = 8M/post_max_size = 50M/g" /etc/php/*/apache2/php.ini
     sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 50M/g" /etc/php/*/apache2/php.ini
 
-    cat /docker-config/conf.d/roundcube/config.inc.php >/etc/roundcube/config.inc.php
-    cat /docker-config/conf.d/roundcube/apache.conf >/etc/apache2/sites-available/roundcube.conf
+    cat /docker-build/conf.d/roundcube/config.inc.php >/etc/roundcube/config.inc.php
+    cat /docker-build/conf.d/roundcube/apache.conf >/etc/apache2/sites-available/roundcube.conf
 
     sed -i "s/____ROUNDCUBE_DES_KEY/$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)/g" /etc/roundcube/config.inc.php
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/roundcube/config.inc.php
@@ -62,7 +62,7 @@ retrieve-volume)
 container)
 
     # check database
-    mysql -u root </docker-config/database/roundcube.sql
+    mysql -u root </docker-build/database/roundcube.sql
 
     ;;
 

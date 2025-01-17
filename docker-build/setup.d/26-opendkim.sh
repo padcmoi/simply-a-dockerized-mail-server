@@ -23,7 +23,7 @@ build)
     killall -w opendkim # opendkim must stopped before configuration
 
     sudo gpasswd -a postfix opendkim
-    cp -f /docker-config/conf.d/opendkim/opendkim.conf /etc/
+    cp -f /docker-build/conf.d/opendkim/opendkim.conf /etc/
 
     sed -i "/SOCKET=./d" $OPENDKIM_DEFAULT
     echo "SOCKET=inet:12301@localhost" >>$OPENDKIM_DEFAULT

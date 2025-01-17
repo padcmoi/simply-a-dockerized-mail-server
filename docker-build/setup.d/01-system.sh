@@ -20,7 +20,7 @@ container)
 
     # check default SSL certs
     if [ ! -f /etc/_private/fullchain.pem ] || [ ! -f /etc/_private/privkey.pem ]; then
-        cp -u /docker-config/default_ssl/* /etc/_private/
+        cp -u /docker-build/default_ssl/* /etc/_private/
     fi
 
     ;;

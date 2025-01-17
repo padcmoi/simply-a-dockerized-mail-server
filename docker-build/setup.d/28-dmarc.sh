@@ -94,11 +94,11 @@ container)
         OpenDMARC)
 
             # check database
-            mysql -u root </docker-config/database/opendmarc.sql
+            mysql -u root </docker-build/database/opendmarc.sql
 
             # import and configure conf files
 
-            cp -R -f /docker-config/conf.d/opendmarc/* /etc/
+            cp -R -f /docker-build/conf.d/opendmarc/* /etc/
 
             sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" $OPENDMARC_CONFIG
             sed -i "s/____dmarcReports/${DMARC_REPORTS}/g" $OPENDMARC_CONFIG

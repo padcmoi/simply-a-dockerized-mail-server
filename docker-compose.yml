@@ -6,8 +6,6 @@ services:
     container_name: simply-mailserver
     build:
       context: .
-      args:
-        DOMAIN_FQDN: ${DOMAIN_FQDN}
     env_file: .env
     ports:
       - "25:25"
@@ -15,13 +13,13 @@ services:
       - "465:465"
       - "587:587"
       - "993:993"
-      - "4000:4000" # front app
+      - "4000:4000" # admin web application
       - "4001:4001" # rspamd web interface
       - "4002:4002" # phpmyadmin
-      - "4003:3000" # nest api
-      - "4080:4080" # roundcube
-      - "4190:4190" # to delete
-      - "4443:4443" # roundcube
+      - "4003:3000" # nest api secure only
+      - "4080:4080" # roundcube unsecure
+      # - "4190:4190" # could be useful in the case of an external e-mail client
+      - "4443:4443" # roundcube secure
     extra_hosts:
       - "${DOMAIN_FQDN}:${ADRESSIP}"
     cap_add:

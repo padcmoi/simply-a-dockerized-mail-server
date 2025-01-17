@@ -18,8 +18,8 @@ retrieve-volume) ;;
 
 container)
 
-    cp -Rf /docker-config/conf.d/default/* /etc/default/
-    cp -Rf /docker-config/conf.d/dbconfig-common/* /etc/dbconfig-common/
+    cp -Rf /docker-build/conf.d/default/* /etc/default/
+    cp -Rf /docker-build/conf.d/dbconfig-common/* /etc/dbconfig-common/
 
     for fullpath in $(ls /etc/dbconfig-common/*.conf); do
         sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" $fullpath

@@ -8,7 +8,7 @@ echo "-> $(basename "$0" .sh): $1"
 case $1 in
 build)
 
-    for fullpath in $(ls /docker-config/database/*.sql); do
+    for fullpath in $(ls /docker-build/database/*.sql); do
         sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" $fullpath
         sed -i "s/____mailUserPass/${ADMIN_PASSWORD}/g" $fullpath
     done
@@ -50,7 +50,7 @@ container)
 
     service mariadb start >/dev/null
 
-    mysql -u root </docker-config/database/config.sql && mysql -u root </docker-config/database/build.sql
+    mysql -u root </docker-build/database/config.sql && mysql -u root </docker-build/database/build.sql
 
     ;;
 
