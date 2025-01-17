@@ -10,7 +10,7 @@ build)
 
     apt -y install clamav-daemon clamav-freshclam clamav clamav-freshclam clamav-testfiles clamav-base
 
-    cp -R -f /docker-config/conf.d/clamav/* /etc/clamav/
+    cp -R -f /docker-build/conf.d/clamav/* /etc/clamav/
     sed -i -e "s/^NotifyClamd/#NotifyClamd/g" /etc/clamav/freshclam.conf
 
     ;;

@@ -14,7 +14,7 @@ build)
         service postfix stop
     apt -y install postfix-pcre
 
-    cp -R -f /docker-config/conf.d/postfix/* /etc/postfix/
+    cp -R -f /docker-build/conf.d/postfix/* /etc/postfix/
 
     # postfix changes
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/postfix/main.cf
@@ -55,7 +55,7 @@ retrieve-volume)
 container)
 
     if [ ! -f /etc/_postscreen/postscreen_access.cidr ]; then
-        cp -f /docker-config/conf.d/postfix/postscreen_access.cidr /etc/_postscreen/postscreen_access.cidr
+        cp -f /docker-build/conf.d/postfix/postscreen_access.cidr /etc/_postscreen/postscreen_access.cidr
         chmod 777 /etc/_postscreen/postscreen_access.cidr
     fi
 

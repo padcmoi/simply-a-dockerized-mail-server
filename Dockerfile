@@ -1,37 +1,33 @@
-# Distribution tests:
-# bullseye (debian11) = OK, All services work except clamav-daemon, but antivirus works on emails
-# bookworm (debian12) = ERROR, issues with dovecot quota domain, amavis
 FROM debian:bullseye
 
-ARG DOMAIN_FQDN
-
-# Installation packages
+# Update, remove useless and install require package
 RUN apt update
 RUN apt autoremove -y exim4
 RUN apt install -y git curl sudo net-tools nano htop procps findutils wget zip systemctl rsyslog \ 
 inotify-tools bind9-dnsutils kmod iptables nftables
 
-RUN mkdir -p /docker-config
+# Copy the entire docker-build folder into the image and select this folder
+COPY ./docker-build docker-build
+WORKDIR /docker-build
 
-# Configuration
-WORKDIR /docker-config
-COPY ./config/ .
+# Copy environnement file
 COPY .env /.env
 
-RUN mv ./utils /utils
-
-RUN cp -R -f ./conf.d/cron.d/* /etc/cron.d/
-RUN chmod 644 /etc/cron.d/*
-
-RUN mv ./conf.d/_VARIABLES /_VARIABLES
-RUN chmod 444 /_VARIABLES
-
+# Modify permissions before moving to respective folder
+RUN chmod 644 ./conf.d/cron.d/*
+RUN chmod 444 ./conf.d/_VARIABLES
+RUN chmod +x ./scripts/*
 RUN chmod +x **/*.sh
 RUN chmod +x *.sh
 
-RUN chmod +x ./scripts/*
+# Copy or move into the respective folder
+RUN cp -Rf ./conf.d/cron.d/* /etc/cron.d/
+RUN mv ./conf.d/_VARIABLES /_VARIABLES
 RUN mv ./scripts/* /usr/local/bin/
+RUN mv ./utils /utils
 
-RUN /docker-config/docker-setup.sh build
+# Configures and builds the image with the required packages
+RUN /docker-build/docker-setup.sh build
 
-ENTRYPOINT ["docker-entrypoint.sh"]
+# Executed by the container
+ENTRYPOINT ["/docker-build/docker-entrypoint.sh"]

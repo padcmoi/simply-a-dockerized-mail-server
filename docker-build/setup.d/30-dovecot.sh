@@ -10,7 +10,7 @@ build)
 
     apt install -y dovecot-core dovecot-imapd dovecot-pop3d dovecot-lmtpd dovecot-mysql dovecot-sieve dovecot-managesieved mailutils
 
-    cp -R -f /docker-config/conf.d/dovecot/* /etc/dovecot/
+    cp -R -f /docker-build/conf.d/dovecot/* /etc/dovecot/
 
     groupadd -g 5000 vmail
     useradd -g vmail -u 5000 vmail -d /var/mail

@@ -9,7 +9,7 @@ case $1 in
 build)
 
     apt -y install rspamd
-    cp -R -f /docker-config/conf.d/rspamd/* /etc/rspamd/
+    cp -R -f /docker-build/conf.d/rspamd/* /etc/rspamd/
     echo password="$(rspamadm pw -q -p ${ADMIN_PASSWORD})" >/etc/rspamd/local.d/worker-controller.inc
 
     if [ ! $NOTIFY_SPAM_REJECT == false ] && [ $NOTIFY_SPAM_REJECT_TO ]; then
