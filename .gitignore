@@ -1,15 +1,5 @@
 node_modules
 dist
 .env
-docker/___keep
-volumes/mail
-volumes/mysql
-volumes/log
-volumes/postfix
-volumes/postscreen
-volumes/redis
-volumes/rspamd
-volumes/clamav
-volumes/opendkim
-volumes/fail2ban
-volumes/opendmarc
+___keep
+volumes

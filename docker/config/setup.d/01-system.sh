@@ -16,7 +16,14 @@ save-volume) ;;
 
 retrieve-volume) ;;
 
-container) ;;
+container)
+
+    # check default SSL certs
+    if [ ! -f /etc/_private/fullchain.pem ] || [ ! -f /etc/_private/privkey.pem ]; then
+        cp -u /docker-config/default_ssl/* /etc/_private/
+    fi
+
+    ;;
 
 run)
 
