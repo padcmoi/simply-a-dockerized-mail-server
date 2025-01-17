@@ -8,7 +8,7 @@ bantime = ____fail2BanBantime
 # Several addresses can be defined using space (and/or comma) separator.
 ignoreip = 127.0.0.1/8, 172.200.0.1/16
 
-banaction = nftables-allports
+banaction = ufw
 
 [dovecot]
 enabled = true
