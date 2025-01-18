@@ -34,6 +34,10 @@ build)
         sed -i "s/____fail2BanBantime/3600/g" $FAIL2BAN_CONFIG_DIR/jail.local
     fi
 
+    if [ ! $POSTFIX_PRIVATE_LOGS == true ]; then
+        sed -i "s/\/var\/log\/postfix.log/\/var\/log\/syslog/g" $FAIL2BAN_CONFIG_DIR/jail.local
+    fi
+
     ;;
 
 save-volume)
