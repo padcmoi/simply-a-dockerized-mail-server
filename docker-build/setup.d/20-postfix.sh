@@ -29,6 +29,10 @@ build)
         sed -i "s/____postscreenDeepProtocolTests/yes/g" /etc/postfix/main.cf
     fi
 
+    if [ ! $POSTFIX_PRIVATE_LOGS == true ]; then
+        sed -i "/maillog_file=/d" /etc/postfix/main.cf
+    fi
+
     # reset postfix milters
     sed -i 's/\(^smtpd_milters =\).*/\1/' /etc/postfix/main.cf
 
