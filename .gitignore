@@ -1,5 +1,9 @@
 node_modules
 dist
 .env
+.env.file*
 ___keep
 volumes
+nohup.out
+backup/*.tar*
+.env.menu
