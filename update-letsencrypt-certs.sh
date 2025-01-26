@@ -7,11 +7,11 @@ if [ $1 ]; then
 
         echo $1
 
-        cp /etc/letsencrypt/live/$1/*.pem $DOCKER_VOLUMES/ssl/
+        sudo cp /etc/letsencrypt/live/$1/*.pem $DOCKER_VOLUMES/ssl/
 
-        inotifywait -m -e modify /etc/letsencrypt/live/$1/*.pem |
+        sudo inotifywait -m -e modify /etc/letsencrypt/live/$1/*.pem |
             while read file_path event file_name; do
-                cp -f $file_path$file_name $DOCKER_VOLUMES/ssl/
+                sudo cp -f $file_path$file_name $DOCKER_VOLUMES/ssl/
             done
     }
 
@@ -19,5 +19,5 @@ if [ $1 ]; then
 
 else
     echo "Please define an argument %domain"
-    killall -w update-letsencrypt-certs.sh
+    sudo killall -w update-letsencrypt-certs.sh
 fi

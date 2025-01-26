@@ -35,6 +35,8 @@ container)
 
 run)
 
+    chmod -R o+rwx /var/lib/redis
+    chmod -R o+rwx /var/log/redis
     service redis-server start </dev/null &>/dev/null
     nn 6379
 

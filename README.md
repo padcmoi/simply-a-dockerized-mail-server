@@ -4,18 +4,16 @@
 
 ### Short
 
-Simply a complete mail server running on a single docker container with as few configuration as possible, quick and easy to set up, fully managed in-house with a MySQL database unreachable from the outside, manageable externally via a nest.js API and a front-end application.
-
-- [Readme installation](INSTALLATION.md) (in progress)
-- This project unfinished as long as the PhpMyAdmin is the only way  to manage it (for the moment)
+It's a complete multi-domain mail server in an all-in-one container, with all the services for professional use
+simplified deployment and configuration this to the 'menu.sh' script, plus an API and web interface for complete platform management with ACLs
 
 ### Concept and why
 
-The inspiration for this project came from the [Docker Mailserver Project](https://github.com/docker-mailserver/docker-mailserver), I started from scratch and wanted to create the same project except with full MySQL email management and simple, easy-to-use configuration for everyone.
+The inspiration for this project came from the [Docker Mailserver Project](https://github.com/docker-mailserver/docker-mailserver). I started from scratch and wanted to create the same project, but with full MySQL-based email management and simplified, easy-to-use configuration for everyone.
 
-I've always wanted to create a complete mail server under Linux with custom administration that is often complex to create, which is why I'd like to take on the challenge of being able to deploy it easily with a docker container that includes all of this and then offer it as an open-source project.
+When I started this project, I had limited knowledge of mail servers, I read a lot of documentation and tutorials to help me in the creation, I had to make choices during development due to errors and problems, which explains a large number of commits, through this project I increased my experience in this field and if I had to start from 0, I would have thought differently about this architecture, anyway it's a project that will improve over time.
 
-Through this project I'd like to apply what I've learned in my lessons on the [DYMA platform](https://dyma.fr/) (see my objective diagram), [among the DYMA courses](https://dyma.fr/formations) I'd like to apply:
+Through this project, I'd like to apply what I've learned in my courses on the [DYMA platform](https://dyma.fr/) (see my objectives diagram), [among the DYMA courses](https://dyma.fr/formations) I'd like to apply :
 
 - HTML & CSS
 - Tailwind 3
@@ -27,7 +25,7 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
 - React native (maybe, with an app for iOS and Android smartphones)
 - NestJS
 
-## Included services, checked for implemented
+## This all-in-one container integrates these services (checked is implemented)
 
 - [x] [Postfix](http://www.postfix.org) with SASL Dovecot-LMTP authentication
 - [x] [Dovecot](https://www.dovecot.org) with SASL, IMAPS only
@@ -41,6 +39,7 @@ Through this project I'd like to apply what I've learned in my lessons on the [D
 - [x] [ClamAV](https://www.clamav.net/) with automatic updates
 - [x] [OpenDKIM](http://www.opendkim.org)
 - [x] [OpenDMARC](https://github.com/trusteddomainproject/OpenDMARC)
+  - [x] script for sending Dmarc reports
 - [x] [Fail2ban](https://www.fail2ban.org/wiki/index.php/Main_Page)
 - [x] [Postscreen](http://www.postfix.org/POSTSCREEN_README.html)
 - [x] [Roundcube](https://docs.roundcube.net/doc/help/1.1/fr_FR/)
@@ -66,17 +65,6 @@ I chose to this project MySQL for the advantage of updates and vulnerabilities, 
 Later, I think it would be possible to choose in the environment which type of database by altering the docker configuration files and the bash sed command, it's quite possible and it would be experimental.
 I don't think I'd use SQLite because it's limited in terms of writing performance, but PostgreSQL is, and why not mongoDB?
 
-### Choice of linux distribution
-
-Packages are installed with aptitude, so the distribution can be chosen between debian, ubuntu, ...
-
-I've encountered bugs with some distributions, actually I've tested with 2 distributions
-
-- debian 11 (bullseye)
-  - OK, All services work except clamav-daemon, but antivirus works on emails
-- debian 12 (bookworm)
-  - Issues with dovecot quota domain, amavis
-
 ## Requirements & installation
 
 ###  Requirements
@@ -86,13 +74,13 @@ Memory consumption increases with the antivirus, so it depends on the number of 
 
 ###  Installation
 
+I had planned a documentation that I'll produce later. 
+
+I've finalized a tool that allows complete management of the container, except for the creation of DKIM keys, which will have to be done in the container. It's not impossible that I'll add this functionality from the Menu, but it will appear in the API.
+
+The menu allows you to install, configure and use
+
 There is a document dedicated to this by [clicking here](INSTALLATION.md)
-
-## Tests
-
-At the moment, I don't know how I could set up unit tests, so I'm curious and looking for information.
-Unit testing on a docker container, an interesting topic, I wonder if these tests should be performed from the outside or the inside
-Example with `docker exec -it simply-mailserver bash`
 
 ## License
 

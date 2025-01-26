@@ -57,7 +57,19 @@ fi
 currenttime=$(date +%H:%M)
 currentdom=$(date +%d)
 
-if [[ "$currenttime" > "00:00" ]] && [[ "$currenttime" < "00:08" ]]; then
+format_and_validate_hour() {
+	if ! [[ "$1" =~ ^[0-9]{1,2}$ ]]; then
+		echo "02"
+	elif [[ "$1" -ge 0 && "$1" -le 23 ]]; then
+		printf "%02d" "$1"
+	else
+		echo "02"
+	fi
+}
+
+hour=$(format_and_validate_hour ____dmarcReportHour)
+
+if [[ "$currenttime" > "${hour}:00" ]] && [[ "$currenttime" < "${hour}:08" ]]; then
 	/usr/bin/logger "Sending Reports"
 	/usr/sbin/opendmarc-reports --report-email=$REPORT_EMAIL --report-org="${REPORT_ORG}" --smtp-port=10025 --day --dbhost=localhost --dbname=opendmarc --dbpasswd=$SYSTEM_PASSWORD --dbuser=opendmarc --smtp-server=localhost
 	increment reports

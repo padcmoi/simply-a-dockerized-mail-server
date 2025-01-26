@@ -3,6 +3,8 @@ source /.env
 
 echo "Configuration rspam: $(rspamadm configtest)"
 
+chmod -R 777 /var/log/clamav
+
 if [ $DISABLE_ANTIVIRUS == true ]; then
     service clamav-freshclam stop
     service clamav-daemon stop
@@ -28,6 +30,3 @@ else
 
     echo "ANTIVIRUS CLAMAV ENABLED !!!"
 fi
-
-# TODO remove mail test
-sleep 10 && swaks --to julien@example.local --attach - --server 127.0.0.1:25 </opt/eicar.com
