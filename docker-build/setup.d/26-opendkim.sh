@@ -28,6 +28,13 @@ build)
     sed -i "/SOCKET=./d" $OPENDKIM_DEFAULT
     echo "SOCKET=inet:12301@localhost" >>$OPENDKIM_DEFAULT
 
+    # OpenDKIM restrictions settings
+    DKIM_MULTIPLE_SIGNATURES=$([ "$DKIM_MULTIPLE_SIGNATURES" == "yes" ] && echo "Yes" || echo "No")
+    DKIM_MUST_BE_SIGNED=$([ "$DKIM_MUST_BE_SIGNED" == "yes" ] && echo "Yes" || echo "No")
+
+    sed -i "s/____dkimMultipleSignatures/${DKIM_MULTIPLE_SIGNATURES}/g" $OPENDKIM_CONFIG
+    sed -i "s/____dkimMustBeSigned/${DKIM_MUST_BE_SIGNED}/g" $OPENDKIM_CONFIG
+
     mkdir -p $OPENDKIM_KEYS_PATH
 
     [ ! -f $OPENDKIM_SIGNING_TABLE ] && touch $OPENDKIM_SIGNING_TABLE
