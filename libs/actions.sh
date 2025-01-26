@@ -48,6 +48,31 @@ _configureEnvFile() {
         case $type in
         string)
 
+            # Rule Yes or No
+            if $(_checkWordInText "$checkInDescription" "{{{rule:YES_OR_NO}}}"); then
+                while true; do
+                    skipNextValue=true
+
+                    echo -e "please press Y (for yes) or N (for no) or D for default value"
+                    read -p "$key: (currently to $value) [Y/N/D] " -n1 -r
+                    reply=$REPLY
+
+                    if [[ $reply =~ ^[Yy]$ ]]; then
+                        value=yes
+                        break
+                    elif [[ $reply =~ ^[Nn]$ ]]; then
+                        value=no
+                        break
+                    elif [[ $reply =~ ^[Dd]$ ]]; then
+                        echo -e "Default value kept to: ${value}"
+                        break
+                    fi
+
+                    _displayCurrentDescription "${ENV_TMPFILE}" "${previousKey}" "${key}" 1 1
+                    echo -e "Please make a choice between the listed keys below"
+                done
+            fi
+
             # Folder with create rule
             if $(_checkWordInText "$checkInDescription" "{{{rule:FOLDER_CREATE}}}"); then
                 while true; do
