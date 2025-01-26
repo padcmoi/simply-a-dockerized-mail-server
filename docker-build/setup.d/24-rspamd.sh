@@ -50,6 +50,9 @@ container)
 
 run)
 
+    chown -R _rspamd:_rspamd /var/lib/rspamd
+    chmod -R o+rwx /var/lib/rspamd
+    chmod -R o+rwx /var/log/rspamd
     service rspamd start </dev/null &>/dev/null
     nn rspamd
 

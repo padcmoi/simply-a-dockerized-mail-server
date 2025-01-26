@@ -8,13 +8,13 @@ source /.system_password
 # exec some scripts ...
 ## check in background changes in ssl certs /etc/_private/fullchain.*
 check-mail-ssl-files.sh </dev/null &>/dev/null &
-## provides logs in volume/log
-debug-autocopy-logs.sh </dev/null &>/dev/null &
 ## provides mail in volume/mail
 make-public-mail-volume.sh </dev/null &>/dev/null &
 
 # fix permission issue opendkim keys
 /docker-build/setup.d/26-opendkim.sh container </dev/null &>/dev/null &
+
+/usr/local/bin/services.sh
 
 # WebAPI
 # /docker-build/webapi.sh

@@ -12,7 +12,11 @@ build)
 
     ;;
 
-save-volume) ;;
+save-volume)
+
+    cp -Rf /var/log /var/log.DOCKER_TMP
+
+    ;;
 
 retrieve-volume) ;;
 

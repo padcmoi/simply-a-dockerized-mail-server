@@ -47,8 +47,15 @@ build)
                 sed -i '/^smtpd_milters =/ s/=/= inet:localhost:8893,/' /etc/postfix/main.cf
             fi
 
+            if [ "$DMARC_REPORT_HOUR" -ge 0 ] && [ "$DMARC_REPORT_HOUR" -le 23 ]; then
+                dmarcReportHourChecked=$DMARC_REPORT_HOUR
+            else
+                dmarcReportHourChecked=2
+            fi
+
             sed -i "s/____dmarcDomain/${DMARC_DOMAIN}/g" /usr/local/bin/dmarc_reports.sh
             sed -i "s/____dmarcOrgName/${DMARC_ORG_NAME}/g" /usr/local/bin/dmarc_reports.sh
+            sed -i "s/____dmarcReportHour/${dmarcReportHourChecked}/g" /usr/local/bin/dmarc_reports.sh
 
             ;;
 

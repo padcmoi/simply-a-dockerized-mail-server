@@ -1,5 +1,5 @@
 services:
-  mailserver:
+  simply-mailserver:
     stdin_open: true
     tty: true
     restart: always
@@ -28,7 +28,7 @@ services:
       backend:
         ipv4_address: 172.200.0.5
     volumes:
-      - $DOCKER_VOLUMES/log:/var/_log
+      - $DOCKER_VOLUMES/log:/var/log
       - $DOCKER_VOLUMES/ssl:/etc/_private
       - $DOCKER_VOLUMES/mail:/var/mail
       - $DOCKER_VOLUMES/mysql:/var/lib/mysql
