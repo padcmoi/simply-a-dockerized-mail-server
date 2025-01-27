@@ -110,6 +110,7 @@ container)
             sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" $OPENDMARC_CONFIG
             sed -i "s/____dmarcReports/${DMARC_REPORTS}/g" $OPENDMARC_CONFIG
             sed -i "s/____opendmarcVarFolder/$(escape_slash "$OPENDMARC_VAR")/g" $OPENDMARC_CONFIG
+            sed -i "s/____opendmarcRejectFailures/${DMARC_REJECT_FAILURES}/g" $OPENDMARC_CONFIG
 
             # permission
 
