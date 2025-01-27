@@ -13,7 +13,6 @@ build)
     service fail2ban stop
     cp -Rf /docker-build/conf.d/fail2ban/* $FAIL2BAN_CONFIG_DIR/
     echo "" >$FAIL2BAN_CONFIG_DIR/jail.d/defaults-debian.conf
-    sed -i "s/loglevel = INFO/loglevel = NOTICE/" $FAIL2BAN_CONFIG_DIR/fail2ban.conf
     sed -i "s/logtarget = \/var\/log\/fail2ban.log/logtarget = SYSLOG/" $FAIL2BAN_CONFIG_DIR/fail2ban.conf
 
     if [ $FAIL2BAN_MAXRETRY -gt 0 ]; then
