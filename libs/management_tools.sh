@@ -147,9 +147,7 @@ _managementToolFail2ban() {
             serviceFail2ban=1
         fi
 
-        jailsList=(
-            "apache-auth" "apache-badbots" "apache-botsearch" "apache-fakegooglebot" "apache-modsecurity" "apache-nohome" "apache-noscript" "apache-overflows" "apache-shellshock" "dovecot" "postfix"
-        )
+        jailsList=($(_dockerExec "fail2ban-client status" | grep 'Jail list:' | cut -d ':' -f2 | tr -d ' ' | tr ',' ' '))
 
         echo -e "${COLOR_CYAN}"
         echo -e " ------------------- FAIL2BAN ------------------- ${COLOR_DEFAULT}"
