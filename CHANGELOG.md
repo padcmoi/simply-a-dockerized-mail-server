@@ -12,4 +12,4 @@
 - Antivirus crash and host machine crash (kswapd)
 
 ### Refactor
-- N/A
+- Logs are now in real-time in the menu script, to exit press ctrl+c

@@ -453,12 +453,7 @@ _startStopContainer() {
 
 _logsContainer() {
     clear
-    while true; do
-        sudo docker compose logs
-        read -n1 -e -p "-- PRESS ENTER TO REFRESH -- OR -- X TO LEAVE --" choice2
-        [[ $choice2 =~ ^[Xx]$ ]] && break
-    done
-
+    sudo docker container logs -f simply-mailserver
 }
 
 _buildContainer() {
