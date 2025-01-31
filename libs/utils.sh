@@ -297,3 +297,30 @@ _checkLatestBackup() {
 _dockerExec() {
     sudo docker exec -it simply-mailserver bash -c "${1}"
 }
+
+_isValidIP() {
+    local ip_port=$1
+    local ip=$(echo $ip_port | cut -d':' -f1)
+    local port=$(echo $ip_port | cut -d':' -f2)
+
+    if [[ $ip =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+        IFS='.' read -r -a octets <<<"$ip"
+        for octet in "${octets[@]}"; do
+            if ((octet < 0 || octet > 255)); then
+                [[ $2 ]] && echo "Invalid IP address"
+                return 1
+            fi
+        done
+    else
+        [[ $2 ]] && echo "Invalid IP address"
+        return 1
+    fi
+
+    if [[ $port =~ ^[0-9]+$ ]] && ((port >= 1 && port <= 65535)); then
+        [[ $2 ]] && echo "Valid IP address and port"
+        return 0
+    else
+        [[ $2 ]] && echo "Invalid port"
+        return 1
+    fi
+}
