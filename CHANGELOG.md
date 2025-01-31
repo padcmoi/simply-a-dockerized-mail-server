@@ -10,3 +10,6 @@
 
 ### Fixed
 - Antivirus crash and host machine crash (kswapd)
+
+### Refactor
+- N/A
