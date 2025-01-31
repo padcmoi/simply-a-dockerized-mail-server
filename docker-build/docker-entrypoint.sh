@@ -20,8 +20,9 @@ make-public-mail-volume.sh </dev/null &>/dev/null &
 # /docker-build/webapi.sh
 
 # netstat -tulpn | grep -E -w 'tcp|udp'
-[ $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV DISABLED !!!"
-[ ! $DISABLE_ANTIVIRUS == true ] && echo "ANTIVIRUS CLAMAV ENABLED !!!"
+[ $ANTIVIRUS -eq 0 ] && echo "ANTIVIRUS DISABLED !!!"
+[ $ANTIVIRUS -eq 1 ] && echo "ANTIVIRUS ENABLED (local clamav) !!!"
+[ $ANTIVIRUS -eq 2 ] && echo "ANTIVIRUS ENABLED (remote server clamav) !!!"
 if [ ! $NOTIFY_SPAM_REJECT == false ] && [ $NOTIFY_SPAM_REJECT_TO ]; then
     echo "*** Notification for each spam rejection enabled ***"
 fi
