@@ -45,6 +45,12 @@ _configureEnvFile() {
 
         checkInDescription=$(_displayCurrentDescription "${ENV_TMPFILE}" "${previousKey}" "${key}" 0 0)
 
+        # Rule Ignore
+        if $(_checkWordInText "$checkInDescription" "{{{rule:IGNORE}}}"); then
+            previousKey="${key}" # set a previousKey (see utils/description function)
+            continue
+        fi
+
         case $type in
         string)
 
@@ -179,17 +185,63 @@ _configureEnvFile() {
             fi
             ;;
         bool)
-            while true; do
-                read -e -p "$key: [true/false] " -i "${value}" newValue
-                [[ $newValue == true ]] && break
-                [[ $newValue == false ]] && break
-            done
+
+            if [ $skipNextValue == false ]; then
+                while true; do
+                    read -e -p "$key: [true/false] " -i "${value}" newValue
+                    [[ $newValue == true ]] && break
+                    [[ $newValue == false ]] && break
+                done
+            fi
             ;;
         number)
-            while true; do
-                read -e -p "$key: [0-n] " -i "${value}" newValue
-                [[ $newValue =~ ^-?[0-9]+$ ]] && break
-            done
+
+            # Rule ANTIVIRUS with dependency ANTIVIRUS_REMOTE_SERVER key
+            if $(_checkWordInText "$checkInDescription" "{{{rule:ANTIVIRUS}}}"); then
+                while true; do
+                    skipNextValue=true
+
+                    echo -e "0) Disable antivirus"
+                    echo -e "1) Enable local antivirus (requires a powerful server)"
+                    echo -e "2) Enable remote antivirus"
+
+                    read -n1 -e -p "Please choose a number: [0-2] " choice
+
+                    type=number
+
+                    case $choice in
+                    0)
+                        value=0
+                        break
+                        ;;
+                    1)
+                        value=1
+                        break
+                        ;;
+                    2)
+                        value=2
+                        remote_server=$(grep "^ANTIVIRUS_REMOTE_SERVER=" $ENV_TMPFILE | cut -d '=' -f2-)
+                        while true; do
+                            read -e -p "Please enter the remote server address: " -i "$(_escapeDoubleQuote "${remote_server}")" remote_server
+                            _isValidIP "$remote_server" 1
+                            [[ $? -eq 0 ]] && break
+                        done
+                        _setValue "${ENV_TMPFILE}" "ANTIVIRUS_REMOTE_SERVER" "string" "${remote_server}"
+                        break
+                        ;;
+                    esac
+
+                    _displayCurrentDescription "${ENV_TMPFILE}" "${previousKey}" "${key}" 1 1
+                    echo -e "Please make a choice between the listed keys below"
+                done
+            fi
+
+            if [ $skipNextValue == false ]; then
+                while true; do
+                    read -e -p "$key: [0-n] " -i "${value}" newValue
+                    [[ $newValue =~ ^-?[0-9]+$ ]] && break
+                done
+            fi
             ;;
 
         esac
@@ -401,12 +453,7 @@ _startStopContainer() {
 
 _logsContainer() {
     clear
-    while true; do
-        sudo docker compose logs
-        read -n1 -e -p "-- PRESS ENTER TO REFRESH -- OR -- X TO LEAVE --" choice2
-        [[ $choice2 =~ ^[Xx]$ ]] && break
-    done
-
+    sudo docker container logs -f simply-mailserver
 }
 
 _buildContainer() {
