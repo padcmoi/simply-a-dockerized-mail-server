@@ -299,7 +299,7 @@ _managementRecipients() {
 
             __part() {
                 __headerCurrentPart
-                echo -e "alias@example.local > julien@example.local"
+                _mysqlExec "SELECT source, destination FROM VirtualAliases WHERE source='$currentAlias'"
                 echo -e " "
             }
 
@@ -387,7 +387,16 @@ _managementRecipients() {
 
             case $choice in
             0) currentAlias="" ;;
-            1) ;;
+            1)
+                _confirm "Do you confirm the deletion of this alias ($currentAlias)?"
+                if [ $? -eq 0 ]; then
+                    results=$(_mysqlExec "DELETE FROM VirtualAliases WHERE source='$currentAlias'" list)
+                    echo -e "Alias ($currentAlias) deleted successfully"
+                    currentAlias=""
+                else
+                    echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                fi
+                ;;
             esac
 
         elif [ $currentRecipient ]; then
@@ -407,9 +416,81 @@ _managementRecipients() {
             1) ;;
             2) ;;
             3) ;;
-            4) ;;
-            5) ;;
-            6) ;;
+            4)
+                results=$(_mysqlExec "SELECT source FROM VirtualAliases WHERE domain='$currentDomain'" list)
+                results=("$cancelAction" $(echo $results))
+
+                _menuSelection "text" "Select an alias:" "${results[@]}"
+
+                currentAlias="$(_cleanMysqlValue "${__menuSelectionValue}")"
+                [[ "$currentAlias" == "$cancelAction" ]] && currentAlias=""
+                ;;
+            5)
+                clear && _mysqlExec "SELECT source, destination FROM VirtualAliases WHERE domain='$currentDomain'"
+                _confirm "Press any key to continue" 1
+                ;;
+            6)
+                while true; do
+                    read -e -p "New alias: " -i "$source" source
+
+                    if [ -z "$source" ]; then
+                        echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                        break
+                    fi
+
+                    _isValidEmail "$source"
+                    if [ $? -ne 0 ]; then
+                        echo -e "${COLOR_RED}Invalid domain for alias. Please try again.${COLOR_DEFAULT}"
+                        continue
+                    fi
+
+                    if [[ "$source" != *"@$currentDomain" ]]; then
+                        echo -e "${COLOR_RED}The alias must belong to the domain $currentDomain. Please try again.${COLOR_DEFAULT}"
+                        continue
+                    fi
+
+                    results=$(_mysqlExec "SELECT source FROM VirtualAliases WHERE source='$source'")
+                    if [ ! -z "$results" ]; then
+                        echo -e "${COLOR_RED}The alias already exists. Please try again.${COLOR_DEFAULT}"
+                        continue
+                    fi
+
+                    while true; do
+                        read -e -p "Destination email: " -i "$destination" destination
+                        _isValidEmail "$destination"
+                        if [ $? -ne 0 ]; then
+                            echo -e "${COLOR_RED}Invalid domain for destination email. Please try again.${COLOR_DEFAULT}"
+                            continue
+                        fi
+
+                        if [ "$destination" == "$source" ]; then
+                            echo -e "${COLOR_RED}Destination email cannot be the same as the source email. Please try again.${COLOR_DEFAULT}"
+                            continue
+                        fi
+
+                        results=$(_mysqlExec "SELECT source FROM VirtualAliases WHERE source='$destination'")
+                        if [ ! -z "$results" ]; then
+                            echo -e "${COLOR_RED}It is not possible to point a destination to an existing source. Please try again.${COLOR_DEFAULT}"
+                            continue
+                        fi
+
+                        # add alias to db
+                        results=$(_mysqlExec "INSERT INTO VirtualAliases SET domain='$currentDomain', source='$source', destination='$destination'")
+                        if [ -z "$results" ]; then
+                            echo -e "Alias added successfully"
+                        else
+                            echo "Error:"
+                            echo "$results"
+                        fi
+
+                        _confirm "Press any key to continue" 1
+
+                        break 2
+                    done
+
+                done
+
+                ;;
             7)
                 clear
                 _dockerExec "cat /etc/opendkim/keys/$currentDomain/public_key-*.txt "

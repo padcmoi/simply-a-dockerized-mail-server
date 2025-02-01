@@ -349,6 +349,17 @@ _isValidDomain() {
     fi
 }
 
+_isValidEmail() {
+    local email=$1
+    if [[ $email =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+        [[ $2 ]] && echo "Valid email"
+        return 0
+    else
+        [[ $2 ]] && echo "Invalid email"
+        return 1
+    fi
+}
+
 _convertToBytes() {
     local megabytes=$1
     local bytes=$(echo "$megabytes * 1024 * 1024" | bc)
