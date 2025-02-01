@@ -409,11 +409,24 @@ _menuSelection() {
     local selectedIndex=0
     __menuSelectionValue="" # Return string value
 
+    local pageSize=$MENU_SELECTION_LIMIT_ITEMS_PER_PAGE
+    local pageCount=$(((menuCount + pageSize - 1) / pageSize))
+    local currentPage=0
+
     while true; do
         clear
         [[ $header ]] && echo "$header"
 
-        for i in "${!menuList[@]}"; do
+        local start=0
+        local end=$menuCount
+
+        if [ $menuCount -gt $pageSize ]; then
+            start=$((currentPage * pageSize))
+            end=$((start + pageSize))
+            [ $end -gt $menuCount ] && end=$menuCount
+        fi
+
+        for ((i = start; i < end; i++)); do
             if [ $i -eq $selectedIndex ]; then
                 echo -e "${COLOR_YELLOW}➜ ${menuList[$i]}${COLOR_DEFAULT}"
             else
@@ -421,7 +434,12 @@ _menuSelection() {
             fi
         done
 
-        echo -e "${COLOR_CYAN}Use arrow keys ⬆️⬇️ to navigate the list.${COLOR_DEFAULT}"
+        if [ $menuCount -gt $pageSize ]; then
+            echo -e "${COLOR_CYAN}Use arrow keys ⬆️⬇️ to navigate the list. Use ⬅️➡️ to change pages"
+            echo -e "Page $((currentPage + 1))/$pageCount.${COLOR_DEFAULT}"
+        else
+            echo -e "${COLOR_CYAN}Use arrow keys ⬆️⬇️ to navigate the list.${COLOR_DEFAULT}"
+        fi
 
         read -rsn1 input
         case $input in
@@ -433,6 +451,14 @@ _menuSelection() {
             elif [[ $input == "[B" ]]; then
                 ((selectedIndex++))
                 [ $selectedIndex -ge $menuCount ] && selectedIndex=0
+            elif [[ $input == "[D" ]]; then
+                ((currentPage--))
+                [ $currentPage -lt 0 ] && currentPage=$((pageCount - 1))
+                selectedIndex=$((currentPage * pageSize))
+            elif [[ $input == "[C" ]]; then
+                ((currentPage++))
+                [ $currentPage -ge $pageCount ] && currentPage=0
+                selectedIndex=$((currentPage * pageSize))
             fi
             ;;
         "") break ;;
