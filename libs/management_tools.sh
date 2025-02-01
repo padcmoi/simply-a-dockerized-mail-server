@@ -256,3 +256,253 @@ _managementToolFail2ban() {
         esac
     done
 }
+
+_managementRecipients() {
+
+    cancelAction="***CANCEL***"
+
+    currentDomain=""
+    currentRecipient=""
+    currentAlias=""
+
+    countVirtualDomains=0
+    countVirtualAliases=0
+    countVirtualUsers=0
+
+    countTotalMessagesVirtualDomains=0
+    countTotalQuotaVirtualDomains=0
+    countTotalCurrentQuotaVirtualDomains=0
+
+    countTotalUsedBytesByDomain=0
+    countTotalUsedMessagesByDomain=0
+    countTotalUsedBytesByRecipient=0
+    countTotalUsedMessagesByRecipient=0
+
+    while true; do
+        clear
+
+        __headerCurrentPart() {
+            # headerPart
+            echo -e "DETAILS: "
+            [ -n "$currentDomain" ] && echo -e "Currently selected domain: ${currentDomain}"
+            [ -n "$currentRecipient" ] && echo -e "Currently selected recipient: ${currentRecipient}"
+            [ -n "$currentAlias" ] && echo -e "Currently selected alias: ${currentAlias}"
+        }
+
+        echo -e " ------------------- RECIPIENTS ------------------- "
+
+        #
+        # MESSAGES
+        #
+
+        if [ $currentAlias ]; then
+
+            __part() {
+                __headerCurrentPart
+                echo -e "alias@example.local > julien@example.local"
+                echo -e " "
+            }
+
+            list=(
+                "Deselect this alias ($currentAlias)"
+                "Delete this alias ($currentAlias)"
+            )
+            _menuSelection "index" "$(__part)" "${list[@]}"
+
+        elif [ $currentRecipient ]; then
+
+            __part() {
+                __headerCurrentPart
+                echo -e "Quota [Current/Maximum]: 123/999"
+                echo -e "Messages: 700"
+                echo -e "Last activity: 123/999"
+                echo -e " "
+            }
+
+            list=(
+                "Deselect this recipient ${currentRecipient}"
+                "Modify the quota of ${currentRecipient}"
+                "Change the password of ${currentRecipient}"
+                "Deactivate this recipient ${currentRecipient}"
+                "Delete this recipient ${currentRecipient}"
+            )
+            _menuSelection "index" "$(__part)" "${list[@]}"
+
+        elif [ $currentDomain ]; then
+
+            _userManagementCalculateUserDomainMailUsage
+
+            __part() {
+                __headerCurrentPart
+                echo -e " "
+                echo -e "Recipients: $countVirtualUsers"
+                echo -e "Aliases: $countVirtualAliases"
+                echo -e "Total used bytes for $currentDomain: $(_convertFromBytes "$countTotalUsedBytesByDomain" 1)"
+                echo -e "Total used messages for $currentDomain: $countTotalUsedMessagesByDomain"
+                echo -e " "
+            }
+
+            list=(
+                "Deselect the domain ${currentDomain}"
+                "Select a recipient for this domain ${currentDomain}"
+                "List all recipients for a domain ${currentDomain}"
+                "Add a recipient for this domain ${currentDomain}"
+                "Select an alias for this domain ${currentDomain}"
+                "List all aliases for a domain ${currentDomain}"
+                "Add an alias for this domain ${currentDomain}"
+                "View DKIM public key for this domain ${currentDomain}"
+                "Renew DKIM key for this domain ${currentDomain}"
+                "Delete this domain ${currentDomain} and corresponding DKIM key"
+            )
+
+            _menuSelection "index" "$(__part)" "${list[@]}"
+
+        else
+
+            _userManagementCalculateUserDomainMailUsage
+
+            __part() {
+                __headerCurrentPart
+                echo -e "Domains: $countVirtualDomains"
+                echo -e "Quota [Current/Maximum/%]: $(_convertFromBytes "$countTotalCurrentQuotaVirtualDomains" 1) / $(_convertFromBytes "$countTotalQuotaVirtualDomains" 1) / $(_displayPercentage $countTotalCurrentQuotaVirtualDomains $countTotalQuotaVirtualDomains)"
+                echo -e "Total messages: $countTotalMessagesVirtualDomains"
+                echo -e " "
+            }
+
+            list=(
+                "Main menu"
+                "Select a domain"
+                "Add a domain"
+            )
+            _menuSelection "index" "$(__part)" "${list[@]}"
+
+        fi
+
+        choice="${__menuSelectionValue}"
+
+        #
+        # ACTIONS
+        #
+        if [ $currentAlias ]; then
+
+            case $choice in
+            0) currentAlias="" ;;
+            1) ;;
+            esac
+
+        elif [ $currentRecipient ]; then
+
+            case $choice in
+            0) currentRecipient="" ;;
+            1) ;;
+            2) ;;
+            3) ;;
+            4) ;;
+            esac
+
+        elif [ $currentDomain ]; then
+
+            case $choice in
+            0) currentDomain="" ;;
+            1) ;;
+            2) ;;
+            3) ;;
+            4) ;;
+            5) ;;
+            6) ;;
+            7)
+                clear
+                _dockerExec "cat /etc/opendkim/keys/$currentDomain/public_key-*.txt "
+                _confirm "Press any key to continue" 1
+                ;;
+            8)
+                _confirm "Do you confirm this action ?"
+                if [ $? -eq 0 ]; then
+                    _dockerExec "/usr/local/bin/dkim-create.sh \"$currentDomain\" force"
+                    echo -e "DKIM key renewed"
+                    _confirm "Press any key to continue" 1
+                fi
+                ;;
+            9)
+                _confirm "Do you confirm this action ?"
+                if [ $? -eq 0 ]; then
+
+                    _userManagementCalculateUserDomainMailUsage
+
+                    echo -e " "
+                    if [[ "$countVirtualAliases" -gt 0 ]] || [[ "$countVirtualUsers" -gt 0 ]]; then
+                        echo "This domain has $countVirtualUsers recipients and $countVirtualAliases aliases"
+                        _confirm "This action will delete all recipients and aliases for this domain. Do you want to proceed?"
+                        if [ $? -ne 0 ]; then
+                            echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                            continue
+                        fi
+                        echo -e " "
+                    fi
+
+                    _countdownTimer
+                    if [ "$?" -eq 0 ]; then
+                        echo -e "\nProceeding with the action..."
+                        _dockerExec "/usr/local/bin/dkim-delete.sh \"$currentDomain\""
+                        _mysqlExec "DELETE FROM VirtualDomains WHERE domain='$currentDomain'"
+                        _dockerExec "rm -R /var/mail/vhosts/$currentDomain"
+                        echo "Domain and dkim key $currentDomain deleted"
+                        currentDomain=""
+                    fi
+
+                    _confirm "Press any key to continue" 1
+                fi
+                ;;
+            esac
+
+        else
+            case $choice in
+            0) break ;;
+            1)
+                results=$(_mysqlExec "SELECT domain FROM VirtualDomains" list)
+                results=("$cancelAction" $(echo $results))
+
+                _menuSelection "text" "Select a domain:" "${results[@]}"
+
+                currentDomain="$(_cleanMysqlValue "${__menuSelectionValue}")"
+                [[ "$currentDomain" == "$cancelAction" ]] && currentDomain=""
+                ;;
+            2)
+                domainQuota=1000
+                while true; do
+                    read -e -p "Name of the new domain: " -i "$newDomain" newDomain
+                    read -e -p "Domain quota: (Megabytes) " -i "$domainQuota" domainQuota
+
+                    if [[ "$domainQuota" =~ ^[0-9]+$ ]] && [ "$domainQuota" -ge 1 ] && [ "$domainQuota" -le 20000 ]; then
+                        _isValidDomain "$newDomain" 1
+                        if [ $? -eq 0 ]; then
+                            results=$(_mysqlExec "SELECT domain FROM VirtualDomains WHERE domain='$newDomain'")
+                            [ ! -z "$results" ] && echo -e "Error: The domain ($newDomain) already exists." || break
+                        fi
+                    else
+                        echo -e "Invalid quota. Please enter a number between 1 and 20000."
+                    fi
+                done
+
+                currentDomain="$(_lowercase "$newDomain")"
+
+                results=$(_mysqlExec "INSERT INTO VirtualDomains SET domain='$currentDomain', active=1, quota='$(_convertToBytes "$domainQuota")', user_start_date=NOW()-INTERVAL 1 DAY")
+
+                if [ -z "$results" ]; then
+                    echo -e "Domain ($currentDomain) added"
+
+                    _confirm "Now you will create the DKIM key, Press any key to continue" 1
+                    _dockerExec "/usr/local/bin/dkim-create.sh \"$currentDomain\" force"
+                else
+                    echo "Error:"
+                    echo "$results"
+                fi
+
+                _confirm "Press any key to continue" 1
+                ;;
+            esac
+
+        fi
+
+    done
+}

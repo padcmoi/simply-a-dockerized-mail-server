@@ -17,6 +17,10 @@ _uppercase() {
     echo "$1" | tr '[:lower:]' '[:upper:]'
 }
 
+_lowercase() {
+    echo "$1" | tr '[:upper:]' '[:lower:]'
+}
+
 _messageOk() {
     echo -e "${1}: 🟢"
 }
@@ -323,4 +327,133 @@ _isValidIP() {
         [[ $2 ]] && echo "Invalid port"
         return 1
     fi
+}
+
+_isInteger() {
+    local value=$1
+    if [[ "$value" =~ ^-?[0-9]+$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+_isValidDomain() {
+    local domain=$1
+    if [[ $domain =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$ ]]; then
+        [[ $2 ]] && echo "Valid domain"
+        return 0
+    else
+        [[ $2 ]] && echo "Invalid domain"
+        return 1
+    fi
+}
+
+_convertToBytes() {
+    local megabytes=$1
+    local bytes=$(echo "$megabytes * 1024 * 1024" | bc)
+    [[ $2 ]] && echo "$bytes bytes" || echo $bytes
+}
+
+_convertFromBytes() {
+    local bytes=$1
+    local megabytes=$(echo "scale=2; $bytes / 1024 / 1024" | bc)
+    if (($(echo "$megabytes < 1" | bc -l))); then
+        local kilobytes=$(echo "scale=2; $bytes / 1024" | bc)
+        [[ $2 ]] && echo "$kilobytes KB" || echo $kilobytes
+    elif (($(echo "$megabytes >= 1024" | bc -l))); then
+        local gigabytes=$(echo "scale=2; $megabytes / 1024" | bc)
+        [[ $2 ]] && echo "$gigabytes GB" || echo $gigabytes
+    else
+        [[ $2 ]] && echo "$megabytes MB" || echo $megabytes
+    fi
+}
+
+_displayPercentage() {
+    local numerator=$1
+    local denominator=$2
+    if [ $denominator -eq 0 ]; then
+        echo "N/A %"
+        return 1
+    fi
+    local percentage=$(echo "($numerator * 100) / $denominator" | bc)
+    echo "${percentage}%"
+}
+
+_mysqlExec() {
+    local query=$1
+    local mode=$2
+
+    case $mode in
+    list) sudo docker exec -it simply-mailserver bash -c "mysql -u root -D mailserver -sN -e \"$query\"" ;;
+    *) sudo docker exec -it simply-mailserver bash -c "mysql -u root -D mailserver -e \"$query\"" ;;
+    esac
+}
+
+_menuSelection() {
+    local mode="${1}"
+    local header="${2}"
+    local menuList=("${@:3}")
+    local menuCount=${#menuList[@]}
+    local selectedIndex=0
+    __menuSelectionValue="" # Return string value
+
+    while true; do
+        clear
+        [[ $header ]] && echo "$header"
+
+        for i in "${!menuList[@]}"; do
+            if [ $i -eq $selectedIndex ]; then
+                echo -e "${COLOR_YELLOW}➜ ${menuList[$i]}${COLOR_DEFAULT}"
+            else
+                echo -e "  ${menuList[$i]}"
+            fi
+        done
+
+        echo -e "${COLOR_CYAN}Use arrow keys ⬆️⬇️ to navigate the list.${COLOR_DEFAULT}"
+
+        read -rsn1 input
+        case $input in
+        $'\x1b')
+            read -rsn2 -t 0.1 input
+            if [[ $input == "[A" ]]; then
+                ((selectedIndex--))
+                [ $selectedIndex -lt 0 ] && selectedIndex=$((menuCount - 1))
+            elif [[ $input == "[B" ]]; then
+                ((selectedIndex++))
+                [ $selectedIndex -ge $menuCount ] && selectedIndex=0
+            fi
+            ;;
+        "") break ;;
+        esac
+    done
+
+    case $mode in
+    text) __menuSelectionValue="${menuList[$selectedIndex]}" ;;
+    index) __menuSelectionValue="${selectedIndex}" ;;
+    *) ;;
+    esac
+}
+
+# fix this kind of problem example 'domain.local'$'\r'
+_cleanMysqlValue() {
+    echo -e "${1}" | tr -d '\r'
+}
+
+_countdownTimer() {
+    local seconds=10
+    echo -e "You have 10 seconds to cancel the action by pressing any key..."
+
+    while [ $seconds -gt 0 ]; do
+
+        echo -ne "   $seconds\033[0K\r"
+        read -t 1 -n 1 && {
+            echo -e "\nAction cancelled"
+            return 1
+            break
+        }
+        ((seconds--))
+    done
+
+    [ $seconds -eq 0 ] && return 0
 }

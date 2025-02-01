@@ -226,6 +226,7 @@ managementToolsMenu() {
         echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
         echo -e "1) POSTFIX"
         echo -e "2) FAIL2BAN"
+        echo -e "3) RECIPIENTS"
 
         read -n1 -e -p "Please choose a number: [0-9] " choice
 
@@ -233,6 +234,7 @@ managementToolsMenu() {
         0) break ;;
         1) _managementToolPostfix ;;
         2) _managementToolFail2ban ;;
+        3) _managementRecipients ;;
 
         esac
     done
