@@ -26,6 +26,7 @@ _userManagementCalculateUserDomainMailUsage() {
     countTotalUsedMessagesByDomain=0
     countTotalUsedBytesByRecipient=0
     countTotalUsedMessagesByRecipient=0
+    countTotalBytesByRecipient=0
 
     if [ $currentDomain ]; then
         queries+=(
@@ -33,12 +34,16 @@ _userManagementCalculateUserDomainMailUsage() {
             "SELECT COUNT(id) FROM VirtualUsers WHERE domain='$currentDomain'"
             "SELECT SUM(bytes) FROM VirtualQuotaUsers WHERE domain='$currentDomain'"
             "SELECT SUM(messages) FROM VirtualQuotaUsers WHERE domain='$currentDomain'"
+            "SELECT quota FROM VirtualDomains WHERE domain='$currentDomain'"
+            "SELECT SUM(quota) FROM VirtualUsers WHERE domain='$currentDomain'"
         )
         variables+=(
             "countVirtualAliases"
             "countVirtualUsers"
             "countTotalUsedBytesByDomain"
             "countTotalUsedMessagesByDomain"
+            "countMaxBytesFromDomain"
+            "countTotalBytesByDomain"
         )
     fi
 
@@ -46,10 +51,12 @@ _userManagementCalculateUserDomainMailUsage() {
         queries+=(
             "SELECT SUM(bytes) FROM VirtualQuotaUsers WHERE email='$currentRecipient'"
             "SELECT SUM(messages) FROM VirtualQuotaUsers WHERE email='$currentRecipient'"
+            "SELECT SUM(quota) FROM VirtualUsers WHERE email='$currentRecipient'"
         )
         variables+=(
             "countTotalUsedBytesByRecipient"
             "countTotalUsedMessagesByRecipient"
+            "countTotalBytesByRecipient"
         )
     fi
 

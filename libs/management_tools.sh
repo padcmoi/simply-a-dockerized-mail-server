@@ -261,8 +261,8 @@ _managementRecipients() {
 
     cancelAction="***CANCEL***"
 
-    currentDomain=""
-    currentRecipient=""
+    currentDomain="example.local"
+    currentRecipient="user@example.local"
     currentAlias=""
 
     countVirtualDomains=0
@@ -277,6 +277,9 @@ _managementRecipients() {
     countTotalUsedMessagesByDomain=0
     countTotalUsedBytesByRecipient=0
     countTotalUsedMessagesByRecipient=0
+
+    countMaxBytesFromDomain=0
+    countTotalBytesByDomain=0
 
     while true; do
         clear
@@ -311,11 +314,13 @@ _managementRecipients() {
 
         elif [ $currentRecipient ]; then
 
+            _userManagementCalculateUserDomainMailUsage
+
             __part() {
                 __headerCurrentPart
-                echo -e "Quota [Current/Maximum]: 123/999"
-                echo -e "Messages: 700"
-                echo -e "Last activity: 123/999"
+                echo -e "Quota used [Current/Maximum]: $(_convertFromBytes "$countTotalUsedBytesByRecipient" 1)/$(_convertFromBytes "$countTotalBytesByRecipient" 1)"
+                echo -e "Messages: $countTotalUsedMessagesByRecipient"
+                echo -e "Last activity: $(_mysqlExec "SELECT last_activity FROM VirtualQuotaUsers WHERE email='$currentRecipient';" list)"
                 echo -e " "
             }
 
@@ -335,6 +340,10 @@ _managementRecipients() {
             __part() {
                 __headerCurrentPart
                 echo -e " "
+                echo -e "Quota allocated [Current/Maximum]: $(_convertFromBytes "$countTotalBytesByDomain" 1)/$(_convertFromBytes "$countMaxBytesFromDomain" 1)"
+                echo -e "Remaining quota: $(_convertFromBytes $((countMaxBytesFromDomain - countTotalBytesByDomain)) 1)"
+                [[ $countTotalBytesByDomain -gt $countMaxBytesFromDomain ]] && echo -e "${COLOR_RED}Quota exceed${COLOR_DEFAULT}"
+
                 echo -e "Recipients: $countVirtualUsers"
                 echo -e "Aliases: $countVirtualAliases"
                 echo -e "Total used bytes for $currentDomain: $(_convertFromBytes "$countTotalUsedBytesByDomain" 1)"
@@ -403,7 +412,36 @@ _managementRecipients() {
 
             case $choice in
             0) currentRecipient="" ;;
-            1) ;;
+            1)
+                curQuota=$((countTotalBytesByRecipient / 1048576))
+                oldValue=$((curQuota * 1048576))
+                RemainingQuota=$((countMaxBytesFromDomain - countTotalBytesByDomain))
+                clear
+                while true; do
+                    echo -e "Remaining quota: $(_convertFromBytes $RemainingQuota 1)"
+
+                    while true; do
+                        read -e -p "Change the current quota (in MB): " -i "$curQuota" curQuota
+                        if [[ "$curQuota" =~ ^[0-9]+$ ]]; then
+                            break
+                        else
+                            echo -e "${COLOR_RED}Invalid input. Please enter an integer value.${COLOR_DEFAULT}"
+                        fi
+                    done
+
+                    curQuotaConverted=$(_convertToBytes "$curQuota")
+                    calcul=$((curQuotaConverted - oldValue))
+
+                    if [ "$calcul" -lt "$RemainingQuota" ]; then
+                        break
+                    else
+                        clear && echo -e "${COLOR_RED}The new quota exceeds the total domain quota. Please enter a smaller value.${COLOR_DEFAULT}"
+                    fi
+                done
+
+                _mysqlExec "UPDATE VirtualUsers SET quota=$((${curQuota} * 1048576)) WHERE email='$currentRecipient'"
+                echo -e "Quota updated successfully"
+                ;;
             2) ;;
             3) ;;
             4) ;;
