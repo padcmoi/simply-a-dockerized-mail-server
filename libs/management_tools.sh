@@ -413,9 +413,55 @@ _managementRecipients() {
 
             case $choice in
             0) currentDomain="" ;;
-            1) ;;
-            2) ;;
-            3) ;;
+            1)
+                results=$(_mysqlExec "SELECT email FROM VirtualUsers WHERE domain='$currentDomain'" list)
+                results=("$cancelAction" $(echo $results))
+
+                _menuSelection "text" "Select a recipient:" "${results[@]}"
+
+                currentRecipient="$(_cleanMysqlValue "${__menuSelectionValue}")"
+                [[ "$currentRecipient" == "$cancelAction" ]] && currentRecipient=""
+
+                ;;
+            2)
+                clear && _mysqlExec "
+                    SELECT 
+                        U.email, CAST(VirtualQuotaUsers.bytes / 1048576 AS INT) AS current_quota_mb, CAST(U.quota / 1048576 AS INT) AS max_quota_mb, 
+                        U.active, U.user_start_date, VirtualQuotaUsers.last_activity AS last_change
+                    FROM VirtualUsers AS U
+                    INNER JOIN VirtualQuotaUsers ON U.email = VirtualQuotaUsers.email
+                    WHERE U.domain='example.local';
+                "
+                _confirm "Press any key to continue" 1
+                ;;
+            3)
+                newRecipient=""
+                password=""
+                quota=100
+                while true; do
+                    while true; do
+                        read -e -p "New email address (without domain): " -i "$newRecipient" newRecipient
+                        if [ -z "$newRecipient" ]; then
+                            echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                            break 2
+                        fi
+                        if [[ "$newRecipient" == *"@"* ]]; then
+                            echo -e "${COLOR_RED}The email address should not contain the '@' symbol. Please try again.${COLOR_DEFAULT}"
+                        else
+                            break
+                        fi
+                    done
+                    newEmail="${newRecipient}@${currentDomain}"
+                    read -e -p "Password: " -i "$password" password
+                    read -e -p "Quota (in MB): " -i "$quota" quota
+
+                    _userManagementAddRecipient "${currentDomain}" "${newEmail}" "${password}" "${quota}" "1"
+                    response=$?
+                    [[ $response -eq 0 ]] && break
+                done
+
+                _confirm "Press any key to continue" 1
+                ;;
             4)
                 results=$(_mysqlExec "SELECT source FROM VirtualAliases WHERE domain='$currentDomain'" list)
                 results=("$cancelAction" $(echo $results))
@@ -571,6 +617,10 @@ _managementRecipients() {
 
                 if [ -z "$results" ]; then
                     echo -e "Domain ($currentDomain) added"
+
+                    passwordRandom=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 12)
+                    _userManagementAddRecipient "${currentDomain}" "root@${currentDomain}" "${passwordRandom}" "100" "0"
+                    _mysqlExec "REPLACE INTO VirtualQuotaDomains SET domain='$currentDomain';"
 
                     _confirm "Now you will create the DKIM key, Press any key to continue" 1
                     _dockerExec "/usr/local/bin/dkim-create.sh \"$currentDomain\" force"
