@@ -491,7 +491,29 @@ _managementRecipients() {
                     done
                     newEmail="${newRecipient}@${currentDomain}"
                     read -e -p "Password: " -i "$password" password
-                    read -e -p "Quota (in MB): " -i "$quota" quota
+
+                    # Check quota remaining ...
+                    RemainingQuota=$((countMaxBytesFromDomain - countTotalBytesByDomain))
+                    while true; do
+                        echo -e "Remaining quota: $(_convertFromBytes $RemainingQuota 1)"
+
+                        while true; do
+                            read -e -p "Quota (in MB): " -i "$quota" quota
+                            if [[ "$quota" =~ ^[0-9]+$ ]]; then
+                                break
+                            else
+                                echo -e "${COLOR_RED}Invalid input. Please enter an integer value.${COLOR_DEFAULT}"
+                            fi
+                        done
+
+                        curQuotaConverted=$(_convertToBytes "$quota")
+
+                        if [ "$curQuotaConverted" -lt "$RemainingQuota" ]; then
+                            break
+                        else
+                            echo -e "${COLOR_RED}The new quota exceeds the total domain quota. Please enter a smaller value.${COLOR_DEFAULT}"
+                        fi
+                    done
 
                     _userManagementAddRecipient "${currentDomain}" "${newEmail}" "${password}" "${quota}" "1"
                     response=$?
