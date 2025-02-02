@@ -261,8 +261,8 @@ _managementRecipients() {
 
     cancelAction="***CANCEL***"
 
-    currentDomain="example.local"
-    currentRecipient="user@example.local"
+    currentDomain=""
+    currentRecipient=""
     currentAlias=""
 
     _userManagementResetVariables
@@ -306,7 +306,9 @@ _managementRecipients() {
                 __headerCurrentPart
                 echo -e "Quota used [Current/Maximum]: $(_convertBytesToMB "$calculateTotalBytesConsumedPerVirtualRecipient" 1)/$(_convertBytesToMB "$countQuotasAllocatedPerRecipient" 1)"
                 echo -e "Messages: $CalculateTotalMessagesConsumedPerRecipient"
-                echo -e "Last activity: $(_mysqlExec "SELECT last_activity FROM VirtualQuotaUsers WHERE email='$currentRecipient';" list)"
+                echo -e "Last message: $(_mysqlExec "SELECT last_activity FROM VirtualQuotaUsers WHERE email='$currentRecipient';" list)"
+                echo -e "Last modification: $(_mysqlExec "SELECT last_activity FROM VirtualUsers WHERE email='$currentRecipient';" list)"
+                echo -e "Account status: $([ "$virtualRecipientStatus" == "1" ] && echo "enabled" || echo "disabled")"
                 echo -e " "
             }
 
@@ -314,7 +316,8 @@ _managementRecipients() {
                 "Deselect this recipient ${currentRecipient}"
                 "Modify the quota of ${currentRecipient}"
                 "Change the password of ${currentRecipient}"
-                "Deactivate this recipient ${currentRecipient}"
+                "$([ "$virtualRecipientStatus" == "1" ] && echo "Deactivate" || echo "Activate") this recipient ${currentRecipient}"
+                "Rename this recipient ${currentRecipient}"
                 "Delete this recipient ${currentRecipient}"
             )
             _menuSelection "index" "$(__part)" "${list[@]}"
@@ -406,35 +409,121 @@ _managementRecipients() {
                 oldValue=$((curQuota * 1048576))
                 RemainingQuota=$((quotasAllocatedPerVirtualDomains - countQuotasAllocatedPerVirtualDomain))
                 maxAttributable=$((RemainingQuota + countQuotasAllocatedPerRecipient - 1048576))
+                [[ "$maxAttributable" -lt 0 ]] && maxAttributable=0
                 clear
                 while true; do
-                    echo -e "Max value allowed: $(_convertBytesToMB "$maxAttributable" 1 "MB" 1)"
-
                     while true; do
-                        read -e -p "Change the current quota (in MB): " -i "$curQuota" curQuota
-                        if [[ "$curQuota" =~ ^[0-9]+$ ]]; then
+                        echo -e "Max value allowed: $(_convertBytesToMB "$maxAttributable" 1 "MB" 1)"
+
+                        while true; do
+                            read -e -p "Change the current quota (in MB): " -i "$curQuota" curQuota
+
+                            if [ -z "$curQuota" ]; then
+                                echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                                break 3
+                            fi
+
+                            if [[ "$curQuota" =~ ^[0-9]+$ ]]; then
+                                break
+                            else
+                                echo -e "${COLOR_RED}Invalid input. Please enter an integer value.${COLOR_DEFAULT}"
+                            fi
+                        done
+
+                        curQuotaConverted=$((curQuota * 1048576))
+                        calcul=$((curQuotaConverted - oldValue))
+
+                        if [ "$calcul" -le "$RemainingQuota" ]; then
                             break
                         else
-                            echo -e "${COLOR_RED}Invalid input. Please enter an integer value.${COLOR_DEFAULT}"
+                            clear && echo -e "${COLOR_RED}The new quota exceeds the total domain quota. Please enter a smaller value.${COLOR_DEFAULT}"
                         fi
                     done
 
-                    curQuotaConverted=$((curQuota * 1048576))
-                    calcul=$((curQuotaConverted - oldValue))
+                    _mysqlExec "UPDATE VirtualUsers SET quota=$((${curQuota} * 1048576)) WHERE email='$currentRecipient'"
+                    echo -e "Quota updated successfully"
 
-                    if [ "$calcul" -le "$RemainingQuota" ]; then
-                        break
-                    else
-                        clear && echo -e "${COLOR_RED}The new quota exceeds the total domain quota. Please enter a smaller value.${COLOR_DEFAULT}"
-                    fi
+                    break
                 done
-
-                _mysqlExec "UPDATE VirtualUsers SET quota=$((${curQuota} * 1048576)) WHERE email='$currentRecipient'"
-                echo -e "Quota updated successfully"
                 ;;
-            2) ;;
-            3) ;;
-            4) ;;
+            2)
+                clear && password="" && read -e -p "New password: " password
+                if [ -z "$password" ]; then
+                    echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                else
+                    hashedPassword=$(_dockerExec "doveadm pw -s SHA512-CRYPT -p \"$password\" | sed 's/{SHA512-CRYPT}//'")
+                    escapedPassword=$(echo "$hashedPassword" | sed 's/\$/\\$/g')
+                    escapedPassword=$(_trim "$escapedPassword")
+                    _mysqlExec "UPDATE VirtualUsers SET password='$escapedPassword' WHERE email='$currentRecipient'"
+                    echo -e "Password updated successfully"
+                fi
+                _confirm "Press any key to continue" 1
+                ;;
+            3)
+                if [ "$virtualRecipientStatus" == "1" ]; then
+                    _confirm "Do you confirm the deactivation of this recipient ($currentRecipient)?"
+                    if [ $? -eq 0 ]; then
+                        _mysqlExec "UPDATE VirtualUsers SET active=0 WHERE email='$currentRecipient'"
+                        echo -e "Recipient ($currentRecipient) deactivated successfully"
+                    else
+                        echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                    fi
+                else
+                    _confirm "Do you confirm the activation of this recipient ($currentRecipient)?"
+                    if [ $? -eq 0 ]; then
+                        _mysqlExec "UPDATE VirtualUsers SET active=1 WHERE email='$currentRecipient'"
+                        echo -e "Recipient ($currentRecipient) activated successfully"
+                    else
+                        echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                    fi
+                fi
+                ;;
+            4)
+                clear && newRecipient=""
+                while true; do
+                    read -e -p "Provide the new recipient address (without domain): " -i "$newRecipient" newRecipient
+                    if [ -z "$newRecipient" ]; then
+                        echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                        break
+                    fi
+
+                    if [[ "$newRecipient" == *"@"* ]]; then
+                        echo -e "${COLOR_RED}The email address should not contain the '@' symbol. Please try again.${COLOR_DEFAULT}"
+                        continue
+                    fi
+
+                    newRecipient=$(_lowercase "$newRecipient")
+                    newEmail="${newRecipient}@${currentDomain}"
+
+                    _mysqlExec "UPDATE VirtualUsers SET email='$newEmail', maildir='${currentDomain}/${newRecipient}/' WHERE email='$currentRecipient'"
+                    _dockerExec "mv /var/mail/vhosts/${currentDomain}/${currentRecipient%@*} /var/mail/vhosts/${currentDomain}/${newRecipient}"
+
+                    echo -e "Recipient email and maildir updated successfully"
+                    currentRecipient="$newEmail"
+
+                    _confirm "Press any key to continue" 1
+                    break
+                done
+                ;;
+            5)
+                clear && _confirm "Do you confirm the deletion of this recipient ($currentRecipient)?"
+                if [ $? -eq 0 ]; then
+                    echo -e " "
+                    _countdownTimer
+                    if [ "$?" -eq 0 ]; then
+                        echo -e " "
+                        _mysqlExec "DELETE FROM VirtualUsers WHERE email='$currentRecipient'"
+                        _dockerExec "rm -rf /var/mail/vhosts/${currentDomain}/${currentRecipient%@*}"
+                        echo -e "Recipient ($currentRecipient) deleted successfully"
+                        currentRecipient=""
+                    else
+                        echo -e "${COLOR_CYAN}Action cancelled"
+                    fi
+                else
+                    echo -e "${COLOR_CYAN}Action cancelled"
+                fi
+                _confirm "Press any key to continue" 1
+                ;;
             esac
 
         elif [ $currentDomain ]; then
@@ -622,6 +711,7 @@ _managementRecipients() {
                 curQuota=$((quotasAllocatedPerVirtualDomains / 1048576))
                 oldValue=$((curQuota * 1048576))
                 maxAttributable=$((diskRemainingDockerVolume + quotasAllocatedPerVirtualDomains))
+                [[ "$maxAttributable" -lt 0 ]] && maxAttributable=0
                 while true; do
                     while true; do
                         echo -e "Max value allowed: $(_convertBytesToMB "$maxAttributable" 1 "MB" 1)"

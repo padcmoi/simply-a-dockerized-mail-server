@@ -20,6 +20,8 @@ _userManagementResetVariables() {
     calculateTotalBytesConsumedPerVirtualRecipient=0
     CalculateTotalMessagesConsumedPerRecipient=0
     countQuotasAllocatedPerRecipient=0
+
+    virtualRecipientStatus="0"
 }
 
 _userManagementCalculateUserDomainMailUsage() {
@@ -88,6 +90,8 @@ _userManagementCalculateUserDomainMailUsage() {
     done
 
     diskRemainingDockerVolume=$((diskAvailableDockerVolume - countAllocableQuotasInVirtualDomains))
+
+    virtualRecipientStatus=$(_cleanMysqlValue "$(_mysqlExec "SELECT active FROM VirtualUsers WHERE email='$currentRecipient';" list)")
 }
 
 _userManagementAddRecipient() {
