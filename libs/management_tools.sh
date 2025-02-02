@@ -261,25 +261,11 @@ _managementRecipients() {
 
     cancelAction="***CANCEL***"
 
-    currentDomain="example.local"
-    currentRecipient="user@example.local"
+    currentDomain=""
+    currentRecipient=""
     currentAlias=""
 
-    countVirtualDomains=0
-    countVirtualAliases=0
-    countVirtualUsers=0
-
-    countTotalMessagesVirtualDomains=0
-    countTotalQuotaVirtualDomains=0
-    countTotalCurrentQuotaVirtualDomains=0
-
-    countTotalUsedBytesByDomain=0
-    countTotalUsedMessagesByDomain=0
-    countTotalUsedBytesByRecipient=0
-    countTotalUsedMessagesByRecipient=0
-
-    countMaxBytesFromDomain=0
-    countTotalBytesByDomain=0
+    _userManagementResetVariables
 
     while true; do
         clear
@@ -318,8 +304,8 @@ _managementRecipients() {
 
             __part() {
                 __headerCurrentPart
-                echo -e "Quota used [Current/Maximum]: $(_convertFromBytes "$countTotalUsedBytesByRecipient" 1)/$(_convertFromBytes "$countTotalBytesByRecipient" 1)"
-                echo -e "Messages: $countTotalUsedMessagesByRecipient"
+                echo -e "Quota used [Current/Maximum]: $(_convertBytesToMB "$calculateTotalBytesConsumedPerVirtualRecipient" 1)/$(_convertBytesToMB "$countQuotasAllocatedPerRecipient" 1)"
+                echo -e "Messages: $CalculateTotalMessagesConsumedPerRecipient"
                 echo -e "Last activity: $(_mysqlExec "SELECT last_activity FROM VirtualQuotaUsers WHERE email='$currentRecipient';" list)"
                 echo -e " "
             }
@@ -340,14 +326,14 @@ _managementRecipients() {
             __part() {
                 __headerCurrentPart
                 echo -e " "
-                echo -e "Quota allocated [Current/Maximum]: $(_convertFromBytes "$countTotalBytesByDomain" 1)/$(_convertFromBytes "$countMaxBytesFromDomain" 1)"
-                echo -e "Remaining quota: $(_convertFromBytes $((countMaxBytesFromDomain - countTotalBytesByDomain)) 1)"
-                [[ $countTotalBytesByDomain -gt $countMaxBytesFromDomain ]] && echo -e "${COLOR_RED}Quota exceed${COLOR_DEFAULT}"
+                echo -e "Quota allocated [Current/Maximum]: $(_convertBytesToMB "$countQuotasAllocatedPerVirtualDomain" 1)/$(_convertBytesToMB "$quotasAllocatedPerVirtualDomains" 1)"
+                echo -e "Remaining quota: $(_convertBytesToMB $((quotasAllocatedPerVirtualDomains - countQuotasAllocatedPerVirtualDomain)) 1)"
+                [[ $countQuotasAllocatedPerVirtualDomain -gt $quotasAllocatedPerVirtualDomains ]] && echo -e "${COLOR_RED}Quota exceed${COLOR_DEFAULT}"
 
-                echo -e "Recipients: $countVirtualUsers"
-                echo -e "Aliases: $countVirtualAliases"
-                echo -e "Total used bytes for $currentDomain: $(_convertFromBytes "$countTotalUsedBytesByDomain" 1)"
-                echo -e "Total used messages for $currentDomain: $countTotalUsedMessagesByDomain"
+                echo -e "Recipients: $countVirtualUsersPerVirtualDomain"
+                echo -e "Aliases: $countVirtualAliasesPerVirtualDomain"
+                echo -e "Total used bytes for $currentDomain: $(_convertBytesToMB "$calculateTotalBytesConsumedPerVirtualDomain" 1)"
+                echo -e "Total used messages for $currentDomain: $CalculateTotalMessagesConsumedPerVirtualDomain"
                 echo -e " "
             }
 
@@ -373,8 +359,10 @@ _managementRecipients() {
             __part() {
                 __headerCurrentPart
                 echo -e "Domains: $countVirtualDomains"
-                echo -e "Quota [Current/Maximum/%]: $(_convertFromBytes "$countTotalCurrentQuotaVirtualDomains" 1) / $(_convertFromBytes "$countTotalQuotaVirtualDomains" 1) / $(_displayPercentage $countTotalCurrentQuotaVirtualDomains $countTotalQuotaVirtualDomains)"
-                echo -e "Total messages: $countTotalMessagesVirtualDomains"
+                echo -e "Quota [Current/Maximum/%]: $(_convertBytesToMB "$countQuotasUsedInVirtualDomains" 1) / $(_convertBytesToMB "$countAllocableQuotasInVirtualDomains" 1) / $(_displayPercentage $countQuotasUsedInVirtualDomains $countAllocableQuotasInVirtualDomains)"
+                echo -e "Current remaining disk space: $(_convertBytesToMB "$diskAvailableDockerVolume" 1)"
+                echo -e "Remaining disk space with virtual domain allocation: $(_convertBytesToMB "$diskRemainingDockerVolume" 1)"
+                echo -e "Total messages: $countMessagesWrittenInVirtualDomains"
                 echo -e " "
             }
 
@@ -413,12 +401,12 @@ _managementRecipients() {
             case $choice in
             0) currentRecipient="" ;;
             1)
-                curQuota=$((countTotalBytesByRecipient / 1048576))
+                curQuota=$((countQuotasAllocatedPerRecipient / 1048576))
                 oldValue=$((curQuota * 1048576))
-                RemainingQuota=$((countMaxBytesFromDomain - countTotalBytesByDomain))
+                RemainingQuota=$((quotasAllocatedPerVirtualDomains - countQuotasAllocatedPerVirtualDomain))
                 clear
                 while true; do
-                    echo -e "Remaining quota: $(_convertFromBytes $RemainingQuota 1)"
+                    echo -e "Remaining quota: $(_convertBytesToMB $RemainingQuota 1)"
 
                     while true; do
                         read -e -p "Change the current quota (in MB): " -i "$curQuota" curQuota
@@ -429,7 +417,7 @@ _managementRecipients() {
                         fi
                     done
 
-                    curQuotaConverted=$(_convertToBytes "$curQuota")
+                    curQuotaConverted=$(_convertMBToBytes "$curQuota")
                     calcul=$((curQuotaConverted - oldValue))
 
                     if [ "$calcul" -lt "$RemainingQuota" ]; then
@@ -468,15 +456,14 @@ _managementRecipients() {
                         U.active, U.user_start_date, VirtualQuotaUsers.last_activity AS last_change
                     FROM VirtualUsers AS U
                     INNER JOIN VirtualQuotaUsers ON U.email = VirtualQuotaUsers.email
-                    WHERE U.domain='example.local';
+                    WHERE U.domain='$currentDomain';
                 "
                 _confirm "Press any key to continue" 1
                 ;;
             3)
-                newRecipient=""
-                password=""
-                quota=100
+                newRecipient="" && password="" && quota=0
                 while true; do
+                    [[ $countQuotasAllocatedPerVirtualDomain -gt $quotasAllocatedPerVirtualDomains ]] && echo -e "${COLOR_CYAN}Quota exceed action cancelled" && break
                     while true; do
                         read -e -p "New email address (without domain): " -i "$newRecipient" newRecipient
                         if [ -z "$newRecipient" ]; then
@@ -491,11 +478,15 @@ _managementRecipients() {
                     done
                     newEmail="${newRecipient}@${currentDomain}"
                     read -e -p "Password: " -i "$password" password
+                    if [ -z "$password" ]; then
+                        echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                        break
+                    fi
 
                     # Check quota remaining ...
-                    RemainingQuota=$((countMaxBytesFromDomain - countTotalBytesByDomain))
+                    RemainingQuota=$((quotasAllocatedPerVirtualDomains - countQuotasAllocatedPerVirtualDomain))
                     while true; do
-                        echo -e "Remaining quota: $(_convertFromBytes $RemainingQuota 1)"
+                        echo -e "Remaining quota: $(_convertBytesToMB $RemainingQuota 1)"
 
                         while true; do
                             read -e -p "Quota (in MB): " -i "$quota" quota
@@ -506,7 +497,7 @@ _managementRecipients() {
                             fi
                         done
 
-                        curQuotaConverted=$(_convertToBytes "$quota")
+                        curQuotaConverted=$(_convertMBToBytes "$quota")
 
                         if [ "$curQuotaConverted" -lt "$RemainingQuota" ]; then
                             break
@@ -536,13 +527,23 @@ _managementRecipients() {
                 _confirm "Press any key to continue" 1
                 ;;
             6)
+                sourceWithoutDomain="" && destination=""
                 while true; do
-                    read -e -p "New alias: " -i "$source" source
+                    while true; do
+                        read -e -p "New alias (without domain): " -i "$sourceWithoutDomain" sourceWithoutDomain
 
-                    if [ -z "$source" ]; then
-                        echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
-                        break
-                    fi
+                        if [ -z "$sourceWithoutDomain" ]; then
+                            echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                            break
+                        fi
+
+                        if [[ "$sourceWithoutDomain" == *"@"* ]]; then
+                            echo -e "${COLOR_RED}The alias should not contain the '@' symbol. Please try again.${COLOR_DEFAULT}"
+                        else
+                            source="${sourceWithoutDomain}@${currentDomain}"
+                            break
+                        fi
+                    done
 
                     _isValidEmail "$source"
                     if [ $? -ne 0 ]; then
@@ -563,6 +564,10 @@ _managementRecipients() {
 
                     while true; do
                         read -e -p "Destination email: " -i "$destination" destination
+                        if [ -z "$destination" ]; then
+                            echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                            break 2
+                        fi
                         _isValidEmail "$destination"
                         if [ $? -ne 0 ]; then
                             echo -e "${COLOR_RED}Invalid domain for destination email. Please try again.${COLOR_DEFAULT}"
@@ -617,8 +622,8 @@ _managementRecipients() {
                     _userManagementCalculateUserDomainMailUsage
 
                     echo -e " "
-                    if [[ "$countVirtualAliases" -gt 0 ]] || [[ "$countVirtualUsers" -gt 0 ]]; then
-                        echo "This domain has $countVirtualUsers recipients and $countVirtualAliases aliases"
+                    if [[ "$countVirtualAliasesPerVirtualDomain" -gt 0 ]] || [[ "$countVirtualUsersPerVirtualDomain" -gt 0 ]]; then
+                        echo "This domain has $countVirtualUsersPerVirtualDomain recipients and $countVirtualAliasesPerVirtualDomain aliases"
                         _confirm "This action will delete all recipients and aliases for this domain. Do you want to proceed?"
                         if [ $? -ne 0 ]; then
                             echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
@@ -632,7 +637,7 @@ _managementRecipients() {
                         echo -e "\nProceeding with the action..."
                         _dockerExec "/usr/local/bin/dkim-delete.sh \"$currentDomain\""
                         _mysqlExec "DELETE FROM VirtualDomains WHERE domain='$currentDomain'"
-                        _dockerExec "rm -R /var/mail/vhosts/$currentDomain"
+                        _dockerExec "rm -Rf /var/mail/vhosts/$currentDomain"
                         echo "Domain and dkim key $currentDomain deleted"
                         currentDomain=""
                     fi
@@ -655,41 +660,69 @@ _managementRecipients() {
                 [[ "$currentDomain" == "$cancelAction" ]] && currentDomain=""
                 ;;
             2)
-                domainQuota=1000
+                domainQuota=$MENU_SELECTION_DEFAULT_QUOTA_MB && newDomain=""
                 while true; do
-                    read -e -p "Name of the new domain: " -i "$newDomain" newDomain
-                    read -e -p "Domain quota: (Megabytes) " -i "$domainQuota" domainQuota
-
-                    if [[ "$domainQuota" =~ ^[0-9]+$ ]] && [ "$domainQuota" -ge 1 ] && [ "$domainQuota" -le 20000 ]; then
-                        _isValidDomain "$newDomain" 1
-                        if [ $? -eq 0 ]; then
-                            results=$(_mysqlExec "SELECT domain FROM VirtualDomains WHERE domain='$newDomain'")
-                            [ ! -z "$results" ] && echo -e "Error: The domain ($newDomain) already exists." || break
+                    while true; do
+                        read -e -p "Name of the new domain: " -i "$newDomain" newDomain
+                        if [ -z "$newDomain" ]; then
+                            echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                            break 2
                         fi
+
+                        while true; do
+                            while true; do
+                                echo -e "Max value attributable: $(_convertBytesToMB "$diskRemainingDockerVolume" 1 "MB" 1)"
+                                read -e -p "Domain quota: (Megabytes) " -i "$domainQuota" domainQuota
+                                if [ -z "$domainQuota" ]; then
+                                    echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                                    break 4
+                                fi
+                                break
+                            done
+                            domainQuotaBytes=$(_convertMBToBytes "$domainQuota")
+                            if [ "$domainQuotaBytes" -le "$diskRemainingDockerVolume" ]; then
+                                break
+                            else
+                                echo -e "${COLOR_RED}Domain quota cannot exceed the remaining disk space. Please enter a smaller value.${COLOR_DEFAULT}"
+                            fi
+                        done
+
+                        if [[ "$domainQuota" =~ ^[0-9]+$ ]] && [ "$domainQuota" -ge 1 ]; then
+                            _isValidDomain "$newDomain" 1
+                            if [ $? -eq 0 ]; then
+                                results=$(_mysqlExec "SELECT domain FROM VirtualDomains WHERE domain='$newDomain'")
+                                if [ -z "$results" ]; then
+                                    break
+                                else
+                                    echo -e "${COLOR_RED}Error: The domain ($newDomain) already exists.${COLOR_DEFAULT}"
+                                fi
+                            fi
+                        else
+                            echo -e "${COLOR_RED}Invalid quota. Please enter a number minimum 1 MByte.${COLOR_DEFAULT}"
+                        fi
+                    done
+
+                    currentDomain="$(_lowercase "$newDomain")"
+
+                    results=$(_mysqlExec "INSERT INTO VirtualDomains SET domain='$currentDomain', active=1, quota='$(_convertMBToBytes "$domainQuota")', user_start_date=NOW()-INTERVAL 1 DAY")
+
+                    if [ -z "$results" ]; then
+                        echo -e "Domain ($currentDomain) added"
+
+                        passwordRandom=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 12)
+                        _userManagementAddRecipient "${currentDomain}" "root@${currentDomain}" "${passwordRandom}" "1" "0"
+                        _mysqlExec "REPLACE INTO VirtualQuotaDomains SET domain='$currentDomain';"
+
+                        _confirm "Now you will create the DKIM key, Press any key to continue" 1
+                        _dockerExec "/usr/local/bin/dkim-create.sh \"$currentDomain\" force"
                     else
-                        echo -e "Invalid quota. Please enter a number between 1 and 20000."
+                        echo "Error:"
+                        echo "$results"
                     fi
+
+                    _confirm "Press any key to continue" 1
+                    break
                 done
-
-                currentDomain="$(_lowercase "$newDomain")"
-
-                results=$(_mysqlExec "INSERT INTO VirtualDomains SET domain='$currentDomain', active=1, quota='$(_convertToBytes "$domainQuota")', user_start_date=NOW()-INTERVAL 1 DAY")
-
-                if [ -z "$results" ]; then
-                    echo -e "Domain ($currentDomain) added"
-
-                    passwordRandom=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 12)
-                    _userManagementAddRecipient "${currentDomain}" "root@${currentDomain}" "${passwordRandom}" "100" "0"
-                    _mysqlExec "REPLACE INTO VirtualQuotaDomains SET domain='$currentDomain';"
-
-                    _confirm "Now you will create the DKIM key, Press any key to continue" 1
-                    _dockerExec "/usr/local/bin/dkim-create.sh \"$currentDomain\" force"
-                else
-                    echo "Error:"
-                    echo "$results"
-                fi
-
-                _confirm "Press any key to continue" 1
                 ;;
             esac
 

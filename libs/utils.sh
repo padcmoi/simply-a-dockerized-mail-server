@@ -360,20 +360,30 @@ _isValidEmail() {
     fi
 }
 
-_convertToBytes() {
+_convertMBToBytes() {
     local megabytes=$1
     local bytes=$(echo "$megabytes * 1024 * 1024" | bc)
     [[ $2 ]] && echo "$bytes bytes" || echo $bytes
 }
 
-_convertFromBytes() {
+_convertBytesToMB() {
     local bytes=$1
     local megabytes=$(echo "scale=2; $bytes / 1024 / 1024" | bc)
-    if (($(echo "$megabytes < 1" | bc -l))); then
+    local no_decimal=$4
+
+    if [[ $no_decimal ]]; then
+        megabytes=$(LC_NUMERIC=C printf "%.0f" "$megabytes")
+    fi
+
+    if [[ $3 == "MB" ]]; then
+        echo "$megabytes MB"
+    elif (($(echo "$megabytes < 1" | bc -l))); then
         local kilobytes=$(echo "scale=2; $bytes / 1024" | bc)
+        [[ $no_decimal ]] && kilobytes=$(LC_NUMERIC=C printf "%.0f" "$kilobytes")
         [[ $2 ]] && echo "$kilobytes KB" || echo $kilobytes
     elif (($(echo "$megabytes >= 1024" | bc -l))); then
         local gigabytes=$(echo "scale=2; $megabytes / 1024" | bc)
+        [[ $no_decimal ]] && gigabytes=$(LC_NUMERIC=C printf "%.0f" "$gigabytes")
         [[ $2 ]] && echo "$gigabytes GB" || echo $gigabytes
     else
         [[ $2 ]] && echo "$megabytes MB" || echo $megabytes
@@ -500,4 +510,27 @@ _trim() {
     var="${var#"${var%%[![:space:]]*}"}" # remove leading whitespace characters
     var="${var%"${var##*[![:space:]]}"}" # remove trailing whitespace characters
     echo -n "$var"
+}
+
+_trimQuotes() {
+    local input="$1"
+    input="${input%\"}" # Remove trailing quote if exists
+    input="${input#\"}" # Remove leading quote if exists
+    echo "$input"
+}
+
+_convertHumanReadableToBytes() {
+    local size=$1
+    local unit=${size: -1}
+    local value=${size%?}
+
+    case $unit in
+    K | k) echo $((value * 1024)) ;;
+    M | m) echo $((value * 1024 * 1024)) ;;
+    G | g) echo $((value * 1024 * 1024 * 1024)) ;;
+    T | t) echo $((value * 1024 * 1024 * 1024 * 1024)) ;;
+    P | p) echo $((value * 1024 * 1024 * 1024 * 1024 * 1024)) ;;
+    E | e) echo $((value * 1024 * 1024 * 1024 * 1024 * 1024 * 1024)) ;;
+    *) echo $value ;;
+    esac
 }

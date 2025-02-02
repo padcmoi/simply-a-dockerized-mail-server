@@ -1,6 +1,34 @@
 #!/bin/bash
 
+_userManagementResetVariables() {
+    # Define default variables
+    diskAvailableDockerVolume=0
+    disRemainingDockerVolume=0
+
+    countVirtualDomains=0
+    countMessagesWrittenInVirtualDomains=0
+    countAllocableQuotasInVirtualDomains=0
+    countQuotasUsedInVirtualDomains=0
+
+    countVirtualAliasesPerVirtualDomain=0
+    countVirtualUsersPerVirtualDomain=0
+    calculateTotalBytesConsumedPerVirtualDomain=0
+    CalculateTotalMessagesConsumedPerVirtualDomain=0
+    quotasAllocatedPerVirtualDomains=0
+    countQuotasAllocatedPerVirtualDomain=0
+
+    calculateTotalBytesConsumedPerVirtualRecipient=0
+    CalculateTotalMessagesConsumedPerRecipient=0
+    countQuotasAllocatedPerRecipient=0
+}
+
 _userManagementCalculateUserDomainMailUsage() {
+
+    _userManagementResetVariables
+
+    DOCKER_VOLUMES=$(_trimQuotes $(grep -oP '(?<=DOCKER_VOLUMES=).*' "$ENV_TARGET"))
+    diskAvailableDockerVolume=$(_convertHumanReadableToBytes $(df -h $DOCKER_VOLUMES | awk 'NR==2 {print $4}'))
+
     local queries=(
         "SELECT COUNT(id) FROM VirtualDomains"
         "SELECT SUM(messages) FROM VirtualQuotaUsers"
@@ -9,24 +37,11 @@ _userManagementCalculateUserDomainMailUsage() {
     )
     local variables=(
         "countVirtualDomains"
-        "countTotalMessagesVirtualDomains"
-        "countTotalQuotaVirtualDomains"
-        "countTotalCurrentQuotaVirtualDomains"
+        "countMessagesWrittenInVirtualDomains"
+        "countAllocableQuotasInVirtualDomains"
+        "countQuotasUsedInVirtualDomains"
     )
     local results=""
-
-    # set these variables
-    countVirtualDomains=0
-    countTotalMessagesVirtualDomains=0
-    countTotalQuotaVirtualDomains=0
-    countTotalCurrentQuotaVirtualDomains=0
-    countVirtualAliases=0
-    countVirtualUsers=0
-    countTotalUsedBytesByDomain=0
-    countTotalUsedMessagesByDomain=0
-    countTotalUsedBytesByRecipient=0
-    countTotalUsedMessagesByRecipient=0
-    countTotalBytesByRecipient=0
 
     if [ $currentDomain ]; then
         queries+=(
@@ -38,12 +53,12 @@ _userManagementCalculateUserDomainMailUsage() {
             "SELECT SUM(quota) FROM VirtualUsers WHERE domain='$currentDomain'"
         )
         variables+=(
-            "countVirtualAliases"
-            "countVirtualUsers"
-            "countTotalUsedBytesByDomain"
-            "countTotalUsedMessagesByDomain"
-            "countMaxBytesFromDomain"
-            "countTotalBytesByDomain"
+            "countVirtualAliasesPerVirtualDomain"
+            "countVirtualUsersPerVirtualDomain"
+            "calculateTotalBytesConsumedPerVirtualDomain"
+            "CalculateTotalMessagesConsumedPerVirtualDomain"
+            "quotasAllocatedPerVirtualDomains"
+            "countQuotasAllocatedPerVirtualDomain"
         )
     fi
 
@@ -54,9 +69,9 @@ _userManagementCalculateUserDomainMailUsage() {
             "SELECT SUM(quota) FROM VirtualUsers WHERE email='$currentRecipient'"
         )
         variables+=(
-            "countTotalUsedBytesByRecipient"
-            "countTotalUsedMessagesByRecipient"
-            "countTotalBytesByRecipient"
+            "calculateTotalBytesConsumedPerVirtualRecipient"
+            "CalculateTotalMessagesConsumedPerRecipient"
+            "countQuotasAllocatedPerRecipient"
         )
     fi
 
@@ -71,6 +86,8 @@ _userManagementCalculateUserDomainMailUsage() {
             ((deadLoopCount++))
         done
     done
+
+    diskRemainingDockerVolume=$((diskAvailableDockerVolume - countAllocableQuotasInVirtualDomains))
 }
 
 _userManagementAddRecipient() {
@@ -105,7 +122,7 @@ _userManagementAddRecipient() {
 
                 maildir="$currentDomain/${newEmail%@*}/"
 
-                results=$(_mysqlExec "INSERT INTO VirtualUsers SET domain='$currentDomain', email='$newEmail', password='$escapedPassword', maildir='$maildir', quota='$(_convertToBytes "$quota")', active='$enabled', user_start_date=NOW()-INTERVAL 1 DAY")
+                results=$(_mysqlExec "INSERT INTO VirtualUsers SET domain='$currentDomain', email='$newEmail', password='$escapedPassword', maildir='$maildir', quota='$(_convertMBToBytes "$quota")', active='$enabled', user_start_date=NOW()-INTERVAL 1 DAY")
                 if [ -z "$results" ]; then
                     _mysqlExec "REPLACE INTO VirtualQuotaUsers SET domain='$currentDomain', email='$newEmail';"
 
@@ -123,7 +140,7 @@ _userManagementAddRecipient() {
             echo -e "${COLOR_RED}Invalid email address. Please try again.${COLOR_DEFAULT}"
         fi
     else
-        echo -e "${COLOR_RED}Invalid quota. Please enter a number between 1 and 20000.${COLOR_DEFAULT}"
+        echo -e "${COLOR_RED}Invalid quota. Please enter a number minimum 1 MByte.${COLOR_DEFAULT}"
     fi
 
     return 1
