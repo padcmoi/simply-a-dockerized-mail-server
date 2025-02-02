@@ -347,6 +347,7 @@ _managementRecipients() {
                 "Add an alias for this domain ${currentDomain}"
                 "View DKIM public key for this domain ${currentDomain}"
                 "Renew DKIM key for this domain ${currentDomain}"
+                "Modify the quota of this domain ${currentDomain}"
                 "Delete this domain ${currentDomain} and corresponding DKIM key"
             )
 
@@ -417,10 +418,10 @@ _managementRecipients() {
                         fi
                     done
 
-                    curQuotaConverted=$(_convertMBToBytes "$curQuota")
+                    curQuotaConverted=$((curQuota * 1048576))
                     calcul=$((curQuotaConverted - oldValue))
 
-                    if [ "$calcul" -lt "$RemainingQuota" ]; then
+                    if [ "$calcul" -le "$RemainingQuota" ]; then
                         break
                     else
                         clear && echo -e "${COLOR_RED}The new quota exceeds the total domain quota. Please enter a smaller value.${COLOR_DEFAULT}"
@@ -497,9 +498,9 @@ _managementRecipients() {
                             fi
                         done
 
-                        curQuotaConverted=$(_convertMBToBytes "$quota")
+                        curQuotaConverted=$((quota * 1048576))
 
-                        if [ "$curQuotaConverted" -lt "$RemainingQuota" ]; then
+                        if [ "$curQuotaConverted" -le "$RemainingQuota" ]; then
                             break
                         else
                             echo -e "${COLOR_RED}The new quota exceeds the total domain quota. Please enter a smaller value.${COLOR_DEFAULT}"
@@ -615,7 +616,42 @@ _managementRecipients() {
                     _confirm "Press any key to continue" 1
                 fi
                 ;;
+
             9)
+                curQuota=$((quotasAllocatedPerVirtualDomains / 1048576))
+                oldValue=$((curQuota * 1048576))
+                maxAttributable=$((diskRemainingDockerVolume + quotasAllocatedPerVirtualDomains))
+                while true; do
+                    while true; do
+                        echo -e "Max value allowed: $(_convertBytesToMB "$maxAttributable" 1 "MB" 1)"
+                        read -e -p "Change the current quota (in MB): " -i "$curQuota" curQuota
+                        if [ -z "$curQuota" ]; then
+                            echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                            break 2
+                        fi
+
+                        if [[ "$curQuota" =~ ^[0-9]+$ ]]; then
+                            break
+                        else
+                            echo -e "${COLOR_RED}Invalid input. Please enter an integer value.${COLOR_DEFAULT}"
+                        fi
+                    done
+
+                    curQuotaConverted=$((curQuota * 1048576))
+                    calcul=$((curQuotaConverted - oldValue))
+
+                    if [ "$calcul" -le "$diskRemainingDockerVolume" ]; then
+                        _mysqlExec "UPDATE VirtualDomains SET quota='$curQuotaConverted' WHERE domain='$currentDomain'"
+                        echo -e "Quota updated successfully"
+                        _confirm "Press any key to continue" 1
+                        break
+                    else
+                        clear && echo -e "${COLOR_RED}The new quota exceeds the total domain quota. Please enter a smaller value.${COLOR_DEFAULT}"
+                    fi
+                done
+                ;;
+
+            10)
                 _confirm "Do you confirm this action ?"
                 if [ $? -eq 0 ]; then
 
@@ -645,6 +681,7 @@ _managementRecipients() {
                     _confirm "Press any key to continue" 1
                 fi
                 ;;
+
             esac
 
         else

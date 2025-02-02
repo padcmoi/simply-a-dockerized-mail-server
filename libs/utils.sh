@@ -375,7 +375,9 @@ _convertBytesToMB() {
         megabytes=$(LC_NUMERIC=C printf "%.0f" "$megabytes")
     fi
 
-    if [[ $3 == "MB" ]]; then
+    if [[ $3 == "MB-NL" ]]; then
+        echo "$megabytes"
+    elif [[ $3 == "MB" ]]; then
         echo "$megabytes MB"
     elif (($(echo "$megabytes < 1" | bc -l))); then
         local kilobytes=$(echo "scale=2; $bytes / 1024" | bc)
