@@ -261,8 +261,8 @@ _managementRecipients() {
 
     cancelAction="***CANCEL***"
 
-    currentDomain=""
-    currentRecipient=""
+    currentDomain="example.local"
+    currentRecipient="user@example.local"
     currentAlias=""
 
     _userManagementResetVariables
@@ -405,9 +405,10 @@ _managementRecipients() {
                 curQuota=$((countQuotasAllocatedPerRecipient / 1048576))
                 oldValue=$((curQuota * 1048576))
                 RemainingQuota=$((quotasAllocatedPerVirtualDomains - countQuotasAllocatedPerVirtualDomain))
+                maxAttributable=$((RemainingQuota + countQuotasAllocatedPerRecipient - 1048576))
                 clear
                 while true; do
-                    echo -e "Remaining quota: $(_convertBytesToMB $RemainingQuota 1)"
+                    echo -e "Max value allowed: $(_convertBytesToMB "$maxAttributable" 1 "MB" 1)"
 
                     while true; do
                         read -e -p "Change the current quota (in MB): " -i "$curQuota" curQuota
