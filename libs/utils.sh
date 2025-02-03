@@ -409,6 +409,7 @@ _mysqlExec() {
 
     case $mode in
     list) sudo docker exec -it simply-mailserver bash -c "mysql -u root -D mailserver -sN -e \"$query\"" ;;
+    filter) echo $(_cleanMysqlValue $(sudo docker exec -it simply-mailserver bash -c "mysql -u root -D mailserver -sN -e \"$query\"")) ;;
     *) sudo docker exec -it simply-mailserver bash -c "mysql -u root -D mailserver -e \"$query\"" ;;
     esac
 }

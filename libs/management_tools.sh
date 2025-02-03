@@ -481,6 +481,12 @@ _managementRecipients() {
             4)
                 clear && newRecipient=""
                 while true; do
+                    if [[ "$currentRecipient" == *"root@"* ]]; then
+                        echo -e "${COLOR_RED}Action not allowed for root.${COLOR_DEFAULT}"
+                        _confirm "Press any key to continue" 1
+                        break
+                    fi
+
                     read -e -p "Provide the new recipient address (without domain): " -i "$newRecipient" newRecipient
                     if [ -z "$newRecipient" ]; then
                         echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
@@ -506,22 +512,7 @@ _managementRecipients() {
                 done
                 ;;
             5)
-                clear && _confirm "Do you confirm the deletion of this recipient ($currentRecipient)?"
-                if [ $? -eq 0 ]; then
-                    echo -e " "
-                    _countdownTimer
-                    if [ "$?" -eq 0 ]; then
-                        echo -e " "
-                        _mysqlExec "DELETE FROM VirtualUsers WHERE email='$currentRecipient'"
-                        _dockerExec "rm -rf /var/mail/vhosts/${currentDomain}/${currentRecipient%@*}"
-                        echo -e "Recipient ($currentRecipient) deleted successfully"
-                        currentRecipient=""
-                    else
-                        echo -e "${COLOR_CYAN}Action cancelled"
-                    fi
-                else
-                    echo -e "${COLOR_CYAN}Action cancelled"
-                fi
+                _userManagementRemoveRecipient "$currentRecipient" "$currentDomain"
                 _confirm "Press any key to continue" 1
                 ;;
             esac
@@ -541,15 +532,120 @@ _managementRecipients() {
 
                 ;;
             2)
-                clear && _mysqlExec "
-                    SELECT 
-                        U.email, CAST(VirtualQuotaUsers.bytes / 1048576 AS INT) AS current_quota_mb, CAST(U.quota / 1048576 AS INT) AS max_quota_mb, 
-                        U.active, U.user_start_date, VirtualQuotaUsers.last_activity AS last_change
-                    FROM VirtualUsers AS U
-                    INNER JOIN VirtualQuotaUsers ON U.email = VirtualQuotaUsers.email
-                    WHERE U.domain='$currentDomain';
-                "
-                _confirm "Press any key to continue" 1
+                sortColumn="email" && sortOrder="ASC" && page=0 && limit=$MENU_SELECTION_LIMIT_ITEMS_PER_PAGE
+                totalRows=$(_mysqlExec "SELECT COUNT(id) FROM VirtualUsers WHERE domain='$currentDomain'" "filter")
+                while true; do
+                    clear
+                    offset=$((page * limit))
+                    total_pages=$(((totalRows + limit - 1) / limit))
+                    echo -e "\nUse arrow keys to sort | Left/Right to change column | Up/Down to change order | PageUp/PageDown to navigate pages | Press 'n' to select | Press 'q' to quit."
+                    echo -e "Total pages: $total_pages | Current page: $((page + 1)) | Current sort order: $sortOrder | Current sort column: $sortColumn "
+
+                    _mysqlExec "
+                        SELECT 
+                            U.email, CAST(VirtualQuotaUsers.bytes / 1048576 AS INT) AS current_quota_mb, CAST(U.quota / 1048576 AS INT) AS max_quota_mb, 
+                            VirtualQuotaUsers.messages, U.active, U.user_start_date, VirtualQuotaUsers.last_activity AS last_change
+                        FROM VirtualUsers AS U
+                        INNER JOIN VirtualQuotaUsers ON U.email = VirtualQuotaUsers.email
+                        WHERE U.domain='$currentDomain'
+                        ORDER BY $sortColumn $sortOrder
+                        LIMIT $limit OFFSET $offset
+                    "
+
+                    read -rsn1 input
+                    case $input in
+                    $'\x1b')
+                        read -rsn2 -t 0.1 input
+                        if [[ $input == "[A" ]]; then
+                            sortOrder="ASC"
+                        elif [[ $input == "[B" ]]; then
+                            sortOrder="DESC"
+                        elif [[ $input == "[D" ]]; then
+                            case $sortColumn in
+                            "email") sortColumn="last_change" ;;
+                            "current_quota_mb") sortColumn="email" ;;
+                            "max_quota_mb") sortColumn="current_quota_mb" ;;
+                            "messages") sortColumn="max_quota_mb" ;;
+                            "active") sortColumn="messages" ;;
+                            "user_start_date") sortColumn="active" ;;
+                            "last_change") sortColumn="user_start_date" ;;
+                            esac
+                        elif [[ $input == "[C" ]]; then
+                            case $sortColumn in
+                            "email") sortColumn="current_quota_mb" ;;
+                            "current_quota_mb") sortColumn="max_quota_mb" ;;
+                            "max_quota_mb") sortColumn="messages" ;;
+                            "messages") sortColumn="active" ;;
+                            "active") sortColumn="user_start_date" ;;
+                            "user_start_date") sortColumn="last_change" ;;
+                            "last_change") sortColumn="email" ;;
+                            esac
+                        elif [[ $input == "[5" ]]; then
+                            if [ $page -gt 0 ]; then
+                                page=$((page - 1))
+                            fi
+                        elif [[ $input == "[6" ]]; then
+                            if [ $page -lt $((total_pages - 1)) ]; then
+                                page=$((page + 1))
+                            fi
+                        fi
+                        ;;
+                    n)
+                        recipient=""
+                        while true; do
+                            read -e -p "Provide the recipient address (without domain): " -i "$recipient" recipient
+                            if [ -z "$recipient" ]; then
+                                echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
+                                break
+                            fi
+
+                            if [[ "$recipient" == *"@"* ]]; then
+                                echo -e "${COLOR_RED}The email address should not contain the '@' symbol. Please try again.${COLOR_DEFAULT}"
+                                continue
+                            fi
+
+                            email="${recipient}@${currentDomain}"
+
+                            _isValidEmail "$email"
+                            if [ $? -ne 0 ]; then
+                                echo -e "${COLOR_RED}Invalid email address. Please try again.${COLOR_DEFAULT}"
+                                continue
+                            fi
+
+                            results=$(_mysqlExec "SELECT email FROM VirtualUsers WHERE email='$email' AND domain='$currentDomain'")
+                            if [ -z "$results" ]; then
+                                echo -e "${COLOR_RED}The email address does not exist in the database. Please try again.${COLOR_DEFAULT}"
+                                continue
+                            fi
+
+                            while true; do
+
+                                list=(
+                                    $cancelAction
+                                    "Select this recipient $email"
+                                    "Delete this recipient $email"
+                                )
+                                _menuSelection "index" "Action: " "${list[@]}"
+
+                                choice="${__menuSelectionValue}"
+
+                                case $choice in
+                                0) break 2 ;;
+                                1) currentRecipient="$email" && break 3 ;;
+                                2)
+                                    _userManagementRemoveRecipient "$email" "$currentDomain"
+                                    _confirm "Press any key to continue" 1
+                                    break 2
+                                    ;;
+                                esac
+
+                            done
+
+                        done
+                        ;;
+                    q) break ;;
+                    esac
+                done
                 ;;
             3)
                 newRecipient="" && password="" && quota=0

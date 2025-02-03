@@ -149,3 +149,33 @@ _userManagementAddRecipient() {
 
     return 1
 }
+
+_userManagementRemoveRecipient() {
+    local email="${1}"
+    local domain="${2}"
+
+    if [[ "${email%@*}" == "root" ]]; then
+        echo -e "${COLOR_RED}Cannot delete the root recipient.${COLOR_DEFAULT}"
+        return 2
+    else
+        clear && _confirm "Do you confirm the deletion of this recipient ($email)?"
+        if [ $? -eq 0 ]; then
+            echo -e " "
+            _countdownTimer
+            if [ "$?" -eq 0 ]; then
+                echo -e " "
+                _mysqlExec "DELETE FROM VirtualUsers WHERE email='$email'"
+                _dockerExec "rm -rf /var/mail/vhosts/${domain}/${email%@*}"
+                echo -e "Recipient ($email) deleted successfully"
+                currentRecipient=""
+                return 0
+            else
+                echo -e "${COLOR_CYAN}Action cancelled"
+                return 1
+            fi
+        else
+            echo -e "${COLOR_CYAN}Action cancelled"
+            return 1
+        fi
+    fi
+}
