@@ -67,10 +67,11 @@ mainMenu() {
 
         echo -e "   $(_uppercase "Special commands")"
         echo -e "   Menu configuration, PRESS X"
+        [[ $mailserver -eq 0 ]] && echo -e "   Manage recipients, PRESS K"
         [[ $mailserver -eq 1 ]] && echo -e "   Update mailserver, PRESS U"
 
         # PROMPT
-        read -n1 -e -p "Please choose a number: [0-9,X,U] " choice
+        read -n1 -e -p "Please choose a number: [0-9,X,U,K] " choice
 
         case $choice in
         0) _leaveMenu && break ;;
@@ -85,6 +86,7 @@ mainMenu() {
 
         u | U) [[ $mailserver -eq 1 ]] && _updateMailserver && break ;;
         x | X) menuConfiguration ;;
+        k | K) [[ $mailserver -eq 0 ]] && _managementRecipients ;;
 
         *) ;;
         esac
@@ -226,6 +228,7 @@ managementToolsMenu() {
         echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
         echo -e "1) POSTFIX"
         echo -e "2) FAIL2BAN"
+        echo -e "3) RECIPIENTS"
 
         read -n1 -e -p "Please choose a number: [0-9] " choice
 
@@ -233,6 +236,7 @@ managementToolsMenu() {
         0) break ;;
         1) _managementToolPostfix ;;
         2) _managementToolFail2ban ;;
+        3) _managementRecipients ;;
 
         esac
     done
