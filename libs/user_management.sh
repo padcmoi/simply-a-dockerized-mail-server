@@ -28,7 +28,8 @@ _userManagementCalculateUserDomainMailUsage() {
 
     _userManagementResetVariables
 
-    DOCKER_VOLUMES=$(_trimQuotes $(grep -oP '(?<=DOCKER_VOLUMES=).*' "$ENV_TARGET"))
+    sudo chmod +r $ENV_TARGET && DOCKER_VOLUMES=$(_trimQuotes $(grep -oP '(?<=DOCKER_VOLUMES=).*' "$ENV_TARGET")) && sudo chmod -r $ENV_TARGET
+
     diskAvailableDockerVolume=$(_convertHumanReadableToBytes $(df -h $DOCKER_VOLUMES | awk 'NR==2 {print $4}'))
 
     local queries=(
@@ -126,7 +127,7 @@ _userManagementAddRecipient() {
 
                 maildir="$currentDomain/${newEmail%@*}/"
 
-                results=$(_mysqlExec "INSERT INTO VirtualUsers SET domain='$currentDomain', email='$newEmail', password='$escapedPassword', maildir='$maildir', quota='$(_convertMBToBytes "$quota")', active='$enabled', user_start_date=NOW()-INTERVAL 1 DAY")
+                results=$(_mysqlExec "INSERT INTO VirtualUsers SET domain='$currentDomain', email='$newEmail', password='$escapedPassword', maildir='$maildir', quota='$(_convertMBToBytes "$quota")', active='$enabled', user_start_date=NOW()")
                 if [ -z "$results" ]; then
                     _mysqlExec "REPLACE INTO VirtualQuotaUsers SET domain='$currentDomain', email='$newEmail';"
 
@@ -153,9 +154,13 @@ _userManagementAddRecipient() {
 _userManagementRemoveRecipient() {
     local email="${1}"
     local domain="${2}"
+    results=$(_mysqlExec "SELECT email FROM VirtualUsers WHERE email='$email' AND domain='$domain'")
 
     if [[ "${email%@*}" == "root" ]]; then
         echo -e "${COLOR_RED}Cannot delete the root recipient.${COLOR_DEFAULT}"
+        return 2
+    elif [ -z "$results" ]; then
+        echo -e "${COLOR_RED}The recipient ${email%@*} does not exist with the domain ${domain}.${COLOR_DEFAULT}"
         return 2
     else
         clear && _confirm "Do you confirm the deletion of this recipient ($email)?"
