@@ -501,8 +501,18 @@ _managementRecipients() {
                     newRecipient=$(_lowercase "$newRecipient")
                     newEmail="${newRecipient}@${currentDomain}"
 
+                    results=$(_mysqlExec "SELECT email FROM VirtualUsers WHERE email='$newEmail'")
+                    if [ ! -z "$results" ]; then
+                        echo -e "${COLOR_RED}The email address already exists. Please try again.${COLOR_DEFAULT}"
+                        continue
+                    fi
+
                     _mysqlExec "UPDATE VirtualUsers SET email='$newEmail', maildir='${currentDomain}/${newRecipient}/' WHERE email='$currentRecipient'"
-                    _dockerExec "mv /var/mail/vhosts/${currentDomain}/${currentRecipient%@*} /var/mail/vhosts/${currentDomain}/${newRecipient}"
+                    _dockerExec "
+                    if [ -d \"/var/mail/vhosts/${currentDomain}/${currentRecipient%@*}\" ] && [ ! -d \"/var/mail/vhosts/${currentDomain}/${newRecipient}\" ]; then
+                        mv /var/mail/vhosts/${currentDomain}/${currentRecipient%@*} /var/mail/vhosts/${currentDomain}/${newRecipient}
+                    fi
+                    "
 
                     echo -e "Recipient email and maildir updated successfully"
                     currentRecipient="$newEmail"
