@@ -127,7 +127,7 @@ _userManagementAddRecipient() {
 
                 maildir="$currentDomain/${newEmail%@*}/"
 
-                results=$(_mysqlExec "INSERT INTO VirtualUsers SET domain='$currentDomain', email='$newEmail', password='$escapedPassword', maildir='$maildir', quota='$(_convertMBToBytes "$quota")', active='$enabled', user_start_date=NOW()-INTERVAL 1 DAY")
+                results=$(_mysqlExec "INSERT INTO VirtualUsers SET domain='$currentDomain', email='$newEmail', password='$escapedPassword', maildir='$maildir', quota='$(_convertMBToBytes "$quota")', active='$enabled', user_start_date=NOW()")
                 if [ -z "$results" ]; then
                     _mysqlExec "REPLACE INTO VirtualQuotaUsers SET domain='$currentDomain', email='$newEmail';"
 

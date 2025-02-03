@@ -938,7 +938,7 @@ _managementRecipients() {
 
                     currentDomain="$(_lowercase "$newDomain")"
 
-                    results=$(_mysqlExec "INSERT INTO VirtualDomains SET domain='$currentDomain', active=1, quota='$(_convertMBToBytes "$domainQuota")', user_start_date=NOW()-INTERVAL 1 DAY")
+                    results=$(_mysqlExec "INSERT INTO VirtualDomains SET domain='$currentDomain', active=1, quota='$(_convertMBToBytes "$domainQuota")', user_start_date=NOW()")
 
                     if [ -z "$results" ]; then
                         echo -e "Domain ($currentDomain) added"
