@@ -2,4 +2,4 @@
 
 driver = mysql
 
-user_query = SELECT concat('/var/mail/vhosts/', maildir) AS home, uid, gid, CONCAT('*:bytes=', quota) AS quota_rule FROM VirtualUsers WHERE email='%u' AND VirtualUsers.active = '1' 
+user_query = SELECT concat('/var/mail/vhosts/', maildir) AS home, uid, gid, CONCAT('*:bytes=', U.quota) AS quota_rule FROM VirtualUsers AS U JOIN VirtualDomains AS D ON U.domain=D.domain WHERE email='%u' AND U.active='1' AND D.active='1' AND TO_DAYS(now()) >= TO_DAYS(U.user_start_date) AND (TO_DAYS(now()) <= TO_DAYS(U.user_end_date) OR U.user_end_date IS NULL) AND TO_DAYS(now()) >= TO_DAYS(D.user_start_date) AND (TO_DAYS(now()) <= TO_DAYS(D.user_end_date) OR D.user_end_date IS NULL)
