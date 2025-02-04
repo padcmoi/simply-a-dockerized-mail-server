@@ -415,6 +415,8 @@ _mysqlExec() {
 }
 
 _menuSelection() {
+    source $ENV_MENU_TARGET
+
     local mode="${1}"
     local header="${2}"
     local menuList=("${@:3}")
@@ -441,9 +443,17 @@ _menuSelection() {
 
         for ((i = start; i < end; i++)); do
             if [ $i -eq $selectedIndex ]; then
-                echo -e "${COLOR_YELLOW}➜ ${menuList[$i]}${COLOR_DEFAULT}"
+                if [[ $mode == "key" ]]; then
+                    echo -e "${COLOR_YELLOW}➜ $(echo "${menuList[$i]}" | sed 's/{{{key:[0-9]\+}}}//g')${COLOR_DEFAULT}"
+                else
+                    echo -e "${COLOR_YELLOW}➜ ${menuList[$i]}${COLOR_DEFAULT}"
+                fi
             else
-                echo -e "  ${menuList[$i]}"
+                if [[ $mode == "key" ]]; then
+                    echo -e "  $(echo "${menuList[$i]}" | sed 's/{{{key:[0-9]\+}}}//g')"
+                else
+                    echo -e "  ${menuList[$i]}"
+                fi
             fi
         done
 
@@ -480,6 +490,7 @@ _menuSelection() {
 
     case $mode in
     text) __menuSelectionValue="${menuList[$selectedIndex]}" ;;
+    key) __menuSelectionValue="$(echo "${menuList[$selectedIndex]}" | grep -oP "{{{key:\K\d+(?=}}})")" ;;
     index) __menuSelectionValue="${selectedIndex}" ;;
     *) ;;
     esac

@@ -289,7 +289,7 @@ _thirdPartyMenuCertbotLe() {
     [[ -f $ENV_CERTBOT_INFO ]] && source $ENV_CERTBOT_INFO && domain=$LASTDOMAIN
     while true; do
 
-        headerPart
+        _helloContainer
         mailserver=$?
 
         _checkLetsencryptProcessRunning
@@ -314,49 +314,50 @@ _thirdPartyMenuCertbotLe() {
             fi
         done
 
-        echo -e "${COLOR_DEFAULT}"
-        echo -e "Select domain: ${domain}"
+        __part() {
+            headerPart
+            echo -e "${COLOR_DEFAULT}"
+            echo -e "Select domain: ${domain}"
 
-        _helloContainer
-        mailserver=$?
+            if [[ ! -z $CMD ]]; then
+                echo -e $CMD
+            fi
+            echo -e "${COLOR_CYAN}"
+            echo -e "- CERTBOT-GENERATED CERTIFICATES MENU -"
+            echo -e "${COLOR_DEFAULT}"
+        }
 
-        if [[ ! -z $CMD ]]; then
-            echo -e "${COLOR_YELLOW}"
-            echo -e $CMD
-        fi
-
-        echo -e "${COLOR_CYAN}"
-        echo -e "- CERTBOT-GENERATED CERTIFICATES MENU -"
-        echo -e "${COLOR_DEFAULT}"
-
-        echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
+        list=()
+        list+=("{{{key:001}}}Main menu")
         if [ $domainValid -eq 0 ]; then
-            [[ $processRunning -eq 1 ]] && echo -e "1) Start script"
-            [[ $processRunning -eq 0 ]] && echo -e "1) Stop script"
+            [[ $processRunning -eq 1 ]] && list+=("{{{key:002}}}Start script")
+            [[ $processRunning -eq 0 ]] && list+=("{{{key:002}}}Stop script")
         fi
-        [[ ! -z $CMD ]] && echo -e "${COLOR_YELLOW}2) Clear the List of domains served by certbot${COLOR_DEFAULT}"
-        [[ -z $CMD ]] && echo -e "2) List of domains served by certbot"
-        [[ $processRunning -eq 1 ]] && echo -e "3) Enter a domain served by the certbot daemon"
+        [[ ! -z $CMD ]] && list+=("{{{key:003}}}Clear the List of domains served by certbot")
+        [[ -z $CMD ]] && list+=("{{{key:003}}}List of domains served by certbot")
+        [[ $processRunning -eq 1 ]] && list+=("{{{key:004}}}Enter a domain served by the certbot daemon")
 
-        read -n1 -e -p "Please choose a number: [0-9] " choice
+        _menuSelection "key" "$(__part)" "${list[@]}"
+
+        choice="${__menuSelectionValue}"
 
         case $choice in
-        0) break ;;
-        1)
+        001) break ;;
+        002)
             if [ $domainValid -eq 0 ]; then
                 [[ $processRunning -eq 1 ]] && sudo nohup ./update-letsencrypt-certs.sh "${domain}" &
                 [[ $processRunning -eq 0 ]] && sudo ps ax | grep 'inotifywait -m -e modify /etc/letsencrypt/live' | grep -v grep | awk '{print $1}' | sudo xargs -r kill
                 sleep 1
             fi
             ;;
-        2)
+        003)
             if [ -z $CMD ]; then
                 CMD="List of domains served by certbot: $(_listValidDomains)"
             else
                 CMD=
             fi
             ;;
-        3)
+        004)
             if [ $processRunning -eq 1 ]; then
                 _CMD="$(_listValidDomains)"
                 echo -e "${COLOR_YELLOW}"

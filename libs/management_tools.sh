@@ -2,7 +2,7 @@
 
 _managementToolPostfix() {
     while true; do
-        headerPart
+        _helloContainer
         mailserver=$?
 
         if _dockerExec "ps aux | grep -v grep | grep '/usr/lib/postfix' >/dev/null"; then
@@ -11,37 +11,42 @@ _managementToolPostfix() {
             servicePostfix=1
         fi
 
-        echo -e "${COLOR_CYAN}"
-        echo -e " -------------------- POSTFIX ------------------- ${COLOR_DEFAULT}"
+        __part() {
+            headerPart
+            echo -e "${COLOR_CYAN}"
+            echo -e " -------------------- POSTFIX ------------------- ${COLOR_DEFAULT}"
+        }
 
-        echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
+        list=()
+        list+=("{{{key:001}}}Main menu")
         if [ $servicePostfix -eq 0 ]; then
-            echo -e "1) See tail"
-            echo -e "2) Flush the queue"
-            echo -e "3) View content of mail in queue"
-            echo -e "4) Delete a specific mail with a queueId"
-            echo -e "5) Delete all queued mails"
-            echo -e "6) Delete all mails in « Deferred »"
-            echo -e "7) Delete mail in queue by sender or recipient"
+            list+=("{{{key:002}}}See tail")
+            list+=("{{{key:003}}}Flush the queue")
+            list+=("{{{key:004}}}View content of mail in queue")
+            list+=("{{{key:005}}}Delete a specific mail with a queueId")
+            list+=("{{{key:006}}}Delete all queued mails")
+            list+=("{{{key:007}}}Delete all mails in « Deferred »")
+            list+=("{{{key:008}}}Delete mail in queue by sender or recipient")
         fi
 
-        [[ $servicePostfix -eq 0 ]] && echo -e "9) Switch off Postfix (Stop receiving mail)"
-        [[ $servicePostfix -eq 1 ]] && echo -e "9) Switch on Postfix"
+        [[ $servicePostfix -eq 0 ]] && list+=("{{{key:009}}}Switch off Postfix (Stop receiving mail)")
+        [[ $servicePostfix -eq 1 ]] && list+=("{{{key:009}}}Switch on Postfix")
 
-        echo -e "   $(_uppercase "Special commands")"
-        echo -e "X) See which domains have a lot of deferred incoming mail"
-        echo -e "C) See which domains have a lot of active outgoing mail"
+        [[ $servicePostfix -eq 0 ]] && list+=("{{{key:011}}}See which domains have a lot of deferred incoming mail")
+        [[ $servicePostfix -eq 0 ]] && list+=("{{{key:012}}}See which domains have a lot of active outgoing mail")
 
-        read -n1 -e -p "Please choose a number: [0-9,X,C] " choice
+        _menuSelection "key" "$(__part)" "${list[@]}"
+
+        choice="${__menuSelectionValue}"
 
         case $choice in
-        0) break ;;
-        1)
+        001) break ;;
+        002)
             if [ $servicePostfix -eq 0 ]; then
                 clear && _dockerExec "mailq" && _confirm "Press any key to continue" 1
             fi
             ;;
-        2)
+        003)
             if [ $servicePostfix -eq 0 ]; then
                 _confirm "Do you confirm this action ?"
                 if [ $? -eq 0 ]; then
@@ -51,13 +56,13 @@ _managementToolPostfix() {
                 fi
             fi
             ;;
-        3)
+        004)
             if [ $servicePostfix -eq 0 ]; then
                 read -e -p "Provide me with the queue identifier " queueId
                 clear && _dockerExec "postcat -q $queueId" && _confirm "Press any key to continue" 1
             fi
             ;;
-        4)
+        005)
             if [ $servicePostfix -eq 0 ]; then
                 _confirm "Do you confirm this action ?"
                 if [ $? -eq 0 ]; then
@@ -68,7 +73,7 @@ _managementToolPostfix() {
                 fi
             fi
             ;;
-        5)
+        006)
             if [ $servicePostfix -eq 0 ]; then
                 _confirm "Do you confirm this action ?"
                 if [ $? -eq 0 ]; then
@@ -78,7 +83,7 @@ _managementToolPostfix() {
                 fi
             fi
             ;;
-        6)
+        007)
             if [ $servicePostfix -eq 0 ]; then
                 _confirm "Do you confirm this action ?"
                 if [ $? -eq 0 ]; then
@@ -88,7 +93,7 @@ _managementToolPostfix() {
                 fi
             fi
             ;;
-        7)
+        008)
             if [ $servicePostfix -eq 0 ]; then
                 _confirm "Do you confirm this action ?"
                 if [ $? -eq 0 ]; then
@@ -106,7 +111,7 @@ _managementToolPostfix() {
 
                     read -e -p "Provide me an email " email
 
-                    clear && _dockerExec "mailq | tail -n+2 | awk 'BEGIN { RS = \"\" } { if ($rule == \"$email\")print $1 }' | tr -d '*!' | postsuper -d -"
+                    clear && _dockerExec "mailq | tail -n+2 | awk 'BEGIN { RS = \"\" } { if (\$rule == \"$email\")print \$1 }' | tr -d '*!' | postsuper -d -"
                     _confirm "Press any key to continue" 1
                 else
                     echo -e "${COLOR_CYAN}Action cancelled" && sleep 1
@@ -114,19 +119,19 @@ _managementToolPostfix() {
 
             fi
             ;;
-        x | X)
+        011)
             if [ $servicePostfix -eq 0 ]; then
                 clear && echo -e "See which domains have a lot of deferred incoming mail:"
                 _dockerExec "qshape deferred" && _confirm "Press any key to continue" 1
             fi
             ;;
-        c | C)
+        012)
             if [ $servicePostfix -eq 0 ]; then
                 clear && echo -e "See which domains have a lot of active outgoing mail:"
                 _dockerExec "qshape -s active" && _confirm "Press any key to continue" 1
             fi
             ;;
-        9)
+        009)
             [[ $servicePostfix -eq 0 ]] && _dockerExec "service postfix stop"
             [[ $servicePostfix -eq 1 ]] && _dockerExec "service postfix start"
             sleep 1
@@ -149,38 +154,37 @@ _managementToolFail2ban() {
 
         jailsList=($(_dockerExec "fail2ban-client status" | grep 'Jail list:' | cut -d ':' -f2 | tr -d ' ' | tr ',' ' '))
 
-        echo -e "${COLOR_CYAN}"
-        echo -e " ------------------- FAIL2BAN ------------------- ${COLOR_DEFAULT}"
-
-        echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
+        __part() {
+            headerPart
+            echo -e "${COLOR_CYAN}"
+            echo -e " ------------------- FAIL2BAN ------------------- ${COLOR_DEFAULT}"
+        }
+        list=()
+        list+=("{{{key:001}}}Main menu")
         if [ $serviceFail2ban -eq 0 ]; then
-            echo -e "1) Status"
-            echo -e "2) Status of all jails"
-            echo -e "3) Status of a specific jail"
-            echo -e "4) Unban an IP"
-            echo -e "5) Ban an IP"
-            echo -e "6) List all banned IPs"
-            echo -e "7) Unban all IPs"
+            list+=("{{{key:002}}}Status of all jails")
+            list+=("{{{key:003}}}Status of a specific jail")
+            list+=("{{{key:004}}}Unban an IP")
+            list+=("{{{key:005}}}Ban an IP")
+            list+=("{{{key:006}}}List all banned IPs")
+            list+=("{{{key:007}}}Unban all IPs")
         fi
 
-        [[ $serviceFail2ban -eq 0 ]] && echo -e "9) Switch off Fail2ban"
-        [[ $serviceFail2ban -eq 1 ]] && echo -e "9) Switch on Fail2ban"
+        [[ $serviceFail2ban -eq 0 ]] && list+=("{{{key:009}}}Switch off Fail2ban")
+        [[ $serviceFail2ban -eq 1 ]] && list+=("{{{key:009}}}Switch on Fail2ban")
 
-        read -n1 -e -p "Please choose a number: [0-9] " choice
+        _menuSelection "key" "$(__part)" "${list[@]}"
+
+        choice="${__menuSelectionValue}"
 
         case $choice in
-        0) break ;;
-        1)
+        001) break ;;
+        002)
             if [ $serviceFail2ban -eq 0 ]; then
                 clear && _dockerExec "fail2ban-client status" && _confirm "Press any key to continue" 1
             fi
             ;;
-        2)
-            if [ $serviceFail2ban -eq 0 ]; then
-                clear && _dockerExec "fail2ban-client status" && _confirm "Press any key to continue" 1
-            fi
-            ;;
-        3)
+        003)
             if [ $serviceFail2ban -eq 0 ]; then
                 # read -e -p "Provide the jail name " jailName
 
@@ -197,7 +201,7 @@ _managementToolFail2ban() {
                 clear && _dockerExec "fail2ban-client status $jailName" && _confirm "Press any key to continue" 1
             fi
             ;;
-        4)
+        004)
             if [ $serviceFail2ban -eq 0 ]; then
                 read -e -p "Provide the IP to unban " ip
 
@@ -215,7 +219,7 @@ _managementToolFail2ban() {
                 _confirm "Press any key to continue" 1
             fi
             ;;
-        5)
+        005)
             if [ $serviceFail2ban -eq 0 ]; then
                 read -e -p "Provide the IP to ban " ip
 
@@ -233,12 +237,12 @@ _managementToolFail2ban() {
                 _confirm "Press any key to continue" 1
             fi
             ;;
-        6)
+        006)
             if [ $serviceFail2ban -eq 0 ]; then
                 clear && _dockerExec "fail2ban-client banned" && _confirm "Press any key to continue" 1
             fi
             ;;
-        7)
+        007)
             if [ $serviceFail2ban -eq 0 ]; then
                 _confirm "Do you confirm this action ?"
                 if [ $? -eq 0 ]; then
@@ -248,7 +252,7 @@ _managementToolFail2ban() {
                 fi
             fi
             ;;
-        9)
+        009)
             [[ $serviceFail2ban -eq 0 ]] && _dockerExec "service fail2ban stop"
             [[ $serviceFail2ban -eq 1 ]] && _dockerExec "service fail2ban start"
             sleep 1

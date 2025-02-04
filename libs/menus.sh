@@ -44,49 +44,54 @@ headerPart() {
 mainMenu() {
     while true; do
 
-        headerPart
+        _helloContainer
         mailserver=$?
 
-        echo -e "${COLOR_CYAN}"
-        echo -e " ------------ SIMPLY MAILSERVER MENU ------------ ${COLOR_DEFAULT}"
+        __part() {
+            headerPart
+            echo -e "${COLOR_CYAN}"
+            echo -e " ------------ SIMPLY MAILSERVER MENU ------------ ${COLOR_DEFAULT}"
+        }
 
-        echo -e "${COLOR_BLUE}0) Quit${COLOR_DEFAULT}"
-        [[ -f $ENV_NEWFILE ]] && [[ -f $ENV_TARGET ]] && echo -e "${COLOR_YELLOW}4) Build${COLOR_DEFAULT}"
+        list=()
+
+        list+=("{{{key:001}}}Quit")
+        [[ -f $ENV_NEWFILE ]] && [[ -f $ENV_TARGET ]] && list+=("{{{key:002}}}Build")
 
         if [[ ! -f $ENV_NEWFILE ]] && [[ -f $ENV_TARGET ]]; then
-            [[ $mailserver -eq 1 ]] && echo -e "1) Start Mailserver"
-            [[ $mailserver -eq 0 ]] && echo -e "1) Stop Mailserver"
-            [[ $mailserver -eq 0 ]] && echo -e "2) Open console"
-            [[ $mailserver -eq 0 ]] && echo -e "3) Display logs"
-            [[ $mailserver -eq 1 ]] && echo -e "4) Build"
-            [[ $mailserver -eq 0 ]] && echo -e "5) Management tools"
+            [[ $mailserver -eq 1 ]] && list+=("{{{key:003}}}Start Mailserver")
+            [[ $mailserver -eq 0 ]] && list+=("{{{key:003}}}Stop Mailserver")
+            [[ $mailserver -eq 0 ]] && list+=("{{{key:005}}}Open console")
+            [[ $mailserver -eq 0 ]] && list+=("{{{key:006}}}Display logs")
+            [[ $mailserver -eq 1 ]] && list+=("{{{key:002}}}Build")
+            [[ $mailserver -eq 0 ]] && list+=("{{{key:008}}}Management tools")
         fi
-        [[ -f $ENV_TARGET ]] && echo -e "6) Third party"
+        [[ -f $ENV_TARGET ]] && list+=("{{{key:009}}}Third party")
 
-        [[ $mailserver -eq 1 ]] && echo -e "8) Configuration"
+        [[ $mailserver -eq 1 ]] && list+=("{{{key:010}}}Configuration")
 
-        echo -e "   $(_uppercase "Special commands")"
-        echo -e "   Menu configuration, PRESS X"
-        [[ $mailserver -eq 0 ]] && echo -e "   Manage recipients, PRESS K"
-        [[ $mailserver -eq 1 ]] && echo -e "   Update mailserver, PRESS U"
+        list+=("{{{key:011}}}Menu configuration")
+        [[ $mailserver -eq 0 ]] && list+=("{{{key:012}}}Manage recipients")
+        [[ $mailserver -eq 1 ]] && list+=("{{{key:013}}}Update mailserver")
 
-        # PROMPT
-        read -n1 -e -p "Please choose a number: [0-9,X,U,K] " choice
+        _menuSelection "key" "$(__part)" "${list[@]}"
+
+        choice="${__menuSelectionValue}"
 
         case $choice in
-        0) _leaveMenu && break ;;
-        1) _startStopContainer ;;
-        2) [[ ! -f $ENV_NEWFILE ]] && [[ $mailserver -eq 0 ]] && [[ -f $ENV_TARGET ]] && clear && _dockerExec "bash" ;;
-        3) [[ ! -f $ENV_NEWFILE ]] && [[ $mailserver -eq 0 ]] && [[ -f $ENV_TARGET ]] && _logsContainer ;;
-        4) [[ $mailserver -eq 1 ]] && [[ -f $ENV_TARGET ]] && _buildContainer ;;
-        5) [[ $mailserver -eq 0 ]] && [[ -f $ENV_TARGET ]] && managementToolsMenu ;;
-        6) [[ -f $ENV_TARGET ]] && thirdPartyMenu ;;
+        001) _leaveMenu && break ;;
+        003) _startStopContainer ;;
+        005) [[ ! -f $ENV_NEWFILE ]] && [[ $mailserver -eq 0 ]] && [[ -f $ENV_TARGET ]] && clear && _dockerExec "bash" ;;
+        006) [[ ! -f $ENV_NEWFILE ]] && [[ $mailserver -eq 0 ]] && [[ -f $ENV_TARGET ]] && _logsContainer ;;
+        002) [[ $mailserver -eq 1 ]] && [[ -f $ENV_TARGET ]] && _buildContainer ;;
+        008) [[ $mailserver -eq 0 ]] && [[ -f $ENV_TARGET ]] && managementToolsMenu ;;
+        009) [[ -f $ENV_TARGET ]] && thirdPartyMenu ;;
 
-        8) [[ $mailserver -eq 1 ]] && environmentMenu ;;
+        010) [[ $mailserver -eq 1 ]] && environmentMenu ;;
 
-        u | U) [[ $mailserver -eq 1 ]] && _updateMailserver && break ;;
-        x | X) menuConfiguration ;;
-        k | K) [[ $mailserver -eq 0 ]] && _managementRecipients ;;
+        013) [[ $mailserver -eq 1 ]] && _updateMailserver && break ;;
+        011) menuConfiguration ;;
+        012) [[ $mailserver -eq 0 ]] && _managementRecipients ;;
 
         *) ;;
         esac
@@ -98,24 +103,29 @@ mainMenu() {
 menuConfiguration() {
     while true; do
 
-        headerPart
+        _helloContainer
         mailserver=$?
 
-        echo -e "${COLOR_CYAN}"
-        echo -e " --------------- MENU CONFIGURATION ------------- ${COLOR_DEFAULT}"
+        __part() {
+            headerPart
+            echo -e "${COLOR_CYAN}"
+            echo -e " --------------- MENU CONFIGURATION ------------- ${COLOR_DEFAULT}"
+        }
 
-        echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
+        list=()
 
-        [[ -f $ENV_MENU_TARGET ]] && echo -e "1) Modify from menu environment file (Env.Menu > Tmp)"
-        [[ -f $ENV_MENU_TARGET ]] && echo -e "2) Reset menu environment (Env.Menu file)"
+        list+=("{{{key:001}}}Main menu")
+        [[ -f $ENV_MENU_TARGET ]] && list+=("{{{key:002}}}Modify from menu environment file (Env.Menu > Tmp)")
+        [[ -f $ENV_MENU_TARGET ]] && list+=("{{{key:003}}}Reset menu environment (Env.Menu file)")
 
-        read -n1 -e -p "Please choose a number: [0-9] " choice
+        _menuSelection "key" "$(__part)" "${list[@]}"
+
+        choice="${__menuSelectionValue}"
 
         case $choice in
-        0) break ;;
-
-        1) [[ -f $ENV_MENU_TARGET ]] && _configureEnvFile "menu" ;;
-        2)
+        001) break ;;
+        002) [[ -f $ENV_MENU_TARGET ]] && _configureEnvFile "menu" ;;
+        003)
             echo -e "${COLOR_YELLOW}"
             _confirm "Do you confirm the deletion of the environment file ? this will delete all settings."
             if [ $? -eq 0 ]; then
@@ -126,6 +136,7 @@ menuConfiguration() {
             fi
             echo -e "${COLOR_DEFAULT}"
             ;;
+        *) ;;
         esac
 
     done
@@ -134,29 +145,37 @@ menuConfiguration() {
 environmentMenu() {
     while true; do
 
-        headerPart
+        _helloContainer
         mailserver=$?
 
-        echo -e "${COLOR_CYAN}"
-        echo -e " ----------- ENVIRONMENT CONFIGURATION ---------- ${COLOR_DEFAULT}"
+        __part() {
+            headerPart
+            echo -e "${COLOR_CYAN}"
+            echo -e " ----------- ENVIRONMENT CONFIGURATION ---------- ${COLOR_DEFAULT}"
+        }
 
-        echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
-        [[ ! -f $ENV_TARGET ]] && echo -e "1) Create from sample (Sample > Tmp)"
-        [[ -f $ENV_TARGET ]] && echo -e "2) Modify from env file (Env > Tmp)"
-        [[ -f $ENV_TARGET ]] && echo -e "3) Delete env file (Env file)"
-        [[ -f $ENV_MAKEFILE ]] && echo -e "4) Modify temporary file (Tmp > Tmp)"
-        [[ -f $ENV_MAKEFILE ]] && echo -e "5) Delete temporary file (Tmp file)"
-        [[ -f $ENV_MAKEFILE ]] && echo -e "6) Save in env file (Tmp > Env)"
+        list=()
 
-        read -n1 -e -p "Please choose a number: [0-9] " choice
+        list+=("{{{key:001}}}Main menu")
+
+        [[ ! -f $ENV_TARGET ]] && list+=("{{{key:004}}}Create from sample (Sample > Tmp)")
+        [[ -f $ENV_TARGET ]] && list+=("{{{key:005}}}Modify from env file (Env > Tmp)")
+        [[ -f $ENV_TARGET ]] && list+=("{{{key:006}}}Delete env file (Env file)")
+        [[ -f $ENV_MAKEFILE ]] && list+=("{{{key:007}}}Modify temporary file (Tmp > Tmp)")
+        [[ -f $ENV_MAKEFILE ]] && list+=("{{{key:008}}}Delete temporary file (Tmp file)")
+        [[ -f $ENV_MAKEFILE ]] && list+=("{{{key:009}}}Save in env file (Tmp > Env)")
+
+        _menuSelection "key" "$(__part)" "${list[@]}"
+
+        choice="${__menuSelectionValue}"
 
         case $choice in
-        0) break ;;
-        1) [[ ! -f $ENV_TARGET ]] && _configureEnvFile "sample" ;;
-        2) [[ -f $ENV_TARGET ]] && _configureEnvFile "env" ;;
-        3)
+        001) break ;;
+        004) [[ ! -f $ENV_TARGET ]] && _configureEnvFile "sample" ;;
+        005) [[ -f $ENV_TARGET ]] && _configureEnvFile "env" ;;
+        006)
             echo -e "${COLOR_YELLOW}"
-            _confirm "Do you confirm the deletion of the environment file ? this will delete all settings."
+            _confirm "Do you confirm the deletion of the environment file? This will delete all settings."
             if [ $? -eq 0 ]; then
                 sudo rm $ENV_TARGET
             else
@@ -164,10 +183,10 @@ environmentMenu() {
             fi
             echo -e "${COLOR_DEFAULT}"
             ;;
-        4) [[ -f $ENV_MAKEFILE ]] && _configureEnvFile "made" ;;
-        5)
+        007) [[ -f $ENV_MAKEFILE ]] && _configureEnvFile "made" ;;
+        008)
             echo -e "${COLOR_YELLOW}"
-            _confirm "Do you confirm the deletion of the temporary environment file ?"
+            _confirm "Do you confirm the deletion of the temporary environment file?"
             if [ $? -eq 0 ]; then
                 sudo rm $ENV_MAKEFILE
             else
@@ -175,7 +194,7 @@ environmentMenu() {
             fi
             echo -e "${COLOR_DEFAULT}"
             ;;
-        6)
+        009)
             echo -e "${COLOR_YELLOW}"
             _confirm "Do you confirm that you want to save the new settings? This will overwrite the old ones definitively."
             if [ $? -eq 0 ]; then
@@ -195,49 +214,61 @@ environmentMenu() {
 
 thirdPartyMenu() {
     while true; do
-        headerPart
+
+        _helloContainer
         mailserver=$?
 
-        echo -e "${COLOR_CYAN}"
-        echo -e " --------------- THIRD PARTY MENU --------------- ${COLOR_DEFAULT}"
+        __part() {
+            headerPart
+            echo -e "${COLOR_CYAN}"
+            echo -e " --------------- THIRD PARTY MENU --------------- ${COLOR_DEFAULT}"
+        }
 
-        echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
-        echo -e "1) use certbot-generated certificates (letsencrypt) to update ssl certificates"
-        echo -e "2) backup volumes now"
-        echo -e "9) deletes all docker images (Be careful, this command deletes other docker images)"
+        list=()
+        list+=("{{{key:001}}}Main menu")
+        list+=("{{{key:002}}}Use certbot-generated certificates (letsencrypt) to update ssl certificates")
+        list+=("{{{key:003}}}Backup volumes now")
+        list+=("{{{key:009}}}Deletes all docker images (Be careful, this command deletes other docker images)")
 
-        read -n1 -e -p "Please choose a number: [0-9] " choice
+        _menuSelection "key" "$(__part)" "${list[@]}"
+
+        choice="${__menuSelectionValue}"
 
         case $choice in
-        0) break ;;
-        1) _thirdPartyMenuCertbotLe ;;
-        2) _thirdPartyMenuBackup && sleep 3 ;;
-        9) sudo docker system prune -a --volumes ;;
+        001) break ;;
+        002) _thirdPartyMenuCertbotLe ;;
+        003) _thirdPartyMenuBackup && sleep 3 ;;
+        009) sudo docker system prune -a --volumes ;;
         esac
     done
 }
 
 managementToolsMenu() {
     while true; do
-        headerPart
+        _helloContainer
         mailserver=$?
 
-        echo -e "${COLOR_CYAN}"
-        echo -e " --------------- MANAGEMENT TOOLS --------------- ${COLOR_DEFAULT}"
+        __part() {
+            headerPart
+            echo -e "${COLOR_CYAN}"
+            echo -e " --------------- MANAGEMENT TOOLS --------------- ${COLOR_DEFAULT}"
+        }
 
-        echo -e "${COLOR_BLUE}0) Main menu${COLOR_DEFAULT}"
-        echo -e "1) POSTFIX"
-        echo -e "2) FAIL2BAN"
-        echo -e "3) RECIPIENTS"
+        list=()
+        list+=("{{{key:001}}}Main menu")
+        list+=("{{{key:002}}}POSTFIX")
+        list+=("{{{key:003}}}FAIL2BAN")
+        list+=("{{{key:004}}}RECIPIENTS")
 
-        read -n1 -e -p "Please choose a number: [0-9] " choice
+        _menuSelection "key" "$(__part)" "${list[@]}"
+
+        choice="${__menuSelectionValue}"
 
         case $choice in
-        0) break ;;
-        1) _managementToolPostfix ;;
-        2) _managementToolFail2ban ;;
-        3) _managementRecipients ;;
-
+        001) break ;;
+        002) _managementToolPostfix ;;
+        003) _managementToolFail2ban ;;
+        004) _managementRecipients ;;
         esac
     done
 }
