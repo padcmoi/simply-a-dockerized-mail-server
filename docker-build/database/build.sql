@@ -99,3 +99,13 @@ CREATE TABLE
     FOREIGN KEY (`domain`) REFERENCES `VirtualDomains` (`domain`) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (`owner_id`) REFERENCES `Accounts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_general_ci;
+
+CREATE TABLE 
+  IF NOT EXISTS `SieveRejectSenders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sender` varchar(255) NOT NULL,
+  `enabled` int(11) NOT NULL DEFAULT 1,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `sender` (`sender`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_general_ci;

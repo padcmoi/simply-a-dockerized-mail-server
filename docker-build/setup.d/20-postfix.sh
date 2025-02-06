@@ -58,9 +58,9 @@ retrieve-volume)
 
 container)
 
-    if [ ! -f /etc/_postscreen/postscreen_access.cidr ]; then
-        cp -f /docker-build/conf.d/postfix/postscreen_access.cidr /etc/_postscreen/postscreen_access.cidr
-        chmod 777 /etc/_postscreen/postscreen_access.cidr
+    if [ ! -f /var/_custom_rules/postscreen_access.cidr ]; then
+        cp -f /docker-build/conf.d/postfix/postscreen_access.cidr /var/_custom_rules/postscreen_access.cidr
+        chmod 777 /var/_custom_rules/postscreen_access.cidr
     fi
 
     ;;

@@ -31,6 +31,8 @@ build)
     sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" /etc/dovecot/db-sql/_mysql-connect.conf
     sed -i "s/____domainFQDN/${DOMAIN_FQDN}/g" /etc/dovecot/dovecot.conf
 
+    sed -i "s/____mailRootPass/${SYSTEM_PASSWORD}/g" /usr/local/bin/handle-sieve-rules.sh
+
     ;;
 
 save-volume)
@@ -52,6 +54,12 @@ container)
 
     mkdir -p /var/mail/vhosts/
     chown -R vmail:vmail /var/mail
+
+    # Create the sieve script
+    sieve_script="/var/_custom_rules/senders.sieve"
+    if [ ! -f "$sieve_script" ]; then
+        echo "require [\"reject\"];" >"$sieve_script" && chmod 777 "$sieve_script"
+    fi
 
     ;;
 

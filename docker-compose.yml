@@ -33,7 +33,7 @@ services:
       - $DOCKER_VOLUMES/mail:/var/mail
       - $DOCKER_VOLUMES/mysql:/var/lib/mysql
       - $DOCKER_VOLUMES/postfix:/var/spool/postfix
-      - $DOCKER_VOLUMES/postscreen:/etc/_postscreen
+      - $DOCKER_VOLUMES/custom_rules:/var/_custom_rules
       - $DOCKER_VOLUMES/redis:/var/lib/redis
       - $DOCKER_VOLUMES/rspamd:/var/lib/rspamd
       - $DOCKER_VOLUMES/clamav:/var/lib/clamav
