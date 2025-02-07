@@ -19,7 +19,7 @@ if [ ! -f "$sieve_script" ]; then
 fi
 
 # Query to get the senders to reject
-SQL_QUERY="SELECT sender FROM SieveRejectSenders WHERE date_creation > DATE_SUB(NOW(), INTERVAL 60 SECOND) AND enabled=1"
+SQL_QUERY="SELECT sender FROM SieveRejectSenders WHERE date_creation > DATE_SUB(NOW(), INTERVAL 300 SECOND) AND enabled=1"
 
 # Fetch the senders from the database
 senders=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" -se "$SQL_QUERY")
@@ -30,7 +30,7 @@ else
     count=0
     for sender in $senders; do
         # Append each new sender to the senders.dat file
-        if ! grep -q "$sender" "$sender_data"; then
+        if ! grep -q -w "$sender" "$sender_data"; then
             echo "$sender" >>"$sender_data"
             echo "if address :contains \"from\" \"$sender\" { reject \"Emails from this sender are not accepted.\"; }" >>"$sieve_script"
             count=$((count + 1))
