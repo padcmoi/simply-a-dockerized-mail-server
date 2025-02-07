@@ -10,15 +10,19 @@ ignoreip = 127.0.0.1/8, 172.200.0.1/16
 
 banaction = ufw
 
-[dovecot]
+[dovecot-auth_failed]
 enabled = true
-# maxretry set to 30, when using Thunderbird or with iOS mail app (for example),
-# you can receive many aborted logins causing bans if the maxretry value is too low
-# IE Aborted login (no auth attempts in 0 secs): user=<>, rip=**.122.120.**, lip=172.200.0.5
-maxretry = 30
+maxretry = 10
 findtime = 900
 logpath = /var/log/dovecot.log
-filter = dovecot
+filter = dovecot-auth_failed
+
+[dovecot-password_mismatch]
+enabled = true
+maxretry = 10
+findtime = 900
+logpath = /var/log/dovecot.log
+filter = dovecot-password_mismatch
 
 
 [postfix-ddos]
