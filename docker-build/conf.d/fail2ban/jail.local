@@ -17,12 +17,12 @@ findtime = 900
 logpath = /var/log/dovecot.log
 filter = dovecot-auth_failed
 
-[dovecot-password_mismatch]
+[dovecot-auth_worker]
 enabled = true
 maxretry = 10
 findtime = 900
 logpath = /var/log/dovecot.log
-filter = dovecot-password_mismatch
+filter = dovecot-auth_worker
 
 
 [postfix-ddos]
