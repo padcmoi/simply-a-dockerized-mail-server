@@ -27,7 +27,7 @@ filter = dovecot-password_mismatch
 
 [postfix-ddos]
 enabled = true
-maxretry = 3
+maxretry = 10
 findtime = 300
 bantime  = 900
 logpath = /var/log/mail.log
@@ -37,7 +37,7 @@ filter = postfix
 
 [postfix-aggressive]
 enabled = true
-maxretry = 3
+maxretry = 10
 findtime = 300
 bantime  = 900
 logpath = /var/log/mail.log
@@ -47,7 +47,7 @@ filter = postfix
 
 [postfix-errors]
 enabled = true
-maxretry = 3
+maxretry = 10
 findtime = 300
 bantime  = 900
 logpath = /var/log/mail.log
