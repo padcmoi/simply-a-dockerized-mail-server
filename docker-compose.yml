@@ -26,7 +26,7 @@ services:
       - NET_ADMIN
     networks:
       backend:
-        ipv4_address: 172.200.0.5
+        ipv4_address: 172.200.0.20
     volumes:
       - $DOCKER_VOLUMES/log:/var/log
       - $DOCKER_VOLUMES/ssl:/etc/_private
