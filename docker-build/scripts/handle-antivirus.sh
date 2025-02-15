@@ -5,7 +5,7 @@ SOCKET_CLAMD="/var/run/clamav/clamd.ctl"
 
 echo "Configuration rspam: $(rspamadm configtest)"
 
-chmod -R 777 /var/log/clamav
+chmod -R 774 /var/log/clamav
 
 _escapeSed() {
     echo "$1" | sed -e 's/[]\/$*.^|[]/\\&/g'

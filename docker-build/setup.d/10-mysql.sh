@@ -37,7 +37,7 @@ retrieve-volume)
 
     if [ -d /var/lib/mysql.DOCKER_TMP ] && [ -z "$(ls -A '/var/lib/mysql')" ]; then
         mv -f /var/lib/mysql.DOCKER_TMP/* /var/lib/mysql/
-        chmod -R 755 /var/lib/mysql
+        chmod -R 754 /var/lib/mysql
         chown -R mysql:mysql /var/lib/mysql
     fi
     rm -R /var/lib/mysql.DOCKER_TMP
