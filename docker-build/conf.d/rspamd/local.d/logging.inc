@@ -1,1 +1,1 @@
-# debug_modules = ["antivirus"];
+debug_modules = ["milter"];
