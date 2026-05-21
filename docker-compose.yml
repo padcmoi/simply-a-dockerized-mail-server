@@ -17,6 +17,7 @@
 #   roundcube     - webmail (127.0.0.1:4080)
 #   manager-api   - NestJS admin API (127.0.0.1:4003)
 #   manager-ui    - Nuxt 3 SPA (127.0.0.1:8080)
+#   phpmyadmin    - DB explorer (:8082 open to the world, profile: phpmyadmin)
 #   fail2ban      - intrusion prevention
 #
 
@@ -108,7 +109,7 @@ services:
           - opendmarc
 
   clamav:
-    image: clamav/clamav:1.4.1
+    image: clamav/clamav:1.4.4
     container_name: mail-clamav
     restart: always
     profiles: ["clamav"]
@@ -199,6 +200,27 @@ services:
     # Loopback only - reverse proxy on the host fronts Roundcube in HTTP
     ports:
       - "127.0.0.1:4080:80"
+
+  # DB explorer, opt-in profile - no credentials baked in, log in manually with
+  # root + .secrets/system_password (full access) or mailuser + ADMIN_PASSWORD.
+  # Exposed to the world on :8082 - rotate creds frequently and disable the profile
+  # when not actively investigating (./service.sh disable phpmyadmin).
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: mail-phpmyadmin
+    restart: always
+    profiles: ["phpmyadmin"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 256M
+    networks:
+      backend:
+    ports:
+      - "8082:80"
 
   manager-api:
     build:

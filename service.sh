@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
 PROFILES_FILE="${ROOT}/.profiles"
-KNOWN_PROFILES=(clamav opendmarc)
+KNOWN_PROFILES=(clamav opendmarc phpmyadmin)
 
 read_profiles() {
   [[ -f "$PROFILES_FILE" ]] || return 0
