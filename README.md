@@ -7,13 +7,17 @@ Multi-container rewrite of the 1.x.x monolith. Goal : 100% compat on data (BDD, 
 ```
 install.sh           single entry-point : validates .env, generates secrets,
                      hydrates templates into runtime/config/, prepares volumes
+service.sh           docker compose wrapper : up/down/logs/exec with persistent
+                     profile selection (.profiles)
 docker-compose.yml   services declaration (mariadb, redis, postfix, dovecot,
-                     rspamd, opendkim, opendmarc, clamav, roundcube, fail2ban)
+                     rspamd, opendkim, opendmarc, clamav, roundcube, fail2ban,
+                     manager-api, manager-ui)
 .env.sample          mirror of 1.x.x env contract
 templates/           versioned config files with ____placeholders
 runtime/config/      hydrated output, bind-mounted read-only (gitignored)
 .secrets/            persistent generated secrets (gitignored)
-dockerfiles/         custom images (postfix, opendkim, opendmarc, fail2ban)
+.profiles            enabled docker compose profiles, one per line (gitignored)
+dockerfiles/         custom images (postfix, dovecot, opendkim, opendmarc)
 scripts/             runtime helpers (dkim-create.sh, ...)
 ```
 
@@ -24,10 +28,21 @@ cp .env.sample .env
 # edit .env
 
 ./install.sh             # idempotent : re-run after editing .env
-docker compose up -d     # then bring services up
+./service.sh up          # bring services up (applies enabled profiles)
 
-# Optional profiles
-docker compose --profile clamav --profile opendmarc up -d
+# Optional profiles - persisted in .profiles, applied automatically on every ./service.sh call
+./service.sh enable clamav
+./service.sh enable opendmarc
+./service.sh up
+
+# Day-to-day
+./service.sh ps             # status
+./service.sh logs           # tail all logs
+./service.sh logs postfix   # tail one service
+./service.sh shell dovecot  # exec sh inside a container
+./service.sh restart        # down + up
+./service.sh rebuild        # build --no-cache + up
+./service.sh list           # show known + enabled profiles
 ```
 
 ## Status

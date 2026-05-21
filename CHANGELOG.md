@@ -9,6 +9,7 @@
 - `templates/` holds versioned config templates with `____placeholders` (mirror of 1.x.x `docker-build/conf.d`)
 - `runtime/config/` is the hydrated output, bind-mounted into each container (gitignored)
 - `.secrets/` holds generated persistent secrets (mariadb root password, roundcube DES key, manager-api JWT signing secret)
+- `service.sh` wrapper around `docker compose` : `up`/`down`/`restart`/`rebuild`/`logs`/`ps`/`exec`/`shell` with profile persistence (`enable`/`disable` write to `.profiles`, applied automatically on every call)
 - Postfix milters declared explicitly in main.cf (no more sequential sed appends across setup.d scripts)
 - ClamAV and OpenDMARC behind compose profiles (opt-in, ClamAV optional to avoid kswapd on low-memory hosts)
 - `manager-api/` : NestJS 11 admin API scaffold (TypeORM + Auth0 RS256/JWKS + helmet + throttler + swagger + env validation strict)
