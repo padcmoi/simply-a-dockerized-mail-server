@@ -5,3 +5,7 @@ volumes/
 *.log
 node_modules/
 dist/
+
+# Production DB dump - contains real password hashes, NEVER commit
+mailserver.sql
+*.dump.sql
