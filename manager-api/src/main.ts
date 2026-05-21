@@ -3,8 +3,8 @@ import helmet from 'helmet';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { setupOpenApi } from './openapi';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -38,16 +38,7 @@ async function bootstrap() {
     }),
   );
 
-  if (config.get<string>('SWAGGER_ENABLED') === 'true') {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('manager-api')
-      .setDescription('Mail server admin API - Auth0 RS256 bearer token')
-      .setVersion('1')
-      .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
-      .build();
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api/v1/docs', app, document);
-  }
+  setupOpenApi(app);
 
   app.enableShutdownHooks();
 

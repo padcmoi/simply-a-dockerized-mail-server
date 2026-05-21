@@ -18,6 +18,14 @@ import { DomainsService } from './domains.service';
 import { CreateDomainDto } from './dto/create-domain.dto';
 import { UpdateDomainDto } from './dto/update-domain.dto';
 import { ListDomainsQueryDto } from './dto/list-domains-query.dto';
+import {
+  OpenApiCreateDomain,
+  OpenApiDeleteDomain,
+  OpenApiGetDomain,
+  OpenApiGetDomainDns,
+  OpenApiListDomains,
+  OpenApiUpdateDomain,
+} from './domains.openapi';
 
 @ApiTags('domains')
 @ApiBearerAuth()
@@ -28,30 +36,35 @@ export class DomainsController {
 
   @Get()
   @Roles('admin', 'owner')
+  @OpenApiListDomains()
   list(@Query() query: ListDomainsQueryDto) {
     return this.domains.list(query);
   }
 
   @Get(':id')
   @Roles('admin', 'owner')
+  @OpenApiGetDomain()
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.domains.findOne(id);
   }
 
   @Get(':id/dns')
   @Roles('admin', 'owner')
+  @OpenApiGetDomainDns()
   dns(@Param('id', ParseIntPipe) id: number) {
     return this.domains.dns(id);
   }
 
   @Post()
   @Roles('admin')
+  @OpenApiCreateDomain()
   create(@Body() dto: CreateDomainDto) {
     return this.domains.create(dto);
   }
 
   @Patch(':id')
   @Roles('admin', 'owner')
+  @OpenApiUpdateDomain()
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateDomainDto) {
     return this.domains.update(id, dto);
   }
@@ -59,6 +72,7 @@ export class DomainsController {
   @Delete(':id')
   @Roles('admin')
   @HttpCode(200)
+  @OpenApiDeleteDomain()
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.domains.remove(id);
   }

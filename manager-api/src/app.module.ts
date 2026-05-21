@@ -14,7 +14,6 @@ import { AliasesModule } from './aliases/aliases.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { QuotasModule } from './quotas/quotas.module';
 import { SieveModule } from './sieve/sieve.module';
-import { WebadminAccountsModule } from './webadmin-accounts/webadmin-accounts.module';
 
 @Module({
   imports: [
@@ -42,7 +41,6 @@ import { WebadminAccountsModule } from './webadmin-accounts/webadmin-accounts.mo
     AccountsModule,
     QuotasModule,
     SieveModule,
-    WebadminAccountsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

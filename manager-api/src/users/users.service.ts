@@ -31,8 +31,20 @@ export class UsersService {
       skip: query.page * query.limit,
       take: query.limit,
       order: { email: 'ASC' },
-      select: ['id', 'email', 'domain', 'maildir', 'quota', 'active', 'uid', 'gid',
-               'owner_id', 'user_start_date', 'user_end_date', 'last_activity'],
+      select: [
+        'id',
+        'email',
+        'domain',
+        'maildir',
+        'quota',
+        'active',
+        'uid',
+        'gid',
+        'owner_id',
+        'user_start_date',
+        'user_end_date',
+        'last_activity',
+      ],
     });
     return { items, total, page: query.page, limit: query.limit };
   }
@@ -40,8 +52,20 @@ export class UsersService {
   async findOne(id: number) {
     const found = await this.users.findOne({
       where: { id },
-      select: ['id', 'email', 'domain', 'maildir', 'quota', 'active', 'uid', 'gid',
-               'owner_id', 'user_start_date', 'user_end_date', 'last_activity'],
+      select: [
+        'id',
+        'email',
+        'domain',
+        'maildir',
+        'quota',
+        'active',
+        'uid',
+        'gid',
+        'owner_id',
+        'user_start_date',
+        'user_end_date',
+        'last_activity',
+      ],
     });
     if (!found) throw new NotFoundException(`User ${id} not found`);
     return found;

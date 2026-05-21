@@ -18,6 +18,13 @@ import { Roles, RolesGuard } from '../auth/roles.guard';
 import { AliasesService } from './aliases.service';
 import { CreateAliasDto } from './dto/create-alias.dto';
 import { UpdateAliasDto } from './dto/update-alias.dto';
+import {
+  OpenApiCreateAlias,
+  OpenApiDeleteAlias,
+  OpenApiGetAlias,
+  OpenApiListAliases,
+  OpenApiUpdateAlias,
+} from './aliases.openapi';
 
 @ApiTags('aliases')
 @ApiBearerAuth()
@@ -28,6 +35,7 @@ export class AliasesController {
 
   @Get()
   @Roles('admin', 'owner')
+  @OpenApiListAliases()
   list(
     @Query('page', new DefaultValuePipe(0), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
@@ -39,18 +47,21 @@ export class AliasesController {
 
   @Get(':id')
   @Roles('admin', 'owner')
+  @OpenApiGetAlias()
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.aliases.findOne(id);
   }
 
   @Post()
   @Roles('admin', 'owner')
+  @OpenApiCreateAlias()
   create(@Body() dto: CreateAliasDto) {
     return this.aliases.create(dto);
   }
 
   @Patch(':id')
   @Roles('admin', 'owner')
+  @OpenApiUpdateAlias()
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateAliasDto) {
     return this.aliases.update(id, dto);
   }
@@ -58,6 +69,7 @@ export class AliasesController {
   @Delete(':id')
   @Roles('admin', 'owner')
   @HttpCode(200)
+  @OpenApiDeleteAlias()
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.aliases.remove(id);
   }

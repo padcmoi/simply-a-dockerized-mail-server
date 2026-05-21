@@ -28,6 +28,9 @@ ok()   { echo "${C_GREEN}[+]${C_RESET} $*"; }
 warn() { echo "${C_YELLOW}[!]${C_RESET} $*"; }
 fail() { echo "${C_RED}[x]${C_RESET} $*" >&2; exit 1; }
 
+# Loud failures - set -e exits silently otherwise, masking SIGPIPE / unset-var bugs
+trap 'rc=$?; echo "${C_RED}[x]${C_RESET} install.sh aborted at line $LINENO (exit $rc, last cmd: $BASH_COMMAND)" >&2' ERR
+
 #
 # 1. .env validation
 #
@@ -59,14 +62,20 @@ ok ".env loaded - FQDN=$DOMAIN_FQDN IP=$ADRESSIP"
 mkdir -p "$SECRETS_DIR"
 chmod 700 "$SECRETS_DIR"
 
+# Bounded pipes only : `head -c N` on /dev/urandom races with `set -o pipefail`
+# (tr never reaches EOF, head closes stdin, tr exits 141, pipefail aborts the script
+# silently). openssl emits a finite byte count, tr finishes cleanly, bash slicing
+# takes the prefix - no SIGPIPE possible.
 if [[ ! -f "$SECRETS_DIR/system_password" ]]; then
-  tr -dc 'A-Za-z0-9' </dev/urandom | head -c 50 > "$SECRETS_DIR/system_password"
+  _raw="$(openssl rand -base64 64 | tr -d '/+=\n')"
+  printf '%s' "${_raw:0:50}" > "$SECRETS_DIR/system_password"
   ok "Generated SYSTEM_PASSWORD (mariadb root, 50 chars)"
 fi
 SYSTEM_PASSWORD="$(cat "$SECRETS_DIR/system_password")"
 
 if [[ ! -f "$SECRETS_DIR/roundcube_des_key" ]]; then
-  tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24 > "$SECRETS_DIR/roundcube_des_key"
+  _raw="$(openssl rand -base64 32 | tr -d '/+=\n')"
+  printf '%s' "${_raw:0:24}" > "$SECRETS_DIR/roundcube_des_key"
   ok "Generated Roundcube DES key (24 chars)"
 fi
 ROUNDCUBE_DES_KEY="$(cat "$SECRETS_DIR/roundcube_des_key")"
@@ -84,38 +93,40 @@ _warn_auth0_missing "AUTH0_DOMAIN"
 _warn_auth0_missing "AUTH0_AUDIENCE"
 _warn_auth0_missing "AUTH0_ISSUER"
 
+# manager-api JWT signing secret - independent of the root prompt, generated on every
+# install if missing so the API container always has a /run/secrets/root_jwt_secret to mount.
+if [[ ! -f "$SECRETS_DIR/root_jwt_secret" ]]; then
+  openssl rand -hex 32 > "$SECRETS_DIR/root_jwt_secret"
+  ok "Generated .secrets/root_jwt_secret (64 hex chars)"
+fi
+chmod 600 "$SECRETS_DIR/root_jwt_secret"
+
 # Root account for manager-api : generated ONCE on first install, INSERTed into
-# mailserver.webadmin_accounts via bootstrap SQL run on fresh MariaDB datadir.
-# Credentials are printed to TTY exactly once at end of install and NEVER persisted
-# to disk - they live in the DB only, queried back by manager-api for login.
+# mailserver.Accounts via bootstrap SQL run on fresh MariaDB datadir. Credentials
+# are printed to TTY exactly once at end of install and NEVER persisted to disk -
+# they live in the DB only, queried back by manager-api for login.
 ROOT_PWD_PRINT=""
 ROOT_EMAIL_VAL=""
 MARIADB_INITIALIZED=false
 [[ -d "$DOCKER_VOLUMES/mysql/mysql" ]] && MARIADB_INITIALIZED=true
 
 if [[ "$MARIADB_INITIALIZED" == "true" ]]; then
-  log "MariaDB already initialized - skipping root bootstrap (existing webadmin_accounts row preserved)"
+  log "MariaDB already initialized - skipping root bootstrap (existing Accounts row preserved)"
 else
   [[ -t 0 ]] || fail "No TTY to prompt for root email - run install.sh interactively on first install"
   read -r -p "Root account email (Gmail or your personal address) : " ROOT_EMAIL_INPUT
   ROOT_EMAIL_INPUT="${ROOT_EMAIL_INPUT// /}"
   [[ -z "$ROOT_EMAIL_INPUT" ]] && fail "Root email cannot be empty"
   ROOT_EMAIL_VAL="$ROOT_EMAIL_INPUT"
-  ROOT_PWD_PRINT="$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)"
+  _raw="$(openssl rand -base64 32 | tr -d '/+=\n')"; ROOT_PWD_PRINT="${_raw:0:24}"
   ok "Root credentials generated in memory (printed once at end of install)"
   # SHA512-CRYPT hash with a fresh salt - identical scheme to Dovecot mailbox passwords
   # so the same verification path (openssl passwd -6 -salt ...) works everywhere.
-  ROOT_SALT="$(openssl rand -base64 12 | tr -d '/+=' | head -c 16)"
+  _raw="$(openssl rand -base64 24 | tr -d '/+=\n')"; ROOT_SALT="${_raw:0:16}"
   ROOT_HASHED="$(openssl passwd -6 -salt "$ROOT_SALT" "$ROOT_PWD_PRINT")"
   ROOT_EMAIL_ESC="${ROOT_EMAIL_VAL//\'/\'\'}"
   ROOT_HASHED_ESC="${ROOT_HASHED//\'/\'\'}"
 fi
-
-if [[ ! -f "$SECRETS_DIR/root_jwt_secret" ]]; then
-  openssl rand -hex 32 > "$SECRETS_DIR/root_jwt_secret"
-  ok "Generated .secrets/root_jwt_secret (64 hex chars)"
-fi
-chmod 600 "$SECRETS_DIR/root_jwt_secret"
 
 # Rspamd controller password is written cleartext in worker-controller.inc
 # (rspamadm pw hash needs rspamd binary - we let the container do its own hashing at boot if needed).
@@ -273,37 +284,48 @@ if [[ -n "$REMAINING" ]]; then
   echo "$REMAINING" | sed 's|^|    |'
 fi
 
-# webadmin_accounts bootstrap : additive table for manager-api login, holds the root row.
-# Written into mariadb's /docker-entrypoint-initdb.d/ - runs ONCE on fresh DB init only.
-# Skipped on re-installs because MariaDB ignores init scripts once the datadir is populated,
-# so regenerating the SQL with a different password would be misleading (DB keeps old hash).
+# manager-api login bootstrap : extends the existing 1.x.x `Accounts` table with the
+# columns needed to authenticate (password_hash, role, is_active, ...) and creates the
+# RefreshTokens table where issued refresh JWTs are persisted (one row per session,
+# revocable). Runs ONCE on fresh MariaDB datadir ; skipped on re-installs so we don't
+# overwrite hashes that no longer match what we'd print.
 if [[ "$MARIADB_INITIALIZED" == "false" ]]; then
-  cat > "$RUNTIME_DIR/mariadb/init/99_webadmin_accounts.sql" <<EOF
+  cat > "$RUNTIME_DIR/mariadb/init/99_manager_api_auth.sql" <<EOF
 USE mailserver;
-CREATE TABLE IF NOT EXISTS \`webadmin_accounts\` (
-  \`id\` int(11) NOT NULL AUTO_INCREMENT,
-  \`email\` varchar(255) NOT NULL,
-  \`password_hash\` varchar(128) NOT NULL,
-  \`role\` enum('root','admin','owner','user') NOT NULL DEFAULT 'user',
-  \`account_id\` int(11) DEFAULT NULL,
-  \`is_active\` tinyint(1) NOT NULL DEFAULT 1,
+
+ALTER TABLE \`Accounts\`
+  ADD COLUMN IF NOT EXISTS \`password_hash\` varchar(128) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS \`role\` enum('root','admin','owner','user') NOT NULL DEFAULT 'user',
+  ADD COLUMN IF NOT EXISTS \`is_active\` tinyint(1) NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS \`created_at\` datetime DEFAULT current_timestamp(),
+  ADD COLUMN IF NOT EXISTS \`last_login_at\` datetime DEFAULT NULL,
+  ADD INDEX IF NOT EXISTS \`idx_accounts_role\` (\`role\`);
+
+CREATE TABLE IF NOT EXISTS \`RefreshTokens\` (
+  \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
+  \`jti\` char(36) NOT NULL,
+  \`account_id\` int(11) NOT NULL,
+  \`expires_at\` datetime NOT NULL,
+  \`revoked_at\` datetime DEFAULT NULL,
   \`created_at\` datetime NOT NULL DEFAULT current_timestamp(),
-  \`last_login_at\` datetime DEFAULT NULL,
+  \`last_used_at\` datetime DEFAULT NULL,
+  \`user_agent\` varchar(255) DEFAULT NULL,
+  \`ip\` varchar(45) DEFAULT NULL,
   PRIMARY KEY (\`id\`),
-  UNIQUE KEY (\`email\`),
-  KEY (\`role\`),
-  KEY (\`account_id\`),
-  FOREIGN KEY (\`account_id\`) REFERENCES \`Accounts\` (\`id\`) ON DELETE SET NULL ON UPDATE CASCADE
+  UNIQUE KEY \`uk_RefreshTokens_jti\` (\`jti\`),
+  KEY \`idx_RefreshTokens_account_id\` (\`account_id\`),
+  KEY \`idx_RefreshTokens_expires_at\` (\`expires_at\`),
+  FOREIGN KEY (\`account_id\`) REFERENCES \`Accounts\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_general_ci;
 
-INSERT INTO \`webadmin_accounts\` (\`email\`, \`password_hash\`, \`role\`, \`is_active\`)
+INSERT INTO \`Accounts\` (\`username\`, \`password_hash\`, \`role\`, \`is_active\`)
   VALUES ('$ROOT_EMAIL_ESC', '$ROOT_HASHED_ESC', 'root', 1)
   ON DUPLICATE KEY UPDATE
     \`password_hash\` = VALUES(\`password_hash\`),
     \`role\` = 'root',
     \`is_active\` = 1;
 EOF
-  ok "Wrote webadmin_accounts bootstrap SQL ($ROOT_EMAIL_VAL, role=root)"
+  ok "Wrote manager-api auth bootstrap SQL (Accounts root row + RefreshTokens table)"
 fi
 
 ok "Hydration done - $(find "$RUNTIME_DIR" -type f | wc -l) files in runtime/config/"

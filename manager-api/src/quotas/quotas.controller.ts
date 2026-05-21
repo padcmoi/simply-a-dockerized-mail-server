@@ -3,6 +3,12 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles, RolesGuard } from '../auth/roles.guard';
 import { QuotasService } from './quotas.service';
+import {
+  OpenApiGetDomainQuota,
+  OpenApiGetUserQuota,
+  OpenApiListDomainQuotas,
+  OpenApiListUserQuotas,
+} from './quotas.openapi';
 
 @ApiTags('quotas')
 @ApiBearerAuth()
@@ -13,24 +19,28 @@ export class QuotasController {
 
   @Get('domains')
   @Roles('admin', 'owner')
+  @OpenApiListDomainQuotas()
   listDomains() {
     return this.quotas.listDomains();
   }
 
   @Get('domains/:domain')
   @Roles('admin', 'owner')
+  @OpenApiGetDomainQuota()
   getDomain(@Param('domain') domain: string) {
     return this.quotas.getDomain(domain);
   }
 
   @Get('users')
   @Roles('admin', 'owner')
+  @OpenApiListUserQuotas()
   listUsers(@Query('domain') domain?: string) {
     return this.quotas.listUsers(domain);
   }
 
   @Get('users/:email')
   @Roles('admin', 'owner', 'user')
+  @OpenApiGetUserQuota()
   getUser(@Param('email') email: string) {
     return this.quotas.getUser(email);
   }

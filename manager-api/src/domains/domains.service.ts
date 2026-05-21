@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
@@ -145,13 +140,15 @@ export class DomainsService {
         type: 'TXT',
         name: `${selector}._domainkey`,
         value: dkimTxt ?? '<run dns endpoint after opendkim has the key>',
-        description: 'DKIM public key (selector publishes the public part, private stays on the server)',
+        description:
+          'DKIM public key (selector publishes the public part, private stays on the server)',
       },
       {
         type: 'TXT',
         name: '_dmarc',
         value: `v=DMARC1; p=quarantine; rua=mailto:dmarc_reports@${domain}; ruf=mailto:dmarc_reports@${domain}; fo=1`,
-        description: 'DMARC policy (quarantine on alignment failures, send reports to dmarc_reports@<domain>)',
+        description:
+          'DMARC policy (quarantine on alignment failures, send reports to dmarc_reports@<domain>)',
       },
     ];
     return records;

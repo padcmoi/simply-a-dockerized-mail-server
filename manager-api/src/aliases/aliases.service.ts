@@ -7,9 +7,7 @@ import { UpdateAliasDto } from './dto/update-alias.dto';
 
 @Injectable()
 export class AliasesService {
-  constructor(
-    @InjectRepository(VirtualAlias) private readonly repo: Repository<VirtualAlias>,
-  ) {}
+  constructor(@InjectRepository(VirtualAlias) private readonly repo: Repository<VirtualAlias>) {}
 
   async list(page = 0, limit = 50, search?: string, domain?: string) {
     const where: Record<string, unknown> = {};

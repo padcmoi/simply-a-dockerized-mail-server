@@ -5,4 +5,4 @@ export { VirtualAlias } from './virtual-alias.entity';
 export { VirtualQuotaDomain } from './virtual-quota-domain.entity';
 export { VirtualQuotaUser } from './virtual-quota-user.entity';
 export { SieveRejectSender } from './sieve-reject-sender.entity';
-export { WebadminAccount } from './webadmin-account.entity';
+export { RefreshToken } from './refresh-token.entity';
