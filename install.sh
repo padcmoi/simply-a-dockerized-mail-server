@@ -84,43 +84,38 @@ _warn_auth0_missing "AUTH0_DOMAIN"
 _warn_auth0_missing "AUTH0_AUDIENCE"
 _warn_auth0_missing "AUTH0_ISSUER"
 
-# Root account for manager-api (level 4, above admin/owner/user)
-# Credentials live as docker secrets in .secrets/ on host, /run/secrets/ in container.
-# NEVER stored in .env. The email is ALSO inserted into mailserver.webadmin_accounts
-# so manager-api can fetch role/permissions by email (and so admins/owners/users created
-# later via the API land in the same table).
+# Root account for manager-api : generated ONCE on first install, INSERTed into
+# mailserver.webadmin_accounts via bootstrap SQL run on fresh MariaDB datadir.
+# Credentials are printed to TTY exactly once at end of install and NEVER persisted
+# to disk - they live in the DB only, queried back by manager-api for login.
 ROOT_PWD_PRINT=""
-if [[ ! -f "$SECRETS_DIR/root_email" ]]; then
-  if [[ -t 0 ]]; then
-    read -r -p "Root account email (Gmail or your personal address) : " ROOT_EMAIL_INPUT
-    ROOT_EMAIL_INPUT="${ROOT_EMAIL_INPUT// /}"
-    [[ -z "$ROOT_EMAIL_INPUT" ]] && fail "Root email cannot be empty"
-    echo -n "$ROOT_EMAIL_INPUT" > "$SECRETS_DIR/root_email"
-    ok "Wrote .secrets/root_email"
-  else
-    fail "No .secrets/root_email and no TTY to prompt. Create the file manually then re-run."
-  fi
-fi
-if [[ ! -f "$SECRETS_DIR/root_password" ]]; then
+ROOT_EMAIL_VAL=""
+MARIADB_INITIALIZED=false
+[[ -d "$DOCKER_VOLUMES/mysql/mysql" ]] && MARIADB_INITIALIZED=true
+
+if [[ "$MARIADB_INITIALIZED" == "true" ]]; then
+  log "MariaDB already initialized - skipping root bootstrap (existing webadmin_accounts row preserved)"
+else
+  [[ -t 0 ]] || fail "No TTY to prompt for root email - run install.sh interactively on first install"
+  read -r -p "Root account email (Gmail or your personal address) : " ROOT_EMAIL_INPUT
+  ROOT_EMAIL_INPUT="${ROOT_EMAIL_INPUT// /}"
+  [[ -z "$ROOT_EMAIL_INPUT" ]] && fail "Root email cannot be empty"
+  ROOT_EMAIL_VAL="$ROOT_EMAIL_INPUT"
   ROOT_PWD_PRINT="$(openssl rand -base64 24 | tr -d '/+=' | head -c 24)"
-  echo -n "$ROOT_PWD_PRINT" > "$SECRETS_DIR/root_password"
-  ok "Generated .secrets/root_password (24 chars)"
+  ok "Root credentials generated in memory (printed once at end of install)"
+  # SHA512-CRYPT hash with a fresh salt - identical scheme to Dovecot mailbox passwords
+  # so the same verification path (openssl passwd -6 -salt ...) works everywhere.
+  ROOT_SALT="$(openssl rand -base64 12 | tr -d '/+=' | head -c 16)"
+  ROOT_HASHED="$(openssl passwd -6 -salt "$ROOT_SALT" "$ROOT_PWD_PRINT")"
+  ROOT_EMAIL_ESC="${ROOT_EMAIL_VAL//\'/\'\'}"
+  ROOT_HASHED_ESC="${ROOT_HASHED//\'/\'\'}"
 fi
+
 if [[ ! -f "$SECRETS_DIR/root_jwt_secret" ]]; then
   openssl rand -hex 32 > "$SECRETS_DIR/root_jwt_secret"
   ok "Generated .secrets/root_jwt_secret (64 hex chars)"
 fi
-chmod 600 "$SECRETS_DIR/root_email" "$SECRETS_DIR/root_password" "$SECRETS_DIR/root_jwt_secret"
-
-ROOT_EMAIL_VAL="$(cat "$SECRETS_DIR/root_email")"
-ROOT_PASSWORD_VAL="$(cat "$SECRETS_DIR/root_password")"
-# SHA512-CRYPT hash with a fresh salt - identical scheme to Dovecot mailbox passwords
-# so the same verification path (openssl passwd -6 -salt ...) works everywhere.
-ROOT_SALT="$(openssl rand -base64 12 | tr -d '/+=' | head -c 16)"
-ROOT_HASHED="$(openssl passwd -6 -salt "$ROOT_SALT" "$ROOT_PASSWORD_VAL")"
-# SQL-escape the email + hash before interpolation (safe enough for openssl-generated values)
-ROOT_EMAIL_ESC="${ROOT_EMAIL_VAL//\'/\'\'}"
-ROOT_HASHED_ESC="${ROOT_HASHED//\'/\'\'}"
+chmod 600 "$SECRETS_DIR/root_jwt_secret"
 
 # Rspamd controller password is written cleartext in worker-controller.inc
 # (rspamadm pw hash needs rspamd binary - we let the container do its own hashing at boot if needed).
@@ -279,9 +274,11 @@ if [[ -n "$REMAINING" ]]; then
 fi
 
 # webadmin_accounts bootstrap : additive table for manager-api login, holds the root row.
-# Written into mariadb's /docker-entrypoint-initdb.d/ - runs on first DB init. For an
-# existing DB (migration from 1.x.x), manager-api's BootstrapService also ensures the row.
-cat > "$RUNTIME_DIR/mariadb/init/99_webadmin_accounts.sql" <<EOF
+# Written into mariadb's /docker-entrypoint-initdb.d/ - runs ONCE on fresh DB init only.
+# Skipped on re-installs because MariaDB ignores init scripts once the datadir is populated,
+# so regenerating the SQL with a different password would be misleading (DB keeps old hash).
+if [[ "$MARIADB_INITIALIZED" == "false" ]]; then
+  cat > "$RUNTIME_DIR/mariadb/init/99_webadmin_accounts.sql" <<EOF
 USE mailserver;
 CREATE TABLE IF NOT EXISTS \`webadmin_accounts\` (
   \`id\` int(11) NOT NULL AUTO_INCREMENT,
@@ -306,7 +303,8 @@ INSERT INTO \`webadmin_accounts\` (\`email\`, \`password_hash\`, \`role\`, \`is_
     \`role\` = 'root',
     \`is_active\` = 1;
 EOF
-ok "Wrote webadmin_accounts bootstrap SQL ($ROOT_EMAIL_VAL, role=root)"
+  ok "Wrote webadmin_accounts bootstrap SQL ($ROOT_EMAIL_VAL, role=root)"
+fi
 
 ok "Hydration done - $(find "$RUNTIME_DIR" -type f | wc -l) files in runtime/config/"
 

@@ -8,7 +8,7 @@
 - `install.sh` orchestrates secrets generation, template hydration and volumes preparation
 - `templates/` holds versioned config templates with `____placeholders` (mirror of 1.x.x `docker-build/conf.d`)
 - `runtime/config/` is the hydrated output, bind-mounted into each container (gitignored)
-- `.secrets/` holds generated persistent secrets (mariadb root, roundcube DES key)
+- `.secrets/` holds generated persistent secrets (mariadb root password, roundcube DES key, manager-api JWT signing secret)
 - Postfix milters declared explicitly in main.cf (no more sequential sed appends across setup.d scripts)
 - ClamAV and OpenDMARC behind compose profiles (opt-in, ClamAV optional to avoid kswapd on low-memory hosts)
 - `manager-api/` : NestJS 11 admin API scaffold (TypeORM + Auth0 RS256/JWKS + helmet + throttler + swagger + env validation strict)
@@ -45,6 +45,8 @@
 
 - Mail server is no longer a single Debian-bullseye monolith with 15 chained `setup.d` scripts
 - Web management is API-first (NestJS) + Nuxt frontend, replacing the previous `menu.sh` bash interface
+- Root account credentials never persisted on disk : `install.sh` generates email + password in memory only, inserts via the `99_webadmin_accounts.sql` bootstrap (run once on fresh MariaDB datadir), and prints them ONCE to TTY at the end of install. The DB (`webadmin_accounts` table) is the single source of truth, queried by manager-api at login. Bootstrap is skipped on re-installs once MariaDB datadir is initialized.
+- `manager-api/tsconfig.json` : explicit `rootDir: ./src` (silences TS warning when `include` covers a single source root) ; deprecated `baseUrl` removed (no `paths` mapping consumed it)
 
 ### Compatibility
 
