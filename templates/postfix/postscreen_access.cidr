@@ -1,0 +1,14 @@
+# Rules are evaluated in the order as specified.
+# Blacklist 192.168.* except 192.168.0.1.
+# Example:
+# 192.168.0.1       permit
+# 192.168.0.0/16    reject
+
+# Gmail servers
+209.85.0.0/16       permit
+
+# Amazon SES
+54.240.0.0/16       permit
+
+# Yahoo servers
+77.238.0.0/16       permit

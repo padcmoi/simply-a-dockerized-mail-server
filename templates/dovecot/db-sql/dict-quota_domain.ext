@@ -1,0 +1,15 @@
+!include_try _mysql-connect.conf
+
+map {
+  pattern = priv/quota/storage
+  table = VirtualQuotaDomains
+  username_field = domain
+  value_field = bytes
+}
+
+map {
+  pattern = priv/quota/messages
+  table = VirtualQuotaDomains
+  username_field = domain
+  value_field = messages
+}

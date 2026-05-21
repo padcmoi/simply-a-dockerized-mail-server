@@ -1,0 +1,7 @@
+if /^From:/
+!/^From: *dmarc-noreply@/ REJECT Only DMARC reports allowed. F
+endif
+
+if /^Subject:/
+!/^Subject: Report Domain:/ REJECT Only DMARC reports allowed. S
+endif
