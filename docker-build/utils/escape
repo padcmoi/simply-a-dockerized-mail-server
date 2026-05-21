@@ -1,5 +1,0 @@
-#!/bin/bash
-
-escape_slash() {
-    echo "$1" | sed 's/\//\\\//g'
-}
