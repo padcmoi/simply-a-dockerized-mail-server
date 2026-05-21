@@ -1,9 +1,7 @@
-node_modules
-dist
 .env
-.env.file*
-___keep
-volumes
-nohup.out
-backup/*.tar*
-.env.menu
+.secrets/
+runtime/
+volumes/
+*.log
+node_modules/
+dist/

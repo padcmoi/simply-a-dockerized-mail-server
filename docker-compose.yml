@@ -1,50 +1,294 @@
+#
+# v2.0.0 - multi-container mail server
+# Run install.sh first to hydrate runtime/config/ and prepare volumes + secrets.
+#
+# All services run on pinned images. Custom thin Alpine layers only for postfix and dovecot
+# (no upstream image bundles MySQL plugins + bind-mount config cleanly).
+#
+# Service map :
+#   mariadb       - mailserver + opendmarc + roundcube + webadmin_accounts (internal only)
+#   redis         - Rspamd backend (bayes, greylist) (internal only)
+#   postfix       - SMTP 25/465/587, postscreen
+#   dovecot       - IMAP/IMAPS 143/993, LMTP, managesieve
+#   rspamd        - milter 11332, web UI on 127.0.0.1:11334
+#   opendkim      - DKIM signing milter 12301
+#   opendmarc     - DMARC milter 8893 (profile: opendmarc)
+#   clamav        - antivirus daemon (profile: clamav)
+#   roundcube     - webmail (127.0.0.1:4080)
+#   manager-api   - NestJS admin API (127.0.0.1:4003)
+#   manager-ui    - Nuxt 3 SPA (127.0.0.1:8080)
+#   fail2ban      - intrusion prevention
+#
+
 services:
-  simply-mailserver:
-    stdin_open: true
-    tty: true
+  mariadb:
+    image: mariadb:10.5.29
+    container_name: mail-mariadb
     restart: always
-    container_name: simply-mailserver
-    build:
-      context: .
     env_file: .env
-    ports:
-      - "25:25"
-      - "143:143"
-      - "465:465"
-      - "587:587"
-      - "993:993"
-      - "4000:4000" # admin web application
-      - "4001:4001" # rspamd web interface
-      - "4002:4002" # phpmyadmin
-      - "4003:3000" # nest api secure only
-      - "4080:4080" # roundcube unsecure
-      # - "4190:4190" # could be useful in the case of an external e-mail client
-      - "4443:4443" # roundcube secure
-    extra_hosts:
-      - "${DOMAIN_FQDN}:${ADRESSIP}"
-    cap_add:
-      - NET_ADMIN
+    environment:
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/mariadb_root_password
+    volumes:
+      - ${DOCKER_VOLUMES}/mysql:/var/lib/mysql
+      - ./runtime/config/mariadb/init:/docker-entrypoint-initdb.d:ro
+    secrets:
+      - mariadb_root_password
     networks:
       backend:
-        ipv4_address: 172.200.0.5
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:6.0.20-alpine
+    container_name: mail-redis
+    restart: always
     volumes:
-      - $DOCKER_VOLUMES/log:/var/log
-      - $DOCKER_VOLUMES/ssl:/etc/_private
-      - $DOCKER_VOLUMES/mail:/var/mail
-      - $DOCKER_VOLUMES/mysql:/var/lib/mysql
-      - $DOCKER_VOLUMES/postfix:/var/spool/postfix
-      - $DOCKER_VOLUMES/postscreen:/etc/_postscreen
-      - $DOCKER_VOLUMES/redis:/var/lib/redis
-      - $DOCKER_VOLUMES/rspamd:/var/lib/rspamd
-      - $DOCKER_VOLUMES/clamav:/var/lib/clamav
-      - $DOCKER_VOLUMES/opendkim:/etc/opendkim
-      - $DOCKER_VOLUMES/fail2ban:/var/lib/fail2ban
-      - $DOCKER_VOLUMES/opendmarc:/var/opendmarc
+      - ${DOCKER_VOLUMES}/redis:/data
+    networks:
+      backend:
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  opendkim:
+    # Alpine 3.20 ships opendkim 2.11.0 via apk - thin Dockerfile, same pattern as postfix/dovecot
+    build:
+      context: ./dockerfiles/opendkim
+    image: mail-opendkim:v2.0.0
+    container_name: mail-opendkim
+    restart: always
+    volumes:
+      - ${DOCKER_VOLUMES}/opendkim:/etc/opendkim
+      - ./runtime/config/opendkim:/etc/opendkim-config:ro
+    networks:
+      backend:
+        aliases:
+          - opendkim
+
+  rspamd:
+    image: rspamd/rspamd:3.11.1
+    container_name: mail-rspamd
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ${DOCKER_VOLUMES}/rspamd:/var/lib/rspamd
+      - ./runtime/config/rspamd/local.d:/etc/rspamd/local.d:ro
+      - ./runtime/config/rspamd/override.d:/etc/rspamd/override.d:ro
+    networks:
+      backend:
+        aliases:
+          - rspamd
+    ports:
+      - "127.0.0.1:11334:11334"
+
+  opendmarc:
+    # Alpine 3.20 ships opendmarc 1.4.2 via apk
+    build:
+      context: ./dockerfiles/opendmarc
+    image: mail-opendmarc:v2.0.0
+    container_name: mail-opendmarc
+    restart: always
+    profiles: ["opendmarc"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - ${DOCKER_VOLUMES}/opendmarc:/var/opendmarc
+      - ./runtime/config/opendmarc:/etc/opendmarc-config:ro
+    networks:
+      backend:
+        aliases:
+          - opendmarc
+
+  clamav:
+    image: clamav/clamav:1.4.1
+    container_name: mail-clamav
+    restart: always
+    profiles: ["clamav"]
+    volumes:
+      - ${DOCKER_VOLUMES}/clamav:/var/lib/clamav
+    networks:
+      backend:
+        aliases:
+          - clamav
+
+  dovecot:
+    build:
+      context: ./dockerfiles/dovecot
+    image: mail-dovecot:v2.0.0
+    container_name: mail-dovecot
+    restart: always
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    env_file: .env
+    volumes:
+      - ${DOCKER_VOLUMES}/mail:/var/mail
+      - ${DOCKER_VOLUMES}/ssl:/etc/_private:ro
+      - ./runtime/config/dovecot:/etc/dovecot-config:ro
+      # Shared with postfix - the dovecot-lmtp + auth unix sockets live here.
+      # Compat lock : LMTP and SASL stay on unix sockets, not TCP.
+      - ${DOCKER_VOLUMES}/postfix-spool:/var/spool/postfix
+    networks:
+      backend:
+        aliases:
+          - dovecot
+    ports:
+      - "143:143"
+      - "993:993"
+
+  postfix:
+    build:
+      context: ./dockerfiles/postfix
+    image: mail-postfix:v2.0.0
+    container_name: mail-postfix
+    restart: always
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      dovecot:
+        condition: service_started
+      rspamd:
+        condition: service_started
+      opendkim:
+        condition: service_started
+    env_file: .env
+    extra_hosts:
+      - "${DOMAIN_FQDN}:${ADRESSIP}"
+    volumes:
+      - ${DOCKER_VOLUMES}/postfix-spool:/var/spool/postfix
+      - ${DOCKER_VOLUMES}/ssl:/etc/_private:ro
+      - ./runtime/config/postfix:/etc/postfix-config:ro
+    networks:
+      backend:
+    ports:
+      - "25:25"
+      - "465:465"
+      - "587:587"
+
+  roundcube:
+    image: roundcube/roundcubemail:1.6.x-apache
+    container_name: mail-roundcube
+    restart: always
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      dovecot:
+        condition: service_started
+    environment:
+      ROUNDCUBEMAIL_DB_TYPE: mysql
+      ROUNDCUBEMAIL_DB_HOST: mariadb
+      ROUNDCUBEMAIL_DB_NAME: roundcube
+      ROUNDCUBEMAIL_DB_USER: mailuser
+      ROUNDCUBEMAIL_DB_PASSWORD: ${ADMIN_PASSWORD}
+      ROUNDCUBEMAIL_DEFAULT_HOST: ssl://dovecot
+      ROUNDCUBEMAIL_DEFAULT_PORT: 993
+      ROUNDCUBEMAIL_SMTP_SERVER: tls://postfix
+      ROUNDCUBEMAIL_SMTP_PORT: 587
+    volumes:
+      - ${DOCKER_VOLUMES}/roundcube:/var/roundcube/config
+    networks:
+      backend:
+    # Loopback only - reverse proxy on the host fronts Roundcube in HTTP
+    ports:
+      - "127.0.0.1:4080:80"
+
+  manager-api:
+    build:
+      context: ./manager-api
+      target: dev
+    container_name: mail-manager-api
+    restart: always
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      CORS_ORIGINS: http://127.0.0.1:8080
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_USER: mailuser
+      DB_PASSWORD: ${ADMIN_PASSWORD}
+      DB_NAME: mailserver
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      AUTH0_ISSUER: ${AUTH0_ISSUER}
+      ROOT_JWT_EXPIRES_IN: 15m
+      ROOT_REFRESH_EXPIRES_IN: 7d
+      DOMAIN_FQDN: ${DOMAIN_FQDN}
+      THROTTLE_TTL: 60
+      THROTTLE_LIMIT: 100
+      LOG_LEVEL: info
+      SWAGGER_ENABLED: "true"
+    volumes:
+      # Docker socket - manager-api is the mail server control plane
+      # (postfix reload, DKIM genkey, fail2ban ban/unban, log stream, ...)
+      - /var/run/docker.sock:/var/run/docker.sock
+    secrets:
+      - root_email
+      - root_password
+      - root_jwt_secret
+    networks:
+      backend:
+    # Loopback only - host nginx reverse proxy fronts this
+    ports:
+      - "127.0.0.1:4003:3000"
+
+  manager-ui:
+    # Nuxt 3 SPA - login flow hits manager-api directly. External clients can use the
+    # same JWT auth (manager-ui is just one consumer among others).
+    build:
+      context: ./manager-ui
+      target: production
+    container_name: mail-manager-ui
+    restart: always
+    depends_on:
+      - manager-api
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: http://127.0.0.1:4003/api/v1
+      NUXT_PUBLIC_AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      NUXT_PUBLIC_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      NUXT_PUBLIC_AUTH0_CLIENT_ID: ${AUTH0_SPA_CLIENT_ID:-}
+    networks:
+      backend:
+    # Loopback only - host nginx reverse proxy fronts this in HTTP
+    ports:
+      - "127.0.0.1:8080:3000"
+
+  fail2ban:
+    image: crazymax/fail2ban:1.0.2
+    container_name: mail-fail2ban
+    restart: always
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ${DOCKER_VOLUMES}/fail2ban:/var/lib/fail2ban
+      - ${DOCKER_VOLUMES}/log:/var/log:ro
+      # Only mount jail.local - the 1.x.x filter.d/* uses Debian-only interpolation keys
+      # incompatible with the Alpine fail2ban. Fall back to the image's own filters.
+      - ./runtime/config/fail2ban/jail.local:/etc/fail2ban/jail.local:ro
 
 networks:
   backend:
-    ipam:
-      driver: default
-      config:
-        - subnet: "172.200.0.0/16"
-          gateway: "172.200.0.1"
+    name: mail_backend
+    driver: bridge
+
+secrets:
+  mariadb_root_password:
+    file: ./.secrets/system_password
+  root_email:
+    file: ./.secrets/root_email
+  root_password:
+    file: ./.secrets/root_password
+  root_jwt_secret:
+    file: ./.secrets/root_jwt_secret
