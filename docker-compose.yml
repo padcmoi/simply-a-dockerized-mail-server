@@ -281,7 +281,7 @@ services:
       backend:
     # Loopback only - host nginx reverse proxy fronts this in HTTP
     ports:
-      - "127.0.0.1:8080:3000"
+      - "8080:3000"
 
   fail2ban:
     image: crazymax/fail2ban:1.0.2
