@@ -2,6 +2,7 @@
 .env.local
 .env.menu
 .env.file*
+INSTALL_INFO.txt
 volumes/
 nohup.out
 backup/
