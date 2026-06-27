@@ -1,0 +1,31 @@
+[DEFAULT]
+ignoreip = 127.0.0.1/8 ::1 172.200.0.0/24
+bantime  = ${FAIL2BAN_BANTIME}
+findtime = ${FAIL2BAN_FINDTIME}
+maxretry = ${FAIL2BAN_MAXRETRY}
+backend  = polling
+banaction = iptables-multiport
+loglevel  = INFO
+logtarget = STDOUT
+
+# Disable defaults that need /var/log/messages (not present in this container).
+[sshd]
+enabled = false
+
+[postfix-sasl]
+enabled  = true
+filter   = postfix[mode=auth]
+port     = smtp,465,587
+logpath  = /var/log/mail/postfix.log
+
+[postfix-relay]
+enabled  = true
+filter   = postfix[mode=normal]
+port     = smtp,465,587
+logpath  = /var/log/mail/postfix.log
+
+[dovecot]
+enabled  = true
+filter   = dovecot
+port     = 993,143
+logpath  = /var/log/mail/dovecot.log
