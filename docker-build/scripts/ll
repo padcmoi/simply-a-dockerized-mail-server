@@ -1,7 +1,0 @@
-#!/bin/bash
-
-if [ $1 ]; then
-    stat -c '%a %U:%G %n' * | grep "${1}"
-else
-    stat -c '%a %U:%G %n' *
-fi
