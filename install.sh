@@ -1,88 +1,285 @@
 #!/usr/bin/env bash
-# First-run bootstrap. Generates .env with strong secrets, creates the initial
-# admin row in Accounts, and reminds you of the DKIM key generation step.
-# Idempotent.
+# Simply Mail Server v2 one-shot installer.
+#
+# A non-technical user types a hostname, hits enter for everything else, walks
+# away with: full stack running, schema created by TypeORM, admin account
+# seeded, primary domain + first mailbox provisioned, DKIM key generated and
+# the DNS record printed ready to paste. Passwords are auto-generated.
+#
+# Idempotent: re-runs only fill what is missing.
 set -euo pipefail
 cd "$(dirname "$0")"
 
 SAMPLE=.env.sample
 TARGET=.env
 
-c()   { printf '\033[1;34m[install]\033[0m %s\n' "$*"; }
-warn(){ printf '\033[1;33m[warn]\033[0m %s\n' "$*"; }
-die() { printf '\033[1;31m[fatal]\033[0m %s\n' "$*"; exit 1; }
+c()    { printf '\033[1;34m[install]\033[0m %s\n' "$*"; }
+ok()   { printf '\033[1;32m[ok]\033[0m %s\n' "$*"; }
+q()    { printf '\033[1;36m[?]\033[0m %s ' "$*"; }
+warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*"; }
+die()  { printf '\033[1;31m[fatal]\033[0m %s\n' "$*"; exit 1; }
+
+if [ "$(id -u)" -ne 0 ]; then
+  die "This script must be run with sudo or as root"
+fi
 
 [ -f "$SAMPLE" ] || die ".env.sample missing"
-[ -f "$TARGET" ] || { c "creating $TARGET from $SAMPLE"; cp "$SAMPLE" "$TARGET"; }
+if [ -f "$TARGET" ]; then
+  die ".env already exists. install.sh is a one-shot bootstrap and refuses to
+       run with an existing .env to avoid clobbering live secrets.
+       To start over: rm .env && sudo rm -rf volumes/ INSTALL_INFO.txt
+       To tweak values without reinstalling: edit .env directly."
+fi
+c "creating $TARGET from $SAMPLE"
+cp "$SAMPLE" "$TARGET"
+
+env_get() { grep -E "^${1}=" "$TARGET" | head -1 | cut -d= -f2-; }
+env_set() {
+  local key="$1" value="$2"
+  if grep -qE "^${key}=" "$TARGET"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "$TARGET"
+  else
+    echo "${key}=${value}" >> "$TARGET"
+  fi
+}
+
+needs_input() {
+  local v="$1"
+  [[ -z "$v" || "$v" =~ example\.com|203\.0\.113\.10|change_me ]]
+}
+
+ask() {
+  local key="$1" label="$2" default="$3"
+  local current
+  current=$(env_get "$key")
+  if needs_input "$current"; then
+    if [ -n "$default" ]; then
+      q "$label [$default]:"
+    else
+      q "$label:"
+    fi
+    local answer
+    read -r answer
+    env_set "$key" "${answer:-$default}"
+  fi
+}
 
 rand_b64()   { openssl rand -base64 48 | tr -d '\n/+=' | head -c 32; }
 rand_alnum() { openssl rand -hex 16; }
 
-substitute() {
+# Read a value in a validation loop: re-prompts until the answer matches the
+# regex. Echoes the validated value (caller captures with $(...)).
+# Warnings and prompts go to stderr so they do not pollute the captured value.
+prompt_re() {
+  local label="$1" default="$2" pattern="$3" hint="$4" ans
+  while true; do
+    if [ -n "$default" ]; then
+      printf '\033[1;36m[?]\033[0m %s [%s]: ' "$label" "$default" >&2
+    else
+      printf '\033[1;36m[?]\033[0m %s: ' "$label" >&2
+    fi
+    read -r ans
+    ans="${ans:-$default}"
+    if [[ "$ans" =~ $pattern ]]; then
+      printf '%s' "$ans"
+      return 0
+    fi
+    printf '\033[1;33m[warn]\033[0m invalid input, expected: %s\n' "$hint" >&2
+  done
+}
+
+set_secret_if_placeholder() {
   local key="$1" value="$2"
-  if grep -Eq "^${key}=change_me" "$TARGET"; then
-    c "setting ${key}"
-    sed -i "s|^${key}=change_me.*|${key}=${value}|" "$TARGET"
+  if grep -qE "^${key}=change_me" "$TARGET"; then
+    env_set "$key" "$value"
   fi
 }
 
-substitute DB_PASSWORD                "$(rand_alnum)"
-substitute DB_ROOT_PASSWORD           "$(rand_alnum)"
-substitute RSPAMD_PASSWORD            "$(rand_alnum)"
-substitute MANAGER_JWT_ACCESS_SECRET  "$(rand_b64)"
-substitute MANAGER_JWT_REFRESH_SECRET "$(rand_b64)"
-substitute MANAGER_ADMIN_PASSWORD     "$(rand_alnum)"
+# ---------------------------------------------------------------------------
+# 1. Interactive configuration
+# ---------------------------------------------------------------------------
+echo
+c "configuration"
 
-needs_input=0
-for k in MAIL_HOSTNAME MAIL_PUBLIC_IP TLS_CERT_NAME; do
-  v=$(grep -E "^${k}=" "$TARGET" | head -1 | cut -d= -f2-)
-  if [[ "$v" =~ example\.com|203\.0\.113\.10 ]]; then
-    warn "${k} still has sample value (${v}) - edit .env then re-run"
-    needs_input=1
+# Prompt for the FQDN in a loop: a Let's Encrypt cert for it must already
+# exist on the host. Re-prompt until the user enters a name whose cert is
+# present (or Ctrl-C). Only persist to .env once the check passes.
+LE_PATH=$(env_get TLS_LETSENCRYPT_PATH)
+FQDN_DEFAULT="mail.example.com"
+while true; do
+  q "Mail server FQDN (PTR + cert CN) [$FQDN_DEFAULT]:"
+  read -r ANSWER
+  HOSTNAME="${ANSWER:-$FQDN_DEFAULT}"
+  CERT_DIR="${LE_PATH}/live/${HOSTNAME}"
+  if [ -f "${CERT_DIR}/fullchain.pem" ] && [ -f "${CERT_DIR}/privkey.pem" ]; then
+    env_set MAIL_HOSTNAME "$HOSTNAME"
+    env_set TLS_CERT_NAME "$HOSTNAME"
+    ok "TLS certificate found at ${CERT_DIR}"
+    break
   fi
+  warn "no Let's Encrypt certificate at ${CERT_DIR}/{fullchain,privkey}.pem"
+  warn "obtain one with: sudo certbot certonly --standalone -d ${HOSTNAME}"
+  warn "then re-enter the FQDN below (or Ctrl-C to quit)"
+  FQDN_DEFAULT="$HOSTNAME"
 done
 
-if [ "$needs_input" -eq 1 ]; then
-  echo
-  echo "edit $TARGET first, then run ./service.sh up"
-  exit 0
-fi
+DETECTED_IP=$(curl -s --max-time 4 https://api.ipify.org 2>/dev/null \
+            || curl -s --max-time 4 https://ifconfig.me 2>/dev/null \
+            || true)
+PUBLIC_IP=$(prompt_re "Public IPv4 of this host" "$DETECTED_IP" \
+  '^([0-9]{1,3}\.){3}[0-9]{1,3}$' "IPv4 like 203.0.113.10")
+env_set MAIL_PUBLIC_IP "$PUBLIC_IP"
 
-c "bringing mariadb up..."
-docker compose up -d mariadb
-docker compose exec -T mariadb sh -c 'until healthcheck.sh --connect --innodb_initialized 2>/dev/null; do sleep 1; done' || die "mariadb did not become healthy"
+DEFAULT_DOMAIN="${HOSTNAME#mail.}"
+PRIMARY_DOMAIN=$(prompt_re "Primary mail domain" "$DEFAULT_DOMAIN" \
+  '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$' \
+  "domain name like example.com")
 
-c "seeding initial Accounts row..."
-ADMIN_USER=$(grep -E '^MANAGER_ADMIN_USERNAME=' "$TARGET" | cut -d= -f2-)
-ADMIN_PASS=$(grep -E '^MANAGER_ADMIN_PASSWORD=' "$TARGET" | cut -d= -f2-)
-DB_NAME=$(grep -E '^DB_NAME=' "$TARGET" | cut -d= -f2-)
-DB_ROOT=$(grep -E '^DB_ROOT_PASSWORD=' "$TARGET" | cut -d= -f2-)
+MAILBOX_LOCAL=$(prompt_re "First mailbox local part" "postmaster" \
+  '^[a-zA-Z0-9._+-]+$' \
+  "letters, digits, dots, underscores, dashes, plus")
+MAILBOX_EMAIL="${MAILBOX_LOCAL}@${PRIMARY_DOMAIN}"
 
-PASS_HASH=$(docker run --rm -e P="$ADMIN_PASS" node:22-alpine sh -c "npm install --silent bcrypt@5.1.1 >/dev/null 2>&1 && node -e \"console.log(require('bcrypt').hashSync(process.env.P, 12))\"")
+RC_LANG=$(prompt_re "Roundcube default language (en_US, fr_FR, de_DE, ...)" "en_US" \
+  '^[a-z]{2}_[A-Z]{2}$' \
+  "locale code like en_US or fr_FR")
+env_set ROUNDCUBE_LANGUAGE "$RC_LANG"
 
+# ---------------------------------------------------------------------------
+# 2. Secrets (auto-generated, never asked)
+# ---------------------------------------------------------------------------
+c "generating secrets where placeholders remain"
+set_secret_if_placeholder DB_PASSWORD                "$(rand_alnum)"
+set_secret_if_placeholder DB_ROOT_PASSWORD           "$(rand_alnum)"
+set_secret_if_placeholder RSPAMD_PASSWORD            "$(rand_alnum)"
+set_secret_if_placeholder MANAGER_JWT_ACCESS_SECRET  "$(rand_b64)"
+set_secret_if_placeholder MANAGER_JWT_REFRESH_SECRET "$(rand_b64)"
+set_secret_if_placeholder MANAGER_ADMIN_PASSWORD     "$(rand_alnum)"
+MAILBOX_PASSWORD=$(rand_alnum)
+
+PUBLIC_IP=$(env_get MAIL_PUBLIC_IP)
+DB_NAME=$(env_get DB_NAME)
+DB_ROOT=$(env_get DB_ROOT_PASSWORD)
+ADMIN_USER=$(env_get MANAGER_ADMIN_USERNAME)
+ADMIN_PASS=$(env_get MANAGER_ADMIN_PASSWORD)
+MANAGEUI_PORT=$(env_get BINDING_PORT_MANAGEUI)
+ROUNDCUBE_PORT=$(env_get BINDING_PORT_ROUNDCUBE)
+PHPMYADMIN_PORT=$(env_get BINDING_PORT_PHPMYADMIN)
+RSPAMDUI_PORT=$(env_get BINDING_PORT_RSPAMD_UI)
+
+# ---------------------------------------------------------------------------
+# 3. Full stack up
+# ---------------------------------------------------------------------------
+c "building images and bringing the full stack up..."
+docker compose up -d --build
+
+# ---------------------------------------------------------------------------
+# 4. Wait for TypeORM to create the schema
+# ---------------------------------------------------------------------------
+c "waiting for TypeORM to create the schema (max 180s)..."
+T=180
+until docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" \
+        -e "SHOW TABLES LIKE 'Accounts'" 2>/dev/null | grep -q Accounts; do
+  sleep 1
+  T=$((T-1))
+  [ $T -le 0 ] && die "manager-api did not finish creating the schema in time"
+done
+ok "schema ready"
+
+# ---------------------------------------------------------------------------
+# 5. Seed admin
+# ---------------------------------------------------------------------------
+c "hashing admin password and upserting Accounts row..."
+ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
+  node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" \
+  | tr -d '\r')
 docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
 INSERT INTO Accounts (username, password, role, enabled, created_at, updated_at)
-VALUES ('${ADMIN_USER}', '${PASS_HASH}', 'admin', 1, NOW(), NOW())
+VALUES ('${ADMIN_USER}', '${ADMIN_HASH}', 'admin', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE password=VALUES(password), updated_at=NOW();
 SQL
+ok "admin account ready"
 
-c "install complete"
-cat <<EOF
+# ---------------------------------------------------------------------------
+# 6. Seed primary domain and first mailbox
+# ---------------------------------------------------------------------------
+c "provisioning primary domain ${PRIMARY_DOMAIN} and mailbox ${MAILBOX_EMAIL}..."
+MAILBOX_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$MAILBOX_PASSWORD")
+DOMAIN_QUOTA=$((10 * 1024 * 1024 * 1024))
+MAILBOX_QUOTA=$((1 * 1024 * 1024 * 1024))
+MAILDIR="${PRIMARY_DOMAIN}/${MAILBOX_LOCAL}/"
+docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
+INSERT IGNORE INTO VirtualDomains (domain, quota, active)
+VALUES ('${PRIMARY_DOMAIN}', ${DOMAIN_QUOTA}, 1);
 
-Next:
-  ./service.sh up
-  open https://<your reverse proxy host>
-  login: ${ADMIN_USER} / ${ADMIN_PASS}
+INSERT INTO VirtualUsers (domain, email, password, maildir, quota, active)
+VALUES ('${PRIMARY_DOMAIN}', '${MAILBOX_EMAIL}', '${MAILBOX_HASH}', '${MAILDIR}', ${MAILBOX_QUOTA}, 1)
+ON DUPLICATE KEY UPDATE password=VALUES(password);
+SQL
+ok "domain and mailbox provisioned"
 
-DKIM key generation per domain (run after adding a domain in the UI):
-  ./service.sh exec opendkim sh -c '
-    D=example.com; S=dkim_\$(date +%Y_%m)
-    mkdir -p /etc/opendkim/keys/\$D
+# ---------------------------------------------------------------------------
+# 7. DKIM key
+# ---------------------------------------------------------------------------
+SELECTOR="dkim_$(date +%Y_%m)"
+c "generating DKIM key for ${PRIMARY_DOMAIN} (selector ${SELECTOR})..."
+docker compose exec -T opendkim sh -c "
+  set -e
+  D='${PRIMARY_DOMAIN}'
+  S='${SELECTOR}'
+  mkdir -p /etc/opendkim/keys/\$D
+  if [ ! -f /etc/opendkim/keys/\$D/\$S.private ]; then
     opendkim-genkey -b 2048 -d \$D -s \$S -D /etc/opendkim/keys/\$D
-    echo "\${S}._domainkey.\${D} \${D}:\${S}:/etc/opendkim/keys/\${D}/\${S}.private" >> /etc/opendkim/key.table
-    echo "*@\${D} \${S}._domainkey.\${D}" >> /etc/opendkim/signing.table
-    cat /etc/opendkim/keys/\$D/\$S.txt
-  '
-  ./service.sh restart opendkim
+    chown opendkim:opendkim /etc/opendkim/keys/\$D/\$S.private
+  fi
+  grep -q \"\$S._domainkey.\$D\" /etc/opendkim/key.table 2>/dev/null || \
+    echo \"\$S._domainkey.\$D \$D:\$S:/etc/opendkim/keys/\$D/\$S.private\" >> /etc/opendkim/key.table
+  grep -q \"\\*@\$D \$S._domainkey.\$D\" /etc/opendkim/signing.table 2>/dev/null || \
+    echo \"*@\$D \$S._domainkey.\$D\" >> /etc/opendkim/signing.table
+" >/dev/null
+DKIM_VALUE=$(docker compose exec -T opendkim sh -c \
+  "grep -o '\"[^\"]*\"' /etc/opendkim/keys/${PRIMARY_DOMAIN}/${SELECTOR}.txt | tr -d '\"' | tr -d '\n'")
+docker compose restart opendkim >/dev/null
+ok "DKIM key generated"
 
+# ---------------------------------------------------------------------------
+# 8. Summary
+# ---------------------------------------------------------------------------
+PUBLIC_DISPLAY="${PUBLIC_IP:-<MAIL_PUBLIC_IP>}"
+cat <<EOF | tee INSTALL_INFO.txt
+
+==========================================================================
+                       install complete
+==========================================================================
+
+URLs (binding IPs are set in .env, default 127.0.0.1 for UIs):
+  manager UI   : http://${PUBLIC_DISPLAY}:${MANAGEUI_PORT}
+  roundcube    : http://${PUBLIC_DISPLAY}:${ROUNDCUBE_PORT}
+  phpmyadmin   : http://${PUBLIC_DISPLAY}:${PHPMYADMIN_PORT}
+  rspamd UI    : http://${PUBLIC_DISPLAY}:${RSPAMDUI_PORT}
+
+Manager UI credentials:
+  login        : ${ADMIN_USER}
+  password     : ${ADMIN_PASS}
+
+First mailbox (IMAP / SMTP / roundcube):
+  email        : ${MAILBOX_EMAIL}
+  password     : ${MAILBOX_PASSWORD}
+
+phpMyAdmin (root):
+  user         : root
+  password     : ${DB_ROOT}
+
+DKIM DNS record to publish for ${PRIMARY_DOMAIN}:
+  Name  : ${SELECTOR}._domainkey
+  Type  : TXT
+  Value : ${DKIM_VALUE}
+
+After publishing the DNS record (1-5 min propagation), verify with:
+  docker exec mail-opendkim opendkim-testkey \\
+    -d ${PRIMARY_DOMAIN} -s ${SELECTOR} \\
+    -k /etc/opendkim/keys/${PRIMARY_DOMAIN}/${SELECTOR}.private -vvv
+
+See DOMAIN_DNS.md for the full DNS record set (MX, SPF, DMARC).
+==========================================================================
 EOF
