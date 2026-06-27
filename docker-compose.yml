@@ -205,6 +205,7 @@ services:
       ROUNDCUBEMAIL_SMTP_SERVER: tls://mail-postfix
       ROUNDCUBEMAIL_SMTP_PORT: 587
       ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,managesieve
+      ROUNDCUBE_LANGUAGE: ${ROUNDCUBE_LANGUAGE}
     volumes:
       - ./images/roundcube/config:/var/roundcube/config:ro
     networks:

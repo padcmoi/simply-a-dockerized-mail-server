@@ -24,7 +24,7 @@ $config['force_https']           = false;
 $config['trusted_host_patterns'] = ['.+'];
 
 $config['skin']                   = 'elastic';
-$config['language']               = 'en_US';
+$config['language']               = getenv('ROUNDCUBE_LANGUAGE') ?: 'en_US';
 $config['default_charset']        = 'UTF-8';
 $config['create_default_folders'] = true;
 $config['log_driver']             = 'stdout';
