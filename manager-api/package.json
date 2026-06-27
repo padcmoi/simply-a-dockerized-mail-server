@@ -6,7 +6,9 @@
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",
-    "start:dev": "nest start --watch"
+    "start:dev": "nest start --watch",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -32,6 +34,7 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.0",
     "@types/passport-jwt": "^4.0.1",
+    "prettier": "^3.3.3",
     "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@9.15.0"

@@ -1,41 +1,50 @@
 <script setup lang="ts">
-interface Domain { id: number; domain: string; quota: string; active: number }
+interface Domain {
+  id: number;
+  domain: string;
+  quota: string;
+  active: number;
+}
 
-const { call } = useApi()
-const toast = useToast()
-const items = ref<Domain[]>([])
-const loading = ref(false)
-const form = reactive({ domain: '', active: true })
+const { call } = useApi();
+const toast = useToast();
+const items = ref<Domain[]>([]);
+const loading = ref(false);
+const form = reactive({ domain: "", active: true });
 
 async function load() {
-  loading.value = true
-  try { items.value = await call<Domain[]>('/domains') }
-  catch (err) { toast.add({ title: 'Failed', description: (err as Error).message, color: 'error' }) }
-  finally { loading.value = false }
+  loading.value = true;
+  try {
+    items.value = await call<Domain[]>("/domains");
+  } catch (err) {
+    toast.add({ title: "Failed", description: (err as Error).message, color: "error" });
+  } finally {
+    loading.value = false;
+  }
 }
-onMounted(load)
+onMounted(load);
 
 async function create() {
   try {
-    await call('/domains', { method: 'POST', body: form })
-    form.domain = ''
-    await load()
-    toast.add({ title: 'Domain added', color: 'success' })
+    await call("/domains", { method: "POST", body: form });
+    form.domain = "";
+    await load();
+    toast.add({ title: "Domain added", color: "success" });
   } catch (err) {
-    toast.add({ title: 'Add failed', description: (err as Error).message, color: 'error' })
+    toast.add({ title: "Add failed", description: (err as Error).message, color: "error" });
   }
 }
 async function remove(id: number) {
-  await call(`/domains/${id}`, { method: 'DELETE' })
-  await load()
+  await call(`/domains/${id}`, { method: "DELETE" });
+  await load();
 }
 
 const columns = [
-  { accessorKey: 'id', header: 'ID' },
-  { accessorKey: 'domain', header: 'Domain' },
-  { accessorKey: 'active', header: 'Active' },
-  { accessorKey: 'quota', header: 'Quota' },
-]
+  { accessorKey: "id", header: "ID" },
+  { accessorKey: "domain", header: "Domain" },
+  { accessorKey: "active", header: "Active" },
+  { accessorKey: "quota", header: "Quota" },
+];
 </script>
 
 <template>
@@ -56,7 +65,7 @@ const columns = [
     <UTable :columns="columns" :data="items" :loading="loading">
       <template #cell-active="{ row }">
         <UBadge :color="row.original.active ? 'success' : 'neutral'">
-          {{ row.original.active ? 'Yes' : 'No' }}
+          {{ row.original.active ? "Yes" : "No" }}
         </UBadge>
       </template>
       <template #actions-cell="{ row }">

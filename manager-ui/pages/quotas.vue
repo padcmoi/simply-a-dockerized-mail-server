@@ -1,32 +1,41 @@
 <script setup lang="ts">
-interface Q { id: number; domain: string; email?: string; bytes: string; messages: string; lastActivity: string }
+interface Q {
+  id: number;
+  domain: string;
+  email?: string;
+  bytes: string;
+  messages: string;
+  lastActivity: string;
+}
 
-const { call } = useApi()
-const domains = ref<Q[]>([])
-const users = ref<Q[]>([])
-const loading = ref(false)
+const { call } = useApi();
+const domains = ref<Q[]>([]);
+const users = ref<Q[]>([]);
+const loading = ref(false);
 
 async function load() {
-  loading.value = true
+  loading.value = true;
   try {
-    domains.value = await call<Q[]>('/quotas/domains')
-    users.value = await call<Q[]>('/quotas/users')
-  } finally { loading.value = false }
+    domains.value = await call<Q[]>("/quotas/domains");
+    users.value = await call<Q[]>("/quotas/users");
+  } finally {
+    loading.value = false;
+  }
 }
-onMounted(load)
+onMounted(load);
 
 const domainCols = [
-  { accessorKey: 'domain', header: 'Domain' },
-  { accessorKey: 'bytes', header: 'Bytes' },
-  { accessorKey: 'messages', header: 'Messages' },
-  { accessorKey: 'lastActivity', header: 'Last activity' },
-]
+  { accessorKey: "domain", header: "Domain" },
+  { accessorKey: "bytes", header: "Bytes" },
+  { accessorKey: "messages", header: "Messages" },
+  { accessorKey: "lastActivity", header: "Last activity" },
+];
 const userCols = [
-  { accessorKey: 'email', header: 'Mailbox' },
-  { accessorKey: 'bytes', header: 'Bytes' },
-  { accessorKey: 'messages', header: 'Messages' },
-  { accessorKey: 'lastActivity', header: 'Last activity' },
-]
+  { accessorKey: "email", header: "Mailbox" },
+  { accessorKey: "bytes", header: "Bytes" },
+  { accessorKey: "messages", header: "Messages" },
+  { accessorKey: "lastActivity", header: "Last activity" },
+];
 </script>
 
 <template>

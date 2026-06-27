@@ -1,42 +1,51 @@
 <script setup lang="ts">
-interface Reject { id: number; sender: string; enabled: number; dateCreation: string }
+interface Reject {
+  id: number;
+  sender: string;
+  enabled: number;
+  dateCreation: string;
+}
 
-const { call } = useApi()
-const toast = useToast()
-const items = ref<Reject[]>([])
-const loading = ref(false)
-const form = reactive({ sender: '' })
+const { call } = useApi();
+const toast = useToast();
+const items = ref<Reject[]>([]);
+const loading = ref(false);
+const form = reactive({ sender: "" });
 
 async function load() {
-  loading.value = true
-  try { items.value = await call<Reject[]>('/sieve/reject-senders') } finally { loading.value = false }
+  loading.value = true;
+  try {
+    items.value = await call<Reject[]>("/sieve/reject-senders");
+  } finally {
+    loading.value = false;
+  }
 }
-onMounted(load)
+onMounted(load);
 
 async function create() {
   try {
-    await call('/sieve/reject-senders', { method: 'POST', body: form })
-    form.sender = ''
-    await load()
-    toast.add({ title: 'Sender blocked', color: 'success' })
+    await call("/sieve/reject-senders", { method: "POST", body: form });
+    form.sender = "";
+    await load();
+    toast.add({ title: "Sender blocked", color: "success" });
   } catch (err) {
-    toast.add({ title: 'Failed', description: (err as Error).message, color: 'error' })
+    toast.add({ title: "Failed", description: (err as Error).message, color: "error" });
   }
 }
 async function toggle(id: number, enabled: number) {
-  await call(`/sieve/reject-senders/${id}`, { method: 'PATCH', body: { enabled: !enabled } })
-  await load()
+  await call(`/sieve/reject-senders/${id}`, { method: "PATCH", body: { enabled: !enabled } });
+  await load();
 }
 async function remove(id: number) {
-  await call(`/sieve/reject-senders/${id}`, { method: 'DELETE' })
-  await load()
+  await call(`/sieve/reject-senders/${id}`, { method: "DELETE" });
+  await load();
 }
 
 const columns = [
-  { accessorKey: 'sender', header: 'Sender' },
-  { accessorKey: 'enabled', header: 'Enabled' },
-  { accessorKey: 'dateCreation', header: 'Created' },
-]
+  { accessorKey: "sender", header: "Sender" },
+  { accessorKey: "enabled", header: "Enabled" },
+  { accessorKey: "dateCreation", header: "Created" },
+];
 </script>
 
 <template>

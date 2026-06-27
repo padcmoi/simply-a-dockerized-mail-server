@@ -18,6 +18,10 @@
 - Roundcube default language configurable via ROUNDCUBE_LANGUAGE (en_US, fr_FR, de_DE, ...) read by config.inc.php at runtime; install.sh accepts short aliases (fr, FR, en, de, es, it, pt, nl, ru, pl) on top of full xx_YY locales
 - install.sh: one-shot interactive bootstrap (root required, refuses to run with an existing .env), prompts FQDN with Let's Encrypt cert presence check loop, auto-detected public IP, primary domain, first mailbox, Roundcube language, all regex-validated
 - install.sh seeds the admin in Accounts, the primary domain in VirtualDomains, the first mailbox in VirtualUsers, generates the DKIM key for the primary domain and tees credentials + DKIM TXT record to INSTALL_INFO.txt (gitignored)
+- DKIM keys are generated through a tiny Python stdlib HTTP sidecar (`dkim-api.py`) co-running with opendkim in the same container, reachable from the docker `mail` bridge only. manager-api calls it whenever the admin adds, rotates or removes a domain DKIM key. install.sh uses the same sidecar so there is a single DKIM code path for both the bootstrap domain and any subsequent domain
+- New endpoints on manager-api: `POST /api/domains` returns the DKIM TXT record alongside the created domain; `GET /api/domains/:id/dkim` lists active selectors; `POST /api/domains/:id/dkim/rotate` adds a fresh selector without removing the previous one (DNS-rotation friendly); `DELETE /api/domains/:id/dkim?selector=...` removes a stale selector after the TTL has expired
+- Selector pattern changed from `dkim_YYYY_MM` (underscores) to `dkim<YYYYMM>` (ascii pure) for compatibility with strict DNS UIs and legacy DKIM validators
+- Prettier added to both manager-api and manager-ui with a shared style (singleQuote, no semi, trailingComma all, printWidth 110). Run with `pnpm format` (write) or `pnpm format:check` (CI-friendly)
 - service.sh wrapper for docker compose
 - INSTALL.md documents the one-shot installer flow end-to-end
 

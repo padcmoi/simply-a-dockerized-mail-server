@@ -7,7 +7,9 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "preview": "nuxt preview",
-    "start": "node .output/server/index.mjs"
+    "start": "node .output/server/index.mjs",
+    "format": "prettier --write \"{app,components,composables,layouts,middleware,pages,server,stores,plugins}/**/*.{ts,vue,js,mjs}\" \"*.{ts,vue,js,mjs,json}\"",
+    "format:check": "prettier --check \"{app,components,composables,layouts,middleware,pages,server,stores,plugins}/**/*.{ts,vue,js,mjs}\" \"*.{ts,vue,js,mjs,json}\""
   },
   "dependencies": {
     "@nuxt/ui": "^4.8.2",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "prettier": "^3.3.3",
     "typescript": "^5.6.3"
   },
   "packageManager": "pnpm@9.15.0"

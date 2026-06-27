@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { z } from 'zod'
-import { useAuthStore } from '~/stores/auth'
+import { z } from "zod";
+import { useAuthStore } from "~/stores/auth";
 
-definePageMeta({ layout: 'auth' })
+definePageMeta({ layout: "auth" });
 
-const auth = useAuthStore()
-const toast = useToast()
-const loading = ref(false)
-const state = reactive({ username: '', password: '' })
+const auth = useAuthStore();
+const toast = useToast();
+const loading = ref(false);
+const state = reactive({ username: "", password: "" });
 const schema = z.object({
-  username: z.string().min(1, 'Required'),
-  password: z.string().min(1, 'Required'),
-})
+  username: z.string().min(1, "Required"),
+  password: z.string().min(1, "Required"),
+});
 
 async function onSubmit() {
-  loading.value = true
+  loading.value = true;
   try {
-    await auth.login(state.username, state.password)
-    await navigateTo('/domains')
+    await auth.login(state.username, state.password);
+    await navigateTo("/domains");
   } catch (err) {
-    toast.add({ title: 'Login failed', description: (err as Error).message, color: 'error' })
+    toast.add({ title: "Login failed", description: (err as Error).message, color: "error" });
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>

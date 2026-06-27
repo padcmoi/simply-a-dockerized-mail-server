@@ -1,40 +1,50 @@
 <script setup lang="ts">
-interface User { id: number; email: string; domain: string; quota: string; active: number }
+interface User {
+  id: number;
+  email: string;
+  domain: string;
+  quota: string;
+  active: number;
+}
 
-const { call } = useApi()
-const toast = useToast()
-const items = ref<User[]>([])
-const loading = ref(false)
-const form = reactive({ email: '', password: '', quota: 524288000 })
+const { call } = useApi();
+const toast = useToast();
+const items = ref<User[]>([]);
+const loading = ref(false);
+const form = reactive({ email: "", password: "", quota: 524288000 });
 
 async function load() {
-  loading.value = true
-  try { items.value = await call<User[]>('/users') } finally { loading.value = false }
+  loading.value = true;
+  try {
+    items.value = await call<User[]>("/users");
+  } finally {
+    loading.value = false;
+  }
 }
-onMounted(load)
+onMounted(load);
 
 async function create() {
   try {
-    await call('/users', { method: 'POST', body: form })
-    form.email = ''
-    form.password = ''
-    await load()
-    toast.add({ title: 'Mailbox created', color: 'success' })
+    await call("/users", { method: "POST", body: form });
+    form.email = "";
+    form.password = "";
+    await load();
+    toast.add({ title: "Mailbox created", color: "success" });
   } catch (err) {
-    toast.add({ title: 'Create failed', description: (err as Error).message, color: 'error' })
+    toast.add({ title: "Create failed", description: (err as Error).message, color: "error" });
   }
 }
 async function remove(id: number) {
-  await call(`/users/${id}`, { method: 'DELETE' })
-  await load()
+  await call(`/users/${id}`, { method: "DELETE" });
+  await load();
 }
 
 const columns = [
-  { accessorKey: 'email', header: 'Email' },
-  { accessorKey: 'domain', header: 'Domain' },
-  { accessorKey: 'quota', header: 'Quota' },
-  { accessorKey: 'active', header: 'Active' },
-]
+  { accessorKey: "email", header: "Email" },
+  { accessorKey: "domain", header: "Domain" },
+  { accessorKey: "quota", header: "Quota" },
+  { accessorKey: "active", header: "Active" },
+];
 </script>
 
 <template>
