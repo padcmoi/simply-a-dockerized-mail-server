@@ -268,12 +268,18 @@ until docker compose exec -T opendkim curl -fsS http://localhost:8080/healthz >/
   T=$((T-1))
   [ $T -le 0 ] && die "opendkim dkim-api sidecar did not become ready in time"
 done
-DKIM_RESP=$(docker compose exec -T opendkim curl -fsS -X POST \
-  -H 'Content-Type: application/json' -d '{}' \
-  "http://localhost:8080/keys/${PRIMARY_DOMAIN}")
-SELECTOR=$(echo "$DKIM_RESP"  | grep -oE '"selector":"[^"]+"'  | head -1 | cut -d'"' -f4)
-DKIM_VALUE=$(echo "$DKIM_RESP" | grep -oE '"txtRecord":"[^"]+"' | head -1 | cut -d'"' -f4)
-[ -n "$SELECTOR" ] && [ -n "$DKIM_VALUE" ] || die "dkim-api response was not parseable: ${DKIM_RESP}"
+
+# POST to the sidecar AND parse the JSON inside the same opendkim container
+# using python3 (already installed there for dkim-api.py). The sidecar emits
+# compact JSON, but parsing via a real JSON library is the only way that
+# stays correct no matter how dkim-api.py decides to format its output later.
+# Output format: "<selector>|<txtRecord>" with a literal '|' as separator,
+# which never appears in either field.
+DKIM_PARSED=$(docker compose exec -T opendkim sh -c "curl -fsS -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:8080/keys/${PRIMARY_DOMAIN} | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[\"selector\"]+\"|\"+d[\"txtRecord\"])'") \
+  || die "dkim-api request failed for ${PRIMARY_DOMAIN}"
+SELECTOR="${DKIM_PARSED%%|*}"
+DKIM_VALUE="${DKIM_PARSED#*|}"
+[ -n "$SELECTOR" ] && [ -n "$DKIM_VALUE" ] || die "dkim-api returned an unexpected payload: ${DKIM_PARSED}"
 ok "DKIM key generated (selector ${SELECTOR})"
 
 # ---------------------------------------------------------------------------

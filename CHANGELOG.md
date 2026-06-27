@@ -28,6 +28,7 @@
 ### Fixed
 - Sieve reject / redirect / vacation bounces now relay through a dedicated milter-free postfix port 10025 (mynetworks-only, no RBL, no SPF, no rspamd) so dovecot DSNs no longer get caught by the public-SMTP milter chain and the rejection actually reaches the original sender
 - Dovecot healthcheck via `doveadm service status` (imap-login + lmtp); postfix and roundcube now wait for dovecot to report healthy so reloads no longer leave roundcube briefly stranded with "Erreur de connexion au serveur de stockage"
+- install.sh DKIM step now parses the sidecar response with python3 inside the opendkim container instead of fragile grep on JSON. A previous regression where Python's default JSON formatter added whitespace made the grep return empty, dying before the summary block and leaving INSTALL_INFO.txt uncreated. The sidecar also emits compact JSON now as a belt-and-suspenders guard
 
 ### Compatibility
 - DB schema (column names, types, defaults, FK CASCADE, last_activity ON UPDATE) is byte-identical to the v1 production dump

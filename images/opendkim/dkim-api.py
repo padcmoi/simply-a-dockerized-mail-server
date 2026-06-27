@@ -206,7 +206,9 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.write("[dkim-api] " + (fmt % args) + "\n")
 
     def _send(self, code: int, payload):
-        body = json.dumps(payload).encode()
+        # Compact separators (no whitespace) so the response stays trivial to
+        # parse with grep from install.sh: `"selector":"dkim..."`.
+        body = json.dumps(payload, separators=(",", ":")).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
