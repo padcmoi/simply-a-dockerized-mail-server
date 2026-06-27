@@ -67,6 +67,48 @@ ask() {
 rand_b64()   { openssl rand -base64 48 | tr -d '\n/+=' | head -c 32; }
 rand_alnum() { openssl rand -hex 16; }
 
+# Normalize Roundcube locale input. Accepts short codes (fr, FR, Fr) and
+# expands them to the canonical xx_YY form; passes through a full xx_YY
+# if the user typed it. Echoes empty string on unknown input.
+normalize_lang() {
+  case "${1,,}" in
+    en|en_us)     echo "en_US"  ;;
+    fr|fr_fr)     echo "fr_FR"  ;;
+    de|de_de)     echo "de_DE"  ;;
+    es|es_es)     echo "es_ES"  ;;
+    it|it_it)     echo "it_IT"  ;;
+    pt|pt_pt)     echo "pt_PT"  ;;
+    pt_br)        echo "pt_BR"  ;;
+    nl|nl_nl)     echo "nl_NL"  ;;
+    ru|ru_ru)     echo "ru_RU"  ;;
+    pl|pl_pl)     echo "pl_PL"  ;;
+    *)
+      if [[ "$1" =~ ^[a-zA-Z]{2}_[a-zA-Z]{2}$ ]]; then
+        local lo="${1%_*}" hi="${1#*_}"
+        echo "${lo,,}_${hi^^}"
+      fi
+      ;;
+  esac
+}
+
+# Prompt for a Roundcube language. Accepts short aliases (fr, FR, en, ...)
+# and full locales (fr_FR, pt_BR, ...). Echoes the canonical xx_YY value.
+prompt_lang() {
+  local label="$1" default="$2" ans norm
+  while true; do
+    printf '\033[1;36m[?]\033[0m %s (en, fr, de, es, it, pt, nl, ru, pl, ... or full like pt_BR) [%s]: ' \
+      "$label" "$default" >&2
+    read -r ans
+    ans="${ans:-$default}"
+    norm=$(normalize_lang "$ans")
+    if [ -n "$norm" ]; then
+      printf '%s' "$norm"
+      return 0
+    fi
+    printf '\033[1;33m[warn]\033[0m unknown language %q, try a short code (fr, en, de, ...) or a full xx_YY locale\n' "$ans" >&2
+  done
+}
+
 # Read a value in a validation loop: re-prompts until the answer matches the
 # regex. Echoes the validated value (caller captures with $(...)).
 # Warnings and prompts go to stderr so they do not pollute the captured value.
@@ -140,9 +182,7 @@ MAILBOX_LOCAL=$(prompt_re "First mailbox local part" "postmaster" \
   "letters, digits, dots, underscores, dashes, plus")
 MAILBOX_EMAIL="${MAILBOX_LOCAL}@${PRIMARY_DOMAIN}"
 
-RC_LANG=$(prompt_re "Roundcube default language (en_US, fr_FR, de_DE, ...)" "en_US" \
-  '^[a-z]{2}_[A-Z]{2}$' \
-  "locale code like en_US or fr_FR")
+RC_LANG=$(prompt_lang "Roundcube default language" "en_US")
 env_set ROUNDCUBE_LANGUAGE "$RC_LANG"
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@
 - Default sieve script routes X-Spam:YES / X-Spam-Score>=5 mail to Junk
 - manager-api NestJS 11 (TypeORM entities matching v1 schema, JWT + refresh tokens, Zod validation, Swagger at /api/docs, SHA512-CRYPT for mailbox passwords via openssl)
 - manager-ui Nuxt 3 + Nuxt UI v4 with login + domains / users / aliases / quotas / sieve pages, Pinia persisted auth, Nitro proxy /api -> manager-api
-- Roundcube default language configurable via ROUNDCUBE_LANGUAGE (en_US, fr_FR, de_DE, ...) read by config.inc.php at runtime
+- Roundcube default language configurable via ROUNDCUBE_LANGUAGE (en_US, fr_FR, de_DE, ...) read by config.inc.php at runtime; install.sh accepts short aliases (fr, FR, en, de, es, it, pt, nl, ru, pl) on top of full xx_YY locales
 - install.sh: one-shot interactive bootstrap (root required, refuses to run with an existing .env), prompts FQDN with Let's Encrypt cert presence check loop, auto-detected public IP, primary domain, first mailbox, Roundcube language, all regex-validated
 - install.sh seeds the admin in Accounts, the primary domain in VirtualDomains, the first mailbox in VirtualUsers, generates the DKIM key for the primary domain and tees credentials + DKIM TXT record to INSTALL_INFO.txt (gitignored)
 - service.sh wrapper for docker compose
