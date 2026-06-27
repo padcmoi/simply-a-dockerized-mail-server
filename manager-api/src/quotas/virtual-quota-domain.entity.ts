@@ -1,19 +1,29 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { VirtualDomain } from '../domains/virtual-domain.entity'
 
 @Entity({ name: 'VirtualQuotaDomains' })
 export class VirtualQuotaDomain {
-  @PrimaryGeneratedColumn({ name: 'id' })
+  @PrimaryGeneratedColumn({ name: 'id', type: 'int' })
   id!: number
 
   @Column({ name: 'domain', type: 'varchar', length: 255 })
   domain!: string
 
-  @Column({ name: 'bytes', type: 'bigint', default: 0 })
+  @ManyToOne(() => VirtualDomain, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+  @JoinColumn({ name: 'domain', referencedColumnName: 'domain' })
+  domainRef!: VirtualDomain
+
+  @Column({ name: 'bytes', type: 'bigint', width: 20, default: 0 })
   bytes!: string
 
-  @Column({ name: 'messages', type: 'bigint', default: 0 })
+  @Column({ name: 'messages', type: 'bigint', width: 20, default: 0 })
   messages!: string
 
-  @Column({ name: 'last_activity', type: 'datetime' })
+  @Column({
+    name: 'last_activity',
+    type: 'datetime',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
   lastActivity!: Date
 }

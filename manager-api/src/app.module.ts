@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { AccountsModule } from './accounts/accounts.module'
 import { AliasesModule } from './aliases/aliases.module'
 import { AuthModule } from './auth/auth.module'
+import { QuotaTriggersBootstrap } from './common/quota-triggers.bootstrap'
 import { DomainsModule } from './domains/domains.module'
 import { HealthModule } from './health/health.module'
 import { QuotasModule } from './quotas/quotas.module'
@@ -21,8 +22,8 @@ import { UsersModule } from './users/users.module'
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: false,
-      charset: 'utf8mb4',
+      synchronize: true,
+      charset: 'utf8_general_ci',
     }),
     HealthModule,
     AuthModule,
@@ -33,5 +34,6 @@ import { UsersModule } from './users/users.module'
     QuotasModule,
     SieveModule,
   ],
+  providers: [QuotaTriggersBootstrap],
 })
 export class AppModule {}

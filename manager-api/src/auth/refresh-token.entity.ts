@@ -1,15 +1,16 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm'
 import { Account } from '../accounts/account.entity'
 
+@Index('account_id', ['accountId'])
 @Entity({ name: 'RefreshTokens' })
 export class RefreshToken {
-  @PrimaryGeneratedColumn({ name: 'id' })
+  @PrimaryGeneratedColumn({ name: 'id', type: 'int' })
   id!: number
 
   @Column({ name: 'account_id', type: 'int' })
   accountId!: number
 
-  @ManyToOne(() => Account, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Account, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
   @JoinColumn({ name: 'account_id' })
   account!: Account
 
@@ -28,6 +29,6 @@ export class RefreshToken {
   @Column({ name: 'revoked_at', type: 'datetime', nullable: true })
   revokedAt!: Date | null
 
-  @Column({ name: 'created_at', type: 'datetime' })
+  @Column({ name: 'created_at', type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   createdAt!: Date
 }
