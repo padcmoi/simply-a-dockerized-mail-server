@@ -1,0 +1,114 @@
+# =============================================================================
+# Postfix main.cf (rendered from environment at container start)
+# =============================================================================
+
+myhostname     = ${MAIL_HOSTNAME}
+mydomain       = ${MAIL_HOSTNAME}
+myorigin       = $myhostname
+mydestination  = localhost
+inet_interfaces = all
+inet_protocols  = ipv4
+biff           = no
+append_dot_mydomain = no
+readme_directory = no
+compatibility_level = 3.6
+mynetworks = 127.0.0.0/8 [::1]/128 172.200.0.0/24
+
+# --- Logging -----------------------------------------------------------------
+# File so fail2ban can tail it; entrypoint mirrors it to container stdout.
+maillog_file = /var/log/mail/postfix.log
+
+# --- Virtual delivery via LMTP to dovecot ------------------------------------
+# Dovecot owns /var/mail/vhosts as vmail (uid 5000) and updates VirtualQuotaUsers
+# / VirtualQuotaDomains live via dict-sql on each LMTP delivery.
+virtual_transport       = lmtp:inet:mail-dovecot:24
+virtual_mailbox_domains = mysql:/etc/postfix/sql/mysql-virtual-domains.cf
+virtual_mailbox_maps    = mysql:/etc/postfix/sql/mysql-virtual-mailboxes.cf
+virtual_alias_maps      = mysql:/etc/postfix/sql/mysql-virtual-aliases.cf
+
+# --- TLS (Let's Encrypt) -----------------------------------------------------
+smtpd_tls_cert_file = /etc/letsencrypt/live/${TLS_CERT_NAME}/fullchain.pem
+smtpd_tls_key_file  = /etc/letsencrypt/live/${TLS_CERT_NAME}/privkey.pem
+smtpd_use_tls       = yes
+smtpd_tls_security_level = may
+smtpd_tls_auth_only      = yes
+smtpd_tls_loglevel       = 1
+smtpd_tls_received_header = yes
+smtpd_tls_session_cache_database = btree:$data_directory/smtpd_scache
+smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtpd_tls_protocols           = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtpd_tls_mandatory_ciphers   = high
+tls_preempt_cipherlist        = yes
+
+smtp_tls_security_level = may
+smtp_tls_session_cache_database = btree:$data_directory/smtp_scache
+smtp_tls_loglevel = 1
+
+# --- SASL (auth via dovecot, BDD-driven) -------------------------------------
+smtpd_sasl_auth_enable = yes
+smtpd_sasl_type        = dovecot
+smtpd_sasl_path        = inet:mail-dovecot:12345
+smtpd_sasl_security_options = noanonymous
+smtpd_sasl_local_domain     = $myhostname
+broken_sasl_auth_clients    = yes
+smtpd_sender_login_maps     = mysql:/etc/postfix/sql/mysql-sender-login.cf
+
+# --- Restrictions ------------------------------------------------------------
+smtpd_helo_required     = yes
+strict_rfc821_envelopes = yes
+disable_vrfy_command    = yes
+
+smtpd_helo_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_invalid_helo_hostname,
+    reject_non_fqdn_helo_hostname
+
+# SieveRejectSenders blacklist consumed at SMTP time (DB-driven, see sql/).
+smtpd_sender_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_non_fqdn_sender,
+    reject_unknown_sender_domain,
+    reject_authenticated_sender_login_mismatch,
+    check_sender_access mysql:/etc/postfix/sql/mysql-sender-blacklist.cf,
+    check_sender_access mysql:/etc/postfix/sql/mysql-sender-blacklist-domain.cf
+
+smtpd_relay_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_unauth_destination
+
+# Quota enforcement at RCPT time via dovecot's quota-status service (BDD).
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_non_fqdn_recipient,
+    reject_unknown_recipient_domain,
+    reject_unauth_destination,
+    check_policy_service inet:mail-dovecot:12340,
+    check_policy_service unix:private/policyd-spf,
+    reject_rbl_client zen.spamhaus.org
+
+smtpd_data_restrictions = reject_unauth_pipelining
+smtpd_delay_reject = yes
+
+# --- Milter chain ------------------------------------------------------------
+milter_default_action = accept
+milter_protocol       = 6
+smtpd_milters         = inet:mail-opendkim:8891, inet:mail-opendmarc:8893, inet:mail-rspamd:11332
+non_smtpd_milters     = inet:mail-opendkim:8891
+milter_macro_daemon_name = ${MAIL_HOSTNAME}
+
+# --- Limits ------------------------------------------------------------------
+message_size_limit    = 52428800
+mailbox_size_limit    = 0
+recipient_delimiter   = +
+
+alias_maps     = hash:/etc/postfix/aliases
+alias_database = hash:/etc/postfix/aliases
+
+policyd-spf_time_limit = 3600
+
+maximal_queue_lifetime  = 3d
+bounce_queue_lifetime   = 1d

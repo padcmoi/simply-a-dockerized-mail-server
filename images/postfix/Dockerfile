@@ -1,0 +1,23 @@
+FROM alpine:3.20
+
+RUN apk add --no-cache \
+      bash \
+      ca-certificates \
+      gettext \
+      postfix \
+      postfix-mysql \
+      postfix-pcre \
+      postfix-policyd-spf-perl \
+      cyrus-sasl \
+      tini \
+      tzdata \
+    && rm -rf /var/cache/apk/*
+
+COPY conf/ /etc/postfix-templates/
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 25 465 587
+
+ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
+CMD ["postfix", "start-fg"]

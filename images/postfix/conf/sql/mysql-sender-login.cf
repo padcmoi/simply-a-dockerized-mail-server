@@ -1,0 +1,5 @@
+hosts    = ${DB_HOST}
+user     = ${DB_USER}
+password = ${DB_PASSWORD}
+dbname   = ${DB_NAME}
+query    = SELECT email FROM VirtualUsers WHERE email='%s' UNION SELECT destination FROM VirtualAliases WHERE source='%s'
