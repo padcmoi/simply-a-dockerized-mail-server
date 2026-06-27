@@ -1,50 +1,253 @@
-services:
-  simply-mailserver:
-    stdin_open: true
-    tty: true
-    restart: always
-    container_name: simply-mailserver
-    build:
-      context: .
-    env_file: .env
-    ports:
-      - "25:25"
-      - "143:143"
-      - "465:465"
-      - "587:587"
-      - "993:993"
-      - "4000:4000" # admin web application
-      - "4001:4001" # rspamd web interface
-      - "4002:4002" # phpmyadmin
-      - "4003:3000" # nest api secure only
-      - "4080:4080" # roundcube unsecure
-      # - "4190:4190" # could be useful in the case of an external e-mail client
-      - "4443:4443" # roundcube secure
-    extra_hosts:
-      - "${DOMAIN_FQDN}:${ADRESSIP}"
-    cap_add:
-      - NET_ADMIN
-    networks:
-      backend:
-        ipv4_address: 172.200.0.5
-    volumes:
-      - $DOCKER_VOLUMES/log:/var/log
-      - $DOCKER_VOLUMES/ssl:/etc/_private
-      - $DOCKER_VOLUMES/mail:/var/mail
-      - $DOCKER_VOLUMES/mysql:/var/lib/mysql
-      - $DOCKER_VOLUMES/postfix:/var/spool/postfix
-      - $DOCKER_VOLUMES/postscreen:/etc/_postscreen
-      - $DOCKER_VOLUMES/redis:/var/lib/redis
-      - $DOCKER_VOLUMES/rspamd:/var/lib/rspamd
-      - $DOCKER_VOLUMES/clamav:/var/lib/clamav
-      - $DOCKER_VOLUMES/opendkim:/etc/opendkim
-      - $DOCKER_VOLUMES/fail2ban:/var/lib/fail2ban
-      - $DOCKER_VOLUMES/opendmarc:/var/opendmarc
+name: simply-mailserver
+
+x-restart: &restart
+  restart: unless-stopped
 
 networks:
-  backend:
+  mail:
+    driver: bridge
     ipam:
-      driver: default
       config:
-        - subnet: "172.200.0.0/16"
-          gateway: "172.200.0.1"
+        - subnet: 172.200.0.0/24
+
+volumes:
+  redis_data:
+
+services:
+  mariadb:
+    <<: *restart
+    container_name: mail-mariadb
+    build:
+      context: ./images/mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ${VOLUMES_PATH}/mysql:/var/lib/mysql
+    networks:
+      mail:
+        ipv4_address: 172.200.0.10
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    <<: *restart
+    container_name: mail-redis
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      mail:
+        ipv4_address: 172.200.0.11
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  clamav:
+    <<: *restart
+    container_name: mail-clamav
+    build:
+      context: ./images/clamav
+    profiles: ["antivirus"]
+    volumes:
+      - ${VOLUMES_PATH}/clamav:/var/lib/clamav
+    networks:
+      mail:
+        ipv4_address: 172.200.0.12
+
+  opendkim:
+    <<: *restart
+    container_name: mail-opendkim
+    build:
+      context: ./images/opendkim
+    env_file: .env
+    volumes:
+      - ${VOLUMES_PATH}/opendkim:/etc/opendkim
+    networks:
+      mail:
+        ipv4_address: 172.200.0.13
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  opendmarc:
+    <<: *restart
+    container_name: mail-opendmarc
+    build:
+      context: ./images/opendmarc
+    env_file: .env
+    volumes:
+      - ${VOLUMES_PATH}/opendmarc:/var/lib/opendmarc
+    networks:
+      mail:
+        ipv4_address: 172.200.0.14
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  rspamd:
+    <<: *restart
+    container_name: mail-rspamd
+    build:
+      context: ./images/rspamd
+    env_file: .env
+    volumes:
+      - ${VOLUMES_PATH}/rspamd:/var/lib/rspamd
+    networks:
+      mail:
+        ipv4_address: 172.200.0.15
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "${BINDING_IP_RSPAMD_UI}:${BINDING_PORT_RSPAMD_UI}:11334"
+
+  dovecot:
+    <<: *restart
+    container_name: mail-dovecot
+    build:
+      context: ./images/dovecot
+    env_file: .env
+    volumes:
+      - ${VOLUMES_PATH}/mail:/var/mail
+      - ${VOLUMES_PATH}/log:/var/log/mail
+      - ${TLS_LETSENCRYPT_PATH}:/etc/letsencrypt:ro
+    networks:
+      mail:
+        ipv4_address: 172.200.0.16
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "${BINDING_IP_IMAPS}:${BINDING_PORT_IMAPS}:993"
+
+  postfix:
+    <<: *restart
+    container_name: mail-postfix
+    build:
+      context: ./images/postfix
+    env_file: .env
+    volumes:
+      - ${VOLUMES_PATH}/postfix-spool:/var/spool/postfix
+      - ${VOLUMES_PATH}/log:/var/log/mail
+      - ${TLS_LETSENCRYPT_PATH}:/etc/letsencrypt:ro
+    networks:
+      mail:
+        ipv4_address: 172.200.0.17
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      dovecot:
+        condition: service_started
+      opendkim:
+        condition: service_started
+      opendmarc:
+        condition: service_started
+      rspamd:
+        condition: service_started
+    ports:
+      - "${BINDING_IP_SMTP}:${BINDING_PORT_SMTP}:25"
+      - "${BINDING_IP_SMTPS}:${BINDING_PORT_SMTPS}:465"
+      - "${BINDING_IP_SUBMISSION}:${BINDING_PORT_SUBMISSION}:587"
+
+  fail2ban:
+    <<: *restart
+    container_name: mail-fail2ban
+    build:
+      context: ./images/fail2ban
+    env_file: .env
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ${VOLUMES_PATH}/log:/var/log/mail:ro
+      - ${VOLUMES_PATH}/fail2ban:/var/lib/fail2ban
+
+  phpmyadmin:
+    <<: *restart
+    container_name: mail-phpmyadmin
+    image: phpmyadmin:5.2.1-apache
+    environment:
+      PMA_HOST: mail-mariadb
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+      UPLOAD_LIMIT: 256M
+    networks:
+      mail:
+        ipv4_address: 172.200.0.21
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "${BINDING_IP_PHPMYADMIN}:${BINDING_PORT_PHPMYADMIN}:80"
+
+  roundcube:
+    <<: *restart
+    container_name: mail-roundcube
+    image: roundcube/roundcubemail:1.6.10-apache
+    environment:
+      ROUNDCUBEMAIL_DB_TYPE: mysql
+      ROUNDCUBEMAIL_DB_HOST: mail-mariadb
+      ROUNDCUBEMAIL_DB_USER: ${DB_USER}
+      ROUNDCUBEMAIL_DB_PASSWORD: ${DB_PASSWORD}
+      ROUNDCUBEMAIL_DB_NAME: roundcube
+      ROUNDCUBEMAIL_DEFAULT_HOST: ssl://mail-dovecot
+      ROUNDCUBEMAIL_DEFAULT_PORT: 993
+      ROUNDCUBEMAIL_SMTP_SERVER: tls://mail-postfix
+      ROUNDCUBEMAIL_SMTP_PORT: 587
+      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,managesieve
+    volumes:
+      - ./images/roundcube/config:/var/roundcube/config:ro
+    networks:
+      mail:
+        ipv4_address: 172.200.0.18
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      dovecot:
+        condition: service_started
+    ports:
+      - "${BINDING_IP_ROUNDCUBE}:${BINDING_PORT_ROUNDCUBE}:80"
+
+  manager-api:
+    <<: *restart
+    container_name: mail-manager-api
+    build:
+      context: ./manager-api
+    env_file: .env
+    environment:
+      DB_HOST: mail-mariadb
+      DB_PORT: 3306
+      NODE_ENV: production
+    networks:
+      mail:
+        ipv4_address: 172.200.0.19
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  manager-ui:
+    <<: *restart
+    container_name: mail-manager-ui
+    build:
+      context: ./manager-ui
+    environment:
+      NUXT_PUBLIC_API_BASE: /api
+      NUXT_API_PROXY_TARGET: http://manager-api:3000
+      NODE_ENV: production
+    networks:
+      mail:
+        ipv4_address: 172.200.0.20
+    depends_on:
+      - manager-api
+    ports:
+      - "${BINDING_IP_MANAGEUI}:${BINDING_PORT_MANAGEUI}:3000"
