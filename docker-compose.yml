@@ -235,6 +235,7 @@ services:
       DB_HOST: mail-mariadb
       DB_PORT: 3306
       NODE_ENV: production
+      OPENDKIM_API_URL: http://mail-opendkim:8080
     networks:
       mail:
         ipv4_address: 172.200.0.19

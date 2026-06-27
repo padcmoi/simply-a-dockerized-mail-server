@@ -261,26 +261,20 @@ ok "domain and mailbox provisioned"
 # ---------------------------------------------------------------------------
 # 7. DKIM key
 # ---------------------------------------------------------------------------
-SELECTOR="dkim_$(date +%Y_%m)"
-c "generating DKIM key for ${PRIMARY_DOMAIN} (selector ${SELECTOR})..."
-docker compose exec -T opendkim sh -c "
-  set -e
-  D='${PRIMARY_DOMAIN}'
-  S='${SELECTOR}'
-  mkdir -p /etc/opendkim/keys/\$D
-  if [ ! -f /etc/opendkim/keys/\$D/\$S.private ]; then
-    opendkim-genkey -b 2048 -d \$D -s \$S -D /etc/opendkim/keys/\$D
-    chown opendkim:opendkim /etc/opendkim/keys/\$D/\$S.private
-  fi
-  grep -q \"\$S._domainkey.\$D\" /etc/opendkim/key.table 2>/dev/null || \
-    echo \"\$S._domainkey.\$D \$D:\$S:/etc/opendkim/keys/\$D/\$S.private\" >> /etc/opendkim/key.table
-  grep -q \"\\*@\$D \$S._domainkey.\$D\" /etc/opendkim/signing.table 2>/dev/null || \
-    echo \"*@\$D \$S._domainkey.\$D\" >> /etc/opendkim/signing.table
-" >/dev/null
-DKIM_VALUE=$(docker compose exec -T opendkim sh -c \
-  "grep -o '\"[^\"]*\"' /etc/opendkim/keys/${PRIMARY_DOMAIN}/${SELECTOR}.txt | tr -d '\"' | tr -d '\n'")
-docker compose restart opendkim >/dev/null
-ok "DKIM key generated"
+c "generating DKIM key for ${PRIMARY_DOMAIN} via the opendkim sidecar..."
+T=30
+until docker compose exec -T opendkim curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; do
+  sleep 1
+  T=$((T-1))
+  [ $T -le 0 ] && die "opendkim dkim-api sidecar did not become ready in time"
+done
+DKIM_RESP=$(docker compose exec -T opendkim curl -fsS -X POST \
+  -H 'Content-Type: application/json' -d '{}' \
+  "http://localhost:8080/keys/${PRIMARY_DOMAIN}")
+SELECTOR=$(echo "$DKIM_RESP"  | grep -oE '"selector":"[^"]+"'  | head -1 | cut -d'"' -f4)
+DKIM_VALUE=$(echo "$DKIM_RESP" | grep -oE '"txtRecord":"[^"]+"' | head -1 | cut -d'"' -f4)
+[ -n "$SELECTOR" ] && [ -n "$DKIM_VALUE" ] || die "dkim-api response was not parseable: ${DKIM_RESP}"
+ok "DKIM key generated (selector ${SELECTOR})"
 
 # ---------------------------------------------------------------------------
 # 8. Summary
