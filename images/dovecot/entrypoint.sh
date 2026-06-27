@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Render dovecot config from env, ensure ownership, then launch.
+set -euo pipefail
+
+TEMPLATE_DIR=/etc/dovecot-templates
+CONF_DIR=/etc/dovecot
+
+: "${MAIL_HOSTNAME:?MAIL_HOSTNAME is required}"
+: "${DB_NAME:?DB_NAME is required}"
+: "${DB_USER:?DB_USER is required}"
+: "${DB_PASSWORD:?DB_PASSWORD is required}"
+: "${TLS_CERT_NAME:?TLS_CERT_NAME is required}"
+export DB_HOST="${DB_HOST:-mail-mariadb}"
+
+mkdir -p "$CONF_DIR/conf.d"
+SUBST='${MAIL_HOSTNAME} ${TLS_CERT_NAME} ${DB_HOST} ${DB_NAME} ${DB_USER} ${DB_PASSWORD}'
+while IFS= read -r -d '' src; do
+  rel="${src#$TEMPLATE_DIR/}"
+  dst="$CONF_DIR/$rel"
+  mkdir -p "$(dirname "$dst")"
+  envsubst "$SUBST" < "$src" > "$dst"
+done < <(find "$TEMPLATE_DIR" -type f -print0)
+
+mkdir -p /var/mail/vhosts
+chown -R vmail:vmail /var/mail
+
+# Install global sieve scripts (compile each .sieve to .svbin).
+mkdir -p /var/lib/dovecot/sieve/global
+cp -f /etc/dovecot/sieve/*.sieve /var/lib/dovecot/sieve/global/ 2>/dev/null || true
+for s in /var/lib/dovecot/sieve/global/*.sieve; do
+  [ -f "$s" ] && sievec "$s" 2>/dev/null || true
+done
+chown -R vmail:vmail /var/lib/dovecot
+
+if [ ! -s /etc/dovecot/dh.pem ]; then
+  openssl dhparam -out /etc/dovecot/dh.pem 2048 >/dev/null 2>&1 || true
+fi
+
+mkdir -p /var/log/mail
+touch /var/log/mail/dovecot.log
+chown -R vmail:vmail /var/log/mail
+tail -F /var/log/mail/dovecot.log 2>/dev/null &
+
+exec "$@"

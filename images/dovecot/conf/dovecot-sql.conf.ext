@@ -1,0 +1,19 @@
+driver  = mysql
+connect = host=${DB_HOST} dbname=${DB_NAME} user=${DB_USER} password=${DB_PASSWORD}
+default_pass_scheme = SHA512-CRYPT
+
+# passdb -> credentials check against VirtualUsers (v1 SHA512-CRYPT preserved).
+password_query = SELECT email AS user, password \
+                 FROM VirtualUsers \
+                 WHERE email='%u' AND active=1
+
+# userdb -> home, uid/gid and per-user quota limit from VirtualUsers.quota.
+# Dovecot uses quota_rule=*:bytes=N where N=0 means unlimited (v1 behaviour).
+user_query = SELECT \
+               CONCAT('/var/mail/vhosts/', domain, '/', SUBSTRING_INDEX(email,'@',1)) AS home, \
+               5000 AS uid, 5000 AS gid, \
+               CONCAT('*:bytes=', quota) AS quota_rule \
+             FROM VirtualUsers \
+             WHERE email='%u' AND active=1
+
+iterate_query = SELECT email AS user FROM VirtualUsers WHERE active=1
