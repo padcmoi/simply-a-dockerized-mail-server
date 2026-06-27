@@ -4,6 +4,7 @@ RUN apk add --no-cache \
       bash \
       ca-certificates \
       gettext \
+      inotify-tools \
       postfix \
       postfix-mysql \
       postfix-pcre \
@@ -15,7 +16,8 @@ RUN apk add --no-cache \
 
 COPY conf/ /etc/postfix-templates/
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY cert-watcher.sh /usr/local/bin/cert-watcher.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/cert-watcher.sh
 
 EXPOSE 25 465 587
 

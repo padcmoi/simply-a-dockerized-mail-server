@@ -41,4 +41,8 @@ touch /var/log/mail/dovecot.log
 chown -R vmail:vmail /var/log/mail
 tail -F /var/log/mail/dovecot.log 2>/dev/null &
 
+# Watch the bind-mounted Let's Encrypt cert dir; when it rotates we kill
+# PID 1 so docker's restart policy brings dovecot back with the new cert.
+/usr/local/bin/cert-watcher.sh &
+
 exec "$@"

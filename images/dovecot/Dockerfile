@@ -4,6 +4,7 @@ RUN apk add --no-cache \
       bash \
       ca-certificates \
       gettext \
+      inotify-tools \
       openssl \
       dovecot \
       dovecot-mysql \
@@ -19,7 +20,8 @@ RUN apk add --no-cache \
 
 COPY conf/ /etc/dovecot-templates/
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY cert-watcher.sh /usr/local/bin/cert-watcher.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/cert-watcher.sh
 
 EXPOSE 24 143 993 4190 12340 12345
 

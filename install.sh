@@ -259,18 +259,7 @@ SQL
 ok "domain and mailbox provisioned"
 
 # ---------------------------------------------------------------------------
-# 7. Let's Encrypt deploy hook (auto-restart dovecot + postfix on renewal)
-# ---------------------------------------------------------------------------
-c "installing certbot deploy hook for ${TLS_CERT_NAME}..."
-HOOK_DIR=/etc/letsencrypt/renewal-hooks/deploy
-HOOK_FILE="${HOOK_DIR}/simply-mailserver"
-mkdir -p "$HOOK_DIR"
-sed "s|__PROJECT_DIR__|$(pwd)|g" scripts/letsencrypt-deploy-hook.sh > "$HOOK_FILE"
-chmod +x "$HOOK_FILE"
-ok "deploy hook installed at $HOOK_FILE"
-
-# ---------------------------------------------------------------------------
-# 8. DKIM key
+# 7. DKIM key
 # ---------------------------------------------------------------------------
 c "generating DKIM key for ${PRIMARY_DOMAIN} via the opendkim sidecar..."
 T=30
@@ -294,7 +283,7 @@ DKIM_VALUE="${DKIM_PARSED#*|}"
 ok "DKIM key generated (selector ${SELECTOR})"
 
 # ---------------------------------------------------------------------------
-# 9. Summary
+# 8. Summary
 # ---------------------------------------------------------------------------
 PUBLIC_DISPLAY="${PUBLIC_IP:-<MAIL_PUBLIC_IP>}"
 cat <<EOF | tee INSTALL_INFO.txt
