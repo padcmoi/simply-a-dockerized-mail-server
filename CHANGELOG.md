@@ -21,6 +21,10 @@
 - service.sh wrapper for docker compose
 - INSTALL.md documents the one-shot installer flow end-to-end
 
+### Fixed
+- Sieve reject / redirect / vacation bounces now relay through a dedicated milter-free postfix port 10025 (mynetworks-only, no RBL, no SPF, no rspamd) so dovecot DSNs no longer get caught by the public-SMTP milter chain and the rejection actually reaches the original sender
+- Dovecot healthcheck via `doveadm service status` (imap-login + lmtp); postfix and roundcube now wait for dovecot to report healthy so reloads no longer leave roundcube briefly stranded with "Erreur de connexion au serveur de stockage"
+
 ### Compatibility
 - DB schema (column names, types, defaults, FK CASCADE, last_activity ON UPDATE) is byte-identical to the v1 production dump
 - Maildir layout `/var/mail/vhosts/<domain>/<user>/{cur,new,tmp,sieve,...}` preserved, Maildir++ default layout, owner vmail:vmail (5000:5000)
