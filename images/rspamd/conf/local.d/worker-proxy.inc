@@ -1,0 +1,13 @@
+milter = yes;
+timeout = 120s;
+upstream "local" {
+  default = yes;
+  self_scan = yes;
+}
+count = 4;
+max_retries = 5;
+discard_on_reject = false;
+quarantine_on_reject = false;
+spam_header = "X-Spam";
+reject_message = "Spam message rejected";
+bind_socket = "*:11332";
