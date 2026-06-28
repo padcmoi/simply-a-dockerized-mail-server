@@ -10,6 +10,8 @@ RUN apk add --no-cache \
       dovecot-mysql \
       dovecot-lmtpd \
       dovecot-pigeonhole-plugin \
+      redis \
+      rspamd-client \
       tini \
       tzdata \
     && rm -rf /var/cache/apk/* \
