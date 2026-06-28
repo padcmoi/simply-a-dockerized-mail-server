@@ -318,7 +318,7 @@ phpMyAdmin (root):
 DKIM DNS record to publish for ${PRIMARY_DOMAIN}:
   Name  : ${SELECTOR}._domainkey
   Type  : TXT
-  Value : ${DKIM_VALUE}
+  Value : "${DKIM_VALUE}"
 
 After publishing the DNS record (1-5 min propagation), verify with:
   docker exec mail-opendkim opendkim-testkey \\
