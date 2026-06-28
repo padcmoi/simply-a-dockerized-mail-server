@@ -1,3 +1,3 @@
 type = "console";
-level = "notice";
+level = "info";
 systemd = false;

@@ -8,6 +8,6 @@ count = 4;
 max_retries = 5;
 discard_on_reject = false;
 quarantine_on_reject = false;
-spam_header = "X-Spam";
+spam_header = "X-Spam-Flag";
 reject_message = "Spam message rejected";
 bind_socket = "*:11332";
