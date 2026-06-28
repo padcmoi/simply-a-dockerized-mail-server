@@ -10,9 +10,6 @@ networks:
       config:
         - subnet: 172.200.0.0/24
 
-volumes:
-  redis_data:
-
 services:
   mariadb:
     <<: *restart
@@ -41,7 +38,7 @@ services:
     image: redis:7.4-alpine
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
-      - redis_data:/data
+      - ${VOLUMES_PATH}/redis:/data
     networks:
       mail:
         ipv4_address: 172.200.0.11
