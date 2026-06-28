@@ -1,7 +1,10 @@
 import { ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { randomBytes } from "crypto";
 import { Repository } from "typeorm";
+import { sha512crypt } from "../common/sha512-crypt";
 import { DkimKey, DkimService } from "../dkim/dkim.service";
+import { VirtualUser } from "../users/virtual-user.entity";
 import { CreateDomainDto, UpdateDomainDto } from "./domains.validation";
 import { VirtualDomain } from "./virtual-domain.entity";
 
@@ -11,6 +14,7 @@ export class DomainsService {
 
   constructor(
     @InjectRepository(VirtualDomain) private readonly repo: Repository<VirtualDomain>,
+    @InjectRepository(VirtualUser) private readonly users: Repository<VirtualUser>,
     private readonly dkim: DkimService
   ) {}
 
@@ -38,6 +42,7 @@ export class DomainsService {
         userEndDate: input.userEndDate ?? null,
       })
     );
+    await this.reservePostmaster(saved.domain);
     let dkim: DkimKey | null = null;
     try {
       dkim = await this.dkim.create(saved.domain);
@@ -45,6 +50,35 @@ export class DomainsService {
       this.log.warn(`DKIM key generation failed for ${saved.domain}: ${(e as Error).message}`);
     }
     return { ...saved, dkim };
+  }
+
+  // postmaster@<domain> is the envelope-from used by dovecot-lda for system
+  // notifications (blocklist alerts, etc.); it must never authenticate or
+  // accept inbound mail, so we always insert it inactive. Existing rows are
+  // forced back to active=0 on every domain create so the invariant holds
+  // even after a partial / aborted earlier run.
+  private async reservePostmaster(domain: string) {
+    const email = `postmaster@${domain}`;
+    const existing = await this.users.findOne({ where: { email } });
+    if (existing) {
+      if (existing.active !== 0) await this.users.save({ ...existing, active: 0 });
+      return;
+    }
+    const password = await sha512crypt(randomBytes(24).toString("hex"));
+    await this.users.save(
+      this.users.create({
+        email,
+        domain,
+        password,
+        maildir: `${domain}/postmaster/`,
+        quota: "0",
+        active: 0,
+        uid: "vmail",
+        gid: "vmail",
+        userStartDate: new Date().toISOString().slice(0, 10),
+        userEndDate: null,
+      })
+    );
   }
 
   async update(id: number, input: UpdateDomainDto) {

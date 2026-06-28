@@ -177,9 +177,19 @@ PRIMARY_DOMAIN=$(prompt_re "Primary mail domain" "$DEFAULT_DOMAIN" \
   '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$' \
   "domain name like example.com")
 
-MAILBOX_LOCAL=$(prompt_re "First mailbox local part" "postmaster" \
-  '^[a-zA-Z0-9._+-]+$' \
-  "letters, digits, dots, underscores, dashes, plus")
+# postmaster@<domain> is reserved as a write-only sender (envelope-from for
+# system notifications such as blocklist alerts). It is always provisioned
+# with active=0 below, so reject it as the user's first mailbox here.
+while true; do
+  MAILBOX_LOCAL=$(prompt_re "First mailbox local part" "admin" \
+    '^[a-zA-Z0-9._+-]+$' \
+    "letters, digits, dots, underscores, dashes, plus")
+  if [ "${MAILBOX_LOCAL,,}" = "postmaster" ]; then
+    warn "postmaster is reserved as the write-only system sender; pick another local part"
+    continue
+  fi
+  break
+done
 MAILBOX_EMAIL="${MAILBOX_LOCAL}@${PRIMARY_DOMAIN}"
 
 RC_LANG=$(prompt_lang "Roundcube default language" "en_US")
@@ -253,6 +263,12 @@ MAILBOX_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$MAILBOX_PASSWO
 DOMAIN_QUOTA=$((10 * 1024 * 1024 * 1024))
 MAILBOX_QUOTA=$((1 * 1024 * 1024 * 1024))
 MAILDIR="${PRIMARY_DOMAIN}/${MAILBOX_LOCAL}/"
+# postmaster@<domain> is the envelope-from used by dovecot-lda for system
+# notifications (blocklist alerts in images/dovecot/conf/sieve/bin/hooks/
+# 40-notify.sh, etc.). Insert it as active=0 so no one can authenticate or
+# receive inbound mail on it; LDA delivery only uses it as a header string,
+# never as a destination.
+POSTMASTER_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$(rand_alnum)")
 docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
 INSERT IGNORE INTO VirtualDomains (domain, quota, active)
 VALUES ('${PRIMARY_DOMAIN}', ${DOMAIN_QUOTA}, 1);
@@ -260,8 +276,12 @@ VALUES ('${PRIMARY_DOMAIN}', ${DOMAIN_QUOTA}, 1);
 INSERT INTO VirtualUsers (domain, email, password, maildir, quota, active)
 VALUES ('${PRIMARY_DOMAIN}', '${MAILBOX_EMAIL}', '${MAILBOX_HASH}', '${MAILDIR}', ${MAILBOX_QUOTA}, 1)
 ON DUPLICATE KEY UPDATE password=VALUES(password);
+
+INSERT INTO VirtualUsers (domain, email, password, maildir, quota, active)
+VALUES ('${PRIMARY_DOMAIN}', 'postmaster@${PRIMARY_DOMAIN}', '${POSTMASTER_HASH}', '${PRIMARY_DOMAIN}/postmaster/', 0, 0)
+ON DUPLICATE KEY UPDATE active=0;
 SQL
-ok "domain and mailbox provisioned"
+ok "domain and mailbox provisioned (postmaster@${PRIMARY_DOMAIN} reserved inactive)"
 
 # ---------------------------------------------------------------------------
 # 7. DKIM key
