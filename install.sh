@@ -59,7 +59,7 @@ ask() {
       q "$label:"
     fi
     local answer
-    read -r answer
+    read -e -r answer
     env_set "$key" "${answer:-$default}"
   fi
 }
@@ -98,7 +98,7 @@ prompt_lang() {
   while true; do
     printf '\033[1;36m[?]\033[0m %s (en, fr, de, es, it, pt, nl, ru, pl, ... or full like pt_BR) [%s]: ' \
       "$label" "$default" >&2
-    read -r ans
+    read -e -r ans
     ans="${ans:-$default}"
     norm=$(normalize_lang "$ans")
     if [ -n "$norm" ]; then
@@ -120,7 +120,7 @@ prompt_re() {
     else
       printf '\033[1;36m[?]\033[0m %s: ' "$label" >&2
     fi
-    read -r ans
+    read -e -r ans
     ans="${ans:-$default}"
     if [[ "$ans" =~ $pattern ]]; then
       printf '%s' "$ans"
@@ -150,7 +150,7 @@ LE_PATH=$(env_get TLS_LETSENCRYPT_PATH)
 FQDN_DEFAULT="mail.example.com"
 while true; do
   q "Mail server FQDN (PTR + cert CN) [$FQDN_DEFAULT]:"
-  read -r ANSWER
+  read -e -r ANSWER
   HOSTNAME="${ANSWER:-$FQDN_DEFAULT}"
   CERT_DIR="${LE_PATH}/live/${HOSTNAME}"
   if [ -f "${CERT_DIR}/fullchain.pem" ] && [ -f "${CERT_DIR}/privkey.pem" ]; then
