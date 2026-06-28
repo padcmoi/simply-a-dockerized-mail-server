@@ -2,6 +2,9 @@
 
 ## [Unreleased] - 2026-06-28
 
+### Fixed
+- Dovecot cold start no longer trips its own healthcheck. A fresh `docker compose up` used to run `openssl dhparam -out /etc/dovecot/dh.pem 2048` in the entrypoint, which takes 20-90 s on a typical VPS and pushes dovecot past the healthcheck `start_period`; `dependency failed to start: container mail-dovecot is unhealthy` then cascaded to postfix and roundcube. The dhparam is now baked into the image at build time (`RUN openssl dhparam ...` in `images/dovecot/Dockerfile`), the entrypoint only regenerates it when the file is empty, and the healthcheck `start_period` is bumped to 60 s as a safety margin for everything else (sieve recompile, vmail chown on a freshly mounted volume, cert-watcher launch)
+
 ### Changed
 - Redis storage moved from the docker-managed named volume `redis_data` to a bind-mount at `${VOLUMES_PATH}/redis` (defaults to `./volumes/redis`). Same path convention as every other stateful service. The motivation is operational safety: a `docker volume prune -af` (run by mistake or by a clean-up cron) used to wipe every per-user bayes token, every `spam_count`, every `senders:<from>:reporters/recipients` set and every postmaster `notified:` flag without warning. With everything under `${VOLUMES_PATH}` the same paths now hold every piece of runtime state, and the volumes directory can be snapshotted or rsynced as a whole
 

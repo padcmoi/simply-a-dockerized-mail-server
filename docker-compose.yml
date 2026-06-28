@@ -137,7 +137,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 15s
+      # start_period absorbs the slowest cold-start path (sieve recompile,
+      # maildir chown on a freshly mounted volume, cert-watcher launch).
+      # dhparam is baked at build time so it does not factor in any more.
+      start_period: 60s
 
   postfix:
     <<: *restart
