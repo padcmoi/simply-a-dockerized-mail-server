@@ -9,20 +9,29 @@ export class QuotaTriggersBootstrap implements OnApplicationBootstrap {
   async onApplicationBootstrap() {
     const stmts: string[] = [
       "DROP TRIGGER IF EXISTS `VirtualUsers_after_insert_quota`",
+      // The trigger also fires on `INSERT ... ON DUPLICATE KEY UPDATE` paths
+      // (MariaDB fires AFTER INSERT regardless of whether the statement ended
+      // up inserting or updating the source row). VirtualQuotaUsers.email has
+      // no UNIQUE constraint, so `INSERT IGNORE` would not actually ignore
+      // anything: every re-run of install.sh or every recreate-after-cascade
+      // would stack a fresh quota row. Guarding with a NOT EXISTS subquery
+      // makes the trigger truly idempotent without touching the table shape.
       `CREATE TRIGGER \`VirtualUsers_after_insert_quota\`
        AFTER INSERT ON \`VirtualUsers\`
        FOR EACH ROW
        BEGIN
-         INSERT IGNORE INTO \`VirtualQuotaUsers\` (\`domain\`, \`email\`, \`bytes\`, \`messages\`)
-         VALUES (NEW.\`domain\`, NEW.\`email\`, 0, 0);
+         INSERT INTO \`VirtualQuotaUsers\` (\`domain\`, \`email\`, \`bytes\`, \`messages\`)
+         SELECT NEW.\`domain\`, NEW.\`email\`, 0, 0
+         WHERE NOT EXISTS (SELECT 1 FROM \`VirtualQuotaUsers\` WHERE \`email\` = NEW.\`email\`);
        END`,
       "DROP TRIGGER IF EXISTS `VirtualDomains_after_insert_quota`",
       `CREATE TRIGGER \`VirtualDomains_after_insert_quota\`
        AFTER INSERT ON \`VirtualDomains\`
        FOR EACH ROW
        BEGIN
-         INSERT IGNORE INTO \`VirtualQuotaDomains\` (\`domain\`, \`bytes\`, \`messages\`)
-         VALUES (NEW.\`domain\`, 0, 0);
+         INSERT INTO \`VirtualQuotaDomains\` (\`domain\`, \`bytes\`, \`messages\`)
+         SELECT NEW.\`domain\`, 0, 0
+         WHERE NOT EXISTS (SELECT 1 FROM \`VirtualQuotaDomains\` WHERE \`domain\` = NEW.\`domain\`);
        END`,
       "DROP TRIGGER IF EXISTS `VirtualQuotaUsers_after_update_agg`",
       `CREATE TRIGGER \`VirtualQuotaUsers_after_update_agg\`

@@ -3,7 +3,8 @@
 #
 # A non-technical user types a hostname, hits enter for everything else, walks
 # away with: full stack running, schema created by TypeORM, admin account
-# seeded, primary domain + first mailbox provisioned, DKIM key generated and
+# seeded, primary domain provisioned (postmaster@<domain> reserved inactive,
+# real mailboxes are created later via the manager-ui), DKIM key generated and
 # the DNS record printed ready to paste. Passwords are auto-generated.
 #
 # Idempotent: re-runs only fill what is missing.
@@ -177,21 +178,6 @@ PRIMARY_DOMAIN=$(prompt_re "Primary mail domain" "$DEFAULT_DOMAIN" \
   '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$' \
   "domain name like example.com")
 
-# postmaster@<domain> is reserved as a write-only sender (envelope-from for
-# system notifications such as blocklist alerts). It is always provisioned
-# with active=0 below, so reject it as the user's first mailbox here.
-while true; do
-  MAILBOX_LOCAL=$(prompt_re "First mailbox local part" "admin" \
-    '^[a-zA-Z0-9._+-]+$' \
-    "letters, digits, dots, underscores, dashes, plus")
-  if [ "${MAILBOX_LOCAL,,}" = "postmaster" ]; then
-    warn "postmaster is reserved as the write-only system sender; pick another local part"
-    continue
-  fi
-  break
-done
-MAILBOX_EMAIL="${MAILBOX_LOCAL}@${PRIMARY_DOMAIN}"
-
 RC_LANG=$(prompt_lang "Roundcube default language" "en_US")
 env_set ROUNDCUBE_LANGUAGE "$RC_LANG"
 
@@ -210,7 +196,6 @@ set_secret_if_placeholder RSPAMD_PASSWORD            "$(rand_alnum)"
 set_secret_if_placeholder MANAGER_JWT_ACCESS_SECRET  "$(rand_b64)"
 set_secret_if_placeholder MANAGER_JWT_REFRESH_SECRET "$(rand_b64)"
 set_secret_if_placeholder MANAGER_ADMIN_PASSWORD     "$(rand_alnum)"
-MAILBOX_PASSWORD=$(rand_alnum)
 
 PUBLIC_IP=$(env_get MAIL_PUBLIC_IP)
 DB_NAME=$(env_get DB_NAME)
@@ -256,13 +241,10 @@ SQL
 ok "admin account ready"
 
 # ---------------------------------------------------------------------------
-# 6. Seed primary domain and first mailbox
+# 6. Seed primary domain and reserve postmaster
 # ---------------------------------------------------------------------------
-c "provisioning primary domain ${PRIMARY_DOMAIN} and mailbox ${MAILBOX_EMAIL}..."
-MAILBOX_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$MAILBOX_PASSWORD")
+c "provisioning primary domain ${PRIMARY_DOMAIN} (real mailboxes are created later via the manager-ui)..."
 DOMAIN_QUOTA=$((10 * 1024 * 1024 * 1024))
-MAILBOX_QUOTA=$((1 * 1024 * 1024 * 1024))
-MAILDIR="${PRIMARY_DOMAIN}/${MAILBOX_LOCAL}/"
 # postmaster@<domain> is the envelope-from used by dovecot-lda for system
 # notifications (blocklist alerts in images/dovecot/conf/sieve/bin/hooks/
 # 40-notify.sh, etc.). Insert it as active=0 so no one can authenticate or
@@ -274,14 +256,10 @@ INSERT IGNORE INTO VirtualDomains (domain, quota, active)
 VALUES ('${PRIMARY_DOMAIN}', ${DOMAIN_QUOTA}, 1);
 
 INSERT INTO VirtualUsers (domain, email, password, maildir, quota, active)
-VALUES ('${PRIMARY_DOMAIN}', '${MAILBOX_EMAIL}', '${MAILBOX_HASH}', '${MAILDIR}', ${MAILBOX_QUOTA}, 1)
-ON DUPLICATE KEY UPDATE password=VALUES(password);
-
-INSERT INTO VirtualUsers (domain, email, password, maildir, quota, active)
 VALUES ('${PRIMARY_DOMAIN}', 'postmaster@${PRIMARY_DOMAIN}', '${POSTMASTER_HASH}', '${PRIMARY_DOMAIN}/postmaster/', 0, 0)
 ON DUPLICATE KEY UPDATE active=0;
 SQL
-ok "domain and mailbox provisioned (postmaster@${PRIMARY_DOMAIN} reserved inactive)"
+ok "domain provisioned (postmaster@${PRIMARY_DOMAIN} reserved inactive)"
 
 # ---------------------------------------------------------------------------
 # 7. DKIM key
@@ -327,9 +305,9 @@ Manager UI credentials:
   login        : ${ADMIN_USER}
   password     : ${ADMIN_PASS}
 
-First mailbox (IMAP / SMTP / roundcube):
-  email        : ${MAILBOX_EMAIL}
-  password     : ${MAILBOX_PASSWORD}
+Create real mailboxes from the manager-ui (login above, then Users -> +Add).
+postmaster@${PRIMARY_DOMAIN} is reserved as the inactive system sender and
+must stay inactive (it is only used as envelope-from on system notifications).
 
 phpMyAdmin (root):
   user         : root
