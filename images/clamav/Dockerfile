@@ -6,6 +6,7 @@ RUN apk add --no-cache \
       clamav \
       clamav-daemon \
       clamav-libunrar \
+      netcat-openbsd \
       tini \
       tzdata \
     && rm -rf /var/cache/apk/* \
