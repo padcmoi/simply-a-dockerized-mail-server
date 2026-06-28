@@ -37,7 +37,12 @@ USER_DOMAIN="${USER#*@}"
 date_hdr="$(date -R 2>/dev/null || date)"
 mid="<blocklist-notice.$$.$(date +%s 2>/dev/null || echo 0)@${USER_DOMAIN}>"
 
-doveadm save -u "$USER" -m INBOX <<EOF
+# Deliver via dovecot-lda (not doveadm save) so the full sieve pipeline
+# runs on the notification: spam-to-junk in sieve_before, then the user's
+# managesieve script. That way a user-crafted AUTOROUTER rule for
+# postmaster@<domain> (or any custom filter) is honoured, instead of the
+# notification being force-filed into INBOX behind the user's back.
+/usr/libexec/dovecot/dovecot-lda -d "$USER" -f "postmaster@${USER_DOMAIN}" <<EOF
 From: postmaster@${USER_DOMAIN}
 To: ${USER}
 Date: ${date_hdr}

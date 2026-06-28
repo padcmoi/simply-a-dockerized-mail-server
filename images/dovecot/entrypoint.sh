@@ -32,12 +32,17 @@ for s in /var/lib/dovecot/sieve/global/*.sieve; do
 done
 chown -R vmail:vmail /var/lib/dovecot
 
-# Install :pipe binaries used by learn-spam.sieve / learn-ham.sieve. The
-# directory matches sieve_pipe_bin_dir in 90-sieve.conf. The orchestrator
-# (sa-learn-pipe.sh) delegates to per-concern hooks under hooks/.
-mkdir -p /usr/local/lib/dovecot/sieve/hooks
+# Install :pipe binaries used by learn-spam.sieve / learn-ham.sieve and the
+# auto-route.sieve / auto-route-undo.sieve pair. The directory matches
+# sieve_pipe_bin_dir in 90-sieve.conf. Each orchestrator delegates to its
+# own per-concern hooks dir.
+mkdir -p /usr/local/lib/dovecot/sieve/hooks \
+         /usr/local/lib/dovecot/sieve/auto-route-hooks \
+         /usr/local/lib/dovecot/sieve/auto-route-undo-hooks
 cp -f /etc/dovecot/sieve/bin/*.sh /usr/local/lib/dovecot/sieve/ 2>/dev/null || true
 cp -f /etc/dovecot/sieve/bin/hooks/*.sh /usr/local/lib/dovecot/sieve/hooks/ 2>/dev/null || true
+cp -f /etc/dovecot/sieve/bin/auto-route-hooks/*.sh /usr/local/lib/dovecot/sieve/auto-route-hooks/ 2>/dev/null || true
+cp -f /etc/dovecot/sieve/bin/auto-route-undo-hooks/*.sh /usr/local/lib/dovecot/sieve/auto-route-undo-hooks/ 2>/dev/null || true
 find /usr/local/lib/dovecot/sieve -type f -name '*.sh' -exec chmod +x {} +
 
 if [ ! -s /etc/dovecot/dh.pem ]; then
