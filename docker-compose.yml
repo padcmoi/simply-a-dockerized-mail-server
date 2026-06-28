@@ -219,6 +219,7 @@ services:
       ROUNDCUBEMAIL_SMTP_PORT: 587
       ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,managesieve,markasjunk
       ROUNDCUBE_LANGUAGE: ${ROUNDCUBE_LANGUAGE}
+      ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: ${ATTACHMENT_MAX_SIZE_MB:-25}M
     volumes:
       - ./images/roundcube/config:/var/roundcube/config:ro
     networks:

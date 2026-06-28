@@ -185,6 +185,11 @@ MAILBOX_EMAIL="${MAILBOX_LOCAL}@${PRIMARY_DOMAIN}"
 RC_LANG=$(prompt_lang "Roundcube default language" "en_US")
 env_set ROUNDCUBE_LANGUAGE "$RC_LANG"
 
+ATTACH_MB=$(prompt_re "Maximum attachment size in MB (postfix + Roundcube)" "25" \
+  '^[1-9][0-9]{0,3}$' \
+  "integer between 1 and 9999 MB (Gmail caps at 25)")
+env_set ATTACHMENT_MAX_SIZE_MB "$ATTACH_MB"
+
 # ---------------------------------------------------------------------------
 # 2. Secrets (auto-generated, never asked)
 # ---------------------------------------------------------------------------

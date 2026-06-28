@@ -13,9 +13,14 @@ CONF_DIR=/etc/postfix
 : "${TLS_CERT_NAME:?TLS_CERT_NAME is required}"
 export DB_HOST="${DB_HOST:-mail-mariadb}"
 
+# Translate the user-facing megabyte limit into the byte count postfix
+# expects for message_size_limit. Default 25 MB matches Gmail's cap.
+ATTACHMENT_MAX_SIZE_MB="${ATTACHMENT_MAX_SIZE_MB:-25}"
+export ATTACHMENT_MAX_SIZE_BYTES=$(( ATTACHMENT_MAX_SIZE_MB * 1024 * 1024 ))
+
 mkdir -p "$CONF_DIR/sql"
 # Only substitute these exact vars so postfix's own $vars are left untouched.
-SUBST='${MAIL_HOSTNAME} ${MAIL_PUBLIC_IP} ${TLS_CERT_NAME} ${DB_HOST} ${DB_NAME} ${DB_USER} ${DB_PASSWORD}'
+SUBST='${MAIL_HOSTNAME} ${MAIL_PUBLIC_IP} ${TLS_CERT_NAME} ${DB_HOST} ${DB_NAME} ${DB_USER} ${DB_PASSWORD} ${ATTACHMENT_MAX_SIZE_BYTES}'
 while IFS= read -r -d '' src; do
   rel="${src#$TEMPLATE_DIR/}"
   dst="$CONF_DIR/$rel"
