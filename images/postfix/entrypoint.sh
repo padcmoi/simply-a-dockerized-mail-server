@@ -41,7 +41,14 @@ chown -R postfix:postfix /var/spool/postfix 2>/dev/null || true
 
 mkdir -p /var/log/mail
 touch /var/log/mail/postfix.log
-chown -R postfix:postfix /var/log/mail
+# Touch ONLY postfix.log so we don't clobber the dovecot.log ownership
+# (set by the dovecot container's entrypoint to vmail:vmail mode 0666).
+# A previous `chown -R postfix:postfix /var/log/mail` here was racing
+# the dovecot entrypoint and leaving dovecot-lda unable to write its
+# log -- the postmaster notification then silently failed because LDA
+# delivery aborted on first log write.
+chown postfix:postfix /var/log/mail/postfix.log
+chmod 0666 /var/log/mail/postfix.log
 tail -F /var/log/mail/postfix.log 2>/dev/null &
 
 # Watch the bind-mounted Let's Encrypt cert dir; when it rotates we kill

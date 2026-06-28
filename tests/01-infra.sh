@@ -10,13 +10,7 @@ t_containers_healthy() {
   done
   for c in "${STACK_CONTAINERS[@]}"; do
     local s; s=$(docker inspect -f '{{.State.Status}}' "$c" 2>/dev/null || echo missing)
-    if [[ "$s" == "running" ]]; then
-      pass "running.$c" "running"
-    elif [[ "$c" == "mail-fail2ban" ]]; then
-      skip "running.$c" "known issue ($s)"
-    else
-      fail "running.$c" "$s"
-    fi
+    [[ "$s" == "running" ]] && pass "running.$c" "running" || fail "running.$c" "$s"
   done
 }
 

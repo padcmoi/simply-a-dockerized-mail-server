@@ -8,8 +8,15 @@ banaction = iptables-multiport
 loglevel  = INFO
 logtarget = STDOUT
 
-# Disable defaults that need /var/log/messages (not present in this container).
+# Disable defaults that need /var/log/messages (not present in this
+# container -- no syslog, no sshd, by design). The Alpine fail2ban
+# package ships /etc/fail2ban/jail.d/alpine-ssh.conf which enables BOTH
+# [sshd] and [sshd-ddos] pointing at /var/log/messages; fail2ban refuses
+# to boot if any enabled jail has no log file, so we must turn off both.
 [sshd]
+enabled = false
+
+[sshd-ddos]
 enabled = false
 
 [postfix-sasl]

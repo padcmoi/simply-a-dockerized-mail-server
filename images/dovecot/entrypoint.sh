@@ -52,6 +52,7 @@ fi
 mkdir -p /var/log/mail
 touch /var/log/mail/dovecot.log
 chown -R vmail:vmail /var/log/mail
+chmod 0666 /var/log/mail/dovecot.log
 tail -F /var/log/mail/dovecot.log 2>/dev/null &
 
 # Watch the bind-mounted Let's Encrypt cert dir; when it rotates we kill
