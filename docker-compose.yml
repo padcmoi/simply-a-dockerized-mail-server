@@ -217,7 +217,7 @@ services:
       ROUNDCUBEMAIL_DEFAULT_PORT: 993
       ROUNDCUBEMAIL_SMTP_SERVER: tls://mail-postfix
       ROUNDCUBEMAIL_SMTP_PORT: 587
-      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,managesieve
+      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,managesieve,markasjunk
       ROUNDCUBE_LANGUAGE: ${ROUNDCUBE_LANGUAGE}
     volumes:
       - ./images/roundcube/config:/var/roundcube/config:ro
