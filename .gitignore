@@ -14,3 +14,6 @@ ___keep
 *.log
 .output/
 .nuxt/
+
+# test-mailservers.sh outputs (regenerated on every run)
+test-results.md
