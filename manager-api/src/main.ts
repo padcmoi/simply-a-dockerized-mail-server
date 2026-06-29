@@ -15,7 +15,7 @@ async function bootstrap() {
     .setVersion("1.0.0")
     .addBearerAuth()
     .build();
-  SwaggerModule.setup("api/docs", app, SwaggerModule.createDocument(app, swagger));
+  SwaggerModule.setup("api/doc", app, SwaggerModule.createDocument(app, swagger));
 
   await app.listen(Number(process.env.MANAGER_API_PORT ?? 3000), "0.0.0.0");
 }

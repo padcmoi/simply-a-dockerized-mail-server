@@ -12,7 +12,7 @@ export const useAuthStore = defineStore("auth", {
   getters: { isAuthenticated: (state) => state.session !== null },
   actions: {
     async login(username: string, password: string) {
-      const data = await $fetch<{ accessToken: string; refreshToken: string; expiresAt: string }>("/api/auth/login", {
+      const data = await $fetch<{ accessToken: string; refreshToken: string; expiresAt: string }>("/api/v1/auth/jwt/login", {
         method: "POST",
         body: { username, password },
       });
@@ -20,7 +20,7 @@ export const useAuthStore = defineStore("auth", {
     },
     async logout() {
       if (this.session) {
-        await $fetch("/api/auth/logout", {
+        await $fetch("/api/v1/auth/jwt/logout", {
           method: "POST",
           body: { refreshToken: this.session.refreshToken },
           headers: { Authorization: `Bearer ${this.session.accessToken}` },
