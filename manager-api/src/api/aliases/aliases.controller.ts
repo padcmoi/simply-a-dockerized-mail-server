@@ -5,7 +5,7 @@ import { AliasesService } from "./aliases.service";
 import { CreateAliasDto, UpdateAliasDto, createAliasSchema, updateAliasSchema } from "./aliases.validation";
 
 @AliasesApi()
-@Controller("aliases")
+@Controller({ path: "aliases", version: "1" })
 export class AliasesController {
   constructor(private readonly svc: AliasesService) {}
 

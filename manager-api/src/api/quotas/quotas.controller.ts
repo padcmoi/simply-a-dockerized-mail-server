@@ -6,7 +6,7 @@ import { VirtualQuotaUser } from "../../core/entities/virtual-quota-user.entity"
 import { ListDomainQuotasDocs, ListUserQuotasDocs, QuotasApi } from "./quotas.openapi";
 
 @QuotasApi()
-@Controller("quotas")
+@Controller({ path: "quotas", version: "1" })
 export class QuotasController {
   constructor(
     @InjectRepository(VirtualQuotaDomain) private readonly domains: Repository<VirtualQuotaDomain>,

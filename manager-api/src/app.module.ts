@@ -3,12 +3,12 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AliasesModule } from "./api/aliases/aliases.module";
-import { AuthModule } from "./api/auth/auth.module";
 import { DomainsModule } from "./api/domains/domains.module";
 import { HealthModule } from "./api/health/health.module";
 import { QuotasModule } from "./api/quotas/quotas.module";
 import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.module";
 import { UsersModule } from "./api/users/users.module";
+import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { UsersModule } from "./api/users/users.module";
       charset: "utf8mb4",
     }),
     HealthModule,
-    AuthModule,
+    JwtAuthModule,
     DomainsModule,
     UsersModule,
     AliasesModule,

@@ -5,7 +5,7 @@ import { UsersService } from "./users.service";
 import { CreateUserDto, UpdateUserDto, createUserSchema, updateUserSchema } from "./users.validation";
 
 @UsersApi()
-@Controller("users")
+@Controller({ path: "users", version: "1" })
 export class UsersController {
   constructor(private readonly svc: UsersService) {}
 

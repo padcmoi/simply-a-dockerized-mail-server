@@ -4,14 +4,14 @@ import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { createHash, randomBytes } from "crypto";
 import { Repository } from "typeorm";
-import { Account } from "../../core/entities/account.entity";
-import { RefreshToken } from "../../core/entities/refresh-token.entity";
+import { Account } from "../../entities/account.entity";
+import { RefreshToken } from "../../entities/refresh-token.entity";
 
 const ACCESS_TTL = Number(process.env.MANAGER_JWT_ACCESS_TTL ?? 900);
 const REFRESH_TTL = Number(process.env.MANAGER_JWT_REFRESH_TTL ?? 2_592_000);
 
 @Injectable()
-export class AuthService {
+export class JwtAuthService {
   constructor(
     private readonly jwt: JwtService,
     @InjectRepository(Account) private readonly accounts: Repository<Account>,

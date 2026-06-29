@@ -16,7 +16,7 @@ import {
 } from "./reject-senders.validation";
 
 @RejectSendersApi()
-@Controller("sieve/reject-senders")
+@Controller({ path: "sieve/reject-senders", version: "1" })
 export class RejectSendersController {
   constructor(private readonly svc: RejectSendersService) {}
 

@@ -15,7 +15,7 @@ import { DomainsService } from "./domains.service";
 import { CreateDomainDto, UpdateDomainDto, createDomainSchema, updateDomainSchema } from "./domains.validation";
 
 @DomainsApi()
-@Controller("domains")
+@Controller({ path: "domains", version: "1" })
 export class DomainsController {
   constructor(private readonly svc: DomainsService) {}
 
