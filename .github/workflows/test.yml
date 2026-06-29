@@ -1,0 +1,149 @@
+name: Mail server test suite
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ./test-mailservers.sh
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MAIL_FQDN: mail.example.com
+      PRIMARY_DOMAIN: example.com
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free up runner disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL || true
+          df -h /
+
+      - name: Pin mail FQDN to loopback
+        run: echo "127.0.0.1 ${MAIL_FQDN}" | sudo tee -a /etc/hosts
+
+      - name: Generate a self-signed TLS cert for ${{ env.MAIL_FQDN }}
+        run: |
+          set -euo pipefail
+          sudo mkdir -p "/tmp/letsencrypt/live/${MAIL_FQDN}"
+          sudo openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+            -keyout "/tmp/letsencrypt/live/${MAIL_FQDN}/privkey.pem" \
+            -out    "/tmp/letsencrypt/live/${MAIL_FQDN}/fullchain.pem" \
+            -subj   "/CN=${MAIL_FQDN}" \
+            -addext "subjectAltName=DNS:${MAIL_FQDN}"
+          sudo chmod 0755 /tmp/letsencrypt /tmp/letsencrypt/live "/tmp/letsencrypt/live/${MAIL_FQDN}"
+          sudo chmod 0644 "/tmp/letsencrypt/live/${MAIL_FQDN}"/*.pem
+
+      - name: Render .env from .env.sample with CI defaults
+        run: |
+          set -euo pipefail
+          rand() { openssl rand -hex 16; }
+          randb64() { openssl rand -base64 48 | tr -d '\n/+=' | head -c 32; }
+          cp .env.sample .env
+          # CI-friendly values: loopback IP, self-signed cert path, random secrets.
+          sed -i "s|^MAIL_HOSTNAME=.*|MAIL_HOSTNAME=${MAIL_FQDN}|"                    .env
+          sed -i "s|^MAIL_PUBLIC_IP=.*|MAIL_PUBLIC_IP=127.0.0.1|"                     .env
+          sed -i "s|^TLS_CERT_NAME=.*|TLS_CERT_NAME=${MAIL_FQDN}|"                    .env
+          sed -i "s|^TLS_LETSENCRYPT_PATH=.*|TLS_LETSENCRYPT_PATH=/tmp/letsencrypt|"  .env
+          sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$(rand)|"                             .env
+          sed -i "s|^DB_ROOT_PASSWORD=.*|DB_ROOT_PASSWORD=$(rand)|"                   .env
+          sed -i "s|^RSPAMD_PASSWORD=.*|RSPAMD_PASSWORD=$(rand)|"                     .env
+          sed -i "s|^MANAGER_JWT_ACCESS_SECRET=.*|MANAGER_JWT_ACCESS_SECRET=$(randb64)|"   .env
+          sed -i "s|^MANAGER_JWT_REFRESH_SECRET=.*|MANAGER_JWT_REFRESH_SECRET=$(randb64)|" .env
+          sed -i "s|^MANAGER_ADMIN_PASSWORD=.*|MANAGER_ADMIN_PASSWORD=$(rand)|"       .env
+
+      - name: Bring stack up
+        run: docker compose up -d --build
+
+      - name: Wait for TypeORM schema (max 180s)
+        run: |
+          set -euo pipefail
+          DB_ROOT=$(grep ^DB_ROOT_PASSWORD .env | cut -d= -f2)
+          DB_NAME=$(grep ^DB_NAME .env | cut -d= -f2)
+          for i in $(seq 1 180); do
+            if docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" \
+                 -e "SHOW TABLES LIKE 'accounts'" 2>/dev/null | grep -q accounts; then
+              echo "schema ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "schema never became ready"; exit 1
+
+      - name: Seed admin account + primary domain + reserve postmaster
+        run: |
+          set -euo pipefail
+          DB_ROOT=$(grep ^DB_ROOT_PASSWORD .env | cut -d= -f2)
+          DB_NAME=$(grep ^DB_NAME .env | cut -d= -f2)
+          ADMIN_USER=$(grep ^MANAGER_ADMIN_USERNAME .env | cut -d= -f2)
+          ADMIN_PASS=$(grep ^MANAGER_ADMIN_PASSWORD .env | cut -d= -f2)
+          ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
+            node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" | tr -d '\r')
+          docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
+          INSERT INTO accounts (username, password, role, enabled, created_at, updated_at)
+          VALUES ('${ADMIN_USER}', '${ADMIN_HASH}', 'admin', 1, NOW(), NOW())
+          ON DUPLICATE KEY UPDATE password=VALUES(password), updated_at=NOW();
+          SQL
+          POSTMASTER_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$(openssl rand -hex 16)")
+          docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
+          INSERT IGNORE INTO virtual_domains (domain, quota, active)
+          VALUES ('${PRIMARY_DOMAIN}', 10737418240, 1);
+
+          INSERT INTO virtual_users (domain, email, password, maildir, quota, active)
+          VALUES ('${PRIMARY_DOMAIN}', 'postmaster@${PRIMARY_DOMAIN}',
+                  '${POSTMASTER_HASH}', '${PRIMARY_DOMAIN}/postmaster/', 0, 0)
+          ON DUPLICATE KEY UPDATE active=0;
+          SQL
+
+      - name: Generate DKIM key for ${{ env.PRIMARY_DOMAIN }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if docker compose exec -T opendkim curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker compose exec -T opendkim curl -fsS -X POST \
+            -H 'Content-Type: application/json' -d '{}' \
+            "http://localhost:8080/keys/${PRIMARY_DOMAIN}" >/dev/null
+
+      - name: Run ./test-mailservers.sh
+        id: tests
+        run: ./test-mailservers.sh
+
+      - name: Upload test report + raw log (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test-results.md
+            test.log
+          if-no-files-found: warn
+
+      - name: Capture docker-compose logs on failure
+        if: failure()
+        run: docker compose logs --no-color --timestamps > docker-compose.log || true
+
+      - name: Upload docker-compose logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-compose-logs
+          path: docker-compose.log
+          if-no-files-found: ignore
+
+      - name: Tear stack down
+        if: always()
+        run: docker compose down -v --remove-orphans || true
