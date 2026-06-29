@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Free up runner disk
         run: |
@@ -124,7 +124,7 @@ jobs:
 
       - name: Upload test report + raw log (always)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results
           path: |
@@ -138,7 +138,7 @@ jobs:
 
       - name: Upload docker-compose logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docker-compose-logs
           path: docker-compose.log
