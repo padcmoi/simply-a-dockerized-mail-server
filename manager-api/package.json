@@ -11,10 +11,10 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "typeorm": "typeorm-ts-node-commonjs",
     "db:create": "typeorm migration:create",
-    "db:generate": "pnpm typeorm migration:generate -d src/data-source.ts",
-    "db:migrate": "pnpm typeorm migration:run -d src/data-source.ts",
-    "db:revert": "pnpm typeorm migration:revert -d src/data-source.ts",
-    "db:show": "pnpm typeorm migration:show -d src/data-source.ts"
+    "db:generate": "pnpm typeorm migration:generate -d src/core/database/data-source.ts",
+    "db:migrate": "pnpm typeorm migration:run -d src/core/database/data-source.ts",
+    "db:revert": "pnpm typeorm migration:revert -d src/core/database/data-source.ts",
+    "db:show": "pnpm typeorm migration:show -d src/core/database/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

@@ -2,14 +2,13 @@ import { join } from "path";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { AccountsModule } from "./accounts/accounts.module";
-import { AliasesModule } from "./aliases/aliases.module";
-import { AuthModule } from "./auth/auth.module";
-import { DomainsModule } from "./domains/domains.module";
-import { HealthModule } from "./health/health.module";
-import { QuotasModule } from "./quotas/quotas.module";
-import { SieveModule } from "./sieve/sieve.module";
-import { UsersModule } from "./users/users.module";
+import { AliasesModule } from "./api/aliases/aliases.module";
+import { AuthModule } from "./api/auth/auth.module";
+import { DomainsModule } from "./api/domains/domains.module";
+import { HealthModule } from "./api/health/health.module";
+import { QuotasModule } from "./api/quotas/quotas.module";
+import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.module";
+import { UsersModule } from "./api/users/users.module";
 
 @Module({
   imports: [
@@ -23,19 +22,18 @@ import { UsersModule } from "./users/users.module";
       database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: false,
-      migrations: [join(__dirname, "migrations", "*.js")],
+      migrations: [join(__dirname, "core/database/migrations", "*.js")],
       migrationsRun: true,
       migrationsTableName: "migrations",
       charset: "utf8mb4",
     }),
     HealthModule,
     AuthModule,
-    AccountsModule,
     DomainsModule,
     UsersModule,
     AliasesModule,
     QuotasModule,
-    SieveModule,
+    RejectSendersModule,
   ],
 })
 export class AppModule {}
