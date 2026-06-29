@@ -3,7 +3,7 @@ interface Reject {
   id: number;
   sender: string;
   enabled: number;
-  dateCreation: string;
+  createdAt: string;
 }
 
 const { call } = useApi();
@@ -44,7 +44,7 @@ async function remove(id: number) {
 const columns = [
   { accessorKey: "sender", header: "Sender" },
   { accessorKey: "enabled", header: "Enabled" },
-  { accessorKey: "dateCreation", header: "Created" },
+  { accessorKey: "createdAt", header: "Created" },
 ];
 </script>
 

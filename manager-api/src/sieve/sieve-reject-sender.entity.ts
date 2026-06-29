@@ -12,10 +12,10 @@ export class SieveRejectSender {
   enabled!: number;
 
   @Column({
-    name: "date_creation",
+    name: "created_at",
     type: "datetime",
     default: () => "CURRENT_TIMESTAMP",
     onUpdate: "CURRENT_TIMESTAMP",
   })
-  dateCreation!: Date;
+  createdAt!: Date;
 }

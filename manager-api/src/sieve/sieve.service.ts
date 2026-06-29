@@ -15,7 +15,7 @@ export class SieveService {
     if (await this.repo.findOne({ where: { sender } })) {
       throw new ConflictException(`Sender ${sender} already blocked`);
     }
-    return this.repo.save(this.repo.create({ sender, enabled: 1, dateCreation: new Date() }));
+    return this.repo.save(this.repo.create({ sender, enabled: 1, createdAt: new Date() }));
   }
 
   async toggle(id: number, enabled: boolean) {
