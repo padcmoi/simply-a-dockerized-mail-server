@@ -1,0 +1,14 @@
+services:
+  fail2ban:
+    container_name: mail-fail2ban
+    restart: unless-stopped
+    build:
+      context: ../../images/fail2ban
+    env_file: ../../.env
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ${VOLUMES_PATH}/log:/var/log/mail:ro
+      - ${VOLUMES_PATH}/fail2ban:/var/lib/fail2ban

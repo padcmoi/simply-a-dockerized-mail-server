@@ -1,0 +1,28 @@
+services:
+  dovecot:
+    container_name: mail-dovecot
+    restart: unless-stopped
+    build:
+      context: ../../images/dovecot
+    env_file: ../../.env
+    volumes:
+      - ${VOLUMES_PATH}/mail:/var/mail
+      - ${VOLUMES_PATH}/log:/var/log/mail
+      - ${TLS_LETSENCRYPT_PATH}:/etc/letsencrypt:ro
+    networks:
+      mail:
+        ipv4_address: 172.200.0.16
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "${BINDING_IP_IMAPS}:${BINDING_PORT_IMAPS}:993"
+    healthcheck:
+      test: ["CMD-SHELL", "doveadm service status | grep -q imap-login && doveadm service status | grep -q lmtp"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # start_period absorbs the slowest cold-start path (sieve recompile,
+      # maildir chown on a freshly mounted volume, cert-watcher launch).
+      # dhparam is baked at build time so it does not factor in any more.
+      start_period: 60s

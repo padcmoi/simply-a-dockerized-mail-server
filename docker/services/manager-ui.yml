@@ -1,0 +1,17 @@
+services:
+  manager-ui:
+    container_name: mail-manager-ui
+    restart: unless-stopped
+    build:
+      context: ../../manager-ui
+    environment:
+      NUXT_PUBLIC_API_BASE: /api
+      NUXT_API_PROXY_TARGET: http://manager-api:3000
+      NODE_ENV: production
+    networks:
+      mail:
+        ipv4_address: 172.200.0.20
+    depends_on:
+      - manager-api
+    ports:
+      - "${BINDING_IP_MANAGEUI}:${BINDING_PORT_MANAGEUI}:3000"

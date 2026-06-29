@@ -1,0 +1,16 @@
+name: simply-mailserver
+
+# Webmail overlay. `include:` pulls in the main stack so the depends_on
+# chain (mariadb + dovecot healthy) resolves and the `mail` network exists
+# when this file is invoked on its own:
+#   docker compose -f docker-compose.roundcube.yml up -d
+# Running just `docker compose up -d` (no `-f`) gives the main stack with
+# no webmail.
+include:
+  - docker-compose.yml
+
+services:
+  roundcube:
+    extends:
+      file: ./docker/services/roundcube.yml
+      service: roundcube

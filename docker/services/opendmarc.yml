@@ -1,0 +1,15 @@
+services:
+  opendmarc:
+    container_name: mail-opendmarc
+    restart: unless-stopped
+    build:
+      context: ../../images/opendmarc
+    env_file: ../../.env
+    volumes:
+      - ${VOLUMES_PATH}/opendmarc:/var/lib/opendmarc
+    networks:
+      mail:
+        ipv4_address: 172.200.0.14
+    depends_on:
+      mariadb:
+        condition: service_healthy

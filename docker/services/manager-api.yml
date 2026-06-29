@@ -1,0 +1,18 @@
+services:
+  manager-api:
+    container_name: mail-manager-api
+    restart: unless-stopped
+    build:
+      context: ../../manager-api
+    env_file: ../../.env
+    environment:
+      DB_HOST: mail-mariadb
+      DB_PORT: 3306
+      NODE_ENV: production
+      OPENDKIM_API_URL: http://mail-opendkim:8080
+    networks:
+      mail:
+        ipv4_address: 172.200.0.19
+    depends_on:
+      mariadb:
+        condition: service_healthy
