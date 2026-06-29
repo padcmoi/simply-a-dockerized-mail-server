@@ -2,7 +2,7 @@ import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
 
 @Index("domain_2", ["domain"])
 @Index("owner_id", ["ownerId"])
-@Entity({ name: "VirtualDomains" })
+@Entity({ name: "virtual_domains" })
 export class VirtualDomain {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;

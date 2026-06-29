@@ -19,8 +19,8 @@ mynetworks = 127.0.0.0/8 [::1]/128 172.200.0.0/24
 maillog_file = /var/log/mail/postfix.log
 
 # --- Virtual delivery via LMTP to dovecot ------------------------------------
-# Dovecot owns /var/mail/vhosts as vmail (uid 5000) and updates VirtualQuotaUsers
-# / VirtualQuotaDomains live via dict-sql on each LMTP delivery.
+# Dovecot owns /var/mail/vhosts as vmail (uid 5000) and updates virtual_quota_users
+# / virtual_quota_domains live via dict-sql on each LMTP delivery.
 virtual_transport       = lmtp:inet:mail-dovecot:24
 virtual_mailbox_domains = mysql:/etc/postfix/sql/mysql-virtual-domains.cf
 virtual_mailbox_maps    = mysql:/etc/postfix/sql/mysql-virtual-mailboxes.cf
@@ -64,7 +64,7 @@ smtpd_helo_restrictions =
     reject_invalid_helo_hostname,
     reject_non_fqdn_helo_hostname
 
-# SieveRejectSenders blacklist consumed at SMTP time (DB-driven, see sql/).
+# sieve_reject_senders blacklist consumed at SMTP time (DB-driven, see sql/).
 smtpd_sender_restrictions =
     permit_mynetworks,
     permit_sasl_authenticated,

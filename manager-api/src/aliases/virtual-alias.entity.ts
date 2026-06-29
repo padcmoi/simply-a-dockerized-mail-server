@@ -2,7 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } 
 import { VirtualDomain } from "../domains/virtual-domain.entity";
 
 @Index("owner_id", ["ownerId"])
-@Entity({ name: "VirtualAliases" })
+@Entity({ name: "virtual_aliases" })
 export class VirtualAlias {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;

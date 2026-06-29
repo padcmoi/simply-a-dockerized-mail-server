@@ -2,7 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } 
 import { Account } from "../accounts/account.entity";
 
 @Index("account_id", ["accountId"])
-@Entity({ name: "RefreshTokens" })
+@Entity({ name: "refresh_tokens" })
 export class RefreshToken {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;

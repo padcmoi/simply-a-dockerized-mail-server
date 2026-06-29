@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity({ name: "SieveRejectSenders" })
+@Entity({ name: "sieve_reject_senders" })
 export class SieveRejectSender {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;

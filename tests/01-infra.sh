@@ -27,7 +27,7 @@ t_clamav_responds() {
 t_mariadb_schema() {
   local tables
   tables=$(docker exec mail-mariadb mariadb -uroot -p"$DB_ROOT_PASSWORD" -BN mailserver -e "SHOW TABLES" 2>/dev/null | sort | tr '\n' ' ')
-  for t in Accounts RefreshTokens SieveRejectSenders VirtualAliases VirtualDomains VirtualQuotaDomains VirtualQuotaUsers VirtualUsers; do
+  for t in accounts refresh_tokens sieve_reject_senders virtual_aliases virtual_domains virtual_quota_domains virtual_quota_users virtual_users; do
     case " $tables " in
       *" $t "*) pass "db.table.$t" "present" ;;
       *)        fail "db.table.$t" "missing (have: $tables)" ;;

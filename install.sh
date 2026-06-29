@@ -219,7 +219,7 @@ docker compose up -d --build
 c "waiting for TypeORM to create the schema (max 180s)..."
 T=180
 until docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" \
-        -e "SHOW TABLES LIKE 'Accounts'" 2>/dev/null | grep -q Accounts; do
+        -e "SHOW TABLES LIKE 'accounts'" 2>/dev/null | grep -q accounts; do
   sleep 1
   T=$((T-1))
   [ $T -le 0 ] && die "manager-api did not finish creating the schema in time"
@@ -229,12 +229,12 @@ ok "schema ready"
 # ---------------------------------------------------------------------------
 # 5. Seed admin
 # ---------------------------------------------------------------------------
-c "hashing admin password and upserting Accounts row..."
+c "hashing admin password and upserting accounts row..."
 ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
   node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" \
   | tr -d '\r')
 docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
-INSERT INTO Accounts (username, password, role, enabled, created_at, updated_at)
+INSERT INTO accounts (username, password, role, enabled, created_at, updated_at)
 VALUES ('${ADMIN_USER}', '${ADMIN_HASH}', 'admin', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE password=VALUES(password), updated_at=NOW();
 SQL
@@ -252,10 +252,10 @@ DOMAIN_QUOTA=$((10 * 1024 * 1024 * 1024))
 # never as a destination.
 POSTMASTER_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$(rand_alnum)")
 docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
-INSERT IGNORE INTO VirtualDomains (domain, quota, active)
+INSERT IGNORE INTO virtual_domains (domain, quota, active)
 VALUES ('${PRIMARY_DOMAIN}', ${DOMAIN_QUOTA}, 1);
 
-INSERT INTO VirtualUsers (domain, email, password, maildir, quota, active)
+INSERT INTO virtual_users (domain, email, password, maildir, quota, active)
 VALUES ('${PRIMARY_DOMAIN}', 'postmaster@${PRIMARY_DOMAIN}', '${POSTMASTER_HASH}', '${PRIMARY_DOMAIN}/postmaster/', 0, 0)
 ON DUPLICATE KEY UPDATE active=0;
 SQL

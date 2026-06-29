@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { VirtualDomain } from "../domains/virtual-domain.entity";
 
-@Entity({ name: "VirtualQuotaDomains" })
+@Entity({ name: "virtual_quota_domains" })
 export class VirtualQuotaDomain {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;

@@ -2,7 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "t
 import { VirtualDomain } from "../domains/virtual-domain.entity";
 import { VirtualUser } from "../users/virtual-user.entity";
 
-@Entity({ name: "VirtualQuotaUsers" })
+@Entity({ name: "virtual_quota_users" })
 export class VirtualQuotaUser {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;

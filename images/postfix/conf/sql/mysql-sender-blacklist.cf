@@ -2,4 +2,4 @@ hosts    = ${DB_HOST}
 user     = ${DB_USER}
 password = ${DB_PASSWORD}
 dbname   = ${DB_NAME}
-query    = SELECT 'REJECT Sender blacklisted' FROM SieveRejectSenders WHERE sender='%s' AND enabled=1
+query    = SELECT 'REJECT Sender blacklisted' FROM sieve_reject_senders WHERE sender='%s' AND enabled=1

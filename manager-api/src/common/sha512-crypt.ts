@@ -5,7 +5,7 @@ import { promisify } from "util";
 const exec = promisify(execFile);
 
 // Hash a plaintext password with the standard $6$ SHA-512 crypt format using
-// openssl. Matches the legacy passwords stored in VirtualUsers.password and
+// openssl. Matches the legacy passwords stored in virtual_users.password and
 // dovecot's SHA512-CRYPT scheme.
 export async function sha512crypt(plain: string): Promise<string> {
   const salt = randomBytes(8)

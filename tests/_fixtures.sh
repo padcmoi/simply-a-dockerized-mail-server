@@ -10,14 +10,14 @@ create_recipients() {
   pw_hash=$(openssl passwd -6 -salt "mailtest$$" "$TEST_PASSWORD")
   for user in "${TEST_USERS[@]}"; do
     docker exec -i mail-mariadb mariadb -uroot -p"$DB_ROOT_PASSWORD" mailserver >>"$LOG_FILE" 2>&1 <<SQL
-INSERT INTO VirtualUsers (owner_id, domain, email, password, maildir, quota, active, uid, gid, user_start_date)
+INSERT INTO virtual_users (owner_id, domain, email, password, maildir, quota, active, uid, gid, user_start_date)
 VALUES (NULL, '$TEST_DOMAIN', '${user}@${TEST_DOMAIN}', '{SHA512-CRYPT}${pw_hash}', '${TEST_DOMAIN}/${user}/', 1073741824, 1, 'vmail', 'vmail', '1970-01-01')
 ON DUPLICATE KEY UPDATE password = VALUES(password), active = 1;
 SQL
   done
   docker exec -i mail-mariadb mariadb -uroot -p"$DB_ROOT_PASSWORD" mailserver >>"$LOG_FILE" 2>&1 <<SQL
-UPDATE VirtualQuotaUsers SET bytes = 0, messages = 0 WHERE email LIKE 'at%@$TEST_DOMAIN';
-UPDATE VirtualQuotaDomains SET bytes = 0, messages = 0 WHERE domain = '$TEST_DOMAIN';
+UPDATE virtual_quota_users SET bytes = 0, messages = 0 WHERE email LIKE 'at%@$TEST_DOMAIN';
+UPDATE virtual_quota_domains SET bytes = 0, messages = 0 WHERE domain = '$TEST_DOMAIN';
 SQL
   # Pre-create every standard mailbox so doveadm save / IMAP MOVE never
   # bail out with "Mailbox doesn't exist". DA / DF are the user folders
@@ -37,8 +37,8 @@ cleanup_recipients() {
   for user in "${TEST_USERS[@]}"; do
     docker exec mail-dovecot rm -rf "/var/mail/vhosts/${TEST_DOMAIN}/${user}" >/dev/null 2>&1 || true
     docker exec -i mail-mariadb mariadb -uroot -p"$DB_ROOT_PASSWORD" mailserver >>"$LOG_FILE" 2>&1 <<SQL
-DELETE FROM VirtualQuotaUsers WHERE email = '${user}@${TEST_DOMAIN}';
-DELETE FROM VirtualUsers      WHERE email = '${user}@${TEST_DOMAIN}';
+DELETE FROM virtual_quota_users WHERE email = '${user}@${TEST_DOMAIN}';
+DELETE FROM virtual_users       WHERE email = '${user}@${TEST_DOMAIN}';
 SQL
     docker exec mail-redis sh -c "redis-cli --scan --pattern '*${user}@${TEST_DOMAIN}*' | xargs -r redis-cli DEL" >/dev/null 2>&1 || true
   done
