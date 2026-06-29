@@ -31,8 +31,18 @@ TEST_USERS=("at1" "at2" "at3" "at4" "at5" "at6")
 REPORT_FILE="${PROJECT_DIR}/test-results.md"
 LOG_FILE="${PROJECT_DIR}/test.log"
 
-STACK_CONTAINERS=(mail-mariadb mail-redis mail-clamav mail-opendkim mail-opendmarc mail-rspamd mail-dovecot mail-postfix mail-roundcube mail-fail2ban mail-phpmyadmin mail-manager-api mail-manager-ui)
+STACK_CONTAINERS=(mail-mariadb mail-redis mail-clamav mail-opendkim mail-opendmarc mail-rspamd mail-dovecot mail-postfix mail-fail2ban mail-phpmyadmin mail-manager-api mail-manager-ui)
 HEALTH_CONTAINERS=(mail-mariadb mail-redis mail-clamav mail-dovecot)
+
+# Roundcube is shipped via the optional docker-compose.roundcube.yml overlay.
+# Detect it at boot so the tests can switch between "assert running" and
+# "skip cleanly" without the suite ever red-flagging a container the user
+# chose not to deploy.
+ROUNDCUBE_PRESENT=0
+if docker inspect mail-roundcube >/dev/null 2>&1; then
+  ROUNDCUBE_PRESENT=1
+  STACK_CONTAINERS+=(mail-roundcube)
+fi
 
 # ---------- output / counters ----------
 COLOR_OFF=$'\033[0m'

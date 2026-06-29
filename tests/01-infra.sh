@@ -47,10 +47,10 @@ t_ports_open() {
       fail "tcp.$port" "closed"
     fi
   done
-  # 4190 (ManageSieve) is bridge-only -- reach it from another container.
-  if docker exec mail-roundcube sh -c 'echo | nc -z mail-dovecot 4190 2>/dev/null || (echo > /dev/tcp/mail-dovecot/4190 2>/dev/null)' 2>/dev/null; then
-    pass "tcp.4190.bridge" "open"
-  elif docker exec mail-dovecot sh -c 'echo | nc -z 127.0.0.1 4190' >/dev/null 2>&1; then
+  # 4190 (ManageSieve) is bridge-only. Probe it from inside dovecot, which
+  # is always present; the previous bridge-via-roundcube probe broke when
+  # the webmail overlay is not deployed.
+  if docker exec mail-dovecot sh -c 'echo | nc -z 127.0.0.1 4190' >/dev/null 2>&1; then
     pass "tcp.4190.bridge" "open (local)"
   else
     fail "tcp.4190.bridge" "closed"

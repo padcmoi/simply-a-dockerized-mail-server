@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# Roundcube: login page + IMAP link to dovecot + dovecot-lda respects the
+# Roundcube: login page + IMAP link to dovecot (both skipped cleanly when
+# the optional webmail overlay is not deployed) + dovecot-lda respects the
 # user's sieve (regression coverage for the postmaster-notification
 # pathway introduced when 40-notify.sh moved from doveadm save to LDA).
+# The LDA test does NOT depend on roundcube; it stays unconditional.
 
 t_roundcube_login_page() {
   section "Roundcube"
+  if [[ "${ROUNDCUBE_PRESENT:-0}" -ne 1 ]]; then
+    skip "roundcube.login_page" "webmail overlay not deployed"
+    return
+  fi
   local code
   code=$(docker exec mail-roundcube curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/ 2>/dev/null)
   if [[ "$code" =~ ^(200|302)$ ]]; then
@@ -15,6 +21,10 @@ t_roundcube_login_page() {
 }
 
 t_roundcube_imap_proxy() {
+  if [[ "${ROUNDCUBE_PRESENT:-0}" -ne 1 ]]; then
+    skip "roundcube.dovecot_link" "webmail overlay not deployed"
+    return
+  fi
   local out
   out=$(docker exec mail-roundcube sh -c 'echo | timeout 3 openssl s_client -quiet -connect mail-dovecot:993 -CAfile /etc/ssl/certs/ca-certificates.crt 2>/dev/null | head -1' 2>/dev/null)
   if printf '%s' "$out" | grep -q '* OK'; then
