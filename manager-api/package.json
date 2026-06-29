@@ -8,7 +8,13 @@
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\""
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "db:create": "typeorm migration:create",
+    "db:generate": "pnpm typeorm migration:generate -d src/data-source.ts",
+    "db:migrate": "pnpm typeorm migration:run -d src/data-source.ts",
+    "db:revert": "pnpm typeorm migration:revert -d src/data-source.ts",
+    "db:show": "pnpm typeorm migration:show -d src/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -25,6 +31,7 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "ts-node": "^10.9.2",
     "typeorm": "^0.3.20",
     "zod": "^3.23.8"
   },

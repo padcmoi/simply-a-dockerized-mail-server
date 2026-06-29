@@ -1,10 +1,10 @@
+import { join } from "path";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AccountsModule } from "./accounts/accounts.module";
 import { AliasesModule } from "./aliases/aliases.module";
 import { AuthModule } from "./auth/auth.module";
-import { QuotaTriggersBootstrap } from "./common/quota-triggers.bootstrap";
 import { DomainsModule } from "./domains/domains.module";
 import { HealthModule } from "./health/health.module";
 import { QuotasModule } from "./quotas/quotas.module";
@@ -22,8 +22,11 @@ import { UsersModule } from "./users/users.module";
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: true,
-      charset: "utf8_general_ci",
+      synchronize: false,
+      migrations: [join(__dirname, "migrations", "*.js")],
+      migrationsRun: true,
+      migrationsTableName: "migrations",
+      charset: "utf8mb4",
     }),
     HealthModule,
     AuthModule,
@@ -34,6 +37,5 @@ import { UsersModule } from "./users/users.module";
     QuotasModule,
     SieveModule,
   ],
-  providers: [QuotaTriggersBootstrap],
 })
 export class AppModule {}
