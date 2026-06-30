@@ -16,10 +16,10 @@ t_reject_senders() {
   local sql="docker exec -i mail-mariadb mariadb -uroot -p${DB_ROOT_PASSWORD} mailserver"
   local victim="blacklist-test@spam-fixture.invalid"
   local domain="spam-domain-fixture.invalid"
-  local pf_email() {
+  pf_email() {
     docker exec mail-postfix postmap -q "$1" mysql:/etc/postfix/sql/mysql-sender-blacklist.cf 2>/dev/null
   }
-  local pf_domain() {
+  pf_domain() {
     docker exec mail-postfix postmap -q "$1" mysql:/etc/postfix/sql/mysql-sender-blacklist-domain.cf 2>/dev/null
   }
 

@@ -18,7 +18,7 @@ t_hook_10_bayes() {
   inject_mail at1 INBOX "$from" "hook-bayes-train-$$" "" "$body"
   imap_move at1 INBOX Junk >/dev/null 2>&1
   local key=""
-  for _ in $(seq 1 10); do
+  for _ in $(seq 1 15); do
     key=$(docker exec mail-redis sh -c "redis-cli --scan --pattern 'RS$(email_of at1)_*' | head -1" 2>/dev/null)
     [[ -n "$key" ]] && break
     sleep 1

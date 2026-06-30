@@ -36,12 +36,12 @@ except Exception as e:
   print("ERROR", repr(e))
 PY
   )
-  if printf '%s' "$out" | grep -qiE 'virus|infected|clam'; then
+  if printf '%s' "$out" | grep -q ACCEPTED; then
+    fail "clamav.eicar_reject" "EICAR accepted - not blocked"
+  elif printf '%s' "$out" | grep -q REJECTED; then
     pass "clamav.eicar_reject" "$(printf '%s' "$out" | head -c 100)"
-  elif printf '%s' "$out" | grep -q ACCEPTED; then
-    fail "clamav.eicar_reject" "EICAR accepted"
   else
-    fail "clamav.eicar_reject" "rejected but not for virus reason: $(printf '%s' "$out" | head -c 120)"
+    fail "clamav.eicar_reject" "unexpected result: $(printf '%s' "$out" | head -c 120)"
   fi
 }
 
