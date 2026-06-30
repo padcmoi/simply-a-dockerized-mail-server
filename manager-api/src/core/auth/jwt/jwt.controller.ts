@@ -1,8 +1,12 @@
-import { Body, Controller, Headers, Ip, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Ip, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import type { Request } from "express";
 import { ZodValidationPipe } from "../../common/zod.pipe";
-import { JwtAuthApi, JwtLoginDocs, JwtLogoutDocs, JwtRefreshDocs } from "./jwt.openapi";
+import { JwtAuthApi, JwtLoginDocs, JwtLogoutDocs, JwtMeDocs, JwtRefreshDocs, JwtUpdateProfileDocs } from "./jwt.openapi";
 import { JwtAuthService } from "./jwt.service";
-import { LoginDto, RefreshDto, loginSchema, refreshSchema } from "./jwt.validation";
+import { LoginDto, RefreshDto, UpdateProfileDto, loginSchema, refreshSchema, updateProfileSchema } from "./jwt.validation";
+
+type AuthedRequest = Request & { user: { id: number; username: string; isRoot: boolean } };
 
 @JwtAuthApi()
 @Controller({ path: "auth/jwt", version: "1" })
@@ -34,5 +38,19 @@ export class JwtAuthController {
   async logout(@Body(new ZodValidationPipe(refreshSchema)) body: RefreshDto) {
     await this.auth.revoke(body.refreshToken);
     return { ok: true };
+  }
+
+  @Get("me")
+  @JwtMeDocs()
+  @UseGuards(AuthGuard("jwt"))
+  me(@Req() req: AuthedRequest) {
+    return this.auth.me(req.user.id);
+  }
+
+  @Patch("me")
+  @JwtUpdateProfileDocs()
+  @UseGuards(AuthGuard("jwt"))
+  updateProfile(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(updateProfileSchema)) body: UpdateProfileDto) {
+    return this.auth.updateProfile(req.user.id, body);
   }
 }

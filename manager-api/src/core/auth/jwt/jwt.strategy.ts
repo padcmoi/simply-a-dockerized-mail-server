@@ -5,7 +5,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 export interface JwtPayload {
   sub: number;
   username: string;
-  role: string;
+  isRoot: boolean;
 }
 
 @Injectable()
@@ -22,6 +22,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload) {
     if (!payload?.sub) throw new UnauthorizedException();
-    return { id: payload.sub, username: payload.username, role: payload.role };
+    return { id: payload.sub, username: payload.username, isRoot: payload.isRoot === true };
   }
 }

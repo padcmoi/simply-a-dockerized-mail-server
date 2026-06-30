@@ -6,6 +6,15 @@
 
 create_recipients() {
   section "Provisioning ${#TEST_USERS[@]} test recipients in $TEST_DOMAIN"
+  # install.sh no longer seeds a primary domain (the root account is expected
+  # to create domains from the manager-ui), so the FK `virtual_users.domain
+  # -> virtual_domains.domain` would reject the recipient INSERTs below
+  # against a freshly-installed stack. Upsert the TEST_DOMAIN row first.
+  docker exec -i mail-mariadb mariadb -uroot -p"$DB_ROOT_PASSWORD" mailserver >>"$LOG_FILE" 2>&1 <<SQL
+INSERT INTO virtual_domains (domain, quota, active, user_start_date)
+VALUES ('$TEST_DOMAIN', $((10 * 1024 * 1024 * 1024)), 1, '1970-01-01')
+ON DUPLICATE KEY UPDATE active = 1;
+SQL
   local pw_hash
   pw_hash=$(openssl passwd -6 -salt "mailtest$$" "$TEST_PASSWORD")
   for user in "${TEST_USERS[@]}"; do

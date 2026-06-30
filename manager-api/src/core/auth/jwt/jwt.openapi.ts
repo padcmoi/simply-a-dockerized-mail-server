@@ -19,3 +19,20 @@ export const JwtRefreshDocs = () =>
 
 export const JwtLogoutDocs = () =>
   applyDecorators(ApiBearerAuth(), UseGuards(AuthGuard("jwt")), ApiOperation({ summary: "Revoke a refresh token (idempotent)" }));
+
+export const JwtMeDocs = () =>
+  applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({ summary: "Return the profile of the authenticated account" }),
+    ApiResponse({ status: 200, description: "Profile returned" }),
+    ApiResponse({ status: 401, description: "Missing or invalid access token" })
+  );
+
+export const JwtUpdateProfileDocs = () =>
+  applyDecorators(
+    ApiBearerAuth(),
+    ApiOperation({ summary: "Update the authenticated account's display name, email or avatar URL" }),
+    ApiResponse({ status: 200, description: "Profile updated" }),
+    ApiResponse({ status: 401, description: "Missing or invalid access token" }),
+    ApiResponse({ status: 409, description: "Email already in use by another account" })
+  );

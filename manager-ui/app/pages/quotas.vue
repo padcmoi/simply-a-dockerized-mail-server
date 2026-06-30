@@ -49,18 +49,30 @@ const recipientCols = [
 </script>
 
 <template>
-  <div class="space-y-8">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">Quotas</h1>
-      <UButton icon="i-lucide-refresh-cw" variant="ghost" :loading="loading" @click="load">Refresh</UButton>
+  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-info"
+        title="Live mailbox usage maintained by the dovecot dict-sql backend."
+        class="flex-1 min-w-[16rem]"
+      />
+      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
     </div>
-    <section class="space-y-2">
-      <h2 class="text-lg font-medium">Per domain</h2>
-      <UTable :columns="domainCols" :data="domainRows" :loading="loading" />
-    </section>
-    <section class="space-y-2">
-      <h2 class="text-lg font-medium">Per recipient</h2>
-      <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" />
-    </section>
+
+    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+      <template #header>
+        <h2 class="font-semibold">Per domain</h2>
+      </template>
+      <UTable :columns="domainCols" :data="domainRows" :loading="loading" sticky />
+    </UCard>
+
+    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="mt-6">
+      <template #header>
+        <h2 class="font-semibold">Per recipient</h2>
+      </template>
+      <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" sticky />
+    </UCard>
   </div>
 </template>

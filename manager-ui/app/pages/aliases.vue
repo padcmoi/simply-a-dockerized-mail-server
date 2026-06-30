@@ -68,24 +68,47 @@ const columns = [
 </script>
 
 <template>
-  <div class="space-y-6">
-    <h1 class="text-2xl font-semibold">Aliases</h1>
+  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-info"
+        title="Forward an address (or a whole domain) to one or more real recipients."
+        class="flex-1 min-w-[16rem]"
+      />
+      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+    </div>
+
     <UCard>
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
-        <USelect
-          v-model="form.domainId"
-          :items="domains.map((d) => ({ label: d.domain, value: d.id }))"
-          placeholder="Domain"
-        />
-        <UInput v-model="form.localPart" placeholder="local-part" />
-        <UInput v-model="form.destination" placeholder="real@example.com" />
-        <UButton icon="i-lucide-plus" @click="create">Add</UButton>
-      </div>
-    </UCard>
-    <UTable :columns="columns" :data="items" :loading="loading">
-      <template #actions-cell="{ row }">
-        <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" @click="remove(row.original)" />
+      <template #header>
+        <h2 class="font-semibold">Add an alias</h2>
       </template>
-    </UTable>
+      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end" @submit="create">
+        <UFormField label="Domain" name="domainId">
+          <USelect
+            v-model="form.domainId"
+            :items="domains.map((d) => ({ label: d.domain, value: d.id }))"
+            placeholder="Pick a domain"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField label="Local part" name="localPart">
+          <UInput v-model="form.localPart" placeholder="local-part" class="w-full" />
+        </UFormField>
+        <UFormField label="Destination" name="destination">
+          <UInput v-model="form.destination" placeholder="real@example.com" class="w-full" />
+        </UFormField>
+        <UButton type="submit" icon="i-lucide-plus" block class="lg:w-auto">Add</UButton>
+      </UForm>
+    </UCard>
+
+    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="mt-6">
+      <UTable :columns="columns" :data="items" :loading="loading" sticky>
+        <template #actions-cell="{ row }">
+          <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" square @click="remove(row.original)" />
+        </template>
+      </UTable>
+    </UCard>
   </div>
 </template>

@@ -1,11 +1,20 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { createHash, randomBytes } from "crypto";
-import { Repository } from "typeorm";
+import { Not, Repository } from "typeorm";
 import { Account } from "../../entities/account.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
+import { UpdateProfileDto } from "./jwt.validation";
+
+export type ProfileResponse = {
+  username: string;
+  name: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  isRoot: boolean;
+};
 
 const ACCESS_TTL = Number(process.env.MANAGER_JWT_ACCESS_TTL ?? 900);
 const REFRESH_TTL = Number(process.env.MANAGER_JWT_REFRESH_TTL ?? 2_592_000);
@@ -50,9 +59,39 @@ export class JwtAuthService {
     }
   }
 
+  async me(accountId: number): Promise<ProfileResponse> {
+    const account = await this.accounts.findOne({ where: { id: accountId } });
+    if (!account) throw new NotFoundException("Account not found");
+    return this.toProfile(account);
+  }
+
+  async updateProfile(accountId: number, input: UpdateProfileDto): Promise<ProfileResponse> {
+    const account = await this.accounts.findOne({ where: { id: accountId } });
+    if (!account) throw new NotFoundException("Account not found");
+    if (input.email !== undefined && input.email !== null && input.email !== account.email) {
+      const clash = await this.accounts.findOne({ where: { email: input.email, id: Not(accountId) } });
+      if (clash) throw new ConflictException(`Email ${input.email} is already used by another account`);
+    }
+    if (input.name !== undefined) account.name = input.name;
+    if (input.email !== undefined) account.email = input.email;
+    if (input.avatarUrl !== undefined) account.avatarUrl = input.avatarUrl;
+    await this.accounts.save(account);
+    return this.toProfile(account);
+  }
+
+  private toProfile(account: Account): ProfileResponse {
+    return {
+      username: account.username,
+      name: account.name,
+      email: account.email,
+      avatarUrl: account.avatarUrl,
+      isRoot: account.isRoot === 1,
+    };
+  }
+
   private async issueTokens(account: Account, userAgent?: string, ip?: string) {
     const accessToken = await this.jwt.signAsync(
-      { sub: account.id, username: account.username, role: account.role },
+      { sub: account.id, username: account.username, isRoot: account.isRoot === 1 },
       { secret: process.env.MANAGER_JWT_ACCESS_SECRET, expiresIn: ACCESS_TTL }
     );
     const refreshRaw = randomBytes(48).toString("base64url");

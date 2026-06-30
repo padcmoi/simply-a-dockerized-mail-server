@@ -8,23 +8,28 @@
     "dev": "nuxt dev",
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",
-    "format": "prettier --write \"{app,components,composables,layouts,middleware,pages,server,stores,plugins}/**/*.{ts,vue,js,mjs}\" \"*.{ts,vue,js,mjs,json}\"",
-    "format:check": "prettier --check \"{app,components,composables,layouts,middleware,pages,server,stores,plugins}/**/*.{ts,vue,js,mjs}\" \"*.{ts,vue,js,mjs,json}\""
+    "format": "prettier --write \"{app,server}/**/*.{ts,vue,js,mjs,css}\" \"*.{ts,vue,js,mjs,json}\"",
+    "format:check": "prettier --check \"{app,server}/**/*.{ts,vue,js,mjs,css}\" \"*.{ts,vue,js,mjs,json}\""
   },
   "dependencies": {
-    "@nuxt/ui": "^4.8.2",
-    "@pinia-plugin-persistedstate/nuxt": "^1.2.1",
-    "@pinia/nuxt": "^0.10.0",
-    "nuxt": "^3.16.0",
-    "pinia": "^3.0.0",
-    "vue": "^3.5.0",
-    "vue-router": "^4.5.0",
-    "zod": "^3.23.8"
+    "@iconify-json/lucide": "^1.2.115",
+    "@nuxt/ui": "^4.9.0",
+    "@pinia/nuxt": "^0.11.3",
+    "@tailwindcss/vite": "^4.0.0",
+    "@vueuse/core": "^14.0.0",
+    "@vueuse/nuxt": "^14.0.0",
+    "nuxt": "^4.4.8",
+    "pinia": "^3.0.4",
+    "pinia-plugin-persistedstate": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "vue": "^3.5.39",
+    "vue-router": "^4.6.4",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "prettier": "^3.3.3",
-    "typescript": "^5.6.3"
+    "@types/node": "^22.20.0",
+    "prettier": "^3.9.4",
+    "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@9.15.0"
 }

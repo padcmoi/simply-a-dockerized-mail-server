@@ -8,11 +8,23 @@ export class Account {
   @Column({ name: "username", type: "varchar", length: 255, unique: true })
   username!: string;
 
+  @Column({ name: "name", type: "varchar", length: 255, nullable: true })
+  name!: string | null;
+
+  @Column({ name: "email", type: "varchar", length: 255, nullable: true, unique: true })
+  email!: string | null;
+
+  @Column({ name: "avatar_url", type: "varchar", length: 1024, nullable: true })
+  avatarUrl!: string | null;
+
   @Column({ name: "password", type: "varchar", length: 255, nullable: true })
   password!: string | null;
 
-  @Column({ name: "role", type: "varchar", length: 32, default: "admin" })
-  role!: string;
+  // 1 for the install-time super-admin (seeded by install.sh), 0 for every
+  // account created afterwards. Finer-grained permissions belong to a future
+  // ACL table; this flag stays on the row only to identify the bootstrap user.
+  @Column({ name: "is_root", type: "tinyint", width: 1, default: 0 })
+  isRoot!: number;
 
   @Column({ name: "enabled", type: "tinyint", width: 1, default: 1 })
   enabled!: number;

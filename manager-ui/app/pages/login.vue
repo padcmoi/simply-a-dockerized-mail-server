@@ -27,19 +27,22 @@ async function onSubmit() {
 </script>
 
 <template>
-  <UCard class="w-full max-w-sm">
+  <UCard class="w-full max-w-md">
     <template #header>
-      <div class="text-xl font-semibold">Mail Manager</div>
-      <div class="text-sm text-neutral-500">Sign in to continue</div>
+      <div class="flex items-center gap-2">
+        <UIcon name="i-lucide-mail" class="text-primary text-2xl" />
+        <h1 class="text-lg font-semibold">Mail Manager</h1>
+      </div>
+      <p class="text-sm text-muted mt-1">Sign in to manage domains, recipients and aliases.</p>
     </template>
     <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
       <UFormField label="Username" name="username" required>
-        <UInput v-model="state.username" autocomplete="username" class="w-full" />
+        <UInput v-model="state.username" autocomplete="username" icon="i-lucide-user" class="w-full" />
       </UFormField>
       <UFormField label="Password" name="password" required>
-        <UInput v-model="state.password" type="password" autocomplete="current-password" class="w-full" />
+        <UInput v-model="state.password" type="password" autocomplete="current-password" icon="i-lucide-lock" class="w-full" />
       </UFormField>
-      <UButton type="submit" :loading="loading" block>Sign in</UButton>
+      <UButton type="submit" :loading="loading" block size="lg">Sign in</UButton>
     </UForm>
   </UCard>
 </template>

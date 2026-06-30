@@ -2,10 +2,11 @@
 # Simply Mail Server v2 one-shot installer.
 #
 # A non-technical user types a hostname, hits enter for everything else, walks
-# away with: full stack running, schema created by TypeORM, admin account
-# seeded, primary domain provisioned (postmaster@<domain> reserved inactive,
-# real mailboxes are created later via the manager-ui), DKIM key generated and
-# the DNS record printed ready to paste. Passwords are auto-generated.
+# away with: full stack running, schema created by TypeORM and one root
+# account seeded into `accounts`. Domains, postmaster reservations, DKIM keys
+# and any subsequent manager account are then created from the manager-ui by
+# that root account (no auto-provisioning at install time). Passwords are
+# auto-generated.
 #
 # Idempotent: re-runs only fill what is missing.
 set -euo pipefail
@@ -34,7 +35,7 @@ fi
 # and a re-run skips every step whose name appears at or before the
 # recorded marker.
 STAGE_KEY="_INSTALL_STAGE"
-STAGES=(start config secrets up schema admin domain dkim)
+STAGES=(start config secrets up schema admin)
 
 env_get() { grep -E "^${1}=" "$TARGET" 2>/dev/null | head -1 | cut -d= -f2-; }
 env_set() {
@@ -223,14 +224,6 @@ if ! stage_done config; then
     '^([0-9]{1,3}\.){3}[0-9]{1,3}$' "IPv4 like 203.0.113.10")
   env_set MAIL_PUBLIC_IP "$PUBLIC_IP"
 
-  DEFAULT_DOMAIN="${HOSTNAME#mail.}"
-  PRIMARY_DOMAIN=$(prompt_re "Primary mail domain" "$DEFAULT_DOMAIN" \
-    '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$' \
-    "domain name like example.com")
-  # Persist as a temp key so a resume can re-read it without re-prompting.
-  # `_*` keys are wiped from .env at the end of a successful install.
-  env_set _PRIMARY_DOMAIN "$PRIMARY_DOMAIN"
-
   RC_LANG=$(prompt_lang "Roundcube default language" "en_US")
   env_set ROUNDCUBE_LANGUAGE "$RC_LANG"
 
@@ -238,6 +231,26 @@ if ! stage_done config; then
     '^[1-9][0-9]{0,3}$' \
     "integer between 1 and 9999 MB (Gmail caps at 25)")
   env_set ATTACHMENT_MAX_SIZE_MB "$ATTACH_MB"
+
+  # Webmail choice. Mail backend works either way: IMAP/SMTP clients (Thunderbird,
+  # iOS Mail, mobile apps...) reach the stack unchanged. Roundcube is just an
+  # optional browser UI bundled in an overlay compose file. Default = Roundcube
+  # because that is what a non-technical operator usually expects.
+  echo
+  echo "Webmail to deploy alongside the mail backend:"
+  echo "  1) Roundcube (default; browser UI at port \$BINDING_PORT_ROUNDCUBE)"
+  echo "  2) None      (IMAP/SMTP clients still work; no browser webmail)"
+  while true; do
+    printf '\033[1;36m[?]\033[0m Choice [1]: '
+    read -e -r WEBMAIL_ANS
+    case "${WEBMAIL_ANS:-1}" in
+      1|roundcube|Roundcube) WEBMAIL=roundcube; break ;;
+      2|none|None)           WEBMAIL=none;      break ;;
+      *) warn "invalid choice, type 1 or 2 (got '$WEBMAIL_ANS')" ;;
+    esac
+  done
+  env_set WEBMAIL "$WEBMAIL"
+  ok "webmail: $WEBMAIL"
 
   stage_set config
 fi
@@ -247,7 +260,9 @@ fi
 # need to come back from .env.
 HOSTNAME=$(env_get MAIL_HOSTNAME)
 PUBLIC_IP=$(env_get MAIL_PUBLIC_IP)
-PRIMARY_DOMAIN=$(env_get _PRIMARY_DOMAIN)
+WEBMAIL=$(env_get WEBMAIL)
+export COMPOSE_FILE=docker-compose.yml
+[ "$WEBMAIL" = "roundcube" ] && COMPOSE_FILE=docker-compose.roundcube.yml
 
 # ---------------------------------------------------------------------------
 # 2. Secrets (auto-generated, never asked)
@@ -264,6 +279,8 @@ if ! stage_done secrets; then
 fi
 
 DB_NAME=$(env_get DB_NAME)
+DB_USER=$(env_get DB_USER)
+DB_PASS=$(env_get DB_PASSWORD)
 DB_ROOT=$(env_get DB_ROOT_PASSWORD)
 ADMIN_USER=$(env_get MANAGER_ADMIN_USERNAME)
 ADMIN_PASS=$(env_get MANAGER_ADMIN_PASSWORD)
@@ -298,104 +315,43 @@ if ! stage_done schema; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Seed admin
+# 5. Seed root account
 # ---------------------------------------------------------------------------
 if ! stage_done admin; then
-  c "hashing admin password and upserting accounts row..."
+  c "hashing root password and upserting accounts row..."
   ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
     node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" \
     | tr -d '\r')
+  # is_root=1 marks this row as the bootstrap super-admin. The seeded account
+  # is the only one created by install.sh; every subsequent account, domain,
+  # postmaster reservation and DKIM key is created from the manager-ui (or
+  # the manager-api directly) by this root user. Re-running install keeps the
+  # row but rehashes its password (NOT a no-op: lets the operator reset it by
+  # picking a new MANAGER_ADMIN_PASSWORD and a fresh install on top).
   docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
-INSERT INTO accounts (username, password, role, enabled, created_at, updated_at)
-VALUES ('${ADMIN_USER}', '${ADMIN_HASH}', 'admin', 1, NOW(), NOW())
-ON DUPLICATE KEY UPDATE password=VALUES(password), updated_at=NOW();
+INSERT INTO accounts (username, password, is_root, enabled, created_at, updated_at)
+VALUES ('${ADMIN_USER}', '${ADMIN_HASH}', 1, 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE password=VALUES(password), is_root=1, updated_at=NOW();
 SQL
-  ok "admin account ready"
+  ok "root account ready"
   stage_set admin
 fi
 
 # ---------------------------------------------------------------------------
-# 6. Seed primary domain and reserve postmaster
-# ---------------------------------------------------------------------------
-if ! stage_done domain; then
-  c "provisioning primary domain ${PRIMARY_DOMAIN} (real mailboxes are created later via the manager-ui)..."
-  DOMAIN_QUOTA=$((10 * 1024 * 1024 * 1024))
-  # postmaster@<domain> is the envelope-from used by dovecot-lda for system
-  # notifications (blocklist alerts in images/dovecot/conf/sieve/bin/hooks/
-  # 40-notify.sh, etc.). Insert it as active=0 so no one can authenticate or
-  # receive inbound mail on it; LDA delivery only uses it as a header string,
-  # never as a destination.
-  POSTMASTER_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$(rand_alnum)")
-  docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
-INSERT IGNORE INTO virtual_domains (domain, quota, active)
-VALUES ('${PRIMARY_DOMAIN}', ${DOMAIN_QUOTA}, 1);
-
-INSERT INTO virtual_users (domain, email, password, maildir, quota, active)
-VALUES ('${PRIMARY_DOMAIN}', 'postmaster@${PRIMARY_DOMAIN}', '${POSTMASTER_HASH}', '${PRIMARY_DOMAIN}/postmaster/', 0, 0)
-ON DUPLICATE KEY UPDATE active=0;
-SQL
-  ok "domain provisioned (postmaster@${PRIMARY_DOMAIN} reserved inactive)"
-  stage_set domain
-fi
-
-# ---------------------------------------------------------------------------
-# 7. DKIM key
-# ---------------------------------------------------------------------------
-if ! stage_done dkim; then
-  c "generating DKIM key for ${PRIMARY_DOMAIN} via the opendkim sidecar..."
-  T=30
-  until docker compose exec -T opendkim curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; do
-    sleep 1
-    T=$((T-1))
-    [ $T -le 0 ] && die "opendkim dkim-api sidecar did not become ready in time"
-  done
-
-  # POST to the sidecar AND parse the JSON inside the same opendkim container
-  # using python3 (already installed there for dkim-api.py). The sidecar emits
-  # compact JSON, but parsing via a real JSON library is the only way that
-  # stays correct no matter how dkim-api.py decides to format its output later.
-  # Output format: "<selector>|<txtRecord>" with a literal '|' as separator,
-  # which never appears in either field.
-  DKIM_PARSED=$(docker compose exec -T opendkim sh -c "curl -fsS -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:8080/keys/${PRIMARY_DOMAIN} | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[\"selector\"]+\"|\"+d[\"txtRecord\"])'") \
-    || die "dkim-api request failed for ${PRIMARY_DOMAIN}"
-  SELECTOR="${DKIM_PARSED%%|*}"
-  DKIM_VALUE="${DKIM_PARSED#*|}"
-  [ -n "$SELECTOR" ] && [ -n "$DKIM_VALUE" ] || die "dkim-api returned an unexpected payload: ${DKIM_PARSED}"
-  ok "DKIM key generated (selector ${SELECTOR})"
-
-  # Persist the DKIM material into the manager-api `dkim_keys` table so direct
-  # DB queries (phpMyAdmin, ops scripts) see the row immediately, without
-  # waiting for a manager-api self-heal on the next /api/v1/domains/:id/dkim
-  # call. DkimService.list() also reads from this table; populating it here
-  # means the primary domain's DKIM key is available API-side from second 1.
-  DNS_NAME="${SELECTOR}._domainkey"
-  PUBLIC_KEY=$(printf '%s' "$DKIM_VALUE" | sed -n 's/.*p=\([^;[:space:]]*\).*/\1/p')
-  [ -n "$PUBLIC_KEY" ] || die "could not extract the base64 public key from the TXT record"
-  docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
-INSERT INTO dkim_keys (domain, selector, dns_name, public_key, txt_record)
-VALUES ('${PRIMARY_DOMAIN}', '${SELECTOR}', '${DNS_NAME}', '${PUBLIC_KEY}', '${DKIM_VALUE}')
-ON DUPLICATE KEY UPDATE
-  dns_name = VALUES(dns_name),
-  public_key = VALUES(public_key),
-  txt_record = VALUES(txt_record);
-SQL
-  ok "DKIM material persisted in dkim_keys"
-
-  # Cache the SELECTOR / TXT for the summary so a resumed run (skipping
-  # this block) can still display the DNS record without re-querying.
-  env_set _DKIM_SELECTOR  "$SELECTOR"
-  env_set _DKIM_TXT_RECORD "$DKIM_VALUE"
-  stage_set dkim
-fi
-
-# Rehydrate DKIM display vars from .env for the summary block below.
-SELECTOR=$(env_get _DKIM_SELECTOR)
-DKIM_VALUE=$(env_get _DKIM_TXT_RECORD)
-
-# ---------------------------------------------------------------------------
-# 8. Summary
+# 6. Summary
 # ---------------------------------------------------------------------------
 PUBLIC_DISPLAY="${PUBLIC_IP:-<MAIL_PUBLIC_IP>}"
+# Build the URLs block conditionally so a `WEBMAIL=none` install does not
+# advertise a Roundcube URL that resolves to nothing.
+URLS="  manager UI   : http://${PUBLIC_DISPLAY}:${MANAGEUI_PORT}"
+if [ "$WEBMAIL" = "roundcube" ]; then
+  URLS="${URLS}
+  roundcube    : http://${PUBLIC_DISPLAY}:${ROUNDCUBE_PORT}"
+fi
+URLS="${URLS}
+  phpmyadmin   : http://${PUBLIC_DISPLAY}:${PHPMYADMIN_PORT}
+  rspamd UI    : http://${PUBLIC_DISPLAY}:${RSPAMDUI_PORT}"
+
 cat <<EOF | tee INSTALL_INFO.txt
 
 ==========================================================================
@@ -403,41 +359,28 @@ cat <<EOF | tee INSTALL_INFO.txt
 ==========================================================================
 
 URLs (binding IPs are set in .env, default 127.0.0.1 for UIs):
-  manager UI   : http://${PUBLIC_DISPLAY}:${MANAGEUI_PORT}
-  roundcube    : http://${PUBLIC_DISPLAY}:${ROUNDCUBE_PORT}
-  phpmyadmin   : http://${PUBLIC_DISPLAY}:${PHPMYADMIN_PORT}
-  rspamd UI    : http://${PUBLIC_DISPLAY}:${RSPAMDUI_PORT}
+${URLS}
 
-Manager UI credentials:
+Root credentials (is_root=1 super-admin):
   login        : ${ADMIN_USER}
   password     : ${ADMIN_PASS}
 
-Create real mailboxes from the manager-ui (login above, then Users -> +Add).
-postmaster@${PRIMARY_DOMAIN} is reserved as the inactive system sender and
-must stay inactive (it is only used as envelope-from on system notifications).
+Sign in at the manager UI above, then create your first domain
+(Domains -> +Add). The API reserves postmaster@<domain> inactive and
+generates a DKIM key in the same call; the TXT record to publish is
+returned by the create response and listed under Domains -> <name> -> DKIM.
 
-phpMyAdmin (root):
-  user         : root
-  password     : ${DB_ROOT}
+phpMyAdmin / MariaDB credentials:
+  root         : root / ${DB_ROOT}
+  app user     : ${DB_USER} / ${DB_PASS}  (postfix, dovecot, manager-api)
 
-DKIM DNS record to publish for ${PRIMARY_DOMAIN}:
-  Name  : ${SELECTOR}._domainkey
-  Type  : TXT
-  Value : "${DKIM_VALUE}"
-
-After publishing the DNS record (1-5 min propagation), verify with:
-  docker exec mail-opendkim opendkim-testkey \\
-    -d ${PRIMARY_DOMAIN} -s ${SELECTOR} \\
-    -k /etc/opendkim/keys/${PRIMARY_DOMAIN}/${SELECTOR}.private -vvv
-
-See DOMAIN_DNS.md for the full DNS record set (MX, SPF, DMARC).
+See DOMAIN_DNS.md for the full DNS record set (MX, SPF, DMARC, DKIM).
 ==========================================================================
 EOF
 
 # Install reached the end: wipe every installer-owned scaffolding key
-# (`_INSTALL_STAGE`, `_PRIMARY_DOMAIN`, `_DKIM_*`, anything matching
-# `^_[A-Z_]+=`) so the live .env carries only runtime config. A re-run of
-# install.sh against this .env will now die with the "completed install"
-# branch of the preflight, as expected.
+# (`_INSTALL_STAGE`, anything matching `^_[A-Z_]+=`) so the live .env carries
+# only runtime config. A re-run of install.sh against this .env will now die
+# with the "completed install" branch of the preflight, as expected.
 stage_purge
 ok "install.sh complete; .env scrubbed of internal scaffolding"
