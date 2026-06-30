@@ -28,13 +28,10 @@ const accounts = ref<ManagerAccount[]>([]);
 const allDomains = ref<Domain[]>([]);
 
 const inviteOpen = ref(false);
-const inviteEmail = ref("");
-const inviteSelectedDomains = ref<number[]>([]);
 const inviteSending = ref(false);
 
 const aclOpen = ref(false);
 const aclAccount = ref<ManagerAccount | null>(null);
-const aclSelected = ref<number[]>([]);
 const aclSaving = ref(false);
 
 const domainOptions = computed(() => allDomains.value.map((d) => ({ label: d.domain, value: d.id })));
@@ -64,20 +61,13 @@ async function load() {
   }
 }
 
-async function sendInvite() {
+async function sendInvite(data: { email: string; domainIds: number[] | null }) {
   inviteSending.value = true;
   try {
-    await call("/accounts/invite", {
-      method: "POST",
-      body: {
-        email: inviteEmail.value,
-        domainIds: inviteSelectedDomains.value.length ? inviteSelectedDomains.value : null,
-      },
-    });
+    await call("/accounts/invite", { method: "POST", body: data });
     toast.add({ title: t("accounts.toast.invited"), color: "success" });
     inviteOpen.value = false;
-    inviteEmail.value = "";
-    inviteSelectedDomains.value = [];
+    await load();
   } catch {
     toast.add({ title: t("accounts.toast.inviteFailed"), color: "error" });
   } finally {
@@ -98,18 +88,14 @@ async function revokeAccount(acc: ManagerAccount) {
 
 function openAcl(acc: ManagerAccount) {
   aclAccount.value = acc;
-  aclSelected.value = acc.domains.map((d) => d.id);
   aclOpen.value = true;
 }
 
-async function saveAcl() {
+async function saveAcl(domainIds: number[]) {
   if (!aclAccount.value) return;
   aclSaving.value = true;
   try {
-    await call(`/accounts/${aclAccount.value.id}/acl`, {
-      method: "PUT",
-      body: { domainIds: aclSelected.value },
-    });
+    await call(`/accounts/${aclAccount.value.id}/acl`, { method: "PUT", body: { domainIds } });
     toast.add({ title: t("accounts.toast.aclSaved"), color: "success" });
     aclOpen.value = false;
     await load();
@@ -134,24 +120,13 @@ onMounted(load);
     />
 
     <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2">
-        <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
-      </div>
-      <UButton
-        v-if="auth.session?.isRoot"
-        icon="i-lucide-mail-plus"
-        color="primary"
-        @click="
-          () => {
-            inviteOpen = true;
-          }
-        "
-      >
+      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+      <UButton v-if="auth.session?.isRoot" icon="i-lucide-mail-plus" color="primary" @click="inviteOpen = true">
         {{ t("accounts.inviteButton") }}
       </UButton>
     </div>
 
-    <UCard>
+    <UCard class="hidden lg:block">
       <UTable :loading="loading" :data="accounts" :columns="columns" sticky>
         <template #username-cell="{ row }">
           <div class="flex items-center gap-2">
@@ -160,34 +135,29 @@ onMounted(load);
             <UBadge v-if="row.original.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
           </div>
         </template>
-
         <template #name-cell="{ row }">
           <span class="text-muted">{{ row.original.name ?? "-" }}</span>
         </template>
-
         <template #email-cell="{ row }">
           <span class="text-muted text-sm">{{ row.original.email ?? "-" }}</span>
         </template>
-
         <template #domains-cell="{ row }">
           <div v-if="row.original.isRoot" class="text-xs text-muted italic">{{ t("invite.allDomains") }}</div>
           <div v-else-if="row.original.domains.length === 0" class="text-xs text-dimmed">-</div>
           <div v-else class="flex flex-wrap gap-1">
-            <UBadge v-for="d in row.original.domains.slice(0, 3)" :key="d.id" color="neutral" variant="subtle" size="xs">
-              {{ d.domain }}
-            </UBadge>
-            <UBadge v-if="row.original.domains.length > 3" color="neutral" variant="subtle" size="xs">
-              +{{ row.original.domains.length - 3 }}
-            </UBadge>
+            <UBadge v-for="d in row.original.domains.slice(0, 3)" :key="d.id" color="neutral" variant="subtle" size="xs">{{
+              d.domain
+            }}</UBadge>
+            <UBadge v-if="row.original.domains.length > 3" color="neutral" variant="subtle" size="xs"
+              >+{{ row.original.domains.length - 3 }}</UBadge
+            >
           </div>
         </template>
-
         <template #status-cell="{ row }">
           <UBadge :color="row.original.enabled ? 'success' : 'neutral'" variant="subtle" size="sm">
             {{ row.original.enabled ? t("common.active") : t("common.inactive") }}
           </UBadge>
         </template>
-
         <template #actions-cell="{ row }">
           <div class="flex items-center gap-1 justify-end">
             <UButton
@@ -213,110 +183,30 @@ onMounted(load);
       </UTable>
     </UCard>
 
-    <UModal v-model:open="inviteOpen">
-      <template #content>
-        <UCard>
-          <template #header>
-            <h3 class="font-semibold">{{ t("accounts.invite.title") }}</h3>
-          </template>
+    <div class="lg:hidden space-y-3">
+      <div v-if="loading" class="flex justify-center py-8">
+        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+      </div>
+      <p v-else-if="accounts.length === 0" class="text-sm text-muted text-center py-6">-</p>
+      <AccountCard
+        v-for="acc in accounts"
+        v-else
+        :key="acc.id"
+        :account="acc"
+        @open-acl="openAcl(acc)"
+        @revoke="revokeAccount(acc)"
+      />
+    </div>
 
-          <div class="space-y-4">
-            <UFormField :label="t('accounts.invite.emailLabel')" required>
-              <UInput v-model="inviteEmail" type="email" class="w-full" />
-            </UFormField>
+    <AccountInviteModal v-model:open="inviteOpen" :domain-options="domainOptions" :sending="inviteSending" @submit="sendInvite" />
 
-            <UFormField :label="t('accounts.invite.domainsLabel')" :hint="t('accounts.invite.domainsHint')">
-              <div class="space-y-2 max-h-48 overflow-y-auto border border-default rounded-md p-2">
-                <label v-for="opt in domainOptions" :key="opt.value" class="flex items-center gap-2 cursor-pointer py-1">
-                  <input
-                    type="checkbox"
-                    :value="opt.value"
-                    :checked="inviteSelectedDomains.includes(opt.value)"
-                    class="rounded"
-                    @change="
-                      (e) => {
-                        const checked = (e.target as HTMLInputElement).checked;
-                        inviteSelectedDomains = checked
-                          ? [...inviteSelectedDomains, opt.value]
-                          : inviteSelectedDomains.filter((id) => id !== opt.value);
-                      }
-                    "
-                  />
-                  <span class="text-sm">{{ opt.label }}</span>
-                </label>
-              </div>
-            </UFormField>
-          </div>
-
-          <template #footer>
-            <div class="flex justify-end gap-2">
-              <UButton
-                color="neutral"
-                variant="ghost"
-                @click="
-                  () => {
-                    inviteOpen = false;
-                  }
-                "
-              >
-                {{ t("common.cancel") }}
-              </UButton>
-              <UButton color="primary" :loading="inviteSending" :disabled="!inviteEmail" @click="sendInvite">
-                {{ t("accounts.invite.submit") }}
-              </UButton>
-            </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
-
-    <UModal v-model:open="aclOpen">
-      <template #content>
-        <UCard>
-          <template #header>
-            <h3 class="font-semibold">{{ t("accounts.acl.title") }}</h3>
-            <p v-if="aclAccount" class="text-sm text-muted">{{ aclAccount.username }}</p>
-          </template>
-
-          <p class="text-sm text-muted mb-3">{{ t("accounts.acl.hint") }}</p>
-          <div class="space-y-2 max-h-56 overflow-y-auto border border-default rounded-md p-2">
-            <label v-for="opt in domainOptions" :key="opt.value" class="flex items-center gap-2 cursor-pointer py-1">
-              <input
-                type="checkbox"
-                :value="opt.value"
-                :checked="aclSelected.includes(opt.value)"
-                class="rounded"
-                @change="
-                  (e) => {
-                    const checked = (e.target as HTMLInputElement).checked;
-                    aclSelected = checked ? [...aclSelected, opt.value] : aclSelected.filter((id) => id !== opt.value);
-                  }
-                "
-              />
-              <span class="text-sm">{{ opt.label }}</span>
-            </label>
-          </div>
-
-          <template #footer>
-            <div class="flex justify-end gap-2">
-              <UButton
-                color="neutral"
-                variant="ghost"
-                @click="
-                  () => {
-                    aclOpen = false;
-                  }
-                "
-              >
-                {{ t("common.cancel") }}
-              </UButton>
-              <UButton color="primary" :loading="aclSaving" @click="saveAcl">
-                {{ t("accounts.acl.save") }}
-              </UButton>
-            </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
+    <AccountAclModal
+      v-model:open="aclOpen"
+      :username="aclAccount?.username ?? ''"
+      :domain-options="domainOptions"
+      :initial-selected="aclAccount?.domains.map((d) => d.id) ?? []"
+      :saving="aclSaving"
+      @save="saveAcl"
+    />
   </div>
 </template>

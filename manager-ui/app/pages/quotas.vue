@@ -68,18 +68,36 @@ onMounted(load);
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
     </div>
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }">
+    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
       <template #header>
         <h2 class="font-semibold">{{ t("quotas.perDomain") }}</h2>
       </template>
       <UTable :columns="domainCols" :data="domainRows" :loading="loading" sticky />
     </UCard>
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="mt-6">
+    <div class="lg:hidden space-y-3">
+      <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">{{ t("quotas.perDomain") }}</h2>
+      <div v-if="loading" class="flex justify-center py-8">
+        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+      </div>
+      <p v-else-if="domainRows.length === 0" class="text-sm text-muted text-center py-6">-</p>
+      <QuotaCard v-for="item in domainRows" v-else :key="item.id" :item="item" />
+    </div>
+
+    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
       <template #header>
         <h2 class="font-semibold">{{ t("quotas.perRecipient") }}</h2>
       </template>
       <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" sticky />
     </UCard>
+
+    <div class="lg:hidden space-y-3">
+      <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">{{ t("quotas.perRecipient") }}</h2>
+      <div v-if="loading" class="flex justify-center py-8">
+        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+      </div>
+      <p v-else-if="recipientRows.length === 0" class="text-sm text-muted text-center py-6">-</p>
+      <QuotaCard v-for="item in recipientRows" v-else :key="item.id" :item="item" />
+    </div>
   </div>
 </template>

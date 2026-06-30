@@ -109,12 +109,20 @@ onMounted(load);
       </UForm>
     </UCard>
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="mt-6">
+    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
       <UTable :columns="columns" :data="items" :loading="loading" sticky>
         <template #actions-cell="{ row }">
           <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" square @click="remove(row.original)" />
         </template>
       </UTable>
     </UCard>
+
+    <div class="lg:hidden space-y-3">
+      <div v-if="loading" class="flex justify-center py-8">
+        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+      </div>
+      <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
+      <AliasCard v-for="item in items" v-else :key="item.id" :item="item" @delete="remove(item)" />
+    </div>
   </div>
 </template>
