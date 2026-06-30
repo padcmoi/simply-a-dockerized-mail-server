@@ -3,6 +3,7 @@ import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { useAuthStore } from "~/stores/auth";
 
 const open = ref(true);
+const auth = useAuthStore();
 
 const navItems = computed<NavigationMenuItem[]>(() => [
   { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard" },
@@ -11,6 +12,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
   { label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" },
   { label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" },
   { label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" },
+  ...(auth.session?.isRoot ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts" }] : []),
 ]);
 
 const userItems = computed<DropdownMenuItem[][]>(() => [
@@ -87,6 +89,7 @@ const headerTitle = computed(() => {
     "/aliases": t("nav.aliases"),
     "/quotas": t("nav.quotas"),
     "/sieve": t("nav.sieveLong"),
+    "/accounts": t("nav.accounts"),
     "/profile": t("nav.profile"),
   };
   for (const k of Object.keys(map)) if (route.path.startsWith(k)) return map[k];
@@ -100,7 +103,6 @@ const userAvatar = computed(() => {
 });
 
 const { t, locale, locales, setLocale } = useI18n();
-const auth = useAuthStore();
 const route = useRoute();
 const colorMode = useColorMode();
 

@@ -1,5 +1,7 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import type { Request } from "express";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
+import { IsRootGuard } from "../../core/guards/is-root.guard";
 import {
   CreateDomainDocs,
   DiskUsageDocs,
@@ -12,6 +14,8 @@ import {
 import { DomainsService } from "./domains.service";
 import { CreateDomainDto, UpdateDomainDto, createDomainSchema, updateDomainSchema } from "./domains.validation";
 
+type AuthedRequest = Request & { user: { id: number; username: string; isRoot: boolean } };
+
 @DomainsApi()
 @Controller({ path: "domains", version: "1" })
 export class DomainsController {
@@ -19,8 +23,8 @@ export class DomainsController {
 
   @Get()
   @ListDomainsDocs()
-  list() {
-    return this.svc.list();
+  list(@Req() req: AuthedRequest) {
+    return this.svc.list({ id: req.user.id, isRoot: req.user.isRoot });
   }
 
   @Get("disk")
@@ -31,18 +35,20 @@ export class DomainsController {
 
   @Get(":domainId")
   @GetDomainDocs()
-  get(@Param("domainId", ParseIntPipe) domainId: number) {
-    return this.svc.get(domainId);
+  get(@Req() req: AuthedRequest, @Param("domainId", ParseIntPipe) domainId: number) {
+    return this.svc.get(domainId, { id: req.user.id, isRoot: req.user.isRoot });
   }
 
   @Post()
   @CreateDomainDocs()
+  @UseGuards(IsRootGuard)
   create(@Body(new ZodValidationPipe(createDomainSchema)) body: CreateDomainDto) {
     return this.svc.create(body);
   }
 
   @Patch(":domainId")
   @UpdateDomainDocs()
+  @UseGuards(IsRootGuard)
   update(
     @Param("domainId", ParseIntPipe) domainId: number,
     @Body(new ZodValidationPipe(updateDomainSchema)) body: UpdateDomainDto
@@ -52,6 +58,7 @@ export class DomainsController {
 
   @Delete(":domainId")
   @RemoveDomainDocs()
+  @UseGuards(IsRootGuard)
   remove(@Param("domainId", ParseIntPipe) domainId: number) {
     return this.svc.remove(domainId);
   }

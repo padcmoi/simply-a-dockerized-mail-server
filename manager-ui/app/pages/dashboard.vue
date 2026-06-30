@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
+
 definePageMeta({});
 
 interface Domain {
@@ -25,12 +27,23 @@ interface Reject {
   sender: string;
   enabled: number;
 }
+interface DiskInfo {
+  totalBytes: number;
+  freeBytes: number;
+  reservedBytes: number;
+  assignableBytes: number;
+}
 
 const loading = ref(false);
 const domains = ref<Domain[]>([]);
 const recipients = ref<Recipient[]>([]);
 const aliases = ref<Alias[]>([]);
 const rejects = ref<Reject[]>([]);
+const disk = ref<DiskInfo | null>(null);
+
+const { t } = useI18n();
+const { call } = useApi();
+const auth = useAuthStore();
 
 const stats = computed(() => [
   {
@@ -70,21 +83,38 @@ const stats = computed(() => [
     to: "/sieve",
   },
 ]);
+
 const recentDomains = computed(() => domains.value.slice(0, 5));
 const recentRecipients = computed(() => recipients.value.slice(0, 6));
 
-const { t } = useI18n();
-const { call } = useApi();
+const recipientsPerDomain = computed(() =>
+  domains.value
+    .map((d) => ({
+      domain: d.domain,
+      count: recipients.value.filter((r) => r.domain === d.domain).length,
+    }))
+    .filter((d) => d.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
+);
 
 async function load() {
   loading.value = true;
   try {
-    domains.value = await call<Domain[]>("/domains");
-    const recs = await Promise.all(domains.value.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`)));
+    const [domainList, rejectList, diskData] = await Promise.all([
+      call<Domain[]>("/domains"),
+      call<Reject[]>("/sieve/reject-senders"),
+      call<DiskInfo>("/domains/disk"),
+    ]);
+    domains.value = domainList;
+    rejects.value = rejectList;
+    disk.value = diskData;
+    const [recs, als] = await Promise.all([
+      Promise.all(domainList.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`))),
+      Promise.all(domainList.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`))),
+    ]);
     recipients.value = recs.flat();
-    const als = await Promise.all(domains.value.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`)));
     aliases.value = als.flat();
-    rejects.value = await call<Reject[]>("/sieve/reject-senders");
   } finally {
     loading.value = false;
   }
@@ -115,7 +145,23 @@ onMounted(load);
       </UCard>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <UCard v-if="disk">
+        <template #header>
+          <h2 class="font-semibold">{{ t("dashboard.disk.title") }}</h2>
+        </template>
+        <DiskDonutChart :total-bytes="disk.totalBytes" :free-bytes="disk.freeBytes" :reserved-bytes="disk.reservedBytes" />
+      </UCard>
+
+      <UCard>
+        <template #header>
+          <h2 class="font-semibold">{{ t("dashboard.chart.recipientsPerDomain") }}</h2>
+        </template>
+        <DomainBarChart :items="recipientsPerDomain" />
+      </UCard>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">

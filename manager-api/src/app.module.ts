@@ -2,6 +2,7 @@ import { join } from "path";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { AccountsModule } from "./api/accounts/accounts.module";
 import { DomainsModule } from "./api/domains/domains.module";
 import { HealthModule } from "./api/health/health.module";
 import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.module";
@@ -28,6 +29,7 @@ import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
     JwtAuthModule,
     DomainsModule,
     RejectSendersModule,
+    AccountsModule,
   ],
 })
 export class AppModule {}

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { DkimModule } from "../../core/dkim/dkim.module";
+import { AccountDomainAcl } from "../../core/entities/account-domain-acl.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { DomainsAliasesModule } from "./aliases/aliases.module";
@@ -12,7 +13,7 @@ import { DomainsRecipientsModule } from "./recipients/recipients.module";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([VirtualDomain, VirtualUser]),
+    TypeOrmModule.forFeature([VirtualDomain, VirtualUser, AccountDomainAcl]),
     DkimModule,
     DomainsRecipientsModule,
     DomainsAliasesModule,

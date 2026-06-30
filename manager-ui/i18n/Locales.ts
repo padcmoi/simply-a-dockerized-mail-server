@@ -11,6 +11,7 @@ export interface Locales {
     quotas: string;
     sieve: string;
     sieveLong: string;
+    accounts: string;
     profile: string;
     signOut: string;
     appearance: string;
@@ -40,6 +41,10 @@ export interface Locales {
     bytes: string;
     messages: string;
     lastActivity: string;
+    cancel: string;
+    invite: string;
+    revoke: string;
+    manage: string;
   };
   login: {
     title: string;
@@ -56,9 +61,20 @@ export interface Locales {
       recipients: string;
       aliases: string;
       blockedSenders: string;
+      accounts: string;
       activeCount: string;
       enabledCount: string;
       forwarders: string;
+    };
+    disk: {
+      title: string;
+      used: string;
+      free: string;
+      reserved: string;
+    };
+    chart: {
+      recipientsPerDomain: string;
+      recipients: string;
     };
     recent: {
       domains: string;
@@ -190,6 +206,62 @@ export interface Locales {
       updated: string;
       updateFailed: string;
       loadFailed: string;
+    };
+  };
+  accounts: {
+    alertTitle: string;
+    alertDescription: string;
+    inviteButton: string;
+    table: {
+      username: string;
+      name: string;
+      email: string;
+      domains: string;
+      status: string;
+      lastLogin: string;
+    };
+    invite: {
+      title: string;
+      emailLabel: string;
+      domainsLabel: string;
+      domainsHint: string;
+      submit: string;
+    };
+    acl: {
+      title: string;
+      hint: string;
+      save: string;
+    };
+    toast: {
+      invited: string;
+      inviteFailed: string;
+      revoked: string;
+      revokeFailed: string;
+      aclSaved: string;
+      aclFailed: string;
+      loadFailed: string;
+    };
+    confirmRevoke: string;
+  };
+  invite: {
+    loading: string;
+    invalid: string;
+    title: string;
+    subtitle: string;
+    emailLabel: string;
+    domainsLabel: string;
+    allDomains: string;
+    usernameLabel: string;
+    usernameHint: string;
+    nameLabel: string;
+    nameHint: string;
+    passwordLabel: string;
+    submit: string;
+    success: string;
+    successHint: string;
+    goToLogin: string;
+    toast: {
+      failed: string;
     };
   };
 }

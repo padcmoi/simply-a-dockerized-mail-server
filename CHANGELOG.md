@@ -1,95 +1,240 @@
 # Changelog
 
-## [Unreleased] - yyyy-mm-dd
-
-### Added
-- `manager-ui` migrated to the Nuxt 4 `app/` source convention: `app.vue`, `app.config.ts` and the `assets/`, `composables/`, `layouts/`, `middleware/`, `pages/`, `stores/` folders all moved under `manager-ui/app/`. Root keeps only the configuration surface (`nuxt.config.ts`, `tsconfig.json`, `package.json`, `Dockerfile`, `pnpm-lock.yaml`) and the Nitro `server/` tree. The `~/` import alias still resolves correctly because Nuxt 4's default `srcDir` is `app/`. `package.json` `format` / `format:check` globs collapsed from `{app,components,composables,layouts,middleware,pages,server,stores,plugins,assets}/**` to `{app,server}/**`
-- `manager-ui` upgraded to Nuxt 4.4.8 + Tailwind 4 + @nuxt/ui 4.9 + @vueuse/nuxt 14.3 + pinia 3 / pinia-plugin-persistedstate 4 / vue-router 4.6 / zod 4. `tailwindcss` and `@tailwindcss/vite` are now explicit dependencies (peer hoisting was unreliable inside the Alpine pnpm container -- the Vite Tailwind plugin failed to resolve `@import "tailwindcss"` even though pnpm pulled the peer in the local store). The package switched from the deprecated `@pinia-plugin-persistedstate/nuxt` to the current `pinia-plugin-persistedstate/nuxt` subpath. `assets/css/main.css` declares the Tailwind 4 entrypoint (`@import "tailwindcss"; @import "@nuxt/ui";`); the previous `imports.imports` workaround in `nuxt.config.ts` (added to paper over @nuxt/ui 4.9's `nuxt >= 4.1.0` compat refusal on Nuxt 3) is gone now that Nuxt itself satisfies the constraint
-- `manager-ui` shell rewritten on top of Nuxt UI v4 dashboard primitives. `layouts/default.vue` composes `UDashboardGroup` + collapsible/resizable `UDashboardSidebar` (drawer on mobile, persistent column on desktop, all handled by the component) + `UDashboardNavbar` with `UDashboardSidebarCollapse` toggle + `UDashboardPanel` body slot. `UNavigationMenu` renders the route list with `active` state bound to `route.path`. Every list page (`domains`, `recipients`, `aliases`, `quotas`, `sieve`) is wrapped in `UPage` -> `UPageHeader` -> `UPageBody` -> `UPageCard` and uses `UForm`/`UFormField`/`UInput`/`USelect`/`USwitch`/`UButton`/`UTable`/`UBadge` exclusively (no hand-rolled `<div class="flex ...">` shells). Tables enable `sticky` headers; forms keep the existing grid layouts but go through `UFormField` for label/error parity
-- Dark/light mode driven by `useColorMode()` (provided by @nuxt/ui's bundled @nuxtjs/color-mode). A toggle button sits in both layouts: as a footer button in the sidebar (default layout) and fixed top-right on the auth layout. The icon flips between `i-lucide-sun` and `i-lucide-moon`; preference is persisted by color-mode (cookie + localStorage). Theme tokens come from `app.config.ts` (`colors: { primary: "blue", neutral: "slate" }`)
-- DKIM material is now persisted into the `dkim_keys` table the moment it is generated. `DkimService.create()` issues the sidecar POST, then upserts `(domain, selector, dns_name, public_key, txt_record)` into the table on the `(domain, selector)` UNIQUE constraint. `DkimService.list()` reads the table first and only falls back to the sidecar when the table is empty for that domain; in that drift case it persists what the sidecar returns so subsequent calls hit the DB directly. `DkimService.remove()` mirrors deletion to both sides, `removeAll()` cleans up any stale row left by a failed sidecar DELETE. `public_key` is extracted from the TXT record's `p=...` segment so the migration's NOT NULL contract holds. The first DKIM row appears the moment the operator creates a domain through `POST /api/v1/domains`; before that the table is legitimately empty (install.sh does not seed any domain)
-- New additive migration `1782839424338-AccountsRoleToIsRoot.ts`. Drops the `accounts.role` varchar column (a leftover from a planned RBAC scheme that never materialised) and adds `is_root tinyint(1) NOT NULL DEFAULT 0` in its place. The seeded install-time super-admin gets `is_root=1`; every account created afterwards through the manager-api defaults to `is_root=0`. Finer-grained permissions move to a future ACL table keyed on `(account_id, resource)`. `Account` entity, `JwtAuthService.issueTokens()` and `JwtStrategy.validate()` track the rename: the JWT payload now carries `isRoot: boolean` instead of `role: string`. Migrations committed to main are immutable, so this is a forward-only step on top of `1782760167170-CreateAccounts`
-- `install.sh` now asks at the end of its config prompts which webmail to deploy alongside the mail backend: `1) Roundcube (default)` or `2) None`. The answer is persisted as `WEBMAIL=roundcube|none` in `.env` and steers a `COMPOSE_FILE` export -- `docker-compose.roundcube.yml` (the overlay that pulls the main stack in via compose v2 `include:`) or `docker-compose.yml` -- so every subsequent `docker compose up / exec` in the installer (and any later ops command in the same shell) targets the right entrypoint without sprinkling `-f` everywhere. The summary block drops the Roundcube URL line when `WEBMAIL=none` so `INSTALL_INFO.txt` does not advertise a webmail that is not running
-- `install.sh` is now resumable. A new `_INSTALL_STAGE` marker (kept in `.env`, scrubbed at the end) records the last completed checkpoint: `start | config | secrets | up | schema | admin`. Every section is gated by `stage_done <name>`, so a `Ctrl-C` in the middle of (say) the configuration prompts and a plain `./install.sh` re-run picks up exactly where it stopped instead of dying on "`.env` already exists". The preflight refuses three states clearly: `.env` exists with no `_INSTALL_STAGE` (= completed install, nothing to do), `.env` absent but `volumes/` present (= inconsistent state from a previous partial wipe), `volumes/` present at boot of a fresh run (= mariadb/dovecot would silently keep their old credentials). The final step purges every `^_[A-Z_]+=` line, leaving the live `.env` with runtime config only
-- `GET /api/v1/health` returns a synthetic healthcheck snapshot instead of the bare `{ status: "ok" }` stub. New module `src/core/healthcheck/` collects, in parallel, the manager-api process CPU usage (sampled via `process.cpuUsage()` over a 100 ms window, normalised against `os.cpus().length`), memory usage (`os.totalmem` / `os.freemem` percentage), a raw RESP `PING` to `mail-redis:6379` (no redis client pulled in, just a TCP probe + verb check), a `SELECT 1` through the existing TypeORM `DataSource`, and a TCP probe of `mail-postfix:25` that waits for the SMTP `220` banner. Response shape: `{ healthcheck: { status, cpu, memory, redis, db, cpuPercent, memoryPercent, loadScore, charge, loadSignal } }`. `status` flips to `down` when `db` fails, to `degraded` when redis or postfix probe fails or when any tier crosses the `high` threshold (>= 80%). `loadScore` is the 1-minute `os.loadavg()[0]` normalised against `os.cpus().length`; `loadSignal` reports remaining headroom as `up X%`. `charge` follows postfix reachability: `low/medium/high` when SMTP banner answers, `down` when not. Postfix queue depth is intentionally out of scope for now (would require sharing the postfix spool read-only into the manager-api container); the SMTP banner is enough to confirm Postfix is up
-- TypeORM migrations replace `synchronize: true` as the source of truth for the `mailserver` schema. Four migrations live under `manager-api/src/migrations/`, ordered by business domain so a diff reads like the data model: `1782760166966-CreateVirtualMail.ts` (the postfix `virtual_domains` / `virtual_users` / `virtual_aliases` / `virtual_quota_domains` / `virtual_quota_users` chain plus the 5 quota-aggregation triggers), `1782760167052-CreateSieveRejectSenders.ts` (postfix SMTP-time blacklist), `1782760167112-CreateDkimKeys.ts` (DKIM material per domain x selector, FK to `virtual_domains`), `1782760167170-CreateAccounts.ts` (manager-api `accounts` + `refresh_tokens`). All FK and UNIQUE constraints carry stable, semantic names (`fk_virtual_users_domain`, `uq_dkim_keys_domain_selector`, ...) instead of TypeORM's auto-generated `FK_<hash>` so future `migration:generate` diffs are readable. The bespoke `QuotaTriggersBootstrap` provider that used to install the 5 quota triggers at every Nest boot was removed: triggers now live in the `CreateVirtualMail` migration and are created once, on the first run. `TypeOrmModule.forRoot` switches to `synchronize: false`, `migrationsRun: true`, `migrations: [dist/migrations/*.js]`, `migrationsTableName: "migrations"`, so the manager-api container applies any pending migration at boot before serving traffic
-- `manager-api` ships TypeORM CLI scripts so authoring new migrations stays a one-liner: `db:create <path>` (empty file from template), `db:generate <path>` (diff entities vs running DB), `db:migrate` (apply pending), `db:revert` (rollback last), `db:show` (status). All wired through `typeorm-ts-node-commonjs` against `src/data-source.ts`, which exports a stand-alone `DataSource` mirroring the Nest connection (same driver, same entities, same charset `utf8mb4`). `ts-node` moved into runtime dependencies so the CLI is available in the production image without re-installing dev tools
-- New `tests/12-reject-senders.sh`: pins the postfix SQL blacklist wired in `smtpd_sender_restrictions`. Inserts test rows into `sieve_reject_senders`, runs `postmap -q` against `mysql-sender-blacklist.cf` and `mysql-sender-blacklist-domain.cf` (the same SQL postfix evaluates at MAIL FROM time, without the `permit_mynetworks` short-circuit that would skip the restriction for in-bridge senders), and asserts `REJECT ...` is returned for blacklisted senders + empty for clean ones. Also exercises the `enabled=0` toggle path. Test fixtures use `*.invalid` so a stalled prior run never collides with real data
-- GitHub Actions workflow `.github/workflows/test.yml` runs the full `./test-mailservers.sh` suite on every push and pull_request (any branch) plus manual `workflow_dispatch`. A `ubuntu-latest` runner provisions the bootstrap state non-interactively (self-signed cert at `/tmp/letsencrypt/live/mail.example.com/`, `.env` rendered from `.env.sample` with random secrets, admin account + `example.com` primary domain + reserved postmaster seeded directly via SQL, DKIM key generated through the opendkim sidecar), brings the stack up, runs the suite -- the script's exit code drives the job result -- then uploads `test-results.md` and `test.log` as artifacts on every run (plus `docker compose logs` on failure). Concurrency cancels stale runs on the same ref
-- New `dkim_keys` table (TypeORM-synchronized, snake_case) on the `mailserver` database. Columns: `id`, `domain`, `selector`, `dns_name`, `public_key`, `txt_record`, `private_key_path`, `created_at`, `updated_at`. UNIQUE (`domain`, `selector`), INDEX (`domain`), FK to `virtual_domains(domain)` ON DELETE/UPDATE CASCADE. Empty for now; future work persists DKIM material API-side so every domain (including the one provisioned by `install.sh`) exposes its key through the manager-api without going back to the opendkim sidecar
-- New `t_user_activity_window` test in `tests/02-auth.sh`: 10-case matrix over `user_start_date` x `user_end_date` (epoch / past / today / tomorrow / future combinations) checked against both the dovecot passdb (IMAP 993 login) and the postfix `virtual_mailbox_maps` lookup. 20 assertions per run, both bounds are inclusive on the day itself, every impossible window (start > end) is rejected
-- Per-feature documentation under `docs/`: one folder per concern (`delivery`, `sieve`, `autorouter`, `spam`, `antivirus`, `dkim`, `quota`, `auth`, `operations`, `test`) with a `README.md` that lays out the data flow, the code paths, the configuration knobs, the debug commands and the test that pins each behaviour. `docs/README.md` is the entry point and recommends a reading order. The "spam check / router check / custom sieve" priority order lives in `docs/delivery/README.md`
-- End-to-end mail-server test suite: `./test-mailservers.sh` at the project root brings the stack up if needed, waits for every healthcheck-bearing container to be healthy, provisions a handful of synthetic recipients in MariaDB, runs the checks against the running stack and tears the fixtures down at the end. The orchestrator stays slim (~100 lines); the actual checks live in `tests/[0-9]*.sh` grouped by business concern (infra, auth, delivery, sieve, autorouter, blocklist, hooks, antivirus, postfix limits, roundcube, hygiene) plus `tests/_lib.sh` (helpers + counters) and `tests/_fixtures.sh` (recipient lifecycle). Output: a markdown report at `./test-results.md` and a raw `./test.log`. Coverage is intentionally limited to the mail backends -- `manager-api` and `manager-ui` are deliberately out of scope (their own vitest suite handles them). Documented in `docs/test/README.md`
-- AUTOROUTER feature: dragging an INBOX mail into a user-created folder (e.g. `DA`) now upserts a per-user managesieve rule `# rule:[AUTOROUTER <folder> <sender>]` so every future mail from that sender lands in the same folder. The rule is written to the user's own `roundcube.sieve` script (per-user, never global) in the exact format Roundcube's managesieve plugin generates (CRLF, `allof`, `{` on its own line, tab-indented body), so it shows up in Settings -> Filters and the user can edit or delete it from the UI alongside their hand-crafted filters. Wired through pigeonhole's `imap_sieve` (trigger 3: `_from = INBOX, _name = *, _causes = COPY`), `auto-route.sieve` gates the destination against the system-folder set (`INBOX/Drafts/Sent/Junk/Trash/Archive/Archives`), `auto-route-pipe.sh` parses the raw `From:` (same Gmail-dot-tolerant policy as the blocklist), `auto-route-hooks/10-managesieve.sh` rewrites the user's script and recompiles via `sievec`
-- Symmetric AUTOROUTER undo: dragging a mail back to INBOX from a USER folder deletes the matching `AUTOROUTER <folder> <sender>` rule (giving mobile/native IMAP clients without a Filters UI a way to clear an auto-route by drag-and-drop). Critically, dragging from any SYSTEM folder (`Junk` -> documented spam unblock, `Trash` -> undelete, `Drafts/Sent/Archive` -> rare but possible) NEVER deletes the rule. Pigeonhole 0.5 does not expose the source mailbox to sieve scripts, so the source is recovered post-hoc: pigeonhole fires the `_name = INBOX, _causes = COPY` trigger BEFORE the EXPUNGE that completes a MOVE, so the original copy still exists in the source mailbox; `auto-route-undo-pipe.sh` does `doveadm fetch -u <user> mailbox '*' header Message-ID <id>` and rejects the deletion when every non-INBOX hit is a system folder. Hand-crafted rules with a non-`AUTOROUTER` name are never touched, even when their fileinto target matches: only the `# rule:[AUTOROUTER ...]` marker prefix is in scope
-- Per-user bayes classifier in rspamd: `classifier-bayes.conf` declares `per_user = true` with `users_redis_users { selector = "rcpt:addr" }` so each recipient's drag-to-Junk only trains their own statistics
-- New rspamd Lua rule `USER_BLOCKLIST` (`rspamd.local.lua`) that looks up Redis `spam_count:<rcpt>:<from>` at milter time and forces the `add header` action via `task:set_pre_result` once the counter reaches `USER_THRESHOLD = 3`. The mail is never rejected -- the X-Spam-Flag header is added so the sieve routes it to Junk, and the recipient can still open it. 180 days TTL on the Redis counter
-- New rspamd Lua rule `GLOBAL_BLOCKLIST` (same file) that computes a Gmail-style cross-user consensus: once at least `GLOBAL_MIN_RECIPIENTS = 4` distinct users have received mail from a sender and at least `GLOBAL_RATIO = 75%` of them have explicitly flagged it as spam, the sender is also forced to `add header` for everyone (still Junk, never reject). Backed by two Redis SETs (`senders:<from>:reporters` and `senders:<from>:recipients`) maintained respectively by the dovecot pipe hooks and a rspamd post-filter `RECIPIENT_RECORDER` that records every (from, recipient) pair seen
-- Dovecot `imap_sieve` + `sieve_extprograms` plugins wired through new `learn-spam.sieve` (trigger on COPY/APPEND into Junk -- COPY catches both classic COPY+EXPUNGE clients and modern IMAP MOVE clients since dovecot implements MOVE as COPY+EXPUNGE internally) and `learn-ham.sieve` (trigger on COPY from Junk to anywhere except Trash so a delete from Junk -- whether COPY-to-Trash on Roundcube/Android or direct EXPUNGE on iPhone Mail -- never undoes the blocklist)
-- `sa-learn-pipe.sh` reorganised as a thin orchestrator that parses the message once and delegates to per-concern hooks under `hooks/`. Each numbered hook is a self-contained POSIX shell script run in lexical order: `10-bayes.sh` (rspamc learn_spam/learn_ham per-user), `20-user-blocklist.sh` (INCR/DEL spam_count), `30-global-blocklist.sh` (SADD/SREM senders:<from>:reporters set), `40-notify.sh` (postmaster one-shot notification). Adding a feature is now drop a `NN-name.sh`; removing one is `rm` the file
-- New one-shot postmaster notification: when the per-recipient spam_count just crosses `USER_THRESHOLD`, `40-notify.sh` drops an English mail in the recipient's INBOX from `postmaster@<their domain>` explaining (a) why every future mail from that sender will be auto-routed to Junk, (b) that nothing is ever rejected so they can still open Junk, (c) that deleting from Junk (or the Trash) does NOT undo the block, (d) the exact unblock procedure (drag any one Junk mail back to INBOX). Idempotent via `SETNX notified:<rcpt>:<from>`; learn_ham clears the flag so a future re-block re-notifies
-- Antivirus is now mandatory: `mail-clamav` is no longer behind the `antivirus` compose profile, exposes clamd on TCP 3310 inside the `mail` network and has a `nc`-based healthcheck. Rspamd `antivirus.conf` wires it as `CLAM_VIRUS` with `action = "reject"`; rspamd `depends_on` waits for clamav to report healthy. ClamAV reject is the only kind of rejection on the receive side -- viruses are the one case where refusing delivery is safer than landing them in Junk
-- v2 multi-container Alpine stack rewrite (mariadb, redis, postfix, dovecot, rspamd, opendkim, opendmarc, clamav, fail2ban, roundcube, manager-api, manager-ui)
-- manager-api TypeORM synchronize generates the v1-compatible tables (utf8_general_ci, InnoDB, FK CASCADE, defaults and ON UPDATE timestamps byte-for-byte with v1) plus the additive `refresh_tokens` table; no SQL init scripts for the mail schema
-- 5 quota triggers (auto-create `virtual_quota_users` / `virtual_quota_domains` on user/domain insert, recompute `virtual_quota_domains` aggregates on every per-user write) installed by manager-api at boot via an OnApplicationBootstrap hook
-- Dovecot dict-sql quota backend wired to `virtual_quota_users` so every LMTP delivery and IMAP expunge updates the BDD live (parity with v1 production behaviour)
-- Postfix MySQL maps for virtual_mailbox_domains / virtual_mailbox_maps / virtual_alias_maps / sender_login + sender blacklist (`sieve_reject_senders` consumed at SMTP time)
-- Postfix recipient quota policy through dovecot quota-status (BDD-driven over-quota rejection)
-- Milter chain opendkim:8891 -> opendmarc:8893 -> rspamd:11332 with milter_default_action=accept
-- MariaDB init scripts split per auxiliary database: 01-roundcube.sh and 02-opendmarc.sh
-- Rspamd anti-spam with Redis backend, controller web UI on host loopback
-- Default sieve script routes X-Spam:YES / X-Spam-Score>=5 mail to Junk
-- manager-api NestJS 11 (TypeORM entities matching v1 schema, JWT + refresh tokens, Zod validation, Swagger at /api/docs, SHA512-CRYPT for mailbox passwords via openssl)
-- manager-ui Nuxt 3 + Nuxt UI v4 with login + domains / users / aliases / quotas / sieve pages, Pinia persisted auth, Nitro proxy /api -> manager-api
-- Roundcube default language configurable via ROUNDCUBE_LANGUAGE (en_US, fr_FR, de_DE, ...) read by config.inc.php at runtime; install.sh accepts short aliases (fr, FR, en, de, es, it, pt, nl, ru, pl) on top of full xx_YY locales
-- Roundcube `markasjunk` plugin added to the default `ROUNDCUBEMAIL_PLUGINS` list so users have a one-click "mark as junk" toolbar button. The plugin issues a regular IMAP MOVE into the Junk folder, which dovecot internally turns into COPY+EXPUNGE; that COPY fires the `learn-spam.sieve` trigger exactly like a drag-and-drop, feeding the per-user bayes and the USER_BLOCKLIST counter
-- Single attachment size knob `ATTACHMENT_MAX_SIZE_MB` (default 25 MB to match Gmail's send cap) prompted by install.sh and persisted to `.env`. Postfix entrypoint translates the megabyte value into bytes for `message_size_limit`, and the Roundcube service receives it as `ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE` so PHP's `upload_max_filesize` and `post_max_size` follow the same ceiling. Raising the limit is now a one-line edit instead of three different unit conversions
-- install.sh: one-shot interactive bootstrap (root required, refuses to run with an existing .env), prompts FQDN with Let's Encrypt cert presence check loop, auto-detected public IP, primary domain, Roundcube language, all regex-validated
-- install.sh seeds the admin in `accounts`, the primary domain in `virtual_domains`, generates the DKIM key for the primary domain and tees credentials + DKIM TXT record to INSTALL_INFO.txt (gitignored)
-- DKIM keys are generated through a tiny Python stdlib HTTP sidecar (`dkim-api.py`) co-running with opendkim in the same container, reachable from the docker `mail` bridge only. manager-api calls it whenever the admin adds, rotates or removes a domain DKIM key. install.sh uses the same sidecar so there is a single DKIM code path for both the bootstrap domain and any subsequent domain
-- New endpoints on manager-api: `POST /api/domains` returns the DKIM TXT record alongside the created domain; `GET /api/domains/:id/dkim` lists active selectors; `POST /api/domains/:id/dkim/rotate` adds a fresh selector without removing the previous one (DNS-rotation friendly); `DELETE /api/domains/:id/dkim?selector=...` removes a stale selector after the TTL has expired
-- Prettier added to both manager-api and manager-ui with a shared style (singleQuote, no semi, trailingComma all, printWidth 110). Run with `pnpm format` (write) or `pnpm format:check` (CI-friendly)
-- service.sh wrapper for docker compose
-- INSTALL.md documents the one-shot installer flow end-to-end
-
-### Changed
-- `install.sh` no longer auto-provisions a primary domain. The previous `domain` + `dkim` install stages (raw `INSERT IGNORE` into `virtual_domains` / `virtual_users`, direct `curl` to the opendkim sidecar, `INSERT ... ON DUPLICATE KEY UPDATE` into `dkim_keys`) and the matching primary-domain prompt are gone. The installer's only role is now to bring the stack up, run migrations and seed one row in `accounts` flagged `is_root=1`. Every domain (with its postmaster reservation and DKIM key) is created from the manager-ui by the root operator through `POST /api/v1/domains`, which already runs the exact same `reservePostmaster()` + `DkimService.create()` code path that the old install steps tried to duplicate. The `INSTALL_INFO.txt` summary drops the DKIM TXT record block (the operator reads it from the create-domain response) and the postmaster note (no postmaster exists until a domain is created)
-- `tests/_fixtures.sh` upserts the `virtual_domains` row for `TEST_DOMAIN` before inserting recipients. Recipients FK on `virtual_domains.domain` so a fresh stack -- which now has zero domains until the operator creates one -- would reject the recipient INSERTs without this upsert
-- manager-api URL versioning. Every resource is now reached under `/api/v1/<path>` via `app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" })` in `main.ts` plus an explicit `@Controller({ path: "...", version: "1" })` on every controller. The Swagger document declares version `1.0.0` and now lives at `/api/doc` (singular) so the public URL on the Nuxt proxy reads as one word. `manager-ui` consumes the versioned surface: `composables/useApi.ts` prepends `/api/v1`, `stores/auth.ts` posts to `/api/v1/auth/jwt/login` and `/api/v1/auth/jwt/logout`. The existing `nuxt.config.ts` `routeRules: { "/api/**": { proxy: ... } }` rule already passes everything under `/api/**` through to the NestJS container, so the v1 segment naturally flows through without any Nuxt change beyond the two call sites. Routes without the `/v1/` segment now return 404
-- JWT auth moved to `src/core/auth/jwt/`. It is plumbing that other resources consume through `AuthGuard("jwt")`, not a feature module: routes (`/api/v1/auth/jwt/login`, `/api/v1/auth/jwt/refresh`, `/api/v1/auth/jwt/logout`), service (bcrypt-check + refresh-token rotation), passport strategy, openapi decorators, validation schemas and `JwtAuthModule` all live colocated under the same folder. `src/api/auth/` is now reserved for future per-domain auth flavours (HMAC, API key, ...); each will nest under its own `src/core/auth/<flavour>/` subtree following the same pattern. Class names were re-prefixed to disambiguate from `@nestjs/jwt`'s own `JwtModule`: `AuthController` -> `JwtAuthController`, `AuthService` -> `JwtAuthService`, `AuthModule` -> `JwtAuthModule`
-- `manager-api/src` reorganised around the URL surface: every controller now lives under `src/api/<resource>/` and its folder path mirrors the route. `/api/health` -> `src/api/health/`, `/api/domains/*` -> `src/api/domains/`, `/api/users/*` -> `src/api/users/`, `/api/aliases/*` -> `src/api/aliases/`, `/api/quotas/*` -> `src/api/quotas/`, `/api/sieve/reject-senders/*` -> `src/api/sieve/reject-senders/`. Everything without a route (or that is auth plumbing) moved to `src/core/`: TypeORM entities to `src/core/entities/`, JWT auth (controller + service + module + openapi + validation + passport strategy) to `src/core/auth/jwt/`, the opendkim sidecar client to `src/core/dkim/`, shared helpers (`sha512-crypt`, `zod.pipe`) to `src/core/common/`, the stand-alone `DataSource` + migrations to `src/core/database/`. The four migration files keep their timestamps, only the folder changed; `app.module.ts` and the `db:*` pnpm scripts point at the new path. Swagger metadata extracted out of every controller into a sibling `<resource>.openapi.ts` exporting one composed `XxxApi()` decorator for the controller (rolls up `ApiTags` + `ApiBearerAuth` + `UseGuards(AuthGuard("jwt"))` when protected) and one `<Verb>XxxDocs()` per endpoint carrying an `ApiOperation` summary plus relevant `ApiQuery` / `ApiResponse` entries. Controllers now only carry HTTP routing + composed-decorator calls. The legacy `accounts/accounts.module.ts` (no controller, only registered the Account entity) was removed; the JWT auth module registers `Account` + `RefreshToken` via `TypeOrmModule.forFeature` directly. `SieveModule` is now `RejectSendersModule` to follow the URL sub-resource naming
-- `sieve_reject_senders.date_creation` renamed to `created_at` to match the snake_case timestamp convention used by the other tables (`accounts.created_at`, `dkim_keys.created_at`, ...). TypeORM entity now exposes the property as `createdAt`, `SieveService.create()` and the `manager-ui/pages/sieve.vue` table column follow. Existing deployments need a one-off `ALTER TABLE sieve_reject_senders CHANGE date_creation created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP` before the manager-api boots with the new entity, otherwise TypeORM synchronize would add a second column and orphan the data
-- Compose layout split per-service. The root `docker-compose.yml` is now a thin orchestrator that lists every non-webmail service via `extends` against its own file under `docker/services/<service>.yml`; each per-service file owns the full definition (image/build, env_file, network IP, depends_on, healthcheck, ports). Roundcube moved out of the main entry into the optional overlay `docker-compose.roundcube.yml`, which pulls the main stack in through the compose v2 `include:` directive so `docker compose -f docker-compose.roundcube.yml up -d` resolves the depends_on chain (mariadb + dovecot healthy) and the `mail` network without external/sleep workarounds. `docker compose up -d` alone now boots the main stack without any webmail
-- `actions/checkout` and `actions/upload-artifact` bumped from v4 to v5 in `.github/workflows/test.yml` so the workflow no longer trips the "Node.js 20 is deprecated" annotation on every run (v4 targets Node 20, v5 targets Node 24 natively)
-- MariaDB tables in the `mailserver` schema are now snake_case to match MariaDB convention: `Accounts -> accounts`, `RefreshTokens -> refresh_tokens`, `SieveRejectSenders -> sieve_reject_senders`, `VirtualAliases -> virtual_aliases`, `VirtualDomains -> virtual_domains`, `VirtualQuotaDomains -> virtual_quota_domains`, `VirtualQuotaUsers -> virtual_quota_users`, `VirtualUsers -> virtual_users`. Trigger names follow (`virtual_users_after_insert_quota`, etc.) and the bootstrap drops the legacy PascalCase names so older deployments do not keep firing two triggers per write. Renames are in-place via `RENAME TABLE` (metadata only, data preserved); the TypeORM `@Entity({ name })` decorators and every raw SQL reference (postfix `*.cf`, dovecot `dovecot-sql.conf.ext` / `dovecot-dict-sql-quota.conf.ext`, install.sh upserts, test fixtures) were updated in lockstep
-- `virtual_users` rows now honour `user_start_date` and `user_end_date` as a soft activity window. A row is treated exactly like `active=0` outside the window: `user_start_date > CURDATE()` (account not yet active, supports future provisioning) or `user_end_date < CURDATE()` (account expired). Both bounds are inclusive on the day itself; `user_end_date IS NULL` keeps the row unlimited; `user_start_date` defaults to `1970-01-01`. Implemented in the dovecot passdb / userdb / iterate queries (`dovecot-sql.conf.ext`) and in postfix `mysql-virtual-mailboxes.cf` so both IMAP authentication and inbound LMTP delivery refuse outside the window with zero new tables or triggers
-- Redis storage moved from the docker-managed named volume `redis_data` to a bind-mount at `${VOLUMES_PATH}/redis` (defaults to `./volumes/redis`). Same path convention as every other stateful service. The motivation is operational safety: a `docker volume prune -af` (run by mistake or by a clean-up cron) used to wipe every per-user bayes token, every `spam_count`, every `senders:<from>:reporters/recipients` set and every postmaster `notified:` flag without warning. With everything under `${VOLUMES_PATH}` the same paths now hold every piece of runtime state, and the volumes directory can be snapshotted or rsynced as a whole
-- `spam-to-junk.sieve` moved from `sieve_after` to `sieve_before` so X-Spam-Flag routing runs BEFORE the user's script. An AUTOROUTER rule ends with `stop;` and would otherwise short-circuit `sieve_after`, sending a spam-flagged mail into the auto-route folder instead of Junk. With the reorder, a sender that crosses the per-user blocklist threshold (`USER_BLOCKLIST` in rspamd) always lands in Junk even when an AUTOROUTER rule already exists for them
-- Postmaster blocklist notification (`40-notify.sh`) delivered through `dovecot-lda` instead of `doveadm save`, so the full sieve pipeline runs on the notification. The previous direct-write bypass force-filed the notification into INBOX regardless of any user rule; the LDA path lets a custom AUTOROUTER rule for `postmaster@<domain>` (or any user-crafted filter) route the notification to the user's preferred folder
-- Both blocklists read the `From:` address by parsing the raw `From:` header (`task:get_header("From")`) instead of `task:get_from()`, because rspamd's address parser normalises well-known providers (Gmail strips dots and +tags from the local part) -- which would otherwise silently break the lookup when the user flags `user.name@gmail.com` and the next inbound mail is parsed as `username@gmail.com`
-- Greylist module disabled (`local.d/greylist.conf: enabled = false`). The plugin used to soft-reject borderline-score mail with "Try again later", which created a confusing 5-15 minute delivery delay for legitimate-looking senders that just happened to cross the USER_BLOCKLIST threshold; with greylist off the mail is accepted, tagged, and lands in Junk immediately
-- Rspamd `override.d/actions.conf` pins explicit thresholds (`reject = 15`, `add_header = 5`, `greylist = null`) and `worker-proxy.inc` sets `spam_header = "X-Spam-Flag"` so the header rspamd adds matches the one the global `spam-to-junk.sieve` script filters on
-- Selector pattern changed from `dkim_YYYY_MM` (underscores) to `dkim<YYYYMM>` (ascii pure) for compatibility with strict DNS UIs and legacy DKIM validators
-
-### Fixed
-- `manager-ui` no longer 401s on `/api/v1/*` once the 15-minute access JWT expires. `useApi.call` now catches 401, calls the new `auth.refresh()` Pinia action (which POSTs the persisted refresh token to `/api/v1/auth/jwt/refresh` and replaces the session with the freshly issued pair), and replays the original request once. When the refresh itself fails (token revoked or expired), the store clears the session and `useApi` navigates to `/login`
-- `manager-ui` Nitro `routeRules` proxy narrowed from `/api/**` to `/api/v1/**` so Nuxt's own server routes (notably `/api/_nuxt_icon/lucide.json` used by `@nuxt/icon` to bundle Lucide glyphs) stop being forwarded to the manager-api and 404ing
-- End-to-end suite no longer fails on the default (webmail-less) stack. `tests/_lib.sh` detects `mail-roundcube` at boot; it is added to `STACK_CONTAINERS` only when the optional `docker-compose.roundcube.yml` overlay is deployed. `tests/01-infra.sh` probes the bridge-only 4190 / ManageSieve port from inside `mail-dovecot` directly instead of through `mail-roundcube`. `tests/10-roundcube.sh` skips `roundcube.login_page` and `roundcube.dovecot_link` cleanly (counted as SKIP, not FAIL) when the webmail overlay is not deployed; the unrelated `lda.respects_user_sieve` regression test always runs because it talks to dovecot LDA, not Roundcube. CI was red against `feature/v2-rewrite` after the compose split because the suite still treated Roundcube as mandatory
-- fail2ban no longer enters a boot restart loop on a fresh stack (every CI run, every wiped `volumes/`). The container mounts `/var/log/mail` read-only and the postfix-sasl / postfix-relay / dovecot jails point at `postfix.log` / `dovecot.log` inside it; fail2ban refuses to boot if any enabled jail has a missing logpath. The entrypoint now waits up to 60 s for postfix and dovecot to create their log files before exec-ing `fail2ban-server`, so the cold-start race that left fail2ban perpetually `restarting` is gone
-- `install.sh` no longer provisions a `<MAILBOX_LOCAL>@<PRIMARY_DOMAIN>` "first mailbox". Real mailboxes are created from the manager-ui after install; the only auto-created mailbox row is `postmaster@<PRIMARY_DOMAIN>` (still inactive, system-only). `INSTALL_INFO.txt` drops the "First mailbox" credentials block and points the operator at the manager-ui instead
-- Quota triggers `virtual_users_after_insert_quota` and `virtual_domains_after_insert_quota` are now truly idempotent. They were `INSERT IGNORE`, which only works against a UNIQUE constraint -- `virtual_quota_users.email` and `virtual_quota_domains.domain` have none, so every re-run of `install.sh` (which uses `INSERT ... ON DUPLICATE KEY UPDATE` on `virtual_users`) stacked a fresh quota row because MariaDB still fires `AFTER INSERT` on the upsert path. Replaced the literal-values `INSERT IGNORE` with `INSERT ... SELECT ... WHERE NOT EXISTS (SELECT 1 FROM virtual_quota_users WHERE email = NEW.email)` (same shape for the domain trigger). No table-shape change required; the bootstrap drops and recreates the triggers on every manager-api boot
-- `postmaster@<domain>` is now reserved as an inactive write-only sender on every domain. It is the envelope-from used by `dovecot-lda` for system notifications (blocklist alerts in `40-notify.sh`, etc.) and must never authenticate or accept inbound mail. `install.sh` refuses `postmaster` as the first mailbox local part (re-prompts; default is now `admin`) and always inserts `postmaster@<PRIMARY_DOMAIN>` with `active=0` and a random password. Manager-API `DomainsService.create()` runs `reservePostmaster()` to insert the same row inactive on every new domain (and forces `active=0` on any pre-existing row). The LDA path is unaffected because `dovecot-lda -d <recipient> -f postmaster@<domain>` uses postmaster only as an envelope string, never as a destination
-- fail2ban no longer restart-loops at boot. The Alpine `fail2ban` package ships `/etc/fail2ban/jail.d/alpine-ssh.conf` with both `[sshd]` and `[sshd-ddos]` enabled, both pointing at `/var/log/messages` (absent: no syslog in this container by design). Disabling only `[sshd]` left `[sshd-ddos]` enabled, which made fail2ban refuse to boot. Disabling both jails in `images/fail2ban/conf/jail.local` fixes it
-- Postfix no longer logs `unsupported dictionary type: hash` / `btree` at boot. Alpine's postfix is built without Berkeley DB support, so the v1-inherited `hash:` and `btree:` dictionary types failed silently and degraded several lookups. `images/postfix/conf/main.cf` now uses `lmdb:` for `smtpd_tls_session_cache_database`, `smtp_tls_session_cache_database`, `alias_maps` and `alias_database`. `lmdb` is built-in on Alpine postfix and behaves identically for these maps
-- Postmaster blocklist notification no longer silently dropped. `dovecot-lda` and postfix share the bind-mounted `/var/log/mail`; both entrypoints did a recursive `chown` on the directory and raced each other, occasionally leaving `dovecot.log` owned by `postfix:postfix mode 0640`, after which `dovecot-lda` failed every write with `Permission denied` and aborted before the postmaster notification could land in INBOX. `images/dovecot/entrypoint.sh` and `images/postfix/entrypoint.sh` now `chmod 0666` their own log file (and the postfix entrypoint no longer recursively chowns the shared dir), so any uid can write regardless of ownership
-- Dovecot cold start no longer trips its own healthcheck. A fresh `docker compose up` used to run `openssl dhparam -out /etc/dovecot/dh.pem 2048` in the entrypoint, which takes 20-90 s on a typical VPS and pushes dovecot past the healthcheck `start_period`; `dependency failed to start: container mail-dovecot is unhealthy` then cascaded to postfix and roundcube. The dhparam is now baked into the image at build time (`RUN openssl dhparam ...` in `images/dovecot/Dockerfile`), the entrypoint only regenerates it when the file is empty, and the healthcheck `start_period` is bumped to 60 s as a safety margin for everything else (sieve recompile, vmail chown on a freshly mounted volume, cert-watcher launch)
-- TLS certificate rotation is handled entirely inside the postfix and dovecot containers via an inotify watcher (`cert-watcher.sh`) on the bind-mounted `/etc/letsencrypt/live/<TLS_CERT_NAME>/` directory. When certbot rotates the cert on the host, the watcher fires `kill -TERM 1` so docker's restart policy brings the container back with the fresh fullchain/privkey. Nothing is ever installed on the host outside the project directory
-- Sieve reject / redirect / vacation bounces now relay through a dedicated milter-free postfix port 10025 (mynetworks-only, no RBL, no SPF, no rspamd) so dovecot DSNs no longer get caught by the public-SMTP milter chain and the rejection actually reaches the original sender
-- Dovecot healthcheck via `doveadm service status` (imap-login + lmtp); postfix and roundcube now wait for dovecot to report healthy so reloads no longer leave roundcube briefly stranded with "Erreur de connexion au serveur de stockage"
-- install.sh DKIM step now parses the sidecar response with python3 inside the opendkim container instead of fragile grep on JSON. A previous regression where Python's default JSON formatter added whitespace made the grep return empty, dying before the summary block and leaving INSTALL_INFO.txt uncreated. The sidecar also emits compact JSON now as a belt-and-suspenders guard
-
-### Compatibility
-- DB schema (column names, types, defaults, FK CASCADE, last_activity ON UPDATE) is byte-identical to the v1 production dump
-- Maildir layout `/var/mail/vhosts/<domain>/<user>/{cur,new,tmp,sieve,...}` preserved, Maildir++ default layout, owner vmail:vmail (5000:5000)
-- `virtual_users.password` stays SHA512-CRYPT
-- `virtual_quota_users` / `virtual_quota_domains` updated live by dovecot on every LMTP delivery (no maildirsize-only fallback)
+fix(ci,tests): align CI seed + test suite with current schema and stack behavior
+feat(manager-ui,manager-api): mail volume capacity gauge + i18n FR/EN with typed contract
+fix(manager-ui): refresh expired JWT on 401 and stop proxying /api/_nuxt_icon
+chore(lint,typecheck): wire eslint + typecheck on both packages, fix all violations
+feat(ui,api): v2 dashboard layout + account profile (email, name, avatar)
+feat(install,dkim): persist dkim_keys + resumable install.sh
+refactor(api): nest resources under /domains/:domainId, rename users -> recipients
+feat(health): GET /api/v1/health returns a real cpu/mem/redis/db/mail snapshot
+feat(ui): consume /api/v1, swagger moved to /api/doc
+feat(manager-api): URI versioning /api/v1 + jwt auth in core/auth/jwt
+refactor(manager-api): split src into /api (routes) + /core (shared)
+feat(db): typeorm migrations split by business domain + db:* scripts
+fix(tests): make roundcube optional, suite green on webmail-less stack
+feat(sieve): rename date_creation -> created_at + cover blacklist with a test
+ci(actions): bump checkout/upload-artifact to v5 to drop Node 20 deprecation
+refactor(compose): split per-service files, optional roundcube overlay
+fix(fail2ban): wait for postfix+dovecot logs to exist before booting
+ci(mail): github actions workflow runs ./test-mailservers.sh on every branch
+docs(changelog): consolidate duplicated Added/Changed/Fixed sections
+feat(mail): snake_case tables, user_start_date/user_end_date activity window, dkim_keys table
+fix(mail): drop first-mailbox provisioning and stop quota-row stacking
+docs(changelog): postmaster reservation + fail2ban/postfix/log-perms fixes
+fix(mail): reserve postmaster@<domain> as inactive write-only sender
+fix(mail): fail2ban sshd-ddos, postfix lmdb, log perms, drop fail2ban skip
+docs(mail): per-feature READMEs under docs/
+fix(dovecot): bake dhparam at build time so cold start never trips the healthcheck
+chore(redis): bind-mount redis data under ${VOLUMES_PATH}/redis
+test(mail): end-to-end mail-server test suite
+feat(autorouter): managesieve-visible per-sender auto-routing with system-folder-aware undo
+fix(install): enable readline editing on every prompt
+fix(install): wrap DKIM TXT value in double quotes in INSTALL_INFO.txt
+feat(attachments): unified ATTACHMENT_MAX_SIZE_MB knob (default 25, Gmail parity)
+feat(roundcube): enable markasjunk plugin for one-click spam toolbar button
+docs(changelog): rspamd/dovecot per-user blocklist + notification + Junk-only policy
+feat(dovecot): sa-learn-pipe orchestrator + per-concern hooks + postmaster one-shot
+feat(dovecot): imap_sieve + learn-spam/ham sieves with Trash exemption
+feat(rspamd): USER_BLOCKLIST + GLOBAL_BLOCKLIST + RECIPIENT_RECORDER lua rules
+feat(rspamd): explicit action thresholds, sieve-aligned spam header, greylist off
+feat(rspamd): always-on ClamAV antivirus with reject action
+feat(rspamd): per-user bayes classifier wired to Redis selector
+fix(tls): handle Let's Encrypt rotation inside postfix and dovecot containers (inotify watcher, no host install)
+feat(install): install certbot deploy hook that restarts dovecot+postfix on cert renewal
+fix(install): parse DKIM sidecar response with python3 instead of grep, emit compact JSON server-side
+chore: add prettier (double quotes, semi, es5 trailing, printWidth 130) to manager-api and manager-ui
+feat(dkim): manage keys through an opendkim Python sidecar consumed by manager-api and install.sh
+feat(install): accept short language aliases (fr, FR, en, ...) for Roundcube locale prompt
+chore(compose): dovecot healthcheck + postfix and roundcube wait for service_healthy
+fix(sieve): route reject/redirect/vacation bounces through a milter-free internal postfix port
+chore: gitignore INSTALL_INFO.txt
+docs: rewrite INSTALL.md and update CHANGELOG for the installer overhaul
+feat(roundcube): configurable default language via ROUNDCUBE_LANGUAGE
+feat(install): one-shot interactive bootstrap with regex-validated prompts
+chore(mariadb): split init scripts per database (roundcube, opendmarc)
+refactor(manager-api): generate v1-compatible schema via TypeORM synchronize and install triggers via Nest bootstrap hook
+fix(manager-api): bump TypeScript to 6.0 to accept ignoreDeprecations 6.0
+chore: update CHANGELOG, gitignore and LICENSE for v2
+docs: rewrite README, INSTALL and add DOMAIN_DNS for v2 stack
+feat(ops): install.sh secret generation and service.sh compose wrapper
+feat(manager-ui): Nuxt UI v4 admin pages with Nitro proxy to manager-api
+feat(manager-api): JWT auth with refresh tokens backed by Accounts table
+feat(manager-api): NestJS scaffold for domains, users, aliases, quotas and sieve
+feat(security): fail2ban host-net jails for postfix and dovecot
+feat(roundcube): internal docker DNS and plaintext managesieve over bridge
+feat(antispam): opendkim, opendmarc, rspamd and clamav images
+feat(dovecot): LMTP, IMAPS and managesieve with dict-sql quota
+feat(postfix): MySQL-backed virtual delivery with milter chain
+feat(mariadb): v1-compatible schema with live quota aggregation triggers
+feat: multi-container docker-compose with BINDING_PORT/IP env scheme
+chore: drop v1 monolithic stack (Dockerfile, docker-build, libs, webadmin)
+chore: add to gitignore
+Merge branch 'hotfix/1.1.7'
+hotfix v1.1.7
+Merge branch 'hotfix/v1.1.5'
+fix(fail2ban): records SASL Login failed from postfix only if it has a domain
+Merge branch 'hotfix/v1.1.4'
+fix: supports 3 auth worker messages
+fix(fail2ban): increase test time for postfix rules
+fix: excessive auth failed on legitimate connections
+Merge branch 'hotfix/v1.1.3'
+fix: allow no tls connections
+Merge branch 'bugfix/v1.1.2' into develop
+refactor: logs are now in true realtime in menu script
+style: add a category refactor to changelog
+fix: reduces the risk of server crashes due to the antivirus consuming too many resources on a server with too low a memory capacity
+fix(fail2ban): removes the ban from log legitime on postfix
+Merge tag 'v1.1.1' into develop
+Merge branch 'hotfix/v1.1.1'
+fix(fail2ban): prevents bots from polluting logs with failed connection attempts
+fix(opendmarc): provides the possibility of rejection or acceptation of dmarc evaluation failures, by default to false (before set to true)
+fix: adds recursive to copy fail2ban conf folder
+fix: add custom postfix fail2ban filter
+fix: disable rspamd/greylist causing milter-reject 4.7.1 Try again later on some mails
+Adds a menu for complete management, installation and configuration of the docker mail server with ease and simplicity
+Adds a menu for complete management, installation and configuration of the docker mail server with ease and simplicity
+feat(menu/opendkim): adds MultipleSignatures and MustBeSigned configuration to the menu
+fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no
+fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no
+fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no
+Feat: menu implementation for local server installation, configuration and management
+Merge branch 'feature/server-management-menu' of https://github.com/padcmoi/simply-a-dockerized-mail-server into feature/server-management-menu
+feat: adds menu for configuration, management and installation
+fix: add to environment the key data DMARC_REPORT_HOUR
+feat: adds menu for configuration, management and installation
+fix: multiple bugs before prod
+feat: postfix log file in dedicated file or syslog
+perf: add firewall rules with ufw and add a basic config
+refactor: cleans up architecture for easier upgrades
+rfc: Moves docker folder to root folder
+feat: customize the path where volumes will be stored
+hotfixes: remove stdout 1 to avoid polluting with target mails root@domainFQDN
+feat: Adds the ability to enable e-mailing of dmarc reports
+hotfixes: Change ambiguous system password
+docs: update title
+hotfixes: missing reports at 0h
+chore: update datetime file, file constantly modified
+Merge pull request #13 from padcmoi/debian11-bullseye
+Merge pull request #12 from padcmoi/bugfix/mail-server
+hotfixes: enable SSL mode for phpmyadmin
+hotfixes: fix sql search sql to conf
+hotfixes: install roundcube in the image build, to solve the problem of creating databases from APT, add a SQL dump file
+hotfixes: dmarc report script didn't work (overwrite)
+hotfixes: dmarc report script didn't work
+rfc: remove useless mysql command
+rfc complete ll command
+hotfixes: install opendmarc in the image build, to solve the problem of creating databases from APT, add a SQL dump file
+check_policy_service doesn't seem to accept multiple servers, already used by policy-spf
+chore: move sample config in parent folder
+rfc: Improves the visual appearance of started services
+rfc: improve network command
+hotfixes: remove duplicate roundcube configuration in apache.conf, this configuration file becomes a site available to activate
+fix: To avoid fail2ban crashing if these logs dont exist
+fix, show state services
+feat: add network utility
+rfc: Move services in each setup script, add default configuration to have functional services
+rfc: adds run after container in the docker setup sequence
+Merge pull request #5 from padcmoi/feature/e-mail-transfer-policy-dmarc
+feat: implementation complete of opendmarc, default setup, cron added
+feat: add utility reusable
+feat: add dmarc report for opendmarc, add a new volume
+rfc: connections to postfix milter
+fix: change default dmarc
+feat: add opendmarc with configuration
+docs: remove duplicate element
+fix: moves part dmarc in dedicated file
+feat: add dmarc configuration with rspamd, disable dkim in rspamd
+Merge branch 'trunk' into feature/e-mail-transfer-policy-dmarc
+fix: move apache2 concerning rspamd web in 24-rspamd
+fix: opens a socket to allow applications to add content to the database during the image build
+fix: opens a socket to allow applications to add content to the database during the image build
+fix: separates phpmyadmin from the apache2 module as an optional module
+rfc: remove the clear command, for better observation
+fix: separates save spaces from folders destined to become docker volumes
+hotfixes: dovecot permissions issues on etc folder
+chore: disable roundcube installation temp
+fix cp after build database
+chore: doesnt work
+Merge branch 'trunk' into feature/e-mail-transfer-policy-dmarc
+merge
+Merge pull request #8 from padcmoi/chore/clean-architecture
+fix: ambigous name password
+hotfix: force permission on opendkim keys folder
+fix: issue of permissions on dkim keys once created
+chore: remove some useless features
+chore: remove some useless features
+fix: crash postfix boot, permission issues resolved
+fix: permissions on folders clamav, rspamd
+feat: copies volumes during docker build and renames them in a temporary folder, then reinjects them when the container is launched
+rfc system file and configuration, packages are now created in the Docker image, allowing faster restart/startup.
+rfc: add original configuration as reference
+fix add template folder and removes useless instructions
+Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall
+feat: customizable jail rules
+fix: transfer fail2ban log to syslog, notify ban & unban
+feat: implement a firewall and fail2ban to combat brute force attacks
+Merge branch 'main' into feature/e-mail-transfer-policy-dmarc
+Merge branch 'main' into feature/security-fail2ban-firewall
+fix: remove mysql log from syslog and move warn mysql log in dedicated file
+check fail2ban implementation
+check dmarc implementation
+Merge pull request #4 from padcmoi/feature/sign-with-opendkim
+fix attempt fix mysql error log
+Merge branch 'main' into feature/sign-with-opendkim
+fix: add roundcube table to mailuser mysql user
+Merge branch 'main' into feature/sign-with-opendkim
+disable logs mysql server
+rfc: also provides a nice, ready-to-use public key file for sending to DNS
+feat: implementation SPF
+feat: implementation successful opendkim with antivirus ok
+feat: add util command ll
+feat: add spf rules
+check opendkim
+fix api details
+disable API instruction (no create) to reduce build time
+Merge pull request #3 from padcmoi/feature/migrate-antivirus-filtering-from-amavis-to-rspam
+feat: add notification on spam rejection
+feat: add clamav rules to rspamd
+rfc: remove old amavis
+feat: persist clamav database
+rfc: remove useless old mail daemon and add tool
+fix: syslog missing
+Update spam module readme
+Update modules added, rspam, postscreen
+Merge pull request #1 from padcmoi/feat/spam-implementation
+fix: chown errors with unknow vmail user and group
+feat: persist config data from rspamd
+feat: add spam flag with redirect in spam folder
+fix: default sieve rules to new user
+fix: enable upstream spam flag
+feat: persist redis data from rspamd
+feat: implement rspamd web interface
+feat: add custom virtual hosts for apache 2 & change access port
+fix: add whistlist ip to postscreen
+feat: add rspamd with settings & implement Bayesian self-learning ham, spam in dovecot
+fix postscreen volume lost after diff merge
+resolve conflict from main branch
+rfc: move volumes folder to the root project
+feat; implement postscreen
+Merge branch 'main' into feat/spam-implementation
+fix: sql tables numeric values with bigint
+fix: roundcube adress imap, smtp server
+feat: add update auto certificate script
+fix: disable IPV6 & restrictions rules & spamd missing conf
+Merge branch 'main' into feat/spam-implementation
+feat: implements the ability to enable or disable antivirus
+init rspam implement
+feat: add postfix volume
+feat: add task cron, refresh antivirus
+feat: add sieve rules
+fix: sieve error on recipient autoresponses
+fix: hostname ambigous key by fqdn_domain
+feat: add roundcube webmail with basic configuration
+fix: provide start ssl cert
+feat: Adds functional container with postfix, dovecot, database and configuration
+add license
+feat: separate dockerfiles in dedicated folder && import repository in docker container
+feat: add environnement file at nest api
+Create README.md
+initial commit
