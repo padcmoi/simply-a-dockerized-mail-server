@@ -3,7 +3,6 @@ import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { useAuthStore } from "~/stores/auth";
 
 const open = ref(true);
-const auth = useAuthStore();
 
 const navItems = computed<NavigationMenuItem[]>(() => [
   { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard" },
@@ -105,6 +104,7 @@ const userAvatar = computed(() => {
 const { t, locale, locales, setLocale } = useI18n();
 const route = useRoute();
 const colorMode = useColorMode();
+const auth = useAuthStore();
 
 function toggleSidebar() {
   open.value = !open.value;

@@ -1,11 +1,6 @@
 <script setup lang="ts">
 definePageMeta({ layout: "auth" });
 
-const route = useRoute();
-const token = computed(() => route.params.token as string);
-const { t } = useI18n();
-const toast = useToast();
-
 interface InviteInfo {
   email: string;
   domains: string[];
@@ -21,6 +16,11 @@ const name = ref("");
 const password = ref("");
 const submitting = ref(false);
 const done = ref(false);
+
+const token = computed(() => route.params.token as string);
+const route = useRoute();
+const { t } = useI18n();
+const toast = useToast();
 
 async function loadInvitation() {
   try {

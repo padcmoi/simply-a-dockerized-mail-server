@@ -5,8 +5,6 @@ const props = defineProps<{
   reservedBytes: number;
 }>();
 
-const { t } = useI18n();
-
 const SIZE = 140;
 const STROKE = 18;
 const R = (SIZE - STROKE) / 2;
@@ -29,6 +27,8 @@ const freeDash = computed(() => `${freePct.value * C} ${C}`);
 const usedOffset = computed(() => 0);
 const reservedOffset = computed(() => -usedPct.value * C);
 const freeOffset = computed(() => -(usedPct.value + reservedPct.value) * C);
+
+const { t } = useI18n();
 
 function fmt(bytes: number) {
   if (bytes >= 1_073_741_824) return `${(bytes / 1_073_741_824).toFixed(1)} GB`;

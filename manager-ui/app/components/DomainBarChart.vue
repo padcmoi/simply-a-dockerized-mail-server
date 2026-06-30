@@ -3,8 +3,6 @@ const props = defineProps<{
   items: { domain: string; count: number }[];
 }>();
 
-const { t } = useI18n();
-
 const BAR_HEIGHT = 24;
 const GAP = 8;
 const LABEL_W = 140;
@@ -14,6 +12,8 @@ const PADDING = 8;
 const maxCount = computed(() => Math.max(...props.items.map((i) => i.count), 1));
 
 const svgHeight = computed(() => props.items.length * (BAR_HEIGHT + GAP) - GAP + PADDING * 2);
+
+const { t } = useI18n();
 
 function barWidth(count: number) {
   return (count / maxCount.value) * CHART_W;

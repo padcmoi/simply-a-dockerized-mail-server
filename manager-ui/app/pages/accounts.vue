@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth";
 
-definePageMeta({ middleware: "auth" });
+definePageMeta({});
 
 interface AccountDomain {
   id: number;
@@ -23,11 +23,6 @@ interface Domain {
   domain: string;
 }
 
-const { t } = useI18n();
-const { call } = useApi();
-const toast = useToast();
-const auth = useAuthStore();
-
 const loading = ref(false);
 const accounts = ref<ManagerAccount[]>([]);
 const allDomains = ref<Domain[]>([]);
@@ -41,6 +36,22 @@ const aclOpen = ref(false);
 const aclAccount = ref<ManagerAccount | null>(null);
 const aclSelected = ref<number[]>([]);
 const aclSaving = ref(false);
+
+const domainOptions = computed(() => allDomains.value.map((d) => ({ label: d.domain, value: d.id })));
+
+const columns = computed(() => [
+  { accessorKey: "username", header: t("accounts.table.username") },
+  { accessorKey: "name", header: t("accounts.table.name") },
+  { accessorKey: "email", header: t("accounts.table.email") },
+  { id: "domains", header: t("accounts.table.domains") },
+  { id: "status", header: t("accounts.table.status") },
+  { id: "actions", header: "" },
+]);
+
+const { t } = useI18n();
+const { call } = useApi();
+const toast = useToast();
+const auth = useAuthStore();
 
 async function load() {
   loading.value = true;
@@ -109,8 +120,6 @@ async function saveAcl() {
   }
 }
 
-const domainOptions = computed(() => allDomains.value.map((d) => ({ label: d.domain, value: d.id })));
-
 onMounted(load);
 </script>
 
@@ -128,78 +137,67 @@ onMounted(load);
       <div class="flex items-center gap-2">
         <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
       </div>
-      <UButton v-if="auth.session?.isRoot" icon="i-lucide-mail-plus" color="primary" @click="inviteOpen = true">
+      <UButton v-if="auth.session?.isRoot" icon="i-lucide-mail-plus" color="primary" @click="() => { inviteOpen = true; }">
         {{ t("accounts.inviteButton") }}
       </UButton>
     </div>
 
     <UCard>
-      <UTable
-        :loading="loading"
-        :rows="accounts"
-        :columns="[
-          { key: 'username', label: t('accounts.table.username') },
-          { key: 'name', label: t('accounts.table.name') },
-          { key: 'email', label: t('accounts.table.email') },
-          { key: 'domains', label: t('accounts.table.domains') },
-          { key: 'status', label: t('accounts.table.status') },
-          { key: 'actions', label: '' },
-        ]"
-      >
-        <template #username-data="{ row }">
+      <UTable :loading="loading" :data="accounts" :columns="columns" sticky>
+        <template #username-cell="{ row }">
           <div class="flex items-center gap-2">
-            <UAvatar :alt="row.name ?? row.username" size="xs" />
-            <span class="font-medium">{{ row.username }}</span>
-            <UBadge v-if="row.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
+            <UAvatar :alt="row.original.name ?? row.original.username" size="xs" />
+            <span class="font-medium">{{ row.original.username }}</span>
+            <UBadge v-if="row.original.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
           </div>
         </template>
 
-        <template #name-data="{ row }">
-          <span class="text-muted">{{ row.name ?? "-" }}</span>
+        <template #name-cell="{ row }">
+          <span class="text-muted">{{ row.original.name ?? "-" }}</span>
         </template>
 
-        <template #email-data="{ row }">
-          <span class="text-muted text-sm">{{ row.email ?? "-" }}</span>
+        <template #email-cell="{ row }">
+          <span class="text-muted text-sm">{{ row.original.email ?? "-" }}</span>
         </template>
 
-        <template #domains-data="{ row }">
-          <div v-if="row.isRoot" class="text-xs text-muted italic">{{ t("invite.allDomains") }}</div>
-          <div v-else-if="row.domains.length === 0" class="text-xs text-dimmed">-</div>
+        <template #domains-cell="{ row }">
+          <div v-if="row.original.isRoot" class="text-xs text-muted italic">{{ t("invite.allDomains") }}</div>
+          <div v-else-if="row.original.domains.length === 0" class="text-xs text-dimmed">-</div>
           <div v-else class="flex flex-wrap gap-1">
-            <UBadge v-for="d in row.domains.slice(0, 3)" :key="d.id" color="neutral" variant="subtle" size="xs">
+            <UBadge v-for="d in row.original.domains.slice(0, 3)" :key="d.id" color="neutral" variant="subtle" size="xs">
               {{ d.domain }}
             </UBadge>
-            <UBadge v-if="row.domains.length > 3" color="neutral" variant="subtle" size="xs">
-              +{{ row.domains.length - 3 }}
+            <UBadge v-if="row.original.domains.length > 3" color="neutral" variant="subtle" size="xs">
+              +{{ row.original.domains.length - 3 }}
             </UBadge>
           </div>
         </template>
 
-        <template #status-data="{ row }">
-          <UBadge :color="row.enabled ? 'success' : 'neutral'" variant="subtle" size="sm">
-            {{ row.enabled ? t("common.active") : t("common.inactive") }}
+        <template #status-cell="{ row }">
+          <UBadge :color="row.original.enabled ? 'success' : 'neutral'" variant="subtle" size="sm">
+            {{ row.original.enabled ? t("common.active") : t("common.inactive") }}
           </UBadge>
         </template>
 
-        <template #actions-data="{ row }">
+        <template #actions-cell="{ row }">
           <div class="flex items-center gap-1 justify-end">
             <UButton
-              v-if="!row.isRoot"
+              v-if="!row.original.isRoot"
               icon="i-lucide-shield"
               size="xs"
               color="neutral"
               variant="ghost"
               :title="t('accounts.acl.title')"
-              @click="openAcl(row)"
+              @click="openAcl(row.original)"
             />
             <UButton
-              v-if="!row.isRoot && row.enabled"
+              v-if="!row.original.isRoot && row.original.enabled"
               icon="i-lucide-user-x"
               size="xs"
               color="error"
               variant="ghost"
               :title="t('common.revoke')"
-              @click="revokeAccount(row)"
+              @click="revokeAccount(row.original)"
             />
           </div>
         </template>
@@ -243,7 +241,7 @@ onMounted(load);
 
           <template #footer>
             <div class="flex justify-end gap-2">
-              <UButton color="neutral" variant="ghost" @click="inviteOpen = false">
+              <UButton color="neutral" variant="ghost" @click="() => { inviteOpen = false; }">
                 {{ t("common.cancel") }}
               </UButton>
               <UButton color="primary" :loading="inviteSending" :disabled="!inviteEmail" @click="sendInvite">
@@ -284,7 +282,7 @@ onMounted(load);
 
           <template #footer>
             <div class="flex justify-end gap-2">
-              <UButton color="neutral" variant="ghost" @click="aclOpen = false">
+              <UButton color="neutral" variant="ghost" @click="() => { aclOpen = false; }">
                 {{ t("common.cancel") }}
               </UButton>
               <UButton color="primary" :loading="aclSaving" @click="saveAcl">

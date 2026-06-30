@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({});
 
 interface Domain {
@@ -40,10 +38,6 @@ const recipients = ref<Recipient[]>([]);
 const aliases = ref<Alias[]>([]);
 const rejects = ref<Reject[]>([]);
 const disk = ref<DiskInfo | null>(null);
-
-const { t } = useI18n();
-const { call } = useApi();
-const auth = useAuthStore();
 
 const stats = computed(() => [
   {
@@ -97,6 +91,9 @@ const recipientsPerDomain = computed(() =>
     .sort((a, b) => b.count - a.count)
     .slice(0, 8)
 );
+
+const { t } = useI18n();
+const { call } = useApi();
 
 async function load() {
   loading.value = true;
