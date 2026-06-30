@@ -55,6 +55,10 @@ stack_up() {
 }
 
 # ---------- main ----------
+# Reclaim log file if a previous sudo/CI run left it root-owned.
+if [[ -f "$LOG_FILE" ]] && ! [[ -w "$LOG_FILE" ]]; then
+  sudo chown "$(id -u):$(id -g)" "$LOG_FILE" 2>/dev/null || sudo rm -f "$LOG_FILE"
+fi
 : > "$LOG_FILE"
 log "Test suite starting; domain=$TEST_DOMAIN host=$TEST_HOST"
 

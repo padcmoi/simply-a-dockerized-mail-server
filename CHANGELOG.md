@@ -28,7 +28,7 @@ docs(mail): per-feature READMEs under docs/
 fix(dovecot): bake dhparam at build time so cold start never trips the healthcheck
 chore(redis): bind-mount redis data under ${VOLUMES_PATH}/redis
 test(mail): end-to-end mail-server test suite
-feat(autorouter): managesieve-visible per-sender auto-routing with system-folder-aware undo
+feat(AUTOROUTER): managesieve-visible per-sender auto-routing with system-folder-aware undo
 fix(install): enable readline editing on every prompt
 fix(install): wrap DKIM TXT value in double quotes in INSTALL_INFO.txt
 feat(attachments): unified ATTACHMENT_MAX_SIZE_MB knob (default 25, Gmail parity)
