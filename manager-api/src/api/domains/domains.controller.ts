@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from 
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import {
   CreateDomainDocs,
+  DiskUsageDocs,
   DomainsApi,
   GetDomainDocs,
   ListDomainsDocs,
@@ -20,6 +21,12 @@ export class DomainsController {
   @ListDomainsDocs()
   list() {
     return this.svc.list();
+  }
+
+  @Get("disk")
+  @DiskUsageDocs()
+  disk() {
+    return this.svc.disk();
   }
 
   @Get(":domainId")

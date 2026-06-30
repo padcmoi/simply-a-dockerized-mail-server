@@ -18,15 +18,16 @@ const items = ref<Recipient[]>([]);
 const loading = ref(false);
 const form = reactive({ domainId: 0, localPart: "", password: "", quota: 524288000 });
 
+const columns = computed(() => [
+  { accessorKey: "email", header: t("recipients.table.address") },
+  { accessorKey: "domain", header: t("recipients.table.domain") },
+  { accessorKey: "quota", header: t("recipients.table.quota") },
+  { accessorKey: "active", header: t("recipients.table.active") },
+]);
+
+const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
-
-const columns = [
-  { accessorKey: "email", header: "Address" },
-  { accessorKey: "domain", header: "Domain" },
-  { accessorKey: "quota", header: "Quota" },
-  { accessorKey: "active", header: "Active" },
-];
 
 async function load() {
   loading.value = true;
@@ -43,7 +44,7 @@ async function load() {
 
 async function create() {
   if (!form.domainId) {
-    toast.add({ title: "Pick a domain first", color: "error" });
+    toast.add({ title: t("recipients.toast.pickDomain"), color: "error" });
     return;
   }
   try {
@@ -54,9 +55,9 @@ async function create() {
     form.localPart = "";
     form.password = "";
     await load();
-    toast.add({ title: "Recipient created", color: "success" });
+    toast.add({ title: t("recipients.toast.created"), color: "success" });
   } catch (err) {
-    toast.add({ title: "Create failed", description: (err as Error).message, color: "error" });
+    toast.add({ title: t("recipients.toast.createFailed"), description: (err as Error).message, color: "error" });
   }
 }
 
@@ -81,8 +82,8 @@ onMounted(load);
         color="neutral"
         variant="subtle"
         icon="i-lucide-info"
-        title="Mailbox addresses (local-part@domain destinations postfix delivers to)."
-        description="Passwords are hashed with SHA512-CRYPT before storage."
+        :title="t('recipients.alertTitle')"
+        :description="t('recipients.alertDescription')"
         class="flex-1 min-w-[16rem]"
       />
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
@@ -90,27 +91,27 @@ onMounted(load);
 
     <UCard>
       <template #header>
-        <h2 class="font-semibold">Add a recipient</h2>
+        <h2 class="font-semibold">{{ t("recipients.form.title") }}</h2>
       </template>
       <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end" @submit="create">
-        <UFormField label="Domain" name="domainId">
+        <UFormField :label="t('recipients.form.domain')" name="domainId">
           <USelect
             v-model="form.domainId"
             :items="domains.map((d) => ({ label: d.domain, value: d.id }))"
-            placeholder="Pick a domain"
+            :placeholder="t('recipients.form.domainPlaceholder')"
             class="w-full"
           />
         </UFormField>
-        <UFormField label="Local part" name="localPart">
+        <UFormField :label="t('recipients.form.localPart')" name="localPart">
           <UInput v-model="form.localPart" placeholder="local-part" class="w-full" />
         </UFormField>
-        <UFormField label="Password" name="password">
-          <UInput v-model="form.password" type="password" placeholder="Password" class="w-full" />
+        <UFormField :label="t('recipients.form.password')" name="password">
+          <UInput v-model="form.password" type="password" :placeholder="t('recipients.form.password')" class="w-full" />
         </UFormField>
-        <UFormField label="Quota (bytes)" name="quota">
+        <UFormField :label="t('recipients.form.quotaBytes')" name="quota">
           <UInput v-model.number="form.quota" type="number" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-plus" block class="lg:w-auto">Create</UButton>
+        <UButton type="submit" icon="i-lucide-plus" block class="lg:w-auto">{{ t("recipients.form.submit") }}</UButton>
       </UForm>
     </UCard>
 
@@ -118,7 +119,7 @@ onMounted(load);
       <UTable :columns="columns" :data="items" :loading="loading" sticky>
         <template #active-cell="{ row }">
           <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
-            {{ row.original.active ? "Yes" : "No" }}
+            {{ row.original.active ? t("common.yes") : t("common.no") }}
           </UBadge>
         </template>
         <template #actions-cell="{ row }">

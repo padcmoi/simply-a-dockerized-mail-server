@@ -1,6 +1,7 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { randomBytes } from "crypto";
+import { statfs } from "fs/promises";
 import { Repository } from "typeorm";
 import { sha512crypt } from "../../core/common/sha512-crypt";
 import { DkimKey, DkimService } from "../../core/dkim/dkim.service";
@@ -28,9 +29,32 @@ export class DomainsService {
     return found;
   }
 
+  async disk() {
+    const mountPath = process.env.MAIL_VOLUME_PATH ?? "/var/mail";
+    const stats = await statfs(mountPath);
+    const totalBytes = Number(stats.blocks) * stats.bsize;
+    const freeBytes = Number(stats.bavail) * stats.bsize;
+    const { sum } = await this.repo
+      .createQueryBuilder("d")
+      .select("COALESCE(SUM(CAST(d.quota AS UNSIGNED)), 0)", "sum")
+      .getRawOne<{ sum: string }>()
+      .then((r) => r ?? { sum: "0" });
+    const reservedBytes = Number(sum);
+    const assignableBytes = Math.max(0, Math.min(totalBytes, freeBytes + reservedBytes) - reservedBytes);
+    return { totalBytes, freeBytes, reservedBytes, assignableBytes };
+  }
+
   async create(input: CreateDomainDto) {
     if (await this.repo.findOne({ where: { domain: input.domain } })) {
       throw new ConflictException(`Domain ${input.domain} already exists`);
+    }
+    if (input.quota && input.quota > 0) {
+      const { assignableBytes } = await this.disk();
+      if (input.quota > assignableBytes) {
+        throw new BadRequestException(
+          `Quota ${input.quota} exceeds the ${assignableBytes} bytes still assignable on the mail volume`
+        );
+      }
     }
     const saved = await this.repo.save(
       this.repo.create({
@@ -83,6 +107,13 @@ export class DomainsService {
 
   async update(id: number, input: UpdateDomainDto) {
     const current = await this.get(id);
+    if (input.quota !== undefined && input.quota > 0) {
+      const { assignableBytes } = await this.disk();
+      const headroom = assignableBytes + Number(current.quota);
+      if (input.quota > headroom) {
+        throw new BadRequestException(`Quota ${input.quota} exceeds the ${headroom} bytes still assignable on the mail volume`);
+      }
+    }
     if (input.domain !== undefined) current.domain = input.domain;
     if (input.quota !== undefined) current.quota = String(input.quota);
     if (input.active !== undefined) current.active = input.active ? 1 : 0;

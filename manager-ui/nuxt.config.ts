@@ -1,7 +1,16 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-01",
   devtools: { enabled: false },
-  modules: ["@nuxt/ui", "@nuxt/eslint", "@vueuse/nuxt", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt"],
+  modules: ["@nuxt/ui", "@nuxt/eslint", "@vueuse/nuxt", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt", "@nuxtjs/i18n"],
+  i18n: {
+    strategy: "no_prefix",
+    defaultLocale: "en_EN",
+    locales: [
+      { code: "en_EN", name: "English", file: "en_EN.ts" },
+      { code: "fr_FR", name: "Français", file: "fr_FR.ts" },
+    ],
+    detectBrowserLanguage: { useCookie: true, cookieKey: "i18n_locale", redirectOn: "root" },
+  },
   ssr: true,
   css: ["~/assets/css/main.css"],
   // Bundle every `i-lucide-*` icon used in templates into the client output

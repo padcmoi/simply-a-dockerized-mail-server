@@ -12,14 +12,15 @@ const items = ref<Reject[]>([]);
 const loading = ref(false);
 const form = reactive({ sender: "" });
 
+const columns = computed(() => [
+  { accessorKey: "sender", header: t("sieve.table.sender") },
+  { accessorKey: "enabled", header: t("sieve.table.enabled") },
+  { accessorKey: "createdAt", header: t("sieve.table.created") },
+]);
+
+const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
-
-const columns = [
-  { accessorKey: "sender", header: "Sender" },
-  { accessorKey: "enabled", header: "Enabled" },
-  { accessorKey: "createdAt", header: "Created" },
-];
 
 async function load() {
   loading.value = true;
@@ -35,9 +36,9 @@ async function create() {
     await call("/sieve/reject-senders", { method: "POST", body: form });
     form.sender = "";
     await load();
-    toast.add({ title: "Sender blocked", color: "success" });
+    toast.add({ title: t("sieve.toast.blocked"), color: "success" });
   } catch (err) {
-    toast.add({ title: "Failed", description: (err as Error).message, color: "error" });
+    toast.add({ title: t("sieve.toast.failed"), description: (err as Error).message, color: "error" });
   }
 }
 
@@ -57,25 +58,21 @@ onMounted(load);
 <template>
   <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
     <div class="flex items-start justify-between gap-3 flex-wrap">
-      <UAlert
-        color="neutral"
-        variant="subtle"
-        icon="i-lucide-info"
-        title="SQL blacklist enforced by postfix at MAIL FROM time."
-        class="flex-1 min-w-[16rem]"
-      />
+      <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('sieve.alertTitle')" class="flex-1 min-w-[16rem]" />
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
     </div>
 
     <UCard>
       <template #header>
-        <h2 class="font-semibold">Block a sender</h2>
+        <h2 class="font-semibold">{{ t("sieve.form.title") }}</h2>
       </template>
       <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end" @submit="create">
-        <UFormField label="Sender" name="sender">
-          <UInput v-model="form.sender" placeholder="@spamdomain.com or full@address.com" class="w-full" />
+        <UFormField :label="t('sieve.form.sender')" name="sender">
+          <UInput v-model="form.sender" :placeholder="t('sieve.form.senderPlaceholder')" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-shield-x" :disabled="!form.sender" block class="sm:w-auto"> Block </UButton>
+        <UButton type="submit" icon="i-lucide-shield-x" :disabled="!form.sender" block class="sm:w-auto">
+          {{ t("sieve.form.submit") }}
+        </UButton>
       </UForm>
     </UCard>
 

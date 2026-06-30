@@ -35,45 +35,45 @@ const rejects = ref<Reject[]>([]);
 const stats = computed(() => [
   {
     key: "domains",
-    label: "Domains",
+    label: t("dashboard.stats.domains"),
     value: domains.value.length,
-    sub: `${domains.value.filter((d) => d.active).length} active`,
+    sub: t("dashboard.stats.activeCount", { count: domains.value.filter((d) => d.active).length }),
     icon: "i-lucide-globe",
     color: "primary",
     to: "/domains",
   },
   {
     key: "recipients",
-    label: "Recipients",
+    label: t("dashboard.stats.recipients"),
     value: recipients.value.length,
-    sub: `${recipients.value.filter((r) => r.active).length} active`,
+    sub: t("dashboard.stats.activeCount", { count: recipients.value.filter((r) => r.active).length }),
     icon: "i-lucide-users",
     color: "info",
     to: "/recipients",
   },
   {
     key: "aliases",
-    label: "Aliases",
+    label: t("dashboard.stats.aliases"),
     value: aliases.value.length,
-    sub: "forwarders configured",
+    sub: t("dashboard.stats.forwarders"),
     icon: "i-lucide-at-sign",
     color: "success",
     to: "/aliases",
   },
   {
     key: "rejects",
-    label: "Blocked senders",
+    label: t("dashboard.stats.blockedSenders"),
     value: rejects.value.length,
-    sub: `${rejects.value.filter((r) => r.enabled).length} enabled`,
+    sub: t("dashboard.stats.enabledCount", { count: rejects.value.filter((r) => r.enabled).length }),
     icon: "i-lucide-shield-x",
     color: "warning",
     to: "/sieve",
   },
 ]);
-
 const recentDomains = computed(() => domains.value.slice(0, 5));
 const recentRecipients = computed(() => recipients.value.slice(0, 6));
 
+const { t } = useI18n();
 const { call } = useApi();
 
 async function load() {
@@ -96,7 +96,7 @@ onMounted(load);
 <template>
   <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
     <div class="flex items-center justify-between gap-2">
-      <p class="text-sm text-muted">Overview of every mail-stack resource served by manager-api.</p>
+      <p class="text-sm text-muted">{{ t("dashboard.subtitle") }}</p>
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
     </div>
 
@@ -119,18 +119,22 @@ onMounted(load);
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h2 class="font-semibold">Recent domains</h2>
-            <UButton to="/domains" variant="link" size="xs" trailing-icon="i-lucide-arrow-right">View all</UButton>
+            <h2 class="font-semibold">{{ t("dashboard.recent.domains") }}</h2>
+            <UButton to="/domains" variant="link" size="xs" trailing-icon="i-lucide-arrow-right">
+              {{ t("common.viewAll") }}
+            </UButton>
           </div>
         </template>
         <UEmptyState
           v-if="!loading && recentDomains.length === 0"
           icon="i-lucide-globe"
-          title="No domains yet"
-          description="Add your first domain to start receiving mail."
+          :title="t('dashboard.recent.noDomains')"
+          :description="t('dashboard.recent.noDomainsHint')"
         >
           <template #actions>
-            <UButton to="/domains" icon="i-lucide-plus" color="primary">Add a domain</UButton>
+            <UButton to="/domains" icon="i-lucide-plus" color="primary">
+              {{ t("dashboard.recent.addDomain") }}
+            </UButton>
           </template>
         </UEmptyState>
         <ul v-else class="divide-y divide-default">
@@ -140,10 +144,10 @@ onMounted(load);
             </div>
             <div class="min-w-0 flex-1">
               <p class="font-medium truncate">{{ d.domain }}</p>
-              <p class="text-xs text-muted">Quota: {{ d.quota }}</p>
+              <p class="text-xs text-muted">{{ t("dashboard.recent.quotaLabel", { value: d.quota }) }}</p>
             </div>
             <UBadge :color="d.active ? 'success' : 'neutral'" variant="subtle">
-              {{ d.active ? "Active" : "Inactive" }}
+              {{ d.active ? t("common.active") : t("common.inactive") }}
             </UBadge>
           </li>
         </ul>
@@ -152,18 +156,22 @@ onMounted(load);
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h2 class="font-semibold">Recent recipients</h2>
-            <UButton to="/recipients" variant="link" size="xs" trailing-icon="i-lucide-arrow-right">View all</UButton>
+            <h2 class="font-semibold">{{ t("dashboard.recent.recipients") }}</h2>
+            <UButton to="/recipients" variant="link" size="xs" trailing-icon="i-lucide-arrow-right">
+              {{ t("common.viewAll") }}
+            </UButton>
           </div>
         </template>
         <UEmptyState
           v-if="!loading && recentRecipients.length === 0"
           icon="i-lucide-users"
-          title="No recipients yet"
-          description="Create a mailbox once a domain is added."
+          :title="t('dashboard.recent.noRecipients')"
+          :description="t('dashboard.recent.noRecipientsHint')"
         >
           <template #actions>
-            <UButton to="/recipients" icon="i-lucide-plus" color="primary">Add a recipient</UButton>
+            <UButton to="/recipients" icon="i-lucide-plus" color="primary">
+              {{ t("dashboard.recent.addRecipient") }}
+            </UButton>
           </template>
         </UEmptyState>
         <ul v-else class="divide-y divide-default">
@@ -174,7 +182,7 @@ onMounted(load);
               <p class="text-xs text-muted">{{ r.domain }}</p>
             </div>
             <UBadge :color="r.active ? 'success' : 'neutral'" variant="subtle">
-              {{ r.active ? "Active" : "Inactive" }}
+              {{ r.active ? t("common.active") : t("common.inactive") }}
             </UBadge>
           </li>
         </ul>

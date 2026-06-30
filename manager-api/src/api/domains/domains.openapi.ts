@@ -6,6 +6,13 @@ export const DomainsApi = () => applyDecorators(ApiTags("domains"), ApiBearerAut
 
 export const ListDomainsDocs = () => applyDecorators(ApiOperation({ summary: "List managed domains" }));
 
+export const DiskUsageDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Mail volume capacity (total / free / reserved by existing domains / still assignable)",
+    })
+  );
+
 export const GetDomainDocs = () => applyDecorators(ApiOperation({ summary: "Fetch a domain by id" }));
 
 export const CreateDomainDocs = () =>

@@ -5,23 +5,37 @@ import { useAuthStore } from "~/stores/auth";
 const open = ref(true);
 
 const navItems = computed<NavigationMenuItem[]>(() => [
-  { label: "Dashboard", icon: "i-lucide-layout-dashboard", to: "/dashboard" },
-  { label: "Domains", icon: "i-lucide-globe", to: "/domains" },
-  { label: "Recipients", icon: "i-lucide-users", to: "/recipients" },
-  { label: "Aliases", icon: "i-lucide-at-sign", to: "/aliases" },
-  { label: "Quotas", icon: "i-lucide-bar-chart-3", to: "/quotas" },
-  { label: "Sieve", icon: "i-lucide-filter", to: "/sieve" },
+  { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard" },
+  { label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains" },
+  { label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients" },
+  { label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" },
+  { label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" },
+  { label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" },
 ]);
 
 const userItems = computed<DropdownMenuItem[][]>(() => [
-  [{ label: "Profile", icon: "i-lucide-user", to: "/profile" }],
+  [{ label: t("nav.profile"), icon: "i-lucide-user", to: "/profile" }],
   [
     {
-      label: "Appearance",
+      label: t("app.language"),
+      icon: "i-lucide-languages",
+      children: locales.value.map((l) => ({
+        label: l.name ?? l.code,
+        icon: "i-lucide-globe",
+        type: "checkbox",
+        checked: locale.value === l.code,
+        onUpdateChecked: (c: boolean) => {
+          if (c) setLocale(l.code);
+        },
+        onSelect: (e: Event) => e.preventDefault(),
+      })),
+    },
+    {
+      label: t("nav.appearance"),
       icon: "i-lucide-sun-moon",
       children: [
         {
-          label: "Light",
+          label: t("nav.light"),
           icon: "i-lucide-sun",
           type: "checkbox",
           checked: colorMode.value === "light",
@@ -31,7 +45,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
           onSelect: (e: Event) => e.preventDefault(),
         },
         {
-          label: "Dark",
+          label: t("nav.dark"),
           icon: "i-lucide-moon",
           type: "checkbox",
           checked: colorMode.value === "dark",
@@ -41,7 +55,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
           onSelect: (e: Event) => e.preventDefault(),
         },
         {
-          label: "System",
+          label: t("nav.system"),
           icon: "i-lucide-monitor",
           type: "checkbox",
           checked: colorMode.preference === "system",
@@ -55,7 +69,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
   ],
   [
     {
-      label: "Sign out",
+      label: t("nav.signOut"),
       icon: "i-lucide-log-out",
       onSelect: async () => {
         await auth.logout();
@@ -67,16 +81,16 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
 
 const headerTitle = computed(() => {
   const map: Record<string, string> = {
-    "/dashboard": "Dashboard",
-    "/domains": "Domains",
-    "/recipients": "Recipients",
-    "/aliases": "Aliases",
-    "/quotas": "Quotas",
-    "/sieve": "Sieve - Rejected senders",
-    "/profile": "Profile",
+    "/dashboard": t("nav.dashboard"),
+    "/domains": t("nav.domains"),
+    "/recipients": t("nav.recipients"),
+    "/aliases": t("nav.aliases"),
+    "/quotas": t("nav.quotas"),
+    "/sieve": t("nav.sieveLong"),
+    "/profile": t("nav.profile"),
   };
   for (const k of Object.keys(map)) if (route.path.startsWith(k)) return map[k];
-  return "Mail Manager";
+  return t("app.name");
 });
 
 const userAvatar = computed(() => {
@@ -85,6 +99,7 @@ const userAvatar = computed(() => {
   return { alt: auth.session?.name ?? auth.session?.username ?? "?" };
 });
 
+const { t, locale, locales, setLocale } = useI18n();
 const auth = useAuthStore();
 const route = useRoute();
 const colorMode = useColorMode();
@@ -109,7 +124,7 @@ function toggleSidebar() {
       <template #header>
         <UButton
           icon="i-lucide-mail"
-          label="Mail Manager"
+          :label="t('app.name')"
           color="neutral"
           variant="ghost"
           square
@@ -145,7 +160,13 @@ function toggleSidebar() {
 
     <div class="flex-1 flex flex-col min-w-0">
       <div class="h-(--ui-header-height) shrink-0 flex items-center gap-2 px-4 border-b border-default">
-        <UButton icon="i-lucide-panel-left" color="neutral" variant="ghost" aria-label="Toggle sidebar" @click="toggleSidebar" />
+        <UButton
+          icon="i-lucide-panel-left"
+          color="neutral"
+          variant="ghost"
+          :aria-label="t('nav.toggleSidebar')"
+          @click="toggleSidebar"
+        />
         <USeparator orientation="vertical" class="h-5" />
         <h1 class="font-semibold truncate">{{ headerTitle }}</h1>
       </div>

@@ -10,6 +10,9 @@ services:
       DB_PORT: 3306
       NODE_ENV: production
       OPENDKIM_API_URL: http://mail-opendkim:8080
+      MAIL_VOLUME_PATH: /var/mail
+    volumes:
+      - ${VOLUMES_PATH}/mail:/var/mail:ro
     networks:
       mail:
         ipv4_address: 172.200.0.19
