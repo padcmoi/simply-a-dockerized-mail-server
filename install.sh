@@ -25,16 +25,18 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 [ -f "$SAMPLE" ] || die ".env.sample missing"
-if [ -f "$TARGET" ]; then
-  die ".env already exists. install.sh is a one-shot bootstrap and refuses to
-       run with an existing .env to avoid clobbering live secrets.
-       To start over: rm .env && sudo rm -rf volumes/ INSTALL_INFO.txt
-       To tweak values without reinstalling: edit .env directly."
-fi
-c "creating $TARGET from $SAMPLE"
-cp "$SAMPLE" "$TARGET"
 
-env_get() { grep -E "^${1}=" "$TARGET" | head -1 | cut -d= -f2-; }
+# `_INSTALL_STAGE` records the last successfully-completed step so a Ctrl-C
+# mid-install can be resumed with a plain `./install.sh` re-run. The
+# underscore prefix marks the line as installer scaffolding: every key
+# matching `^_[A-Z_]+=` is wiped from .env once the install finishes, so
+# the live runtime config never carries internal state. Stages are ordered
+# and a re-run skips every step whose name appears at or before the
+# recorded marker.
+STAGE_KEY="_INSTALL_STAGE"
+STAGES=(start config secrets up schema admin domain dkim)
+
+env_get() { grep -E "^${1}=" "$TARGET" 2>/dev/null | head -1 | cut -d= -f2-; }
 env_set() {
   local key="$1" value="$2"
   if grep -qE "^${key}=" "$TARGET"; then
@@ -43,6 +45,53 @@ env_set() {
     echo "${key}=${value}" >> "$TARGET"
   fi
 }
+
+stage_index() {
+  local s="$1" i=0
+  for x in "${STAGES[@]}"; do
+    [ "$x" = "$s" ] && echo "$i" && return
+    i=$((i+1))
+  done
+  echo -1
+}
+stage_done() {
+  # Returns 0 (skip work) if the requested checkpoint is at or before the
+  # last completed stage recorded in .env.
+  local want="$1" have wi hi
+  have=$(env_get "$STAGE_KEY")
+  [ -z "$have" ] && return 1
+  wi=$(stage_index "$want"); hi=$(stage_index "$have")
+  [ "$hi" -lt 0 ] || [ "$wi" -lt 0 ] && return 1
+  [ "$hi" -ge "$wi" ]
+}
+stage_set()   { env_set "$STAGE_KEY" "$1"; }
+stage_purge() { sed -i -E '/^_[A-Z_]+=/d' "$TARGET"; }
+
+# -----------------------------------------------------------------------------
+# Pre-flight: decide whether this is a fresh install, a resume, or a refusal.
+# -----------------------------------------------------------------------------
+if [ -f "$TARGET" ]; then
+  RESUME_STAGE=$(env_get "$STAGE_KEY")
+  if [ -z "$RESUME_STAGE" ]; then
+    die ".env exists and carries no _INSTALL_STAGE marker, which means a
+         previous install finished successfully. install.sh refuses to
+         clobber a live .env. To start over:
+           sudo rm -rf volumes/ INSTALL_INFO.txt && rm .env
+         To tweak values without reinstalling: edit .env directly."
+  fi
+  c "resuming install from stage: $RESUME_STAGE"
+elif [ -d volumes ]; then
+  die "./volumes/ exists but .env does not -- inconsistent state.
+       stateful services would skip their init step and keep whatever
+       credentials lived in volumes/ before. To start over:
+         sudo rm -rf volumes/ INSTALL_INFO.txt"
+else
+  c "creating $TARGET from $SAMPLE"
+  cp "$SAMPLE" "$TARGET"
+  stage_set start
+fi
+# After this point, .env exists and $STAGE_KEY is set. Any later die() exit
+# leaves the marker in place, so the next ./install.sh resumes cleanly.
 
 needs_input() {
   local v="$1"
@@ -141,63 +190,79 @@ set_secret_if_placeholder() {
 # ---------------------------------------------------------------------------
 # 1. Interactive configuration
 # ---------------------------------------------------------------------------
-echo
-c "configuration"
+if ! stage_done config; then
+  echo
+  c "configuration"
 
-# Prompt for the FQDN in a loop: a Let's Encrypt cert for it must already
-# exist on the host. Re-prompt until the user enters a name whose cert is
-# present (or Ctrl-C). Only persist to .env once the check passes.
-LE_PATH=$(env_get TLS_LETSENCRYPT_PATH)
-FQDN_DEFAULT="mail.example.com"
-while true; do
-  q "Mail server FQDN (PTR + cert CN) [$FQDN_DEFAULT]:"
-  read -e -r ANSWER
-  HOSTNAME="${ANSWER:-$FQDN_DEFAULT}"
-  CERT_DIR="${LE_PATH}/live/${HOSTNAME}"
-  if [ -f "${CERT_DIR}/fullchain.pem" ] && [ -f "${CERT_DIR}/privkey.pem" ]; then
-    env_set MAIL_HOSTNAME "$HOSTNAME"
-    env_set TLS_CERT_NAME "$HOSTNAME"
-    ok "TLS certificate found at ${CERT_DIR}"
-    break
-  fi
-  warn "no Let's Encrypt certificate at ${CERT_DIR}/{fullchain,privkey}.pem"
-  warn "obtain one with: sudo certbot certonly --standalone -d ${HOSTNAME}"
-  warn "then re-enter the FQDN below (or Ctrl-C to quit)"
-  FQDN_DEFAULT="$HOSTNAME"
-done
+  # Prompt for the FQDN in a loop: a Let's Encrypt cert for it must already
+  # exist on the host. Re-prompt until the user enters a name whose cert is
+  # present (or Ctrl-C). Only persist to .env once the check passes.
+  LE_PATH=$(env_get TLS_LETSENCRYPT_PATH)
+  FQDN_DEFAULT="mail.example.com"
+  while true; do
+    q "Mail server FQDN (PTR + cert CN) [$FQDN_DEFAULT]:"
+    read -e -r ANSWER
+    HOSTNAME="${ANSWER:-$FQDN_DEFAULT}"
+    CERT_DIR="${LE_PATH}/live/${HOSTNAME}"
+    if [ -f "${CERT_DIR}/fullchain.pem" ] && [ -f "${CERT_DIR}/privkey.pem" ]; then
+      env_set MAIL_HOSTNAME "$HOSTNAME"
+      env_set TLS_CERT_NAME "$HOSTNAME"
+      ok "TLS certificate found at ${CERT_DIR}"
+      break
+    fi
+    warn "no Let's Encrypt certificate at ${CERT_DIR}/{fullchain,privkey}.pem"
+    warn "obtain one with: sudo certbot certonly --standalone -d ${HOSTNAME}"
+    warn "then re-enter the FQDN below (or Ctrl-C to quit)"
+    FQDN_DEFAULT="$HOSTNAME"
+  done
 
-DETECTED_IP=$(curl -s --max-time 4 https://api.ipify.org 2>/dev/null \
-            || curl -s --max-time 4 https://ifconfig.me 2>/dev/null \
-            || true)
-PUBLIC_IP=$(prompt_re "Public IPv4 of this host" "$DETECTED_IP" \
-  '^([0-9]{1,3}\.){3}[0-9]{1,3}$' "IPv4 like 203.0.113.10")
-env_set MAIL_PUBLIC_IP "$PUBLIC_IP"
+  DETECTED_IP=$(curl -s --max-time 4 https://api.ipify.org 2>/dev/null \
+              || curl -s --max-time 4 https://ifconfig.me 2>/dev/null \
+              || true)
+  PUBLIC_IP=$(prompt_re "Public IPv4 of this host" "$DETECTED_IP" \
+    '^([0-9]{1,3}\.){3}[0-9]{1,3}$' "IPv4 like 203.0.113.10")
+  env_set MAIL_PUBLIC_IP "$PUBLIC_IP"
 
-DEFAULT_DOMAIN="${HOSTNAME#mail.}"
-PRIMARY_DOMAIN=$(prompt_re "Primary mail domain" "$DEFAULT_DOMAIN" \
-  '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$' \
-  "domain name like example.com")
+  DEFAULT_DOMAIN="${HOSTNAME#mail.}"
+  PRIMARY_DOMAIN=$(prompt_re "Primary mail domain" "$DEFAULT_DOMAIN" \
+    '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$' \
+    "domain name like example.com")
+  # Persist as a temp key so a resume can re-read it without re-prompting.
+  # `_*` keys are wiped from .env at the end of a successful install.
+  env_set _PRIMARY_DOMAIN "$PRIMARY_DOMAIN"
 
-RC_LANG=$(prompt_lang "Roundcube default language" "en_US")
-env_set ROUNDCUBE_LANGUAGE "$RC_LANG"
+  RC_LANG=$(prompt_lang "Roundcube default language" "en_US")
+  env_set ROUNDCUBE_LANGUAGE "$RC_LANG"
 
-ATTACH_MB=$(prompt_re "Maximum attachment size in MB (postfix + Roundcube)" "25" \
-  '^[1-9][0-9]{0,3}$' \
-  "integer between 1 and 9999 MB (Gmail caps at 25)")
-env_set ATTACHMENT_MAX_SIZE_MB "$ATTACH_MB"
+  ATTACH_MB=$(prompt_re "Maximum attachment size in MB (postfix + Roundcube)" "25" \
+    '^[1-9][0-9]{0,3}$' \
+    "integer between 1 and 9999 MB (Gmail caps at 25)")
+  env_set ATTACHMENT_MAX_SIZE_MB "$ATTACH_MB"
+
+  stage_set config
+fi
+
+# Rehydrate shell vars from .env: on a fresh run these were set inside the
+# config block above, but on a resume the block was skipped, so the vars
+# need to come back from .env.
+HOSTNAME=$(env_get MAIL_HOSTNAME)
+PUBLIC_IP=$(env_get MAIL_PUBLIC_IP)
+PRIMARY_DOMAIN=$(env_get _PRIMARY_DOMAIN)
 
 # ---------------------------------------------------------------------------
 # 2. Secrets (auto-generated, never asked)
 # ---------------------------------------------------------------------------
-c "generating secrets where placeholders remain"
-set_secret_if_placeholder DB_PASSWORD                "$(rand_alnum)"
-set_secret_if_placeholder DB_ROOT_PASSWORD           "$(rand_alnum)"
-set_secret_if_placeholder RSPAMD_PASSWORD            "$(rand_alnum)"
-set_secret_if_placeholder MANAGER_JWT_ACCESS_SECRET  "$(rand_b64)"
-set_secret_if_placeholder MANAGER_JWT_REFRESH_SECRET "$(rand_b64)"
-set_secret_if_placeholder MANAGER_ADMIN_PASSWORD     "$(rand_alnum)"
+if ! stage_done secrets; then
+  c "generating secrets where placeholders remain"
+  set_secret_if_placeholder DB_PASSWORD                "$(rand_alnum)"
+  set_secret_if_placeholder DB_ROOT_PASSWORD           "$(rand_alnum)"
+  set_secret_if_placeholder RSPAMD_PASSWORD            "$(rand_alnum)"
+  set_secret_if_placeholder MANAGER_JWT_ACCESS_SECRET  "$(rand_b64)"
+  set_secret_if_placeholder MANAGER_JWT_REFRESH_SECRET "$(rand_b64)"
+  set_secret_if_placeholder MANAGER_ADMIN_PASSWORD     "$(rand_alnum)"
+  stage_set secrets
+fi
 
-PUBLIC_IP=$(env_get MAIL_PUBLIC_IP)
 DB_NAME=$(env_get DB_NAME)
 DB_ROOT=$(env_get DB_ROOT_PASSWORD)
 ADMIN_USER=$(env_get MANAGER_ADMIN_USERNAME)
@@ -210,48 +275,58 @@ RSPAMDUI_PORT=$(env_get BINDING_PORT_RSPAMD_UI)
 # ---------------------------------------------------------------------------
 # 3. Full stack up
 # ---------------------------------------------------------------------------
-c "building images and bringing the full stack up..."
-docker compose up -d --build
+if ! stage_done up; then
+  c "building images and bringing the full stack up..."
+  docker compose up -d --build
+  stage_set up
+fi
 
 # ---------------------------------------------------------------------------
 # 4. Wait for TypeORM to create the schema
 # ---------------------------------------------------------------------------
-c "waiting for TypeORM to create the schema (max 180s)..."
-T=180
-until docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" \
-        -e "SHOW TABLES LIKE 'accounts'" 2>/dev/null | grep -q accounts; do
-  sleep 1
-  T=$((T-1))
-  [ $T -le 0 ] && die "manager-api did not finish creating the schema in time"
-done
-ok "schema ready"
+if ! stage_done schema; then
+  c "waiting for TypeORM to create the schema (max 180s)..."
+  T=180
+  until docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" \
+          -e "SHOW TABLES LIKE 'accounts'" 2>/dev/null | grep -q accounts; do
+    sleep 1
+    T=$((T-1))
+    [ $T -le 0 ] && die "manager-api did not finish creating the schema in time"
+  done
+  ok "schema ready"
+  stage_set schema
+fi
 
 # ---------------------------------------------------------------------------
 # 5. Seed admin
 # ---------------------------------------------------------------------------
-c "hashing admin password and upserting accounts row..."
-ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
-  node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" \
-  | tr -d '\r')
-docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
+if ! stage_done admin; then
+  c "hashing admin password and upserting accounts row..."
+  ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
+    node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" \
+    | tr -d '\r')
+  docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
 INSERT INTO accounts (username, password, role, enabled, created_at, updated_at)
 VALUES ('${ADMIN_USER}', '${ADMIN_HASH}', 'admin', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE password=VALUES(password), updated_at=NOW();
 SQL
-ok "admin account ready"
+  ok "admin account ready"
+  stage_set admin
+fi
 
 # ---------------------------------------------------------------------------
 # 6. Seed primary domain and reserve postmaster
 # ---------------------------------------------------------------------------
-c "provisioning primary domain ${PRIMARY_DOMAIN} (real mailboxes are created later via the manager-ui)..."
-DOMAIN_QUOTA=$((10 * 1024 * 1024 * 1024))
-# postmaster@<domain> is the envelope-from used by dovecot-lda for system
-# notifications (blocklist alerts in images/dovecot/conf/sieve/bin/hooks/
-# 40-notify.sh, etc.). Insert it as active=0 so no one can authenticate or
-# receive inbound mail on it; LDA delivery only uses it as a header string,
-# never as a destination.
-POSTMASTER_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$(rand_alnum)")
-docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
+if ! stage_done domain; then
+  c "provisioning primary domain ${PRIMARY_DOMAIN} (real mailboxes are created later via the manager-ui)..."
+  DOMAIN_QUOTA=$((10 * 1024 * 1024 * 1024))
+  # postmaster@<domain> is the envelope-from used by dovecot-lda for system
+  # notifications (blocklist alerts in images/dovecot/conf/sieve/bin/hooks/
+  # 40-notify.sh, etc.). Insert it as active=0 so no one can authenticate or
+  # receive inbound mail on it; LDA delivery only uses it as a header string,
+  # never as a destination.
+  POSTMASTER_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$(rand_alnum)")
+  docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
 INSERT IGNORE INTO virtual_domains (domain, quota, active)
 VALUES ('${PRIMARY_DOMAIN}', ${DOMAIN_QUOTA}, 1);
 
@@ -259,31 +334,63 @@ INSERT INTO virtual_users (domain, email, password, maildir, quota, active)
 VALUES ('${PRIMARY_DOMAIN}', 'postmaster@${PRIMARY_DOMAIN}', '${POSTMASTER_HASH}', '${PRIMARY_DOMAIN}/postmaster/', 0, 0)
 ON DUPLICATE KEY UPDATE active=0;
 SQL
-ok "domain provisioned (postmaster@${PRIMARY_DOMAIN} reserved inactive)"
+  ok "domain provisioned (postmaster@${PRIMARY_DOMAIN} reserved inactive)"
+  stage_set domain
+fi
 
 # ---------------------------------------------------------------------------
 # 7. DKIM key
 # ---------------------------------------------------------------------------
-c "generating DKIM key for ${PRIMARY_DOMAIN} via the opendkim sidecar..."
-T=30
-until docker compose exec -T opendkim curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; do
-  sleep 1
-  T=$((T-1))
-  [ $T -le 0 ] && die "opendkim dkim-api sidecar did not become ready in time"
-done
+if ! stage_done dkim; then
+  c "generating DKIM key for ${PRIMARY_DOMAIN} via the opendkim sidecar..."
+  T=30
+  until docker compose exec -T opendkim curl -fsS http://localhost:8080/healthz >/dev/null 2>&1; do
+    sleep 1
+    T=$((T-1))
+    [ $T -le 0 ] && die "opendkim dkim-api sidecar did not become ready in time"
+  done
 
-# POST to the sidecar AND parse the JSON inside the same opendkim container
-# using python3 (already installed there for dkim-api.py). The sidecar emits
-# compact JSON, but parsing via a real JSON library is the only way that
-# stays correct no matter how dkim-api.py decides to format its output later.
-# Output format: "<selector>|<txtRecord>" with a literal '|' as separator,
-# which never appears in either field.
-DKIM_PARSED=$(docker compose exec -T opendkim sh -c "curl -fsS -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:8080/keys/${PRIMARY_DOMAIN} | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[\"selector\"]+\"|\"+d[\"txtRecord\"])'") \
-  || die "dkim-api request failed for ${PRIMARY_DOMAIN}"
-SELECTOR="${DKIM_PARSED%%|*}"
-DKIM_VALUE="${DKIM_PARSED#*|}"
-[ -n "$SELECTOR" ] && [ -n "$DKIM_VALUE" ] || die "dkim-api returned an unexpected payload: ${DKIM_PARSED}"
-ok "DKIM key generated (selector ${SELECTOR})"
+  # POST to the sidecar AND parse the JSON inside the same opendkim container
+  # using python3 (already installed there for dkim-api.py). The sidecar emits
+  # compact JSON, but parsing via a real JSON library is the only way that
+  # stays correct no matter how dkim-api.py decides to format its output later.
+  # Output format: "<selector>|<txtRecord>" with a literal '|' as separator,
+  # which never appears in either field.
+  DKIM_PARSED=$(docker compose exec -T opendkim sh -c "curl -fsS -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:8080/keys/${PRIMARY_DOMAIN} | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[\"selector\"]+\"|\"+d[\"txtRecord\"])'") \
+    || die "dkim-api request failed for ${PRIMARY_DOMAIN}"
+  SELECTOR="${DKIM_PARSED%%|*}"
+  DKIM_VALUE="${DKIM_PARSED#*|}"
+  [ -n "$SELECTOR" ] && [ -n "$DKIM_VALUE" ] || die "dkim-api returned an unexpected payload: ${DKIM_PARSED}"
+  ok "DKIM key generated (selector ${SELECTOR})"
+
+  # Persist the DKIM material into the manager-api `dkim_keys` table so direct
+  # DB queries (phpMyAdmin, ops scripts) see the row immediately, without
+  # waiting for a manager-api self-heal on the next /api/v1/domains/:id/dkim
+  # call. DkimService.list() also reads from this table; populating it here
+  # means the primary domain's DKIM key is available API-side from second 1.
+  DNS_NAME="${SELECTOR}._domainkey"
+  PUBLIC_KEY=$(printf '%s' "$DKIM_VALUE" | sed -n 's/.*p=\([^;[:space:]]*\).*/\1/p')
+  [ -n "$PUBLIC_KEY" ] || die "could not extract the base64 public key from the TXT record"
+  docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
+INSERT INTO dkim_keys (domain, selector, dns_name, public_key, txt_record)
+VALUES ('${PRIMARY_DOMAIN}', '${SELECTOR}', '${DNS_NAME}', '${PUBLIC_KEY}', '${DKIM_VALUE}')
+ON DUPLICATE KEY UPDATE
+  dns_name = VALUES(dns_name),
+  public_key = VALUES(public_key),
+  txt_record = VALUES(txt_record);
+SQL
+  ok "DKIM material persisted in dkim_keys"
+
+  # Cache the SELECTOR / TXT for the summary so a resumed run (skipping
+  # this block) can still display the DNS record without re-querying.
+  env_set _DKIM_SELECTOR  "$SELECTOR"
+  env_set _DKIM_TXT_RECORD "$DKIM_VALUE"
+  stage_set dkim
+fi
+
+# Rehydrate DKIM display vars from .env for the summary block below.
+SELECTOR=$(env_get _DKIM_SELECTOR)
+DKIM_VALUE=$(env_get _DKIM_TXT_RECORD)
 
 # ---------------------------------------------------------------------------
 # 8. Summary
@@ -326,3 +433,11 @@ After publishing the DNS record (1-5 min propagation), verify with:
 See DOMAIN_DNS.md for the full DNS record set (MX, SPF, DMARC).
 ==========================================================================
 EOF
+
+# Install reached the end: wipe every installer-owned scaffolding key
+# (`_INSTALL_STAGE`, `_PRIMARY_DOMAIN`, `_DKIM_*`, anything matching
+# `^_[A-Z_]+=`) so the live .env carries only runtime config. A re-run of
+# install.sh against this .env will now die with the "completed install"
+# branch of the preflight, as expected.
+stage_purge
+ok "install.sh complete; .env scrubbed of internal scaffolding"
