@@ -15,5 +15,7 @@ ___keep
 .output/
 .nuxt/
 
+*.tsbuildinfo
+
 # test-mailservers.sh outputs (regenerated on every run)
 test-results.md
