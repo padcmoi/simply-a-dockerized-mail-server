@@ -121,7 +121,16 @@ onMounted(load);
 
     <div class="flex items-center justify-between gap-2">
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
-      <UButton v-if="auth.session?.isRoot" icon="i-lucide-mail-plus" color="primary" @click="inviteOpen = true">
+      <UButton
+        v-if="auth.session?.isRoot"
+        icon="i-lucide-mail-plus"
+        color="primary"
+        @click="
+          () => {
+            inviteOpen = true;
+          }
+        "
+      >
         {{ t("accounts.inviteButton") }}
       </UButton>
     </div>
