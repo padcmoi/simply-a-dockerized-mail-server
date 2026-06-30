@@ -54,6 +54,8 @@ jobs:
           cache-dependency-path: manager-ui/pnpm-lock.yaml
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Prepare Nuxt
+        run: pnpm nuxt prepare
       - name: Lint
         run: pnpm lint
       - name: Typecheck
