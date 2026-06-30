@@ -1,6 +1,6 @@
 import { applyDecorators, UseGuards } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 
 export const DomainsApi = () => applyDecorators(ApiTags("domains"), ApiBearerAuth(), UseGuards(AuthGuard("jwt")));
 
@@ -20,14 +20,3 @@ export const UpdateDomainDocs = () =>
 
 export const RemoveDomainDocs = () =>
   applyDecorators(ApiOperation({ summary: "Delete a domain (cascades users, aliases, quota rows, DKIM keys)" }));
-
-export const ListDkimDocs = () => applyDecorators(ApiOperation({ summary: "List active DKIM selectors for a domain" }));
-
-export const RotateDkimDocs = () =>
-  applyDecorators(ApiOperation({ summary: "Generate a fresh DKIM selector without removing the previous one" }));
-
-export const RemoveDkimDocs = () =>
-  applyDecorators(
-    ApiOperation({ summary: "Remove a specific DKIM selector for a domain (after TTL has expired)" }),
-    ApiQuery({ name: "selector", required: true, type: String })
-  );

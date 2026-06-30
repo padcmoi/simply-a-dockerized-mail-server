@@ -6,7 +6,7 @@ const route = useRoute();
 
 const links = [
   { label: "Domains", to: "/domains", icon: "i-lucide-globe" },
-  { label: "Users", to: "/users", icon: "i-lucide-users" },
+  { label: "Recipients", to: "/recipients", icon: "i-lucide-users" },
   { label: "Aliases", to: "/aliases", icon: "i-lucide-at-sign" },
   { label: "Quotas", to: "/quotas", icon: "i-lucide-bar-chart-3" },
   { label: "Sieve", to: "/sieve", icon: "i-lucide-filter" },

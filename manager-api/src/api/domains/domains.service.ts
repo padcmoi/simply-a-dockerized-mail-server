@@ -99,16 +99,4 @@ export class DomainsService {
     await this.repo.remove(target);
     return { ok: true };
   }
-
-  listDkim(domain: string) {
-    return this.dkim.list(domain);
-  }
-
-  rotateDkim(domain: string) {
-    return this.dkim.create(domain);
-  }
-
-  removeDkim(domain: string, selector: string) {
-    return this.dkim.remove(domain, selector);
-  }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-interface Q {
+interface QuotaRow {
   id: number;
   domain: string;
   email?: string;
@@ -7,17 +7,27 @@ interface Q {
   messages: string;
   lastActivity: string;
 }
+interface Domain {
+  id: number;
+  domain: string;
+}
+interface DomainQuotaPayload {
+  domain: QuotaRow | null;
+  recipients: QuotaRow[];
+}
 
 const { call } = useApi();
-const domains = ref<Q[]>([]);
-const users = ref<Q[]>([]);
+const domainRows = ref<QuotaRow[]>([]);
+const recipientRows = ref<QuotaRow[]>([]);
 const loading = ref(false);
 
 async function load() {
   loading.value = true;
   try {
-    domains.value = await call<Q[]>("/quotas/domains");
-    users.value = await call<Q[]>("/quotas/users");
+    const domains = await call<Domain[]>("/domains");
+    const snapshots = await Promise.all(domains.map((d) => call<DomainQuotaPayload>(`/domains/${d.id}/quotas`)));
+    domainRows.value = snapshots.map((s) => s.domain).filter((d): d is QuotaRow => d !== null);
+    recipientRows.value = snapshots.flatMap((s) => s.recipients);
   } finally {
     loading.value = false;
   }
@@ -30,8 +40,8 @@ const domainCols = [
   { accessorKey: "messages", header: "Messages" },
   { accessorKey: "lastActivity", header: "Last activity" },
 ];
-const userCols = [
-  { accessorKey: "email", header: "Mailbox" },
+const recipientCols = [
+  { accessorKey: "email", header: "Address" },
   { accessorKey: "bytes", header: "Bytes" },
   { accessorKey: "messages", header: "Messages" },
   { accessorKey: "lastActivity", header: "Last activity" },
@@ -46,11 +56,11 @@ const userCols = [
     </div>
     <section class="space-y-2">
       <h2 class="text-lg font-medium">Per domain</h2>
-      <UTable :columns="domainCols" :data="domains" :loading="loading" />
+      <UTable :columns="domainCols" :data="domainRows" :loading="loading" />
     </section>
     <section class="space-y-2">
-      <h2 class="text-lg font-medium">Per mailbox</h2>
-      <UTable :columns="userCols" :data="users" :loading="loading" />
+      <h2 class="text-lg font-medium">Per recipient</h2>
+      <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" />
     </section>
   </div>
 </template>

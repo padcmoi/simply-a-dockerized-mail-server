@@ -1,14 +1,11 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import {
   CreateDomainDocs,
   DomainsApi,
   GetDomainDocs,
-  ListDkimDocs,
   ListDomainsDocs,
-  RemoveDkimDocs,
   RemoveDomainDocs,
-  RotateDkimDocs,
   UpdateDomainDocs,
 } from "./domains.openapi";
 import { DomainsService } from "./domains.service";
@@ -25,10 +22,10 @@ export class DomainsController {
     return this.svc.list();
   }
 
-  @Get(":id")
+  @Get(":domainId")
   @GetDomainDocs()
-  get(@Param("id", ParseIntPipe) id: number) {
-    return this.svc.get(id);
+  get(@Param("domainId", ParseIntPipe) domainId: number) {
+    return this.svc.get(domainId);
   }
 
   @Post()
@@ -37,36 +34,18 @@ export class DomainsController {
     return this.svc.create(body);
   }
 
-  @Patch(":id")
+  @Patch(":domainId")
   @UpdateDomainDocs()
-  update(@Param("id", ParseIntPipe) id: number, @Body(new ZodValidationPipe(updateDomainSchema)) body: UpdateDomainDto) {
-    return this.svc.update(id, body);
+  update(
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Body(new ZodValidationPipe(updateDomainSchema)) body: UpdateDomainDto
+  ) {
+    return this.svc.update(domainId, body);
   }
 
-  @Delete(":id")
+  @Delete(":domainId")
   @RemoveDomainDocs()
-  remove(@Param("id", ParseIntPipe) id: number) {
-    return this.svc.remove(id);
-  }
-
-  @Get(":id/dkim")
-  @ListDkimDocs()
-  async listDkim(@Param("id", ParseIntPipe) id: number) {
-    const d = await this.svc.get(id);
-    return this.svc.listDkim(d.domain);
-  }
-
-  @Post(":id/dkim/rotate")
-  @RotateDkimDocs()
-  async rotateDkim(@Param("id", ParseIntPipe) id: number) {
-    const d = await this.svc.get(id);
-    return this.svc.rotateDkim(d.domain);
-  }
-
-  @Delete(":id/dkim")
-  @RemoveDkimDocs()
-  async removeDkim(@Param("id", ParseIntPipe) id: number, @Query("selector") selector: string) {
-    const d = await this.svc.get(id);
-    return this.svc.removeDkim(d.domain, selector);
+  remove(@Param("domainId", ParseIntPipe) domainId: number) {
+    return this.svc.remove(domainId);
   }
 }
