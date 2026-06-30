@@ -137,7 +137,16 @@ onMounted(load);
       <div class="flex items-center gap-2">
         <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
       </div>
-      <UButton v-if="auth.session?.isRoot" icon="i-lucide-mail-plus" color="primary" @click="() => { inviteOpen = true; }">
+      <UButton
+        v-if="auth.session?.isRoot"
+        icon="i-lucide-mail-plus"
+        color="primary"
+        @click="
+          () => {
+            inviteOpen = true;
+          }
+        "
+      >
         {{ t("accounts.inviteButton") }}
       </UButton>
     </div>
@@ -241,7 +250,15 @@ onMounted(load);
 
           <template #footer>
             <div class="flex justify-end gap-2">
-              <UButton color="neutral" variant="ghost" @click="() => { inviteOpen = false; }">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                @click="
+                  () => {
+                    inviteOpen = false;
+                  }
+                "
+              >
                 {{ t("common.cancel") }}
               </UButton>
               <UButton color="primary" :loading="inviteSending" :disabled="!inviteEmail" @click="sendInvite">
@@ -282,7 +299,15 @@ onMounted(load);
 
           <template #footer>
             <div class="flex justify-end gap-2">
-              <UButton color="neutral" variant="ghost" @click="() => { aclOpen = false; }">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                @click="
+                  () => {
+                    aclOpen = false;
+                  }
+                "
+              >
                 {{ t("common.cancel") }}
               </UButton>
               <UButton color="primary" :loading="aclSaving" @click="saveAcl">
