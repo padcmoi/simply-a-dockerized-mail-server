@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({});
+
 interface Domain {
   id: number;
   domain: string;
@@ -24,27 +26,11 @@ interface Reject {
   enabled: number;
 }
 
-const { call } = useApi();
 const loading = ref(false);
 const domains = ref<Domain[]>([]);
 const recipients = ref<Recipient[]>([]);
 const aliases = ref<Alias[]>([]);
 const rejects = ref<Reject[]>([]);
-
-async function load() {
-  loading.value = true;
-  try {
-    domains.value = await call<Domain[]>("/domains");
-    const recs = await Promise.all(domains.value.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`)));
-    recipients.value = recs.flat();
-    const als = await Promise.all(domains.value.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`)));
-    aliases.value = als.flat();
-    rejects.value = await call<Reject[]>("/sieve/reject-senders");
-  } finally {
-    loading.value = false;
-  }
-}
-onMounted(load);
 
 const stats = computed(() => [
   {
@@ -87,6 +73,24 @@ const stats = computed(() => [
 
 const recentDomains = computed(() => domains.value.slice(0, 5));
 const recentRecipients = computed(() => recipients.value.slice(0, 6));
+
+const { call } = useApi();
+
+async function load() {
+  loading.value = true;
+  try {
+    domains.value = await call<Domain[]>("/domains");
+    const recs = await Promise.all(domains.value.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`)));
+    recipients.value = recs.flat();
+    const als = await Promise.all(domains.value.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`)));
+    aliases.value = als.flat();
+    rejects.value = await call<Reject[]>("/sieve/reject-senders");
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(load);
 </script>
 
 <template>

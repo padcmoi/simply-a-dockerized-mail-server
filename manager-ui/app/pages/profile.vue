@@ -2,26 +2,18 @@
 import { z } from "zod";
 import { useAuthStore } from "~/stores/auth";
 
+definePageMeta({});
+
+const loading = ref(false);
+const form = reactive({ name: "", email: "", avatarUrl: "" });
+
+const avatarPreview = computed(() => {
+  if (form.avatarUrl.trim()) return { src: form.avatarUrl.trim(), alt: form.name || auth.session?.username || "?" };
+  return { alt: form.name || auth.session?.username || "?" };
+});
+
 const auth = useAuthStore();
 const toast = useToast();
-const loading = ref(false);
-
-const form = reactive({
-  name: auth.session?.name ?? "",
-  email: auth.session?.email ?? "",
-  avatarUrl: auth.session?.avatarUrl ?? "",
-});
-
-onMounted(async () => {
-  try {
-    await auth.fetchProfile();
-    form.name = auth.session?.name ?? "";
-    form.email = auth.session?.email ?? "";
-    form.avatarUrl = auth.session?.avatarUrl ?? "";
-  } catch (e) {
-    toast.add({ title: "Failed to load profile", description: (e as Error).message, color: "error" });
-  }
-});
 
 const schema = z.object({
   name: z.string().max(255).optional(),
@@ -45,9 +37,15 @@ async function save() {
   }
 }
 
-const avatarPreview = computed(() => {
-  if (form.avatarUrl.trim()) return { src: form.avatarUrl.trim(), alt: form.name || auth.session?.username || "?" };
-  return { alt: form.name || auth.session?.username || "?" };
+onMounted(async () => {
+  try {
+    await auth.fetchProfile();
+    form.name = auth.session?.name ?? "";
+    form.email = auth.session?.email ?? "";
+    form.avatarUrl = auth.session?.avatarUrl ?? "";
+  } catch (e) {
+    toast.add({ title: "Failed to load profile", description: (e as Error).message, color: "error" });
+  }
 });
 </script>
 

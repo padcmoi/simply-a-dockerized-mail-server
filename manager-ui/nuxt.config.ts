@@ -1,7 +1,7 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-01",
   devtools: { enabled: false },
-  modules: ["@nuxt/ui", "@vueuse/nuxt", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt"],
+  modules: ["@nuxt/ui", "@nuxt/eslint", "@vueuse/nuxt", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt"],
   ssr: true,
   css: ["~/assets/css/main.css"],
   // Bundle every `i-lucide-*` icon used in templates into the client output

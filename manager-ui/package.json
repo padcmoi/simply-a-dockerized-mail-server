@@ -9,7 +9,10 @@
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",
     "format": "prettier --write \"{app,server}/**/*.{ts,vue,js,mjs,css}\" \"*.{ts,vue,js,mjs,json}\"",
-    "format:check": "prettier --check \"{app,server}/**/*.{ts,vue,js,mjs,css}\" \"*.{ts,vue,js,mjs,json}\""
+    "format:check": "prettier --check \"{app,server}/**/*.{ts,vue,js,mjs,css}\" \"*.{ts,vue,js,mjs,json}\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "nuxt prepare && vue-tsc --noEmit"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.115",
@@ -27,9 +30,16 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@nuxt/eslint": "^1.16.0",
     "@types/node": "^22.20.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
+    "eslint": "^10.6.0",
+    "eslint-plugin-vue": "^10.9.2",
     "prettier": "^3.9.4",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vue-eslint-parser": "^10.4.1",
+    "vue-tsc": "^3.3.6"
   },
   "packageManager": "pnpm@9.15.0"
 }

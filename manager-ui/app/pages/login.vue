@@ -4,10 +4,11 @@ import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({ layout: "auth" });
 
-const auth = useAuthStore();
-const toast = useToast();
 const loading = ref(false);
 const state = reactive({ username: "", password: "" });
+
+const auth = useAuthStore();
+const toast = useToast();
 const schema = z.object({
   username: z.string().min(1, "Required"),
   password: z.string().min(1, "Required"),

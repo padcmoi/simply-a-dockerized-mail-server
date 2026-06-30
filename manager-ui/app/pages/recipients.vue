@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({});
+
 interface Recipient {
   id: number;
   email: string;
@@ -11,25 +13,33 @@ interface Domain {
   domain: string;
 }
 
-const { call } = useApi();
-const toast = useToast();
 const domains = ref<Domain[]>([]);
 const items = ref<Recipient[]>([]);
 const loading = ref(false);
 const form = reactive({ domainId: 0, localPart: "", password: "", quota: 524288000 });
 
+const { call } = useApi();
+const toast = useToast();
+
+const columns = [
+  { accessorKey: "email", header: "Address" },
+  { accessorKey: "domain", header: "Domain" },
+  { accessorKey: "quota", header: "Quota" },
+  { accessorKey: "active", header: "Active" },
+];
+
 async function load() {
   loading.value = true;
   try {
     domains.value = await call<Domain[]>("/domains");
-    if (!form.domainId && domains.value.length) form.domainId = domains.value[0].id;
+    const first = domains.value[0];
+    if (!form.domainId && first) form.domainId = first.id;
     const lists = await Promise.all(domains.value.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`)));
     items.value = lists.flat();
   } finally {
     loading.value = false;
   }
 }
-onMounted(load);
 
 async function create() {
   if (!form.domainId) {
@@ -50,7 +60,7 @@ async function create() {
   }
 }
 
-function domainIdFor(row: Recipient): number | null {
+function domainIdFor(row: Recipient) {
   return domains.value.find((d) => d.domain === row.domain)?.id ?? null;
 }
 
@@ -61,12 +71,7 @@ async function remove(row: Recipient) {
   await load();
 }
 
-const columns = [
-  { accessorKey: "email", header: "Address" },
-  { accessorKey: "domain", header: "Domain" },
-  { accessorKey: "quota", header: "Quota" },
-  { accessorKey: "active", header: "Active" },
-];
+onMounted(load);
 </script>
 
 <template>

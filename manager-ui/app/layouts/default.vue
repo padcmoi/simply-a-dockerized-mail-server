@@ -2,9 +2,6 @@
 import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { useAuthStore } from "~/stores/auth";
 
-const auth = useAuthStore();
-const route = useRoute();
-const colorMode = useColorMode();
 const open = ref(true);
 
 const navItems = computed<NavigationMenuItem[]>(() => [
@@ -87,6 +84,14 @@ const userAvatar = computed(() => {
   if (url) return { src: url, alt: auth.session?.name ?? auth.session?.username ?? "user" };
   return { alt: auth.session?.name ?? auth.session?.username ?? "?" };
 });
+
+const auth = useAuthStore();
+const route = useRoute();
+const colorMode = useColorMode();
+
+function toggleSidebar() {
+  open.value = !open.value;
+}
 </script>
 
 <template>
@@ -140,7 +145,7 @@ const userAvatar = computed(() => {
 
     <div class="flex-1 flex flex-col min-w-0">
       <div class="h-(--ui-header-height) shrink-0 flex items-center gap-2 px-4 border-b border-default">
-        <UButton icon="i-lucide-panel-left" color="neutral" variant="ghost" aria-label="Toggle sidebar" @click="open = !open" />
+        <UButton icon="i-lucide-panel-left" color="neutral" variant="ghost" aria-label="Toggle sidebar" @click="toggleSidebar" />
         <USeparator orientation="vertical" class="h-5" />
         <h1 class="font-semibold truncate">{{ headerTitle }}</h1>
       </div>

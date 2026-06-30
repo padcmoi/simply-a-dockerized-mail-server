@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({});
+
 interface Reject {
   id: number;
   sender: string;
@@ -6,11 +8,18 @@ interface Reject {
   createdAt: string;
 }
 
-const { call } = useApi();
-const toast = useToast();
 const items = ref<Reject[]>([]);
 const loading = ref(false);
 const form = reactive({ sender: "" });
+
+const { call } = useApi();
+const toast = useToast();
+
+const columns = [
+  { accessorKey: "sender", header: "Sender" },
+  { accessorKey: "enabled", header: "Enabled" },
+  { accessorKey: "createdAt", header: "Created" },
+];
 
 async function load() {
   loading.value = true;
@@ -20,7 +29,6 @@ async function load() {
     loading.value = false;
   }
 }
-onMounted(load);
 
 async function create() {
   try {
@@ -43,11 +51,7 @@ async function remove(id: number) {
   await load();
 }
 
-const columns = [
-  { accessorKey: "sender", header: "Sender" },
-  { accessorKey: "enabled", header: "Enabled" },
-  { accessorKey: "createdAt", header: "Created" },
-];
+onMounted(load);
 </script>
 
 <template>

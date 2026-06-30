@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({});
+
 interface QuotaRow {
   id: number;
   domain: string;
@@ -16,23 +18,11 @@ interface DomainQuotaPayload {
   recipients: QuotaRow[];
 }
 
-const { call } = useApi();
 const domainRows = ref<QuotaRow[]>([]);
 const recipientRows = ref<QuotaRow[]>([]);
 const loading = ref(false);
 
-async function load() {
-  loading.value = true;
-  try {
-    const domains = await call<Domain[]>("/domains");
-    const snapshots = await Promise.all(domains.map((d) => call<DomainQuotaPayload>(`/domains/${d.id}/quotas`)));
-    domainRows.value = snapshots.map((s) => s.domain).filter((d): d is QuotaRow => d !== null);
-    recipientRows.value = snapshots.flatMap((s) => s.recipients);
-  } finally {
-    loading.value = false;
-  }
-}
-onMounted(load);
+const { call } = useApi();
 
 const domainCols = [
   { accessorKey: "domain", header: "Domain" },
@@ -46,6 +36,25 @@ const recipientCols = [
   { accessorKey: "messages", header: "Messages" },
   { accessorKey: "lastActivity", header: "Last activity" },
 ];
+
+async function load() {
+  loading.value = true;
+  try {
+    const domains = await call<Domain[]>("/domains");
+    const snapshots = await Promise.all(domains.map((d) => call<DomainQuotaPayload>(`/domains/${d.id}/quotas`)));
+    // Plain loop instead of `.filter((d): d is QuotaRow => d !== null)` so we
+    // narrow to QuotaRow without an explicit return-type annotation (banned
+    // by the gestlok no-restricted-syntax rule).
+    const doms: QuotaRow[] = [];
+    for (const s of snapshots) if (s.domain) doms.push(s.domain);
+    domainRows.value = doms;
+    recipientRows.value = snapshots.flatMap((s) => s.recipients);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(load);
 </script>
 
 <template>

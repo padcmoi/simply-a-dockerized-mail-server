@@ -72,7 +72,12 @@ export const useAuthStore = defineStore("auth", {
       this.session = null;
     },
     authHeaders() {
-      return this.session ? { Authorization: `Bearer ${this.session.accessToken}` } : {};
+      // Always return a `Record<string, string>`-typed object so $fetch's
+      // HeadersInit constraint is satisfied without an explicit return type
+      // annotation (banned by the gestlok no-restricted-syntax rule).
+      const headers: Record<string, string> = {};
+      if (this.session) headers.Authorization = `Bearer ${this.session.accessToken}`;
+      return headers;
     },
   },
   persist: true,

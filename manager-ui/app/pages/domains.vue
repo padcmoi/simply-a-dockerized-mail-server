@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({});
+
 interface Domain {
   id: number;
   domain: string;
@@ -6,11 +8,19 @@ interface Domain {
   active: number;
 }
 
-const { call } = useApi();
-const toast = useToast();
 const items = ref<Domain[]>([]);
 const loading = ref(false);
 const form = reactive({ domain: "", active: true });
+
+const { call } = useApi();
+const toast = useToast();
+
+const columns = [
+  { accessorKey: "id", header: "ID" },
+  { accessorKey: "domain", header: "Domain" },
+  { accessorKey: "active", header: "Active" },
+  { accessorKey: "quota", header: "Quota" },
+];
 
 async function load() {
   loading.value = true;
@@ -22,7 +32,6 @@ async function load() {
     loading.value = false;
   }
 }
-onMounted(load);
 
 async function create() {
   try {
@@ -40,12 +49,7 @@ async function remove(id: number) {
   await load();
 }
 
-const columns = [
-  { accessorKey: "id", header: "ID" },
-  { accessorKey: "domain", header: "Domain" },
-  { accessorKey: "active", header: "Active" },
-  { accessorKey: "quota", header: "Quota" },
-];
+onMounted(load);
 </script>
 
 <template>
