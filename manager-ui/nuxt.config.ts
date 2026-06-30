@@ -1,7 +1,28 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-01",
   devtools: { enabled: false },
-  modules: ["@nuxt/ui", "@nuxt/eslint", "@vueuse/nuxt", "@pinia/nuxt", "pinia-plugin-persistedstate/nuxt", "@nuxtjs/i18n"],
+  modules: [
+    "@nuxt/ui",
+    "@nuxt/eslint",
+    "@vueuse/nuxt",
+    "@pinia/nuxt",
+    "pinia-plugin-persistedstate/nuxt",
+    "@nuxtjs/i18n",
+    // vue-router@4.6 dropped the `./volar/sfc-route-blocks` subpath export but
+    // Nuxt core still pushes it into the generated tsconfig, causing vue-tsc to
+    // spam `Load plugin failed` on every typecheck. Strip it here so the noise
+    // disappears without affecting the actual router types.
+    (_, nuxt) => {
+      nuxt.hook("modules:done", () => {
+        nuxt.hook("prepare:types", ({ tsConfig }) => {
+          const plugins = tsConfig.vueCompilerOptions?.plugins;
+          if (Array.isArray(plugins) && tsConfig.vueCompilerOptions) {
+            tsConfig.vueCompilerOptions.plugins = plugins.filter((p) => p !== "vue-router/volar/sfc-route-blocks");
+          }
+        });
+      });
+    },
+  ],
   i18n: {
     strategy: "no_prefix",
     defaultLocale: "en_EN",
