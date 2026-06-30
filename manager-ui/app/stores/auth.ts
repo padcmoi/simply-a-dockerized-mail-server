@@ -71,6 +71,20 @@ export const useAuthStore = defineStore("auth", {
       }
       this.session = null;
     },
+    async refresh() {
+      if (!this.session) return false;
+      try {
+        const data = await $fetch<{ accessToken: string; refreshToken: string; expiresAt: string }>("/api/v1/auth/jwt/refresh", {
+          method: "POST",
+          body: { refreshToken: this.session.refreshToken },
+        });
+        this.session = { ...this.session, ...data };
+        return true;
+      } catch {
+        this.session = null;
+        return false;
+      }
+    },
     authHeaders() {
       // Always return a `Record<string, string>`-typed object so $fetch's
       // HeadersInit constraint is satisfied without an explicit return type

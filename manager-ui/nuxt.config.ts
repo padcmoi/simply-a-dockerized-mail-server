@@ -21,8 +21,8 @@ export default defineNuxtConfig({
   },
   nitro: {
     routeRules: {
-      "/api/**": {
-        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/**` },
+      "/api/v1/**": {
+        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/v1/**` },
       },
     },
   },
