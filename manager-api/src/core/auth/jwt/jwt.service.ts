@@ -24,11 +24,14 @@ export class JwtAuthService {
   constructor(
     private readonly jwt: JwtService,
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
-    @InjectRepository(RefreshToken) private readonly refreshTokens: Repository<RefreshToken>
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokens: Repository<RefreshToken>
   ) {}
 
   async login(username: string, password: string, ua?: string, ip?: string) {
-    const account = await this.accounts.findOne({ where: { username, enabled: 1 } });
+    const account = await this.accounts.findOne({
+      where: { username, enabled: 1 },
+    });
     if (!account || !account.password) throw new UnauthorizedException("Invalid credentials");
     if (!(await bcrypt.compare(password, account.password))) {
       throw new UnauthorizedException("Invalid credentials");
@@ -52,7 +55,9 @@ export class JwtAuthService {
   }
 
   async revoke(rawToken: string) {
-    const stored = await this.refreshTokens.findOne({ where: { tokenHash: this.hash(rawToken) } });
+    const stored = await this.refreshTokens.findOne({
+      where: { tokenHash: this.hash(rawToken) },
+    });
     if (stored && !stored.revokedAt) {
       stored.revokedAt = new Date();
       await this.refreshTokens.save(stored);
@@ -69,7 +74,9 @@ export class JwtAuthService {
     const account = await this.accounts.findOne({ where: { id: accountId } });
     if (!account) throw new NotFoundException("Account not found");
     if (input.email !== undefined && input.email !== null && input.email !== account.email) {
-      const clash = await this.accounts.findOne({ where: { email: input.email, id: Not(accountId) } });
+      const clash = await this.accounts.findOne({
+        where: { email: input.email, id: Not(accountId) },
+      });
       if (clash) throw new ConflictException(`Email ${input.email} is already used by another account`);
     }
     if (input.name !== undefined) account.name = input.name;
@@ -91,7 +98,11 @@ export class JwtAuthService {
 
   private async issueTokens(account: Account, userAgent?: string, ip?: string) {
     const accessToken = await this.jwt.signAsync(
-      { sub: account.id, username: account.username, isRoot: account.isRoot === 1 },
+      {
+        sub: account.id,
+        username: account.username,
+        isRoot: account.isRoot === 1,
+      },
       { secret: process.env.MANAGER_JWT_ACCESS_SECRET, expiresIn: ACCESS_TTL }
     );
     const refreshRaw = randomBytes(48).toString("base64url");
@@ -104,7 +115,11 @@ export class JwtAuthService {
       expiresAt,
       createdAt: new Date(),
     });
-    return { accessToken, refreshToken: refreshRaw, expiresAt: expiresAt.toISOString() };
+    return {
+      accessToken,
+      refreshToken: refreshRaw,
+      expiresAt: expiresAt.toISOString(),
+    };
   }
 
   private hash(raw: string) {

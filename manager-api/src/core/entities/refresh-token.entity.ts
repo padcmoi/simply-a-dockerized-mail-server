@@ -29,6 +29,10 @@ export class RefreshToken {
   @Column({ name: "revoked_at", type: "datetime", nullable: true })
   revokedAt!: Date | null;
 
-  @Column({ name: "created_at", type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+  @Column({
+    name: "created_at",
+    type: "datetime",
+    default: () => "CURRENT_TIMESTAMP",
+  })
   createdAt!: Date;
 }

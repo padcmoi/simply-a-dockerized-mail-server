@@ -6,7 +6,9 @@ import { JwtAuthApi, JwtLoginDocs, JwtLogoutDocs, JwtMeDocs, JwtRefreshDocs, Jwt
 import { JwtAuthService } from "./jwt.service";
 import { LoginDto, RefreshDto, UpdateProfileDto, loginSchema, refreshSchema, updateProfileSchema } from "./jwt.validation";
 
-type AuthedRequest = Request & { user: { id: number; username: string; isRoot: boolean } };
+type AuthedRequest = Request & {
+  user: { id: number; username: string; isRoot: boolean };
+};
 
 @JwtAuthApi()
 @Controller({ path: "auth/jwt", version: "1" })
