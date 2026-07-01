@@ -14,14 +14,19 @@ import type { AcceptInvitationDto, SendInvitationDto, SetAclDto } from "./accoun
 export class AccountsService {
   constructor(
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
-    @InjectRepository(AccountInvitation) private readonly invitations: Repository<AccountInvitation>,
-    @InjectRepository(AccountDomainAcl) private readonly acl: Repository<AccountDomainAcl>,
-    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(AccountInvitation)
+    private readonly invitations: Repository<AccountInvitation>,
+    @InjectRepository(AccountDomainAcl)
+    private readonly acl: Repository<AccountDomainAcl>,
+    @InjectRepository(VirtualDomain)
+    private readonly domains: Repository<VirtualDomain>,
     private readonly mailer: MailerService
   ) {}
 
   async list() {
-    const allAccounts = await this.accounts.find({ order: { username: "ASC" } });
+    const allAccounts = await this.accounts.find({
+      order: { username: "ASC" },
+    });
     const aclRows = await this.acl.find();
     const domainIds = [...new Set(aclRows.map((a) => a.domainId))];
     const domainMap = new Map<number, string>();
@@ -40,7 +45,10 @@ export class AccountsService {
       createdAt: acc.createdAt,
       domains: aclRows
         .filter((a) => a.accountId === acc.id)
-        .map((a) => ({ id: a.domainId, domain: domainMap.get(a.domainId) ?? "" })),
+        .map((a) => ({
+          id: a.domainId,
+          domain: domainMap.get(a.domainId) ?? "",
+        })),
     }));
   }
 
@@ -58,7 +66,9 @@ export class AccountsService {
     if (!account) throw new NotFoundException(`Account #${accountId} not found`);
     const rows = await this.acl.find({ where: { accountId } });
     if (!rows.length) return { accountId, domains: [] };
-    const domList = await this.domains.findBy({ id: In(rows.map((r) => r.domainId)) });
+    const domList = await this.domains.findBy({
+      id: In(rows.map((r) => r.domainId)),
+    });
     return {
       accountId,
       domains: rows.map((r) => ({
@@ -83,7 +93,9 @@ export class AccountsService {
   }
 
   async sendInvitation(invitedBy: number, input: SendInvitationDto) {
-    const existing = await this.invitations.findOne({ where: { email: input.email, acceptedAt: IsNull() } });
+    const existing = await this.invitations.findOne({
+      where: { email: input.email, acceptedAt: IsNull() },
+    });
     if (existing && existing.expiresAt > new Date()) {
       existing.expiresAt = new Date();
       await this.invitations.save(existing);
@@ -91,7 +103,13 @@ export class AccountsService {
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
     await this.invitations.save(
-      this.invitations.create({ token, email: input.email, invitedBy, domainIds: input.domainIds, expiresAt })
+      this.invitations.create({
+        token,
+        email: input.email,
+        invitedBy,
+        domainIds: input.domainIds,
+        expiresAt,
+      })
     );
     let domainNames: string[] = [];
     if (input.domainIds?.length) {

@@ -23,7 +23,9 @@ import {
   setAclSchema,
 } from "./accounts.validation";
 
-type AuthedRequest = Request & { user: { id: number; username: string; isRoot: boolean } };
+type AuthedRequest = Request & {
+  user: { id: number; username: string; isRoot: boolean };
+};
 
 @AccountsApi()
 @Controller({ path: "accounts", version: "1" })
@@ -75,7 +77,8 @@ export class AccountsController {
   @AcceptInvitationDocs()
   acceptInvitation(
     @Param("token") token: string,
-    @Body(new ZodValidationPipe(acceptInvitationSchema)) body: AcceptInvitationDto
+    @Body(new ZodValidationPipe(acceptInvitationSchema))
+    body: AcceptInvitationDto
   ) {
     return this.svc.acceptInvitation(token, body);
   }

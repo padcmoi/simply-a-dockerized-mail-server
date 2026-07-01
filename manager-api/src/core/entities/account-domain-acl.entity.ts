@@ -11,6 +11,10 @@ export class AccountDomainAcl {
   @Column({ name: "domain_id", type: "int" })
   domainId!: number;
 
-  @Column({ name: "created_at", type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+  @Column({
+    name: "created_at",
+    type: "datetime",
+    default: () => "CURRENT_TIMESTAMP",
+  })
   createdAt!: Date;
 }

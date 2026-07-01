@@ -108,7 +108,10 @@ async function saveAcl(domainIds: number[]) {
   if (!aclAccount.value) return;
   aclSaving.value = true;
   try {
-    await call(`/accounts/${aclAccount.value.id}/acl`, { method: "PUT", body: { domainIds } });
+    await call(`/accounts/${aclAccount.value.id}/acl`, {
+      method: "PUT",
+      body: { domainIds },
+    });
     toast.add({ title: t("accounts.toast.aclSaved"), color: "success" });
     aclOpen.value = false;
     await load();
@@ -164,7 +167,9 @@ onMounted(load);
           <span class="text-muted text-sm">{{ row.original.email ?? "-" }}</span>
         </template>
         <template #domains-cell="{ row }">
-          <div v-if="row.original.isRoot" class="text-xs text-muted italic">{{ t("invite.allDomains") }}</div>
+          <div v-if="row.original.isRoot" class="text-xs text-muted italic">
+            {{ t("invite.allDomains") }}
+          </div>
           <div v-else-if="row.original.domains.length === 0" class="text-xs text-dimmed">-</div>
           <div v-else class="flex flex-wrap gap-1">
             <UBadge v-for="d in row.original.domains.slice(0, 3)" :key="d.id" color="neutral" variant="subtle" size="xs">{{

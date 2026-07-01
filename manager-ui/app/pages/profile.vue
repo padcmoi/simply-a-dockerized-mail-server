@@ -8,7 +8,11 @@ const loading = ref(false);
 const form = reactive({ name: "", email: "", avatarUrl: "" });
 
 const avatarPreview = computed(() => {
-  if (form.avatarUrl.trim()) return { src: form.avatarUrl.trim(), alt: form.name || auth.session?.username || "?" };
+  if (form.avatarUrl.trim())
+    return {
+      src: form.avatarUrl.trim(),
+      alt: form.name || auth.session?.username || "?",
+    };
   return { alt: form.name || auth.session?.username || "?" };
 });
 
@@ -34,7 +38,11 @@ async function save() {
     });
     toast.add({ title: t("profile.toast.updated"), color: "success" });
   } catch (e) {
-    toast.add({ title: t("profile.toast.updateFailed"), description: (e as Error).message, color: "error" });
+    toast.add({
+      title: t("profile.toast.updateFailed"),
+      description: (e as Error).message,
+      color: "error",
+    });
   } finally {
     loading.value = false;
   }
@@ -47,7 +55,11 @@ onMounted(async () => {
     form.email = auth.session?.email ?? "";
     form.avatarUrl = auth.session?.avatarUrl ?? "";
   } catch (e) {
-    toast.add({ title: t("profile.toast.loadFailed"), description: (e as Error).message, color: "error" });
+    toast.add({
+      title: t("profile.toast.loadFailed"),
+      description: (e as Error).message,
+      color: "error",
+    });
   }
 });
 </script>

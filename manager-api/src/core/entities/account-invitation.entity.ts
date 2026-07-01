@@ -23,6 +23,10 @@ export class AccountInvitation {
   @Column({ name: "expires_at", type: "datetime" })
   expiresAt!: Date;
 
-  @Column({ name: "created_at", type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+  @Column({
+    name: "created_at",
+    type: "datetime",
+    default: () => "CURRENT_TIMESTAMP",
+  })
   createdAt!: Date;
 }

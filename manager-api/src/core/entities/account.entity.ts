@@ -11,7 +11,13 @@ export class Account {
   @Column({ name: "name", type: "varchar", length: 255, nullable: true })
   name!: string | null;
 
-  @Column({ name: "email", type: "varchar", length: 255, nullable: true, unique: true })
+  @Column({
+    name: "email",
+    type: "varchar",
+    length: 255,
+    nullable: true,
+    unique: true,
+  })
   email!: string | null;
 
   @Column({ name: "avatar_url", type: "varchar", length: 1024, nullable: true })
@@ -32,7 +38,11 @@ export class Account {
   @Column({ name: "last_login", type: "datetime", nullable: true })
   lastLogin!: Date | null;
 
-  @Column({ name: "created_at", type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+  @Column({
+    name: "created_at",
+    type: "datetime",
+    default: () => "CURRENT_TIMESTAMP",
+  })
   createdAt!: Date;
 
   @Column({
