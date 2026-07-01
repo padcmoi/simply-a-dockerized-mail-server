@@ -74,7 +74,7 @@ const { t } = useI18n();
         </p>
         <ul class="divide-y divide-default">
           <li v-for="row in recent" :key="row['message-id']" class="flex items-center justify-between gap-2 py-1.5 text-xs">
-            <span class="truncate text-muted min-w-0 flex-1">{{ row.sender_smtp }}</span>
+            <span class="truncate text-muted min-w-0 flex-1">{{ row.rcpt_smtp?.[0] ?? row.sender_smtp }}</span>
             <UBadge :color="rspamdActionColor(row.action)" variant="subtle" size="xs" class="shrink-0">
               {{ row.action }}
             </UBadge>
