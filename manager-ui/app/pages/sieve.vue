@@ -10,9 +10,9 @@ interface Reject {
 
 const items = ref<Reject[]>([]);
 const loading = ref(false);
-const form = reactive({ sender: "" });
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
+const form = reactive({ sender: "" });
 
 const columns = computed(() => [
   { accessorKey: "sender", header: t("sieve.table.sender") },

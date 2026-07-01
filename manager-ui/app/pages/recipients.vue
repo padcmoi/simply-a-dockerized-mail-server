@@ -16,9 +16,9 @@ interface Domain {
 const domains = ref<Domain[]>([]);
 const items = ref<Recipient[]>([]);
 const loading = ref(false);
-const form = reactive({ domainId: 0, localPart: "", password: "", quota: 524288000 });
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
+const form = reactive({ domainId: 0, localPart: "", password: "", quota: 524288000 });
 
 const columns = computed(() => [
   { accessorKey: "email", header: t("recipients.table.address") },

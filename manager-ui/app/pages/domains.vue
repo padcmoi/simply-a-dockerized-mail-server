@@ -19,9 +19,9 @@ const MB = 1024 * 1024;
 const items = ref<Domain[]>([]);
 const disk = ref<Disk | null>(null);
 const loading = ref(false);
-const form = reactive({ domain: "", active: true, quotaMb: 0 });
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
+const form = reactive({ domain: "", active: true, quotaMb: 0 });
 
 const assignableMb = computed(() => (disk.value ? Math.floor(disk.value.assignableBytes / MB) : 0));
 const totalGb = computed(() => (disk.value ? (disk.value.totalBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));

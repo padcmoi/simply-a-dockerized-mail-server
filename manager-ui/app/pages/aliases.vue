@@ -15,9 +15,9 @@ interface Domain {
 const domains = ref<Domain[]>([]);
 const items = ref<Alias[]>([]);
 const loading = ref(false);
-const form = reactive({ domainId: 0, localPart: "", destination: "" });
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
+const form = reactive({ domainId: 0, localPart: "", destination: "" });
 
 const columns = computed(() => [
   { accessorKey: "source", header: t("aliases.table.from") },
