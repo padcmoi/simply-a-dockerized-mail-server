@@ -37,7 +37,11 @@ async function submit() {
   try {
     await $fetch(`/api/v1/accounts/invite/${token.value}/accept`, {
       method: "POST",
-      body: { username: username.value, name: name.value || undefined, password: password.value },
+      body: {
+        username: username.value,
+        name: name.value || undefined,
+        password: password.value,
+      },
     });
     done.value = true;
   } catch (e) {

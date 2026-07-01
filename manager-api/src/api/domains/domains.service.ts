@@ -17,9 +17,12 @@ export class DomainsService {
   private readonly log = new Logger(DomainsService.name);
 
   constructor(
-    @InjectRepository(VirtualDomain) private readonly repo: Repository<VirtualDomain>,
-    @InjectRepository(VirtualUser) private readonly users: Repository<VirtualUser>,
-    @InjectRepository(AccountDomainAcl) private readonly acl: Repository<AccountDomainAcl>,
+    @InjectRepository(VirtualDomain)
+    private readonly repo: Repository<VirtualDomain>,
+    @InjectRepository(VirtualUser)
+    private readonly users: Repository<VirtualUser>,
+    @InjectRepository(AccountDomainAcl)
+    private readonly acl: Repository<AccountDomainAcl>,
     private readonly dkim: DkimService
   ) {}
 
@@ -27,14 +30,19 @@ export class DomainsService {
     if (caller.isRoot) return this.repo.find({ order: { domain: "ASC" } });
     const rows = await this.acl.find({ where: { accountId: caller.id } });
     if (!rows.length) return [];
-    return this.repo.find({ where: { id: In(rows.map((r) => r.domainId)) }, order: { domain: "ASC" } });
+    return this.repo.find({
+      where: { id: In(rows.map((r) => r.domainId)) },
+      order: { domain: "ASC" },
+    });
   }
 
   async get(id: number, caller?: CallerCtx) {
     const found = await this.repo.findOne({ where: { id } });
     if (!found) throw new NotFoundException(`Domain #${id} not found`);
     if (caller && !caller.isRoot) {
-      const allowed = await this.acl.findOne({ where: { accountId: caller.id, domainId: id } });
+      const allowed = await this.acl.findOne({
+        where: { accountId: caller.id, domainId: id },
+      });
       if (!allowed) throw new NotFoundException(`Domain #${id} not found`);
     }
     return found;

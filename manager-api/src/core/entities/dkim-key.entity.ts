@@ -27,7 +27,12 @@ export class DkimKeyEntity {
   @Column({ name: "txt_record", type: "text" })
   txtRecord!: string;
 
-  @Column({ name: "private_key_path", type: "varchar", length: 512, nullable: true })
+  @Column({
+    name: "private_key_path",
+    type: "varchar",
+    length: 512,
+    nullable: true,
+  })
   privateKeyPath!: string | null;
 
   @Column({

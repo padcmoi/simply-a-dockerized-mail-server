@@ -29,8 +29,18 @@ export class PostfixService {
 
   async queueStats(domain?: string): Promise<PostfixQueueStats> {
     let available = true;
-    const total: QueueDirStats = { active: 0, deferred: 0, hold: 0, incoming: 0 };
-    const domainStats: QueueDirStats = { active: 0, deferred: 0, hold: 0, incoming: 0 };
+    const total: QueueDirStats = {
+      active: 0,
+      deferred: 0,
+      hold: 0,
+      incoming: 0,
+    };
+    const domainStats: QueueDirStats = {
+      active: 0,
+      deferred: 0,
+      hold: 0,
+      incoming: 0,
+    };
     const domainBuf = domain ? Buffer.from(`@${domain}`) : undefined;
 
     for (const dir of QUEUE_DIRS) {

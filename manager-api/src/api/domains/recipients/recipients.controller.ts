@@ -34,7 +34,8 @@ export class RecipientsController {
   @CreateRecipientDocs()
   async create(
     @Param("domainId", ParseIntPipe) domainId: number,
-    @Body(new ZodValidationPipe(createRecipientSchema)) body: CreateRecipientDto
+    @Body(new ZodValidationPipe(createRecipientSchema))
+    body: CreateRecipientDto
   ) {
     const domain = await this.svc.resolveDomain(domainId);
     return this.svc.create(body, domain);
@@ -45,7 +46,8 @@ export class RecipientsController {
   async update(
     @Param("domainId", ParseIntPipe) domainId: number,
     @Param("id", ParseIntPipe) id: number,
-    @Body(new ZodValidationPipe(updateRecipientSchema)) body: UpdateRecipientDto
+    @Body(new ZodValidationPipe(updateRecipientSchema))
+    body: UpdateRecipientDto
   ) {
     const domain = await this.svc.resolveDomain(domainId);
     return this.svc.update(id, body, domain);

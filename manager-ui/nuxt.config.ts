@@ -30,7 +30,11 @@ export default defineNuxtConfig({
       { code: "en_EN", name: "English", file: "en_EN.ts" },
       { code: "fr_FR", name: "Français", file: "fr_FR.ts" },
     ],
-    detectBrowserLanguage: { useCookie: true, cookieKey: "i18n_locale", redirectOn: "root" },
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: "i18n_locale",
+      redirectOn: "root",
+    },
   },
   ssr: true,
   css: ["~/assets/css/main.css"],
@@ -52,20 +56,30 @@ export default defineNuxtConfig({
   nitro: {
     routeRules: {
       "/api/v1/**": {
-        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/v1/**` },
+        proxy: {
+          to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/v1/**`,
+        },
       },
       // Swagger UI HTML + static assets (CSS/JS/icons served relative to /api/doc/).
       "/api/doc": {
-        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc` },
+        proxy: {
+          to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc`,
+        },
       },
       "/api/doc/**": {
-        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc/**` },
+        proxy: {
+          to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc/**`,
+        },
       },
       "/api/doc-json": {
-        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc-json` },
+        proxy: {
+          to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc-json`,
+        },
       },
       "/api/doc-yaml": {
-        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc-yaml` },
+        proxy: {
+          to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc-yaml`,
+        },
       },
     },
   },

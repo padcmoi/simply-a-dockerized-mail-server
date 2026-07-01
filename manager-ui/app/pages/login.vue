@@ -22,7 +22,11 @@ async function onSubmit() {
     await auth.login(state.username, state.password);
     await navigateTo("/dashboard");
   } catch (err) {
-    toast.add({ title: t("login.failed"), description: (err as Error).message, color: "error" });
+    toast.add({
+      title: t("login.failed"),
+      description: (err as Error).message,
+      color: "error",
+    });
   } finally {
     loading.value = false;
   }

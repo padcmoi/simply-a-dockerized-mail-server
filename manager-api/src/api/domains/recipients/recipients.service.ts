@@ -15,8 +15,10 @@ import { CreateRecipientDto, UpdateRecipientDto } from "./recipients.validation"
 @Injectable()
 export class RecipientsService {
   constructor(
-    @InjectRepository(VirtualUser) private readonly recipients: Repository<VirtualUser>,
-    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>
+    @InjectRepository(VirtualUser)
+    private readonly recipients: Repository<VirtualUser>,
+    @InjectRepository(VirtualDomain)
+    private readonly domains: Repository<VirtualDomain>
   ) {}
 
   // Resolve the parent domain from `:domainId` and return its `domain`

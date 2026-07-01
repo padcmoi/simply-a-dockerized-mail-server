@@ -72,7 +72,9 @@ onUnmounted(clearTimer);
         </p>
 
         <div v-else class="space-y-3">
-          <p class="text-sm text-muted text-center">{{ t("confirm.countdownHint") }}</p>
+          <p class="text-sm text-muted text-center">
+            {{ t("confirm.countdownHint") }}
+          </p>
           <div class="h-2 rounded-full overflow-hidden bg-accented">
             <div
               class="h-full bg-error rounded-full transition-[width] duration-1000 ease-linear"

@@ -23,7 +23,11 @@ export class VirtualAlias {
   @Column({ name: "destination", type: "varchar", length: 255 })
   destination!: string;
 
-  @Column({ name: "user_start_date", type: "date", default: () => "'1970-01-01'" })
+  @Column({
+    name: "user_start_date",
+    type: "date",
+    default: () => "'1970-01-01'",
+  })
   userStartDate!: string;
 
   @Column({ name: "user_end_date", type: "date", nullable: true })

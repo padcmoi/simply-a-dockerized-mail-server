@@ -49,19 +49,29 @@ async function create() {
   try {
     await call(`/domains/${domainStore.selected!.id}/recipients`, {
       method: "POST",
-      body: { localPart: form.localPart, password: form.password, quota: form.quota },
+      body: {
+        localPart: form.localPart,
+        password: form.password,
+        quota: form.quota,
+      },
     });
     form.localPart = "";
     form.password = "";
     await load();
     toast.add({ title: t("recipients.toast.created"), color: "success" });
   } catch (err) {
-    toast.add({ title: t("recipients.toast.createFailed"), description: (err as Error).message, color: "error" });
+    toast.add({
+      title: t("recipients.toast.createFailed"),
+      description: (err as Error).message,
+      color: "error",
+    });
   }
 }
 
 async function remove(row: Recipient) {
-  await call(`/domains/${domainStore.selected!.id}/recipients/${row.id}`, { method: "DELETE" });
+  await call(`/domains/${domainStore.selected!.id}/recipients/${row.id}`, {
+    method: "DELETE",
+  });
   await load();
 }
 

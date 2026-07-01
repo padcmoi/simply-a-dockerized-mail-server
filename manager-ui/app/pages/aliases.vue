@@ -55,12 +55,18 @@ async function create() {
     await load();
     toast.add({ title: t("aliases.toast.created"), color: "success" });
   } catch (err) {
-    toast.add({ title: t("aliases.toast.createFailed"), description: (err as Error).message, color: "error" });
+    toast.add({
+      title: t("aliases.toast.createFailed"),
+      description: (err as Error).message,
+      color: "error",
+    });
   }
 }
 
 async function remove(row: Alias) {
-  await call(`/domains/${domainStore.selected!.id}/aliases/${row.id}`, { method: "DELETE" });
+  await call(`/domains/${domainStore.selected!.id}/aliases/${row.id}`, {
+    method: "DELETE",
+  });
   await load();
 }
 

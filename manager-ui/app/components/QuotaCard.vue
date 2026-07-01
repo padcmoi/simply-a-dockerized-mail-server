@@ -1,6 +1,12 @@
 <script setup lang="ts">
 defineProps<{
-  item: { domain?: string; email?: string; bytes: string; messages: string; lastActivity: string };
+  item: {
+    domain?: string;
+    email?: string;
+    bytes: string;
+    messages: string;
+    lastActivity: string;
+  };
 }>();
 
 const { t } = useI18n();

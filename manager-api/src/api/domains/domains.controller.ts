@@ -14,7 +14,9 @@ import {
 import { DomainsService } from "./domains.service";
 import { CreateDomainDto, UpdateDomainDto, createDomainSchema, updateDomainSchema } from "./domains.validation";
 
-type AuthedRequest = Request & { user: { id: number; username: string; isRoot: boolean } };
+type AuthedRequest = Request & {
+  user: { id: number; username: string; isRoot: boolean };
+};
 
 @DomainsApi()
 @Controller({ path: "domains", version: "1" })

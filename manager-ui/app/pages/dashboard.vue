@@ -44,7 +44,9 @@ const stats = computed(() => [
     key: "domains",
     label: t("dashboard.stats.domains"),
     value: domains.value.length,
-    sub: t("dashboard.stats.activeCount", { count: domains.value.filter((d) => d.active).length }),
+    sub: t("dashboard.stats.activeCount", {
+      count: domains.value.filter((d) => d.active).length,
+    }),
     icon: "i-lucide-globe",
     color: "primary",
     to: "/domains",
@@ -53,7 +55,9 @@ const stats = computed(() => [
     key: "recipients",
     label: t("dashboard.stats.recipients"),
     value: recipients.value.length,
-    sub: t("dashboard.stats.activeCount", { count: recipients.value.filter((r) => r.active).length }),
+    sub: t("dashboard.stats.activeCount", {
+      count: recipients.value.filter((r) => r.active).length,
+    }),
     icon: "i-lucide-users",
     color: "info",
     to: "/recipients",
@@ -71,7 +75,9 @@ const stats = computed(() => [
     key: "rejects",
     label: t("dashboard.stats.blockedSenders"),
     value: rejects.value.length,
-    sub: t("dashboard.stats.enabledCount", { count: rejects.value.filter((r) => r.enabled).length }),
+    sub: t("dashboard.stats.enabledCount", {
+      count: rejects.value.filter((r) => r.enabled).length,
+    }),
     icon: "i-lucide-shield-x",
     color: "warning",
     to: "/sieve",
@@ -155,7 +161,9 @@ onMounted(load);
 
       <UCard>
         <template #header>
-          <h2 class="font-semibold">{{ t("dashboard.chart.recipientsPerDomain") }}</h2>
+          <h2 class="font-semibold">
+            {{ t("dashboard.chart.recipientsPerDomain") }}
+          </h2>
         </template>
         <DomainBarChart :items="recipientsPerDomain" />
       </UCard>
@@ -190,7 +198,9 @@ onMounted(load);
             </div>
             <div class="min-w-0 flex-1">
               <p class="font-medium truncate">{{ d.domain }}</p>
-              <p class="text-xs text-muted">{{ t("dashboard.recent.quotaLabel", { value: d.quota }) }}</p>
+              <p class="text-xs text-muted">
+                {{ t("dashboard.recent.quotaLabel", { value: d.quota }) }}
+              </p>
             </div>
             <UBadge :color="d.active ? 'success' : 'neutral'" variant="subtle">
               {{ d.active ? t("common.active") : t("common.inactive") }}
@@ -202,7 +212,9 @@ onMounted(load);
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h2 class="font-semibold">{{ t("dashboard.recent.recipients") }}</h2>
+            <h2 class="font-semibold">
+              {{ t("dashboard.recent.recipients") }}
+            </h2>
             <UButton to="/recipients" variant="link" size="xs" trailing-icon="i-lucide-arrow-right">
               {{ t("common.viewAll") }}
             </UButton>

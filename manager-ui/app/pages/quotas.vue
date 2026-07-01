@@ -80,7 +80,9 @@ onMounted(load);
     </UCard>
 
     <div class="lg:hidden space-y-3">
-      <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">{{ t("quotas.perDomain") }}</h2>
+      <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
+        {{ t("quotas.perDomain") }}
+      </h2>
       <div v-if="loading" class="flex justify-center py-8">
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>
@@ -96,7 +98,9 @@ onMounted(load);
     </UCard>
 
     <div class="lg:hidden space-y-3">
-      <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">{{ t("quotas.perRecipient") }}</h2>
+      <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
+        {{ t("quotas.perRecipient") }}
+      </h2>
       <div v-if="loading" class="flex justify-center py-8">
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>

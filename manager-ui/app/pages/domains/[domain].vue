@@ -8,8 +8,7 @@ const {
   aliases,
   topMailboxes,
   dkimKeys,
-  rspamd,
-  rspamdUnavailable,
+  rspamdHistory,
   postfixQueue,
   loading,
   dkimLoading,
@@ -38,7 +37,9 @@ const {
       <div class="flex items-center gap-3 min-w-0">
         <UIcon name="i-lucide-globe" class="text-primary shrink-0 text-xl" />
         <div class="min-w-0">
-          <h2 class="text-lg font-semibold truncate">{{ domain?.domain ?? "..." }}</h2>
+          <h2 class="text-lg font-semibold truncate">
+            {{ domain?.domain ?? "..." }}
+          </h2>
           <p class="text-xs text-muted">{{ $t("domains.alertTitle") }}</p>
         </div>
         <UBadge v-if="domain" :color="domain.active ? 'success' : 'neutral'" variant="subtle">
@@ -70,9 +71,13 @@ const {
           <div class="min-w-0">
             <p class="text-sm text-muted">{{ $t("nav.recipients") }}</p>
             <p class="text-3xl font-semibold mt-1">{{ recipients.length }}</p>
-            <p class="text-xs text-muted mt-1">{{ $t("dashboard.stats.activeCount", { count: activeRecipients }) }}</p>
+            <p class="text-xs text-muted mt-1">
+              {{ $t("dashboard.stats.activeCount", { count: activeRecipients }) }}
+            </p>
           </div>
-          <div class="rounded-lg p-2 bg-elevated"><UIcon name="i-lucide-users" class="text-2xl text-info" /></div>
+          <div class="rounded-lg p-2 bg-elevated">
+            <UIcon name="i-lucide-users" class="text-2xl text-info" />
+          </div>
         </NuxtLink>
       </UCard>
 
@@ -81,20 +86,30 @@ const {
           <div class="min-w-0">
             <p class="text-sm text-muted">{{ $t("nav.aliases") }}</p>
             <p class="text-3xl font-semibold mt-1">{{ aliases.length }}</p>
-            <p class="text-xs text-muted mt-1">{{ $t("dashboard.stats.forwarders") }}</p>
+            <p class="text-xs text-muted mt-1">
+              {{ $t("dashboard.stats.forwarders") }}
+            </p>
           </div>
-          <div class="rounded-lg p-2 bg-elevated"><UIcon name="i-lucide-at-sign" class="text-2xl text-success" /></div>
+          <div class="rounded-lg p-2 bg-elevated">
+            <UIcon name="i-lucide-at-sign" class="text-2xl text-success" />
+          </div>
         </NuxtLink>
       </UCard>
 
       <UCard>
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-sm text-muted">{{ $t("domainDashboard.messages") }}</p>
+            <p class="text-sm text-muted">
+              {{ $t("domainDashboard.messages") }}
+            </p>
             <p class="text-3xl font-semibold mt-1">{{ messagesCount }}</p>
-            <p class="text-xs text-muted mt-1">{{ $t("domainDashboard.activity") }}</p>
+            <p class="text-xs text-muted mt-1">
+              {{ $t("domainDashboard.activity") }}
+            </p>
           </div>
-          <div class="rounded-lg p-2 bg-elevated"><UIcon name="i-lucide-mail" class="text-2xl text-warning" /></div>
+          <div class="rounded-lg p-2 bg-elevated">
+            <UIcon name="i-lucide-mail" class="text-2xl text-warning" />
+          </div>
         </div>
       </UCard>
     </div>
@@ -140,7 +155,9 @@ const {
 
       <UCard>
         <template #header>
-          <h2 class="font-semibold">{{ $t("domainDashboard.topMailboxes.title") }}</h2>
+          <h2 class="font-semibold">
+            {{ $t("domainDashboard.topMailboxes.title") }}
+          </h2>
         </template>
         <p v-if="topMailboxes.length === 0" class="text-sm text-muted text-center py-4">
           {{ $t("domainDashboard.topMailboxes.noData") }}
@@ -174,7 +191,7 @@ const {
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <DomainRspamdCard :rspamd="rspamd" :unavailable="rspamdUnavailable" />
+      <DomainRspamdCard :history="rspamdHistory" :loading="loading" />
       <DomainPostfixCard :queue="postfixQueue" />
     </div>
 

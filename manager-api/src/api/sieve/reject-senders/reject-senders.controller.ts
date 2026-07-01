@@ -28,7 +28,10 @@ export class RejectSendersController {
 
   @Post()
   @CreateRejectSenderDocs()
-  create(@Body(new ZodValidationPipe(createRejectSenderSchema)) body: CreateRejectSenderDto) {
+  create(
+    @Body(new ZodValidationPipe(createRejectSenderSchema))
+    body: CreateRejectSenderDto
+  ) {
     return this.svc.create(body.sender);
   }
 
@@ -36,7 +39,8 @@ export class RejectSendersController {
   @ToggleRejectSenderDocs()
   toggle(
     @Param("id", ParseIntPipe) id: number,
-    @Body(new ZodValidationPipe(toggleRejectSenderSchema)) body: ToggleRejectSenderDto
+    @Body(new ZodValidationPipe(toggleRejectSenderSchema))
+    body: ToggleRejectSenderDto
   ) {
     return this.svc.toggle(id, body.enabled);
   }

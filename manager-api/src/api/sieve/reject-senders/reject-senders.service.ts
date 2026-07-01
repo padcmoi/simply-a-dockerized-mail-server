@@ -5,7 +5,10 @@ import { SieveRejectSender } from "../../../core/entities/sieve-reject-sender.en
 
 @Injectable()
 export class RejectSendersService {
-  constructor(@InjectRepository(SieveRejectSender) private readonly repo: Repository<SieveRejectSender>) {}
+  constructor(
+    @InjectRepository(SieveRejectSender)
+    private readonly repo: Repository<SieveRejectSender>
+  ) {}
 
   list() {
     return this.repo.find({ order: { sender: "ASC" } });

@@ -38,7 +38,11 @@ export class VirtualUser {
   @Column({ name: "gid", type: "char", length: 15, default: "vmail" })
   gid!: string;
 
-  @Column({ name: "user_start_date", type: "date", default: () => "'1970-01-01'" })
+  @Column({
+    name: "user_start_date",
+    type: "date",
+    default: () => "'1970-01-01'",
+  })
   userStartDate!: string;
 
   @Column({ name: "user_end_date", type: "date", nullable: true })

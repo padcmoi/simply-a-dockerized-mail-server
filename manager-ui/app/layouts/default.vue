@@ -6,16 +6,33 @@ import { useDomainStore } from "~/stores/domain";
 const open = ref(true);
 
 const globalNavItems = computed<NavigationMenuItem[]>(() => [
-  { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard" },
+  {
+    label: t("nav.dashboard"),
+    icon: "i-lucide-layout-dashboard",
+    to: "/dashboard",
+  },
   { label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains" },
+  { label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/rspamd" },
   { label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" },
-  ...(auth.session?.isRoot ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts" }] : []),
+  ...(auth.session?.isRoot
+    ? [
+        {
+          label: t("nav.accounts"),
+          icon: "i-lucide-shield-check",
+          to: "/accounts",
+        },
+      ]
+    : []),
 ]);
 
 const domainNavItems = computed<NavigationMenuItem[]>(() => {
   if (!domainStore.selected) return [];
   return [
-    { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: `/domains/${domainStore.selected.domain}` },
+    {
+      label: t("nav.dashboard"),
+      icon: "i-lucide-layout-dashboard",
+      to: `/domains/${domainStore.selected.domain}`,
+    },
     { label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients" },
     { label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" },
     { label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" },
@@ -96,6 +113,7 @@ const headerTitle = computed(() => {
     "/recipients": t("nav.recipients"),
     "/aliases": t("nav.aliases"),
     "/quotas": t("nav.quotas"),
+    "/rspamd": t("nav.rspamd"),
     "/sieve": t("nav.sieveLong"),
     "/accounts": t("nav.accounts"),
     "/profile": t("nav.profile"),
@@ -106,7 +124,11 @@ const headerTitle = computed(() => {
 
 const userAvatar = computed(() => {
   const url = auth.session?.avatarUrl;
-  if (url) return { src: url, alt: auth.session?.name ?? auth.session?.username ?? "user" };
+  if (url)
+    return {
+      src: url,
+      alt: auth.session?.name ?? auth.session?.username ?? "user",
+    };
   return { alt: auth.session?.name ?? auth.session?.username ?? "?" };
 });
 

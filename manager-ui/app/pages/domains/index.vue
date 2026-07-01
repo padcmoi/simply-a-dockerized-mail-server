@@ -52,7 +52,11 @@ async function load() {
     items.value = list;
     disk.value = d;
   } catch (err) {
-    toast.add({ title: t("domains.toast.loadFailed"), description: (err as Error).message, color: "error" });
+    toast.add({
+      title: t("domains.toast.loadFailed"),
+      description: (err as Error).message,
+      color: "error",
+    });
   } finally {
     loading.value = false;
   }
@@ -66,14 +70,22 @@ async function create() {
   try {
     await call("/domains", {
       method: "POST",
-      body: { domain: form.domain, active: form.active, quota: form.quotaMb * MB },
+      body: {
+        domain: form.domain,
+        active: form.active,
+        quota: form.quotaMb * MB,
+      },
     });
     form.domain = "";
     form.quotaMb = 0;
     await load();
     toast.add({ title: t("domains.toast.added"), color: "success" });
   } catch (err) {
-    toast.add({ title: t("domains.toast.addFailed"), description: (err as Error).message, color: "error" });
+    toast.add({
+      title: t("domains.toast.addFailed"),
+      description: (err as Error).message,
+      color: "error",
+    });
   }
 }
 

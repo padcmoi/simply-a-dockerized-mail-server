@@ -44,12 +44,19 @@ async function create() {
     await load();
     toast.add({ title: t("sieve.toast.blocked"), color: "success" });
   } catch (err) {
-    toast.add({ title: t("sieve.toast.failed"), description: (err as Error).message, color: "error" });
+    toast.add({
+      title: t("sieve.toast.failed"),
+      description: (err as Error).message,
+      color: "error",
+    });
   }
 }
 
 async function toggle(id: number, enabled: number) {
-  await call(`/sieve/reject-senders/${id}`, { method: "PATCH", body: { enabled: !enabled } });
+  await call(`/sieve/reject-senders/${id}`, {
+    method: "PATCH",
+    body: { enabled: !enabled },
+  });
   await load();
 }
 

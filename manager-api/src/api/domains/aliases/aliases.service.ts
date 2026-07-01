@@ -8,8 +8,10 @@ import { CreateAliasDto, UpdateAliasDto } from "./aliases.validation";
 @Injectable()
 export class AliasesService {
   constructor(
-    @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>,
-    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>
+    @InjectRepository(VirtualAlias)
+    private readonly aliases: Repository<VirtualAlias>,
+    @InjectRepository(VirtualDomain)
+    private readonly domains: Repository<VirtualDomain>
   ) {}
 
   async resolveDomain(domainId: number): Promise<string> {

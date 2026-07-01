@@ -10,9 +10,12 @@ import { GetDomainQuotasDocs, QuotasApi } from "./quotas.openapi";
 @Controller({ path: "domains/:domainId/quotas", version: "1" })
 export class QuotasController {
   constructor(
-    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
-    @InjectRepository(VirtualQuotaDomain) private readonly domainQuotas: Repository<VirtualQuotaDomain>,
-    @InjectRepository(VirtualQuotaUser) private readonly recipientQuotas: Repository<VirtualQuotaUser>
+    @InjectRepository(VirtualDomain)
+    private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(VirtualQuotaDomain)
+    private readonly domainQuotas: Repository<VirtualQuotaDomain>,
+    @InjectRepository(VirtualQuotaUser)
+    private readonly recipientQuotas: Repository<VirtualQuotaUser>
   ) {}
 
   private async resolveDomain(domainId: number): Promise<string> {

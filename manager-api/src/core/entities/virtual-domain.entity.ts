@@ -19,7 +19,11 @@ export class VirtualDomain {
   @Column({ name: "active", type: "tinyint", width: 1, default: 0 })
   active!: number;
 
-  @Column({ name: "user_start_date", type: "date", default: () => "'1970-01-01'" })
+  @Column({
+    name: "user_start_date",
+    type: "date",
+    default: () => "'1970-01-01'",
+  })
   userStartDate!: string;
 
   @Column({ name: "user_end_date", type: "date", nullable: true })
