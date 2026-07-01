@@ -3,3 +3,7 @@
 if git diff --cached --name-only | grep -qE '^(manager-api|manager-ui)/'; then
   ./test-node.sh
 fi
+
+if git diff --cached --name-only | grep -qE '^(images|tests)/'; then
+  ./test-mailservers.sh
+fi
