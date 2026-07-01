@@ -20,7 +20,7 @@ async function onSubmit() {
   loading.value = true;
   try {
     await auth.login(state.username, state.password);
-    await navigateTo("/domains");
+    await navigateTo("/dashboard");
   } catch (err) {
     toast.add({ title: t("login.failed"), description: (err as Error).message, color: "error" });
   } finally {

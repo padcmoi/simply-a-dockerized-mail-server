@@ -2,7 +2,7 @@
 const emit = defineEmits<{ delete: [] }>();
 
 defineProps<{
-  item: { id: number; email: string; domain: string; quota: string; active: number };
+  item: { id: number; email: string; quota: string; active: number };
 }>();
 
 const { t } = useI18n();
@@ -17,10 +17,6 @@ const { t } = useI18n();
       </UBadge>
     </div>
     <div class="mt-2 space-y-1 text-sm">
-      <div class="flex gap-2">
-        <span class="text-muted w-24 shrink-0">{{ t("recipients.table.domain") }}</span>
-        <span>{{ item.domain }}</span>
-      </div>
       <div class="flex gap-2">
         <span class="text-muted w-24 shrink-0">{{ t("recipients.table.quota") }}</span>
         <span>{{ item.quota }}</span>

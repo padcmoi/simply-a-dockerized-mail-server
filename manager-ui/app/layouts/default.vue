@@ -1,15 +1,28 @@
 <script setup lang="ts">
 import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { useAuthStore } from "~/stores/auth";
+import { useDomainStore } from "~/stores/domain";
 
 const open = ref(true);
 
-const navItems = computed<NavigationMenuItem[]>(() => [
+const domainStore = useDomainStore();
+
+const globalNavItems = computed<NavigationMenuItem[]>(() => [
   { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard" },
   { label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains" },
-  { label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients" },
-  { label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" },
-  { label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" },
+]);
+
+const domainNavItems = computed<NavigationMenuItem[]>(() => {
+  if (!domainStore.selected) return [];
+  return [
+    { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: `/domains/${domainStore.selected.domain}` },
+    { label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients" },
+    { label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" },
+    { label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" },
+  ];
+});
+
+const bottomNavItems = computed<NavigationMenuItem[]>(() => [
   { label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" },
   ...(auth.session?.isRoot ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts" }] : []),
 ]);
@@ -81,6 +94,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [
 ]);
 
 const headerTitle = computed(() => {
+  if (route.path.startsWith("/domains/") && domainStore.selected) return domainStore.selected.domain;
   const map: Record<string, string> = {
     "/dashboard": t("nav.dashboard"),
     "/domains": t("nav.domains"),
@@ -108,6 +122,11 @@ const auth = useAuthStore();
 
 function toggleSidebar() {
   open.value = !open.value;
+}
+
+function closeDomain() {
+  domainStore.clear();
+  navigateTo("/domains");
 }
 </script>
 
@@ -137,7 +156,48 @@ function toggleSidebar() {
       </template>
 
       <template #default="{ state }">
-        <UNavigationMenu :key="state" :items="navItems" orientation="vertical" :ui="{ link: 'p-1.5 overflow-hidden' }" />
+        <UNavigationMenu
+          :key="`global-${state}`"
+          :items="globalNavItems"
+          orientation="vertical"
+          :ui="{ link: 'p-1.5 overflow-hidden' }"
+        />
+
+        <template v-if="domainStore.selected">
+          <USeparator class="my-2" />
+          <div class="flex items-center gap-1.5 px-1.5 py-1 min-w-0">
+            <NuxtLink :to="`/domains/${domainStore.selected.domain}`" class="flex items-center gap-1.5 min-w-0 flex-1 group">
+              <UIcon name="i-lucide-folder-open" class="text-primary shrink-0 size-4" />
+              <span v-if="open" class="text-xs font-semibold truncate text-muted group-hover:text-primary transition-colors">
+                {{ domainStore.selected.domain }}
+              </span>
+            </NuxtLink>
+            <UButton
+              v-if="open"
+              icon="i-lucide-x"
+              size="2xs"
+              color="neutral"
+              variant="ghost"
+              square
+              class="shrink-0"
+              @click="closeDomain"
+            />
+          </div>
+          <UNavigationMenu
+            :key="`domain-${state}`"
+            :items="domainNavItems"
+            orientation="vertical"
+            :ui="{ link: 'p-1.5 overflow-hidden' }"
+          />
+        </template>
+
+        <USeparator class="my-2" />
+        <UNavigationMenu
+          :key="`bottom-${state}`"
+          :items="bottomNavItems"
+          orientation="vertical"
+          :ui="{ link: 'p-1.5 overflow-hidden' }"
+        />
       </template>
 
       <template #footer>
@@ -173,9 +233,9 @@ function toggleSidebar() {
         <h1 class="font-semibold truncate">{{ headerTitle }}</h1>
       </div>
 
-      <div class="flex-1 min-w-0">
+      <BreadcrumbProvider>
         <slot />
-      </div>
+      </BreadcrumbProvider>
     </div>
   </div>
 </template>

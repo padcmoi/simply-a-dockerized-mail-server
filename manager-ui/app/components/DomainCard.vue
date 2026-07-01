@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const emit = defineEmits<{ delete: [] }>();
+const emit = defineEmits<{ delete: []; open: [] }>();
 
 const props = defineProps<{
   item: { id: number; domain: string; quota: string; active: number };
@@ -33,7 +33,10 @@ const { t } = useI18n();
         <span>{{ quotaMb }} Mo</span>
       </div>
     </div>
-    <div class="mt-3 pt-3 border-t border-default flex justify-end">
+    <div class="mt-3 pt-3 border-t border-default flex justify-between gap-2">
+      <UButton icon="i-lucide-arrow-right" size="sm" color="primary" variant="outline" @click="emit('open')">
+        {{ t("common.manage") }}
+      </UButton>
       <UButton icon="i-lucide-trash-2" size="sm" color="error" variant="outline" @click="emit('delete')">
         {{ t("common.delete") }}
       </UButton>
