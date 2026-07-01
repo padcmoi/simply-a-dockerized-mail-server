@@ -23,7 +23,15 @@ export const CreateDomainDocs = () =>
   );
 
 export const UpdateDomainDocs = () =>
-  applyDecorators(ApiOperation({ summary: "Update quota / active flag / owner / end-date of a domain" }));
+  applyDecorators(
+    ApiOperation({
+      summary: "Update quota / active flag / owner / end-date of a domain",
+    })
+  );
 
 export const RemoveDomainDocs = () =>
-  applyDecorators(ApiOperation({ summary: "Delete a domain (cascades users, aliases, quota rows, DKIM keys)" }));
+  applyDecorators(
+    ApiOperation({
+      summary: "Delete a domain (cascades users, aliases, quota rows, DKIM keys)",
+    })
+  );
