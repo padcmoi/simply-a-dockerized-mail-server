@@ -67,3 +67,8 @@ services:
     extends:
       file: ./docker/services/manager-ui.dev.yml
       service: manager-ui
+
+  roundcube:
+    extends:
+      file: ./docker/services/roundcube.yml
+      service: roundcube
