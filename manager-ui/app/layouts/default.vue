@@ -5,11 +5,11 @@ import { useDomainStore } from "~/stores/domain";
 
 const open = ref(true);
 
-const domainStore = useDomainStore();
-
 const globalNavItems = computed<NavigationMenuItem[]>(() => [
   { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard" },
   { label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains" },
+  { label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" },
+  ...(auth.session?.isRoot ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts" }] : []),
 ]);
 
 const domainNavItems = computed<NavigationMenuItem[]>(() => {
@@ -21,11 +21,6 @@ const domainNavItems = computed<NavigationMenuItem[]>(() => {
     { label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" },
   ];
 });
-
-const bottomNavItems = computed<NavigationMenuItem[]>(() => [
-  { label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" },
-  ...(auth.session?.isRoot ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts" }] : []),
-]);
 
 const userItems = computed<DropdownMenuItem[][]>(() => [
   [{ label: t("nav.profile"), icon: "i-lucide-user", to: "/profile" }],
@@ -115,6 +110,7 @@ const userAvatar = computed(() => {
   return { alt: auth.session?.name ?? auth.session?.username ?? "?" };
 });
 
+const domainStore = useDomainStore();
 const { t, locale, locales, setLocale } = useI18n();
 const route = useRoute();
 const colorMode = useColorMode();
@@ -175,7 +171,7 @@ function closeDomain() {
             <UButton
               v-if="open"
               icon="i-lucide-x"
-              size="2xs"
+              size="xs"
               color="neutral"
               variant="ghost"
               square
@@ -190,14 +186,6 @@ function closeDomain() {
             :ui="{ link: 'p-1.5 overflow-hidden' }"
           />
         </template>
-
-        <USeparator class="my-2" />
-        <UNavigationMenu
-          :key="`bottom-${state}`"
-          :items="bottomNavItems"
-          orientation="vertical"
-          :ui="{ link: 'p-1.5 overflow-hidden' }"
-        />
       </template>
 
       <template #footer>

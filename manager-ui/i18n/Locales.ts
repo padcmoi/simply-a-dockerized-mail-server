@@ -270,4 +270,54 @@ export interface Locales {
       failed: string;
     };
   };
+  domainDashboard: {
+    disk: {
+      title: string;
+      used: string;
+      free: string;
+      allocated: string;
+      unlimited: string;
+    };
+    topMailboxes: {
+      title: string;
+      noData: string;
+    };
+    dkim: {
+      title: string;
+      noKey: string;
+      rotate: string;
+      copied: string;
+      toast: {
+        rotated: string;
+        rotateFailed: string;
+        deleted: string;
+        deleteFailed: string;
+      };
+    };
+    rspamd: {
+      title: string;
+      scanned: string;
+      spam: string;
+      ham: string;
+      greylist: string;
+      unavailable: string;
+    };
+    postfix: {
+      title: string;
+      active: string;
+      deferred: string;
+      hold: string;
+      incoming: string;
+      unavailable: string;
+      global: string;
+      forDomain: string;
+    };
+    blockedSenders: string;
+    messages: string;
+    activity: string;
+    autoRefresh: {
+      label: string;
+      off: string;
+    };
+  };
 }

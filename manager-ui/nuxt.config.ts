@@ -54,6 +54,19 @@ export default defineNuxtConfig({
       "/api/v1/**": {
         proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/v1/**` },
       },
+      // Swagger UI HTML + static assets (CSS/JS/icons served relative to /api/doc/).
+      "/api/doc": {
+        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc` },
+      },
+      "/api/doc/**": {
+        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc/**` },
+      },
+      "/api/doc-json": {
+        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc-json` },
+      },
+      "/api/doc-yaml": {
+        proxy: { to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/doc-yaml` },
+      },
     },
   },
 });

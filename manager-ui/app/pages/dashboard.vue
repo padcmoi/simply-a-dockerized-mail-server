@@ -1,8 +1,6 @@
 <script setup lang="ts">
 definePageMeta({});
 
-const { set: setBreadcrumb } = useBreadcrumb();
-
 interface Domain {
   id: number;
   domain: string;
@@ -94,6 +92,7 @@ const recipientsPerDomain = computed(() =>
     .slice(0, 8)
 );
 
+const { set: setBreadcrumb } = useBreadcrumb();
 const { t } = useI18n();
 const { call } = useApi();
 

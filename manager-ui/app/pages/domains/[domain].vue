@@ -1,134 +1,151 @@
 <script setup lang="ts">
 definePageMeta({});
 
-interface Domain {
-  id: number;
-  domain: string;
-  quota: string;
-  active: number;
-}
-interface Recipient {
-  id: number;
-  active: number;
-}
-interface Alias {
-  id: number;
-}
-interface QuotaPayload {
-  domain: { bytes: string; messages: string; lastActivity: string } | null;
-  recipients: { id: number; email: string; bytes: string }[];
-}
-
-const route = useRoute();
-const { call } = useApi();
-const { t } = useI18n();
-const domainStore = useDomainStore();
-const { set: setBreadcrumb } = useBreadcrumb();
-
-const domain = ref<Domain | null>(null);
-const recipients = ref<Recipient[]>([]);
-const aliases = ref<Alias[]>([]);
-const quota = ref<{ bytes: string; messages: string; lastActivity: string } | null>(null);
-const loading = ref(false);
-
-const domainFqdn = computed(() => String(route.params.domain));
-
-const activeRecipients = computed(() => recipients.value.filter((r) => r.active).length);
-const quotaGb = computed(() => {
-  const d = domain.value;
-  if (!d) return "0";
-  const bytes = Number(d.quota);
-  if (!Number.isFinite(bytes) || bytes <= 0) return t("domains.capacity.hint").split("(")[0].trim();
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-});
-const usedGb = computed(() => {
-  const bytes = Number(quota.value?.bytes ?? 0);
-  if (!Number.isFinite(bytes) || bytes <= 0) return "0 GB";
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-});
-
-watchEffect(() => {
-  setBreadcrumb([{ label: t("nav.domains"), to: "/domains" }, { label: domain.value?.domain ?? "..." }]);
-});
-
-async function load() {
-  loading.value = true;
-  try {
-    const domains = await call<Domain[]>("/domains");
-    const found = domains.find((d) => d.domain === domainFqdn.value) ?? null;
-    domain.value = found;
-    if (!found) return;
-    domainStore.select(found);
-    const [recs, als, quotaData] = await Promise.all([
-      call<Recipient[]>(`/domains/${found.id}/recipients`),
-      call<Alias[]>(`/domains/${found.id}/aliases`),
-      call<QuotaPayload>(`/domains/${found.id}/quotas`),
-    ]);
-    recipients.value = recs;
-    aliases.value = als;
-    quota.value = quotaData.domain;
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(load);
+const {
+  REFRESH_OPTIONS,
+  domain,
+  recipients,
+  aliases,
+  topMailboxes,
+  dkimKeys,
+  rspamd,
+  rspamdUnavailable,
+  postfixQueue,
+  loading,
+  dkimLoading,
+  refreshInterval,
+  activeRecipients,
+  usedBytes,
+  allocatedBytes,
+  freeBytes,
+  isUnlimited,
+  messagesCount,
+  diskChartData,
+  diskChartOptions,
+  barChartData,
+  barChartOptions,
+  barChartHeight,
+  load,
+  rotateDkim,
+  deleteDkim,
+  copyToClipboard,
+} = useDomainDashboard();
 </script>
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
-    <div class="flex items-center justify-between gap-2">
+    <div class="flex items-center justify-between gap-2 flex-wrap">
       <div class="flex items-center gap-3 min-w-0">
         <UIcon name="i-lucide-globe" class="text-primary shrink-0 text-xl" />
         <div class="min-w-0">
           <h2 class="text-lg font-semibold truncate">{{ domain?.domain ?? "..." }}</h2>
-          <p class="text-xs text-muted">{{ t("domains.alertTitle") }}</p>
+          <p class="text-xs text-muted">{{ $t("domains.alertTitle") }}</p>
         </div>
         <UBadge v-if="domain" :color="domain.active ? 'success' : 'neutral'" variant="subtle">
-          {{ domain.active ? t("common.active") : t("common.inactive") }}
+          {{ domain.active ? $t("common.active") : $t("common.inactive") }}
         </UBadge>
       </div>
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 text-xs text-muted">
+          <span class="hidden sm:block shrink-0">{{ $t("domainDashboard.autoRefresh.label") }}:</span>
+          <div class="flex gap-0.5">
+            <button
+              v-for="opt in REFRESH_OPTIONS"
+              :key="opt"
+              class="px-2 py-1 rounded text-xs font-medium transition-colors"
+              :class="refreshInterval === opt ? 'bg-primary text-white' : 'bg-elevated text-muted hover:text-default'"
+              @click="refreshInterval = opt"
+            >
+              {{ opt === 0 ? $t("domainDashboard.autoRefresh.off") : `${opt}s` }}
+            </button>
+          </div>
+        </div>
+        <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+      </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <UCard :ui="{ root: 'transition hover:shadow-lg' }">
         <NuxtLink to="/recipients" class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-sm text-muted">{{ t("nav.recipients") }}</p>
+            <p class="text-sm text-muted">{{ $t("nav.recipients") }}</p>
             <p class="text-3xl font-semibold mt-1">{{ recipients.length }}</p>
-            <p class="text-xs text-muted mt-1">{{ t("dashboard.stats.activeCount", { count: activeRecipients }) }}</p>
+            <p class="text-xs text-muted mt-1">{{ $t("dashboard.stats.activeCount", { count: activeRecipients }) }}</p>
           </div>
-          <div class="rounded-lg p-2 bg-elevated">
-            <UIcon name="i-lucide-users" class="text-2xl text-info" />
-          </div>
+          <div class="rounded-lg p-2 bg-elevated"><UIcon name="i-lucide-users" class="text-2xl text-info" /></div>
         </NuxtLink>
       </UCard>
 
       <UCard :ui="{ root: 'transition hover:shadow-lg' }">
         <NuxtLink to="/aliases" class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-sm text-muted">{{ t("nav.aliases") }}</p>
+            <p class="text-sm text-muted">{{ $t("nav.aliases") }}</p>
             <p class="text-3xl font-semibold mt-1">{{ aliases.length }}</p>
-            <p class="text-xs text-muted mt-1">{{ t("dashboard.stats.forwarders") }}</p>
+            <p class="text-xs text-muted mt-1">{{ $t("dashboard.stats.forwarders") }}</p>
           </div>
-          <div class="rounded-lg p-2 bg-elevated">
-            <UIcon name="i-lucide-at-sign" class="text-2xl text-success" />
-          </div>
+          <div class="rounded-lg p-2 bg-elevated"><UIcon name="i-lucide-at-sign" class="text-2xl text-success" /></div>
         </NuxtLink>
       </UCard>
 
-      <UCard :ui="{ root: 'transition hover:shadow-lg' }">
-        <NuxtLink to="/quotas" class="flex items-start justify-between gap-3">
+      <UCard>
+        <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <p class="text-sm text-muted">{{ t("nav.quotas") }}</p>
-            <p class="text-3xl font-semibold mt-1">{{ usedGb }}</p>
-            <p class="text-xs text-muted mt-1">{{ t("domains.capacity.hint").split("(")[0].trim() }} {{ quotaGb }}</p>
+            <p class="text-sm text-muted">{{ $t("domainDashboard.messages") }}</p>
+            <p class="text-3xl font-semibold mt-1">{{ messagesCount }}</p>
+            <p class="text-xs text-muted mt-1">{{ $t("domainDashboard.activity") }}</p>
           </div>
-          <div class="rounded-lg p-2 bg-elevated">
-            <UIcon name="i-lucide-bar-chart-3" class="text-2xl text-primary" />
+          <div class="rounded-lg p-2 bg-elevated"><UIcon name="i-lucide-mail" class="text-2xl text-warning" /></div>
+        </div>
+      </UCard>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <UCard>
+        <template #header>
+          <h2 class="font-semibold">{{ $t("domainDashboard.disk.title") }}</h2>
+        </template>
+        <div class="flex flex-col sm:flex-row items-center gap-6">
+          <div class="relative shrink-0 w-36 h-36">
+            <ChartsDoughnutChart :data="diskChartData" :options="diskChartOptions" />
+            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span class="text-xs text-muted font-medium">{{ formatBytes(usedBytes) }}</span>
+              <span v-if="!isUnlimited" class="text-[10px] text-dimmed">/ {{ formatBytes(allocatedBytes) }}</span>
+              <span v-else class="text-[10px] text-dimmed">{{ $t("domainDashboard.disk.unlimited") }}</span>
+            </div>
           </div>
-        </NuxtLink>
+          <ul class="space-y-2 text-sm min-w-0">
+            <li class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-sm bg-error shrink-0" />
+              <span class="text-muted">{{ $t("domainDashboard.disk.used") }}</span>
+              <span class="font-medium ml-auto pl-4">{{ formatBytes(usedBytes) }}</span>
+            </li>
+            <template v-if="!isUnlimited">
+              <li class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-success shrink-0" />
+                <span class="text-muted">{{ $t("domainDashboard.disk.free") }}</span>
+                <span class="font-medium ml-auto pl-4">{{ formatBytes(freeBytes) }}</span>
+              </li>
+              <li class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-primary shrink-0" />
+                <span class="text-muted">{{ $t("domainDashboard.disk.allocated") }}</span>
+                <span class="font-medium ml-auto pl-4">{{ formatBytes(allocatedBytes) }}</span>
+              </li>
+            </template>
+            <li v-else>
+              <UBadge color="primary" variant="subtle">{{ $t("domainDashboard.disk.unlimited") }}</UBadge>
+            </li>
+          </ul>
+        </div>
+      </UCard>
+
+      <UCard>
+        <template #header>
+          <h2 class="font-semibold">{{ $t("domainDashboard.topMailboxes.title") }}</h2>
+        </template>
+        <p v-if="topMailboxes.length === 0" class="text-sm text-muted text-center py-4">
+          {{ $t("domainDashboard.topMailboxes.noData") }}
+        </p>
+        <ChartsBarChart v-else :data="barChartData" :options="barChartOptions" :height="barChartHeight" />
       </UCard>
     </div>
 
@@ -136,26 +153,37 @@ onMounted(load);
       <UCard :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }" @click="navigateTo('/recipients')">
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-users" class="text-info text-xl" />
-          <span class="font-medium">{{ t("nav.recipients") }}</span>
+          <span class="font-medium">{{ $t("nav.recipients") }}</span>
           <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
         </div>
       </UCard>
-
       <UCard :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }" @click="navigateTo('/aliases')">
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-at-sign" class="text-success text-xl" />
-          <span class="font-medium">{{ t("nav.aliases") }}</span>
+          <span class="font-medium">{{ $t("nav.aliases") }}</span>
           <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
         </div>
       </UCard>
-
       <UCard :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }" @click="navigateTo('/quotas')">
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-bar-chart-3" class="text-primary text-xl" />
-          <span class="font-medium">{{ t("nav.quotas") }}</span>
+          <span class="font-medium">{{ $t("nav.quotas") }}</span>
           <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
         </div>
       </UCard>
     </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <DomainRspamdCard :rspamd="rspamd" :unavailable="rspamdUnavailable" />
+      <DomainPostfixCard :queue="postfixQueue" />
+    </div>
+
+    <DomainDkimSection
+      :keys="dkimKeys"
+      :loading="dkimLoading"
+      @rotate="rotateDkim"
+      @delete="deleteDkim"
+      @copy="copyToClipboard"
+    />
   </div>
 </template>

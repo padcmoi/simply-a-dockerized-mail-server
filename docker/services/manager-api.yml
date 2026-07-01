@@ -13,6 +13,7 @@ services:
       MAIL_VOLUME_PATH: /var/mail
     volumes:
       - ${VOLUMES_PATH}/mail:/var/mail:ro
+      - ${VOLUMES_PATH}/postfix-spool:/var/spool/postfix:ro
     networks:
       mail:
         ipv4_address: 172.200.0.19
