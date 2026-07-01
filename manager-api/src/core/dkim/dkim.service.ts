@@ -26,7 +26,8 @@ export class DkimService {
 
   constructor(
     cfg: ConfigService,
-    @InjectRepository(DkimKeyEntity) private readonly repo: Repository<DkimKeyEntity>
+    @InjectRepository(DkimKeyEntity)
+    private readonly repo: Repository<DkimKeyEntity>
   ) {
     this.baseUrl = cfg.get<string>("OPENDKIM_API_URL") ?? "http://mail-opendkim:8080";
   }
@@ -36,7 +37,10 @@ export class DkimService {
   // it returns -- this self-heals drift (rows in the sidecar that never
   // made it into the DB, e.g. domains provisioned by an older codepath).
   async list(domain: string): Promise<DkimKey[]> {
-    const persisted = await this.repo.find({ where: { domain }, order: { selector: "ASC" } });
+    const persisted = await this.repo.find({
+      where: { domain },
+      order: { selector: "ASC" },
+    });
     if (persisted.length > 0) return persisted.map((r) => this.toDkimKey(r));
 
     const fromSidecar = await this.fetchFromSidecar(domain).catch(() => [] as DkimKey[]);
@@ -102,7 +106,12 @@ export class DkimService {
   }
 
   private toDkimKey(row: DkimKeyEntity): DkimKey {
-    return { domain: row.domain, selector: row.selector, dnsName: row.dnsName, txtRecord: row.txtRecord };
+    return {
+      domain: row.domain,
+      selector: row.selector,
+      dnsName: row.dnsName,
+      txtRecord: row.txtRecord,
+    };
   }
 
   private async req<T>(method: string, path: string, body?: unknown): Promise<T> {

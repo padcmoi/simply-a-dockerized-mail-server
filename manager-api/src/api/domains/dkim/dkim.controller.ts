@@ -9,14 +9,15 @@ import { DkimApi, ListDkimDocs, RemoveDkimDocs, RotateDkimDocs } from "./dkim.op
 @Controller({ path: "domains/:domainId/dkim", version: "1" })
 export class DkimController {
   constructor(
-    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(VirtualDomain)
+    private readonly domains: Repository<VirtualDomain>,
     private readonly dkim: DkimService
   ) {}
 
   private async resolveDomain(domainId: number): Promise<string> {
     const found = await this.domains.findOne({ where: { id: domainId } });
     if (!found) throw new NotFoundException(`Domain #${domainId} not found`);
-    return found.domain;
+    return found.domain.toLowerCase();
   }
 
   @Get()
@@ -30,6 +31,7 @@ export class DkimController {
   @RotateDkimDocs()
   async rotate(@Param("domainId", ParseIntPipe) domainId: number) {
     const domain = await this.resolveDomain(domainId);
+    await this.dkim.removeAll(domain).catch(() => undefined);
     return this.dkim.create(domain);
   }
 
