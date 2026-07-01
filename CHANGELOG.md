@@ -1,5 +1,6 @@
 # Changelog
 
+- fix(dev): pre-push hook reads git stdin to diff pushed commits instead of staged files
 - chore(dev): trigger test-mailservers.sh on pre-push when images/ or tests/ are modified
 - chore(dev): move CHANGELOG check to pre-commit, tests to pre-push
 - chore(dev): add Husky pre-commit hook running lint and typecheck on both packages
