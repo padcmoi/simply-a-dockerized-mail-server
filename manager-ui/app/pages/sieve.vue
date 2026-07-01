@@ -11,11 +11,14 @@ interface Reject {
 const items = ref<Reject[]>([]);
 const loading = ref(false);
 const form = reactive({ sender: "" });
+const confirmOpen = ref(false);
+const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
 const columns = computed(() => [
   { accessorKey: "sender", header: t("sieve.table.sender") },
   { accessorKey: "enabled", header: t("sieve.table.enabled") },
   { accessorKey: "createdAt", header: t("sieve.table.created") },
+  { id: "actions", header: "" },
 ]);
 
 const { t } = useI18n();
@@ -52,6 +55,16 @@ async function remove(id: number) {
   await load();
 }
 
+function requestDelete(fn: () => Promise<void>) {
+  pendingDeleteFn.value = fn;
+  confirmOpen.value = true;
+}
+
+async function onDeleteConfirmed() {
+  await pendingDeleteFn.value?.();
+  pendingDeleteFn.value = null;
+}
+
 onMounted(load);
 </script>
 
@@ -82,7 +95,14 @@ onMounted(load);
           <USwitch :model-value="!!row.original.enabled" @update:model-value="toggle(row.original.id, row.original.enabled)" />
         </template>
         <template #actions-cell="{ row }">
-          <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" square @click="remove(row.original.id)" />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="xs"
+            square
+            @click="requestDelete(() => remove(row.original.id))"
+          />
         </template>
       </UTable>
     </UCard>
@@ -97,9 +117,11 @@ onMounted(load);
         v-else
         :key="item.id"
         :item="item"
-        @delete="remove(item.id)"
+        @delete="requestDelete(() => remove(item.id))"
         @toggle="toggle(item.id, item.enabled)"
       />
     </div>
+
+    <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
   </div>
 </template>

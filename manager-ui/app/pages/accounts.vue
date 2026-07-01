@@ -33,6 +33,8 @@ const inviteSending = ref(false);
 const aclOpen = ref(false);
 const aclAccount = ref<ManagerAccount | null>(null);
 const aclSaving = ref(false);
+const confirmOpen = ref(false);
+const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
 const domainOptions = computed(() => allDomains.value.map((d) => ({ label: d.domain, value: d.id })));
 
@@ -76,7 +78,6 @@ async function sendInvite(data: { email: string; domainIds: number[] | null }) {
 }
 
 async function revokeAccount(acc: ManagerAccount) {
-  if (!confirm(t("accounts.confirmRevoke"))) return;
   try {
     await call(`/accounts/${acc.id}`, { method: "DELETE" });
     toast.add({ title: t("accounts.toast.revoked"), color: "success" });
@@ -84,6 +85,16 @@ async function revokeAccount(acc: ManagerAccount) {
   } catch {
     toast.add({ title: t("accounts.toast.revokeFailed"), color: "error" });
   }
+}
+
+function requestDelete(fn: () => Promise<void>) {
+  pendingDeleteFn.value = fn;
+  confirmOpen.value = true;
+}
+
+async function onDeleteConfirmed() {
+  await pendingDeleteFn.value?.();
+  pendingDeleteFn.value = null;
 }
 
 function openAcl(acc: ManagerAccount) {
@@ -185,7 +196,7 @@ onMounted(load);
               color="error"
               variant="ghost"
               :title="t('common.revoke')"
-              @click="revokeAccount(row.original)"
+              @click="requestDelete(() => revokeAccount(row.original))"
             />
           </div>
         </template>
@@ -203,7 +214,7 @@ onMounted(load);
         :key="acc.id"
         :account="acc"
         @open-acl="openAcl(acc)"
-        @revoke="revokeAccount(acc)"
+        @revoke="requestDelete(() => revokeAccount(acc))"
       />
     </div>
 
@@ -217,5 +228,7 @@ onMounted(load);
       :saving="aclSaving"
       @save="saveAcl"
     />
+
+    <ConfirmModal v-model:open="confirmOpen" :title="t('accounts.confirmRevoke')" @confirm="onDeleteConfirmed" />
   </div>
 </template>

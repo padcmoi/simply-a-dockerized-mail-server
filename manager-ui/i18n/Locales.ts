@@ -46,6 +46,12 @@ export interface Locales {
     revoke: string;
     manage: string;
   };
+  confirm: {
+    title: string;
+    description: string;
+    proceed: string;
+    countdownHint: string;
+  };
   login: {
     title: string;
     subtitle: string;

@@ -17,12 +17,15 @@ const domains = ref<Domain[]>([]);
 const items = ref<Recipient[]>([]);
 const loading = ref(false);
 const form = reactive({ domainId: 0, localPart: "", password: "", quota: 524288000 });
+const confirmOpen = ref(false);
+const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
 const columns = computed(() => [
   { accessorKey: "email", header: t("recipients.table.address") },
   { accessorKey: "domain", header: t("recipients.table.domain") },
   { accessorKey: "quota", header: t("recipients.table.quota") },
   { accessorKey: "active", header: t("recipients.table.active") },
+  { id: "actions", header: "" },
 ]);
 
 const { t } = useI18n();
@@ -70,6 +73,16 @@ async function remove(row: Recipient) {
   if (!id) return;
   await call(`/domains/${id}/recipients/${row.id}`, { method: "DELETE" });
   await load();
+}
+
+function requestDelete(fn: () => Promise<void>) {
+  pendingDeleteFn.value = fn;
+  confirmOpen.value = true;
+}
+
+async function onDeleteConfirmed() {
+  await pendingDeleteFn.value?.();
+  pendingDeleteFn.value = null;
 }
 
 onMounted(load);
@@ -123,7 +136,14 @@ onMounted(load);
           </UBadge>
         </template>
         <template #actions-cell="{ row }">
-          <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" square @click="remove(row.original)" />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="xs"
+            square
+            @click="requestDelete(() => remove(row.original))"
+          />
         </template>
       </UTable>
     </UCard>
@@ -133,7 +153,9 @@ onMounted(load);
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>
       <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
-      <RecipientCard v-for="item in items" v-else :key="item.id" :item="item" @delete="remove(item)" />
+      <RecipientCard v-for="item in items" v-else :key="item.id" :item="item" @delete="requestDelete(() => remove(item))" />
     </div>
+
+    <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
   </div>
 </template>

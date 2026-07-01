@@ -20,6 +20,8 @@ const items = ref<Domain[]>([]);
 const disk = ref<Disk | null>(null);
 const loading = ref(false);
 const form = reactive({ domain: "", active: true, quotaMb: 0 });
+const confirmOpen = ref(false);
+const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
 const assignableMb = computed(() => (disk.value ? Math.floor(disk.value.assignableBytes / MB) : 0));
 const totalGb = computed(() => (disk.value ? (disk.value.totalBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
@@ -32,6 +34,7 @@ const columns = computed(() => [
   { accessorKey: "domain", header: t("domains.table.domain") },
   { accessorKey: "active", header: t("domains.table.active") },
   { accessorKey: "quota", header: t("domains.table.quotaMb") },
+  { id: "actions", header: "" },
 ]);
 
 const { t } = useI18n();
@@ -73,6 +76,16 @@ async function create() {
 async function remove(id: number) {
   await call(`/domains/${id}`, { method: "DELETE" });
   await load();
+}
+
+function requestDelete(fn: () => Promise<void>) {
+  pendingDeleteFn.value = fn;
+  confirmOpen.value = true;
+}
+
+async function onDeleteConfirmed() {
+  await pendingDeleteFn.value?.();
+  pendingDeleteFn.value = null;
 }
 
 function quotaToMb(raw: string) {
@@ -161,7 +174,14 @@ onMounted(load);
           {{ quotaToMb(row.original.quota) }}
         </template>
         <template #actions-cell="{ row }">
-          <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" square @click="remove(row.original.id)" />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="xs"
+            square
+            @click="requestDelete(() => remove(row.original.id))"
+          />
         </template>
       </UTable>
     </UCard>
@@ -171,7 +191,9 @@ onMounted(load);
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>
       <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
-      <DomainCard v-for="item in items" v-else :key="item.id" :item="item" @delete="remove(item.id)" />
+      <DomainCard v-for="item in items" v-else :key="item.id" :item="item" @delete="requestDelete(() => remove(item.id))" />
     </div>
+
+    <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
   </div>
 </template>

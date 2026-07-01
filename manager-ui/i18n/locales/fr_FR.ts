@@ -48,6 +48,12 @@ export default {
     revoke: "Révoquer",
     manage: "Gérer",
   },
+  confirm: {
+    title: "Confirmer la suppression",
+    description: "Cette action est irréversible.",
+    proceed: "Supprimer",
+    countdownHint: "Annulez avant la fin du décompte pour stopper la suppression.",
+  },
   login: {
     title: "Gestion mail",
     subtitle: "Connectez-vous pour gérer les domaines, destinataires et alias.",

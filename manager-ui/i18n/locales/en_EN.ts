@@ -48,6 +48,12 @@ export default {
     revoke: "Revoke",
     manage: "Manage",
   },
+  confirm: {
+    title: "Confirm deletion",
+    description: "This action cannot be undone.",
+    proceed: "Delete",
+    countdownHint: "Cancel before the countdown ends to stop the deletion.",
+  },
   login: {
     title: "Mail Manager",
     subtitle: "Sign in to manage domains, recipients and aliases.",

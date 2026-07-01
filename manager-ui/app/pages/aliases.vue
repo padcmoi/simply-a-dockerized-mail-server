@@ -16,11 +16,14 @@ const domains = ref<Domain[]>([]);
 const items = ref<Alias[]>([]);
 const loading = ref(false);
 const form = reactive({ domainId: 0, localPart: "", destination: "" });
+const confirmOpen = ref(false);
+const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
 const columns = computed(() => [
   { accessorKey: "source", header: t("aliases.table.from") },
   { accessorKey: "destination", header: t("aliases.table.to") },
   { accessorKey: "domain", header: t("aliases.table.domain") },
+  { id: "actions", header: "" },
 ]);
 
 const { t } = useI18n();
@@ -70,6 +73,16 @@ async function remove(row: Alias) {
   await load();
 }
 
+function requestDelete(fn: () => Promise<void>) {
+  pendingDeleteFn.value = fn;
+  confirmOpen.value = true;
+}
+
+async function onDeleteConfirmed() {
+  await pendingDeleteFn.value?.();
+  pendingDeleteFn.value = null;
+}
+
 onMounted(load);
 </script>
 
@@ -112,7 +125,14 @@ onMounted(load);
     <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
       <UTable :columns="columns" :data="items" :loading="loading" sticky>
         <template #actions-cell="{ row }">
-          <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" square @click="remove(row.original)" />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="xs"
+            square
+            @click="requestDelete(() => remove(row.original))"
+          />
         </template>
       </UTable>
     </UCard>
@@ -122,7 +142,9 @@ onMounted(load);
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>
       <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
-      <AliasCard v-for="item in items" v-else :key="item.id" :item="item" @delete="remove(item)" />
+      <AliasCard v-for="item in items" v-else :key="item.id" :item="item" @delete="requestDelete(() => remove(item))" />
     </div>
+
+    <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
   </div>
 </template>
