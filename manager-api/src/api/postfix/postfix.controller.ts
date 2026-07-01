@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from "@nestjs/common";
+import { PostfixService } from "../../core/postfix/postfix.service";
 import { GetQueueDocs, PostfixApi } from "./postfix.openapi";
-import { PostfixService } from "./postfix.service";
 
 @PostfixApi()
 @Controller({ path: "postfix", version: "1" })
@@ -9,7 +9,7 @@ export class PostfixController {
 
   @GetQueueDocs()
   @Get("queue")
-  async queue(@Query("domain") domain?: string) {
+  queue(@Query("domain") domain?: string) {
     return this.postfix.queueStats(domain);
   }
 }

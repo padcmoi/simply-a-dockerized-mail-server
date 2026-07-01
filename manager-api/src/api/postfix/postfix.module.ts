@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
+import { PostfixCoreModule } from "../../core/postfix/postfix.module";
 import { PostfixController } from "./postfix.controller";
-import { PostfixService } from "./postfix.service";
 
-@Module({ controllers: [PostfixController], providers: [PostfixService] })
+@Module({ imports: [PostfixCoreModule], controllers: [PostfixController] })
 export class PostfixModule {}

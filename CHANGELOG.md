@@ -4,6 +4,7 @@ This is a custom changelog format, generated from git history.
 
 ## [Unreleased] - yyyy-mm-dd
 
+- refactor(api): move Rspamd and Postfix business logic to src/core, api layer is route-only (01-07-2026)
 - feat(api): Rspamd stats proxy endpoint with JWT auth (01-07-2026)
 - feat(api): Postfix spool queue stats endpoint with per-domain filter and JWT auth (01-07-2026)
 - chore(docker): bind-mount postfix spool into manager-api read-only (01-07-2026)
