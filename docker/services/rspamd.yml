@@ -1,6 +1,7 @@
 services:
   rspamd:
     container_name: mail-rspamd
+    hostname: mail-rspamd
     restart: unless-stopped
     build:
       context: ../../images/rspamd
