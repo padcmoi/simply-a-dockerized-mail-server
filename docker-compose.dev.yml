@@ -1,0 +1,24 @@
+name: simply-mailserver
+
+# Dev overlay for manager-api and manager-ui (hot-reload).
+# Pulls in the full stack via include, then replaces both manager services
+# with dev builds that mount source files as volumes.
+#
+# Usage (no antivirus):
+#   docker compose -f docker-compose.dev.yml up -d
+# Usage (with antivirus):
+#   docker compose -f docker-compose.dev.yml --profile antivirus up -d
+
+include:
+  - docker-compose.yml
+
+services:
+  manager-api:
+    extends:
+      file: ./docker/services/manager-api.dev.yml
+      service: manager-api
+
+  manager-ui:
+    extends:
+      file: ./docker/services/manager-ui.dev.yml
+      service: manager-ui
