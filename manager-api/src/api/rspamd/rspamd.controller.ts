@@ -1,7 +1,7 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Query } from "@nestjs/common";
 import type { RspamdStats } from "../../core/rspamd/rspamd.service";
 import { RspamdService } from "../../core/rspamd/rspamd.service";
-import { GetStatsDocs, RspamdApi } from "./rspamd.openapi";
+import { GetHistoryDocs, GetStatsDocs, RspamdApi } from "./rspamd.openapi";
 
 export type { RspamdStats };
 
@@ -14,5 +14,11 @@ export class RspamdController {
   @Get("stats")
   stats() {
     return this.rspamd.stats();
+  }
+
+  @GetHistoryDocs()
+  @Get("history")
+  history(@Query("domain") domain?: string, @Query("size") size?: string) {
+    return this.rspamd.history(domain, size ? parseInt(size, 10) : undefined);
   }
 }

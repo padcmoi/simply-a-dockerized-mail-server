@@ -36,19 +36,17 @@ export interface DkimKey {
   dnsName: string;
   txtRecord: string;
 }
-export interface RspamdActions {
-  reject: number;
-  "soft reject": number;
-  "rewrite subject": number;
-  "add header": number;
-  greylist: number;
-  "no action": number;
-}
-export interface RspamdStats {
-  scanned: number;
-  spam_count: number;
-  ham_count: number;
-  actions: RspamdActions;
+export interface RspamdHistoryRow {
+  "message-id": string;
+  ip: string;
+  action: string;
+  score: number;
+  required_score: number;
+  size: number;
+  unix_time: number;
+  sender_smtp: string;
+  rcpt_smtp: string[];
+  subject: string;
 }
 export interface QueueDirStats {
   active: number;
@@ -85,8 +83,7 @@ export function useDomainDashboard() {
   const quota = ref<QuotaDomain | null>(null);
   const topMailboxes = ref<MailboxEntry[]>([]);
   const dkimKeys = ref<DkimKey[]>([]);
-  const rspamd = ref<RspamdStats | null>(null);
-  const rspamdUnavailable = ref(false);
+  const rspamdHistory = ref<RspamdHistoryRow[]>([]);
   const postfixQueue = ref<PostfixQueueStats | null>(null);
   const loading = ref(false);
   const dkimLoading = ref(false);
@@ -105,7 +102,13 @@ export function useDomainDashboard() {
     if (isUnlimited.value) {
       return {
         labels: [t("domainDashboard.disk.used")],
-        datasets: [{ data: [usedBytes.value || 1], backgroundColor: [colors.value.primary], borderWidth: 0 }],
+        datasets: [
+          {
+            data: [usedBytes.value || 1],
+            backgroundColor: [colors.value.primary],
+            borderWidth: 0,
+          },
+        ],
       };
     }
     return {
@@ -241,19 +244,17 @@ export function useDomainDashboard() {
         quota: quotaByEmail.get(q.email) ?? "0",
       }));
       topMailboxes.value = [...enriched].sort((a, b) => occupancyRate(b) - occupancyRate(a)).slice(0, 10);
-      await Promise.all([loadDkim(found.id), loadRspamd(), loadPostfixQueue(found.domain)]);
+      await Promise.all([loadDkim(found.id), loadRspamdHistory(found.domain), loadPostfixQueue(found.domain)]);
     } finally {
       loading.value = false;
     }
   }
 
-  async function loadRspamd() {
+  async function loadRspamdHistory(fqdn: string) {
     try {
-      rspamd.value = await call<RspamdStats>("/rspamd/stats");
-      rspamdUnavailable.value = false;
+      rspamdHistory.value = await call<RspamdHistoryRow[]>(`/rspamd/history?domain=${encodeURIComponent(fqdn)}&size=200`);
     } catch {
-      rspamd.value = null;
-      rspamdUnavailable.value = true;
+      rspamdHistory.value = [];
     }
   }
 
@@ -282,9 +283,16 @@ export function useDomainDashboard() {
     try {
       await call(`/domains/${domain.value.id}/dkim/rotate`, { method: "POST" });
       await loadDkim(domain.value.id);
-      toast.add({ title: t("domainDashboard.dkim.toast.rotated"), color: "success" });
+      toast.add({
+        title: t("domainDashboard.dkim.toast.rotated"),
+        color: "success",
+      });
     } catch (err) {
-      toast.add({ title: t("domainDashboard.dkim.toast.rotateFailed"), description: (err as Error).message, color: "error" });
+      toast.add({
+        title: t("domainDashboard.dkim.toast.rotateFailed"),
+        description: (err as Error).message,
+        color: "error",
+      });
     } finally {
       dkimLoading.value = false;
     }
@@ -293,17 +301,31 @@ export function useDomainDashboard() {
   async function deleteDkim(selector: string) {
     if (!domain.value) return;
     try {
-      await call(`/domains/${domain.value.id}/dkim/${selector}`, { method: "DELETE" });
+      await call(`/domains/${domain.value.id}/dkim/${selector}`, {
+        method: "DELETE",
+      });
       await loadDkim(domain.value.id);
-      toast.add({ title: t("domainDashboard.dkim.toast.deleted"), color: "success" });
+      toast.add({
+        title: t("domainDashboard.dkim.toast.deleted"),
+        color: "success",
+      });
     } catch (err) {
-      toast.add({ title: t("domainDashboard.dkim.toast.deleteFailed"), description: (err as Error).message, color: "error" });
+      toast.add({
+        title: t("domainDashboard.dkim.toast.deleteFailed"),
+        description: (err as Error).message,
+        color: "error",
+      });
     }
   }
 
   async function copyToClipboard(text: string) {
     await navigator.clipboard.writeText(text);
-    toast.add({ title: t("domainDashboard.dkim.copied"), icon: "i-lucide-copy", color: "success", duration: 1500 });
+    toast.add({
+      title: t("domainDashboard.dkim.copied"),
+      icon: "i-lucide-copy",
+      color: "success",
+      duration: 1500,
+    });
   }
 
   onMounted(() => {
@@ -329,8 +351,7 @@ export function useDomainDashboard() {
     aliases,
     topMailboxes,
     dkimKeys,
-    rspamd,
-    rspamdUnavailable,
+    rspamdHistory,
     postfixQueue,
     loading,
     dkimLoading,

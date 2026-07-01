@@ -21,6 +21,7 @@ This is a custom changelog format, generated from git history.
 - feat(api): add OpenAPI decorators to all endpoints (01-07-2026)
 - feat(api): refresh-token rotation and profile update endpoint (01-07-2026)
 - feat(api): account domain ACL and invitation management (01-07-2026)
+- fix(rspamd): history_redis config, message-id field mapping, domain filter, dedicated UI page (01-07-2026)
 - fix(dev): pre-push hook reads pushed commits range from git stdin [e42f78f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e42f78f8fa915ce7e5884ff98d8796c770d823c7) (01-07-2026)
 - chore(dev): trigger test-mailservers.sh on pre-push for images/ and tests/ changes [b75856b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b75856bbca0596381bddf39fb5822e745589c00a) (01-07-2026)
 - chore(dev): move CHANGELOG check to pre-commit, tests to pre-push [4af78f6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4af78f6a932f1b0da59a6577cc386e5a1a0b802b) (01-07-2026)
