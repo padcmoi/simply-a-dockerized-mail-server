@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   lint-api:
-    name: manager-api · lint + typecheck
+    name: manager-api · lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -33,11 +33,31 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Lint
         run: pnpm lint
+
+  typecheck-api:
+    name: manager-api · typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: manager-api
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9.15.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: manager-api/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Typecheck
         run: pnpm typecheck
 
   lint-ui:
-    name: manager-ui · lint + typecheck
+    name: manager-ui · lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -59,12 +79,34 @@ jobs:
         run: pnpm nuxt prepare
       - name: Lint
         run: pnpm lint
+
+  typecheck-ui:
+    name: manager-ui · typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: manager-ui
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9.15.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: manager-ui/pnpm-lock.yaml
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Prepare Nuxt
+        run: pnpm nuxt prepare
       - name: Typecheck
         run: pnpm typecheck
 
-  test:
+  test-mailserver:
     name: ./test-mailservers.sh
-    needs: [lint-api, lint-ui]
+    needs: [lint-api, typecheck-api, lint-ui, typecheck-ui]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
