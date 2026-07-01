@@ -232,26 +232,6 @@ if ! stage_done config; then
     "integer between 1 and 9999 MB (Gmail caps at 25)")
   env_set ATTACHMENT_MAX_SIZE_MB "$ATTACH_MB"
 
-  # Webmail choice. Mail backend works either way: IMAP/SMTP clients (Thunderbird,
-  # iOS Mail, mobile apps...) reach the stack unchanged. Roundcube is just an
-  # optional browser UI bundled in an overlay compose file. Default = Roundcube
-  # because that is what a non-technical operator usually expects.
-  echo
-  echo "Webmail to deploy alongside the mail backend:"
-  echo "  1) Roundcube (default; browser UI at port \$BINDING_PORT_ROUNDCUBE)"
-  echo "  2) None      (IMAP/SMTP clients still work; no browser webmail)"
-  while true; do
-    printf '\033[1;36m[?]\033[0m Choice [1]: '
-    read -e -r WEBMAIL_ANS
-    case "${WEBMAIL_ANS:-1}" in
-      1|roundcube|Roundcube) WEBMAIL=roundcube; break ;;
-      2|none|None)           WEBMAIL=none;      break ;;
-      *) warn "invalid choice, type 1 or 2 (got '$WEBMAIL_ANS')" ;;
-    esac
-  done
-  env_set WEBMAIL "$WEBMAIL"
-  ok "webmail: $WEBMAIL"
-
   stage_set config
 fi
 
@@ -260,9 +240,6 @@ fi
 # need to come back from .env.
 HOSTNAME=$(env_get MAIL_HOSTNAME)
 PUBLIC_IP=$(env_get MAIL_PUBLIC_IP)
-WEBMAIL=$(env_get WEBMAIL)
-export COMPOSE_FILE=docker-compose.yml
-[ "$WEBMAIL" = "roundcube" ] && COMPOSE_FILE=docker-compose.roundcube.yml
 
 # ---------------------------------------------------------------------------
 # 2. Secrets (auto-generated, never asked)
@@ -341,14 +318,7 @@ fi
 # 6. Summary
 # ---------------------------------------------------------------------------
 PUBLIC_DISPLAY="${PUBLIC_IP:-<MAIL_PUBLIC_IP>}"
-# Build the URLs block conditionally so a `WEBMAIL=none` install does not
-# advertise a Roundcube URL that resolves to nothing.
-URLS="  manager UI   : http://${PUBLIC_DISPLAY}:${MANAGEUI_PORT}"
-if [ "$WEBMAIL" = "roundcube" ]; then
-  URLS="${URLS}
-  roundcube    : http://${PUBLIC_DISPLAY}:${ROUNDCUBE_PORT}"
-fi
-URLS="${URLS}
+URLS="  manager UI   : http://${PUBLIC_DISPLAY}:${MANAGEUI_PORT}
   phpmyadmin   : http://${PUBLIC_DISPLAY}:${PHPMYADMIN_PORT}
   rspamd UI    : http://${PUBLIC_DISPLAY}:${RSPAMDUI_PORT}"
 

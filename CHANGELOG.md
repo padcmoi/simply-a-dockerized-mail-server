@@ -1,5 +1,6 @@
 # Changelog
 
+chore(install): drop WEBMAIL env var and roundcube choice prompt from install.sh
 feat(dev): dedicated dev overlay with hot-reload for manager-api and manager-ui
 chore(ci): chain lint/typecheck/test jobs sequentially for 5-step pipeline view
 chore(ci): split lint/typecheck jobs and rename mail server test job
