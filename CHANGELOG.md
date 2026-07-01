@@ -1,5 +1,6 @@
 # Changelog
 
+- chore(dev): move CHANGELOG check to pre-commit, tests to pre-push
 - chore(dev): add Husky pre-commit hook running lint and typecheck on both packages
 - feat(ui): migrate DiskDonutChart and DomainBarChart to vue-chartjs with reactive dark/light theming
 - feat(ui): enable Nuxt devtools in development mode only
