@@ -10,6 +10,7 @@ import { DomainsController } from "./domains.controller";
 import { DomainsService } from "./domains.service";
 import { DomainsQuotasModule } from "./quotas/quotas.module";
 import { DomainsRecipientsModule } from "./recipients/recipients.module";
+import { DomainsSpamdModule } from "./spamd/spamd.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DomainsRecipientsModule } from "./recipients/recipients.module";
     DomainsAliasesModule,
     DomainsDkimModule,
     DomainsQuotasModule,
+    DomainsSpamdModule,
   ],
   providers: [DomainsService],
   controllers: [DomainsController],

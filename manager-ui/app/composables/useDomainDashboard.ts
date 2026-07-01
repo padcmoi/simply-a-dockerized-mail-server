@@ -244,15 +244,15 @@ export function useDomainDashboard() {
         quota: quotaByEmail.get(q.email) ?? "0",
       }));
       topMailboxes.value = [...enriched].sort((a, b) => occupancyRate(b) - occupancyRate(a)).slice(0, 10);
-      await Promise.all([loadDkim(found.id), loadRspamdHistory(found.domain), loadPostfixQueue(found.domain)]);
+      await Promise.all([loadDkim(found.id), loadRspamdHistory(found.id), loadPostfixQueue(found.domain)]);
     } finally {
       loading.value = false;
     }
   }
 
-  async function loadRspamdHistory(fqdn: string) {
+  async function loadRspamdHistory(domainId: number) {
     try {
-      rspamdHistory.value = await call<RspamdHistoryRow[]>(`/rspamd/history?domain=${encodeURIComponent(fqdn)}&size=200`);
+      rspamdHistory.value = await call<RspamdHistoryRow[]>(`/domains/${domainId}/spamd/history?size=200`);
     } catch {
       rspamdHistory.value = [];
     }

@@ -55,26 +55,21 @@ function onActionConfirmed() {
           <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
         </div>
 
-        <UEmptyState
-          v-else-if="!props.loading && props.keys.length === 0"
-          icon="i-lucide-key"
-          :title="t('domainDashboard.dkim.noKey')"
-        >
-          <template #actions>
-            <UButton
-              icon="i-lucide-plus"
-              color="primary"
-              :loading="props.loading"
-              @click="
-                () => {
-                  confirmActionOpen = true;
-                }
-              "
-            >
-              {{ t("domainDashboard.dkim.generate") }}
-            </UButton>
-          </template>
-        </UEmptyState>
+        <div v-else-if="!props.loading && props.keys.length === 0" class="flex flex-col items-center gap-3 py-6 text-center">
+          <UIcon name="i-lucide-key" class="text-3xl text-muted" />
+          <p class="text-sm text-muted">{{ t("domainDashboard.dkim.noKey") }}</p>
+          <UButton
+            icon="i-lucide-plus"
+            color="primary"
+            @click="
+              () => {
+                confirmActionOpen = true;
+              }
+            "
+          >
+            {{ t("domainDashboard.dkim.generate") }}
+          </UButton>
+        </div>
 
         <div v-else class="space-y-4">
           <div v-for="key in props.keys" :key="key.selector" class="border border-default rounded-lg p-4 space-y-3">

@@ -6,6 +6,8 @@ This is a custom changelog format, generated from git history.
 
 - chore(scripts): format all shell scripts with shfmt -s (01-07-2026)
 - fix(ui): domain rspamd card shows rcpt_smtp instead of sender_smtp (01-07-2026)
+- feat(api): add domains/:domainId/spamd/history and stats routes (01-07-2026)
+- fix(ui): replace UEmptyState with plain div in DomainDkimSection to fix missing generate button (01-07-2026)
 
 - refactor(api): move Rspamd and Postfix business logic to src/core, api layer is route-only (01-07-2026)
 - feat(api): Rspamd stats proxy endpoint with JWT auth (01-07-2026)
