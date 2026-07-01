@@ -8,6 +8,7 @@ export default {
   nav: {
     dashboard: "Dashboard",
     domains: "Domains",
+    rspamd: "Rspamd",
     recipients: "Recipients",
     aliases: "Aliases",
     quotas: "Quotas",
@@ -287,8 +288,13 @@ export default {
     dkim: {
       title: "DKIM keys",
       noKey: "No DKIM key configured",
-      rotate: "Generate new key",
+      generate: "Generate key",
+      rotate: "Rotate key",
       copied: "Copied to clipboard",
+      confirmGenerate: "Generate DKIM key?",
+      confirmGenerateDesc: "A new signing key will be created for this domain.",
+      confirmRotate: "Rotate DKIM key?",
+      confirmRotateDesc: "The current key will be replaced. Update your DNS TXT record after rotation.",
       toast: {
         rotated: "DKIM key generated",
         rotateFailed: "Key generation failed",
@@ -303,6 +309,8 @@ export default {
       ham: "Clean",
       greylist: "Greylisted",
       unavailable: "Rspamd unreachable",
+      noHistory: "No scan history for this domain yet",
+      recentScans: "Recent scans",
     },
     postfix: {
       title: "Postfix queue",
@@ -320,6 +328,22 @@ export default {
     autoRefresh: {
       label: "Auto-refresh",
       off: "Off",
+    },
+  },
+  rspamdPage: {
+    subtitle: "Server-wide spam filter statistics and recent scan history.",
+    uptime: "uptime {s}s",
+    history: {
+      title: "Scan history",
+      noData: "No scan history yet — history is persisted in Redis and accumulates over time.",
+    },
+    col: {
+      from: "From",
+      to: "To",
+      action: "Action",
+      score: "Score",
+      size: "Size",
+      time: "Time",
     },
   },
 } satisfies Locales;

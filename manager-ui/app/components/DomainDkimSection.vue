@@ -13,44 +13,40 @@ const props = defineProps<{
 }>();
 
 const open = ref(true);
-const confirmOpen = ref(false);
+const confirmDeleteOpen = ref(false);
+const confirmActionOpen = ref(false);
 const pendingSelector = ref<string | null>(null);
+
+const confirmActionTitle = computed(() =>
+  props.keys.length > 0 ? t("domainDashboard.dkim.confirmRotate") : t("domainDashboard.dkim.confirmGenerate")
+);
+const confirmActionDesc = computed(() =>
+  props.keys.length > 0 ? t("domainDashboard.dkim.confirmRotateDesc") : t("domainDashboard.dkim.confirmGenerateDesc")
+);
 
 const { t } = useI18n();
 
 function requestDelete(selector: string) {
   pendingSelector.value = selector;
-  confirmOpen.value = true;
+  confirmDeleteOpen.value = true;
 }
 
-function onConfirmed() {
+function onDeleteConfirmed() {
   if (pendingSelector.value) emit("delete", pendingSelector.value);
   pendingSelector.value = null;
+}
+
+function onActionConfirmed() {
+  emit("rotate");
 }
 </script>
 
 <template>
   <UCollapsible v-model:open="open" class="border border-default rounded-lg">
-    <div class="flex items-center justify-between gap-2 flex-wrap px-4 py-3 cursor-pointer select-none">
-      <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-key" class="text-warning" />
-        <h2 class="font-semibold">{{ t("domainDashboard.dkim.title") }}</h2>
-        <UIcon
-          name="i-lucide-chevron-down"
-          class="text-muted transition-transform duration-200"
-          :class="{ '-rotate-180': open }"
-        />
-      </div>
-      <UButton
-        icon="i-lucide-rotate-cw"
-        size="xs"
-        color="warning"
-        variant="soft"
-        :loading="props.loading"
-        @click.stop="emit('rotate')"
-      >
-        {{ t("domainDashboard.dkim.rotate") }}
-      </UButton>
+    <div class="flex items-center gap-2 px-4 py-3 cursor-pointer select-none">
+      <UIcon name="i-lucide-key" class="text-warning" />
+      <h2 class="font-semibold">{{ t("domainDashboard.dkim.title") }}</h2>
+      <UIcon name="i-lucide-chevron-down" class="text-muted transition-transform duration-200" :class="{ '-rotate-180': open }" />
     </div>
 
     <template #content>
@@ -65,8 +61,8 @@ function onConfirmed() {
           :title="t('domainDashboard.dkim.noKey')"
         >
           <template #actions>
-            <UButton icon="i-lucide-plus" color="primary" :loading="props.loading" @click="emit('rotate')">
-              {{ t("domainDashboard.dkim.rotate") }}
+            <UButton icon="i-lucide-plus" color="primary" :loading="props.loading" @click="confirmActionOpen = true">
+              {{ t("domainDashboard.dkim.generate") }}
             </UButton>
           </template>
         </UEmptyState>
@@ -103,7 +99,9 @@ function onConfirmed() {
             </div>
             <div class="bg-elevated rounded-md p-3">
               <div class="flex items-start justify-between gap-2">
-                <p class="font-mono text-xs break-all text-muted leading-relaxed flex-1">{{ key.txtRecord }}</p>
+                <p class="font-mono text-xs break-all text-muted leading-relaxed flex-1">
+                  {{ key.txtRecord }}
+                </p>
                 <UButton
                   icon="i-lucide-copy"
                   color="neutral"
@@ -116,10 +114,29 @@ function onConfirmed() {
               </div>
             </div>
           </div>
+
+          <div class="flex justify-end pt-1">
+            <UButton
+              icon="i-lucide-rotate-cw"
+              size="sm"
+              color="warning"
+              variant="soft"
+              :loading="props.loading"
+              @click="confirmActionOpen = true"
+            >
+              {{ t("domainDashboard.dkim.rotate") }}
+            </UButton>
+          </div>
         </div>
       </div>
     </template>
   </UCollapsible>
 
-  <ConfirmModal v-model:open="confirmOpen" @confirm="onConfirmed" />
+  <ConfirmModal v-model:open="confirmDeleteOpen" @confirm="onDeleteConfirmed" />
+  <ConfirmModal
+    v-model:open="confirmActionOpen"
+    :title="confirmActionTitle"
+    :description="confirmActionDesc"
+    @confirm="onActionConfirmed"
+  />
 </template>

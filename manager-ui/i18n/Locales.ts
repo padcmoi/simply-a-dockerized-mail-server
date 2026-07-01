@@ -6,6 +6,7 @@ export interface Locales {
   nav: {
     dashboard: string;
     domains: string;
+    rspamd: string;
     recipients: string;
     aliases: string;
     quotas: string;
@@ -285,8 +286,13 @@ export interface Locales {
     dkim: {
       title: string;
       noKey: string;
+      generate: string;
       rotate: string;
       copied: string;
+      confirmGenerate: string;
+      confirmGenerateDesc: string;
+      confirmRotate: string;
+      confirmRotateDesc: string;
       toast: {
         rotated: string;
         rotateFailed: string;
@@ -301,6 +307,8 @@ export interface Locales {
       ham: string;
       greylist: string;
       unavailable: string;
+      noHistory: string;
+      recentScans: string;
     };
     postfix: {
       title: string;
@@ -318,6 +326,22 @@ export interface Locales {
     autoRefresh: {
       label: string;
       off: string;
+    };
+  };
+  rspamdPage: {
+    subtitle: string;
+    uptime: string;
+    history: {
+      title: string;
+      noData: string;
+    };
+    col: {
+      from: string;
+      to: string;
+      action: string;
+      score: string;
+      size: string;
+      time: string;
     };
   };
 }

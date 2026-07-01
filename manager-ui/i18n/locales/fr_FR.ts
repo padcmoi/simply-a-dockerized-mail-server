@@ -8,6 +8,7 @@ export default {
   nav: {
     dashboard: "Tableau de bord",
     domains: "Domaines",
+    rspamd: "Rspamd",
     recipients: "Destinataires",
     aliases: "Alias",
     quotas: "Quotas",
@@ -288,8 +289,13 @@ export default {
     dkim: {
       title: "Clés DKIM",
       noKey: "Aucune clé DKIM configurée",
-      rotate: "Générer une nouvelle clé",
+      generate: "Générer une clé",
+      rotate: "Régénérer la clé",
       copied: "Copié dans le presse-papiers",
+      confirmGenerate: "Générer la clé DKIM ?",
+      confirmGenerateDesc: "Une nouvelle clé de signature sera créée pour ce domaine.",
+      confirmRotate: "Régénérer la clé DKIM ?",
+      confirmRotateDesc: "La clé actuelle sera remplacée. Mettez à jour l'enregistrement DNS TXT après la rotation.",
       toast: {
         rotated: "Clé DKIM générée",
         rotateFailed: "Échec de la génération",
@@ -304,6 +310,8 @@ export default {
       ham: "Propres",
       greylist: "Greylisting",
       unavailable: "Rspamd inaccessible",
+      noHistory: "Aucun historique de scan pour ce domaine",
+      recentScans: "Scans récents",
     },
     postfix: {
       title: "File d'attente Postfix",
@@ -321,6 +329,22 @@ export default {
     autoRefresh: {
       label: "Actualisation",
       off: "Non",
+    },
+  },
+  rspamdPage: {
+    subtitle: "Statistiques serveur du filtre anti-spam et historique récent des scans.",
+    uptime: "uptime {s}s",
+    history: {
+      title: "Historique des scans",
+      noData: "Aucun historique — l'historique est persisté dans Redis et s'accumule dans le temps.",
+    },
+    col: {
+      from: "De",
+      to: "À",
+      action: "Action",
+      score: "Score",
+      size: "Taille",
+      time: "Heure",
     },
   },
 } satisfies Locales;
