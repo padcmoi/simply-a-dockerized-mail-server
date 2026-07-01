@@ -1,6 +1,6 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-01",
-  devtools: { enabled: false },
+  devtools: { enabled: process.env.NODE_ENV === "development" },
   modules: [
     "@nuxt/ui",
     "@nuxt/eslint",

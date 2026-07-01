@@ -1,5 +1,8 @@
 # Changelog
 
+- chore(dev): add Husky pre-commit hook running lint and typecheck on both packages
+- feat(ui): migrate DiskDonutChart and DomainBarChart to vue-chartjs with reactive dark/light theming
+- feat(ui): enable Nuxt devtools in development mode only
 - chore(compose): promote roundcube to base stack in docker-compose.yml
 - chore(install): drop WEBMAIL env var and roundcube choice prompt from install.sh
 - feat(dev): dedicated dev overlay with hot-reload for manager-api and manager-ui
