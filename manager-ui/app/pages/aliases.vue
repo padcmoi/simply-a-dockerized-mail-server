@@ -7,49 +7,46 @@ interface Alias {
   destination: string;
   domain: string;
 }
-interface Domain {
-  id: number;
-  domain: string;
-}
 
-const domains = ref<Domain[]>([]);
 const items = ref<Alias[]>([]);
 const loading = ref(false);
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
-const form = reactive({ domainId: 0, localPart: "", destination: "" });
+const form = reactive({ localPart: "", destination: "" });
 
 const columns = computed(() => [
   { accessorKey: "source", header: t("aliases.table.from") },
   { accessorKey: "destination", header: t("aliases.table.to") },
-  { accessorKey: "domain", header: t("aliases.table.domain") },
   { id: "actions", header: "" },
 ]);
 
 const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
+const domainStore = useDomainStore();
+const { set: setBreadcrumb } = useBreadcrumb();
+
+watchEffect(() => {
+  const d = domainStore.selected;
+  setBreadcrumb([
+    { label: t("nav.domains"), to: "/domains" },
+    { label: d?.domain ?? "...", to: d ? `/domains/${d.domain}` : "/domains" },
+    { label: t("nav.aliases") },
+  ]);
+});
 
 async function load() {
   loading.value = true;
   try {
-    domains.value = await call<Domain[]>("/domains");
-    const first = domains.value[0];
-    if (!form.domainId && first) form.domainId = first.id;
-    const lists = await Promise.all(domains.value.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`)));
-    items.value = lists.flat();
+    items.value = await call<Alias[]>(`/domains/${domainStore.selected!.id}/aliases`);
   } finally {
     loading.value = false;
   }
 }
 
 async function create() {
-  if (!form.domainId) {
-    toast.add({ title: t("aliases.toast.pickDomain"), color: "error" });
-    return;
-  }
   try {
-    await call(`/domains/${form.domainId}/aliases`, {
+    await call(`/domains/${domainStore.selected!.id}/aliases`, {
       method: "POST",
       body: { localPart: form.localPart, destination: form.destination },
     });
@@ -62,14 +59,8 @@ async function create() {
   }
 }
 
-function domainIdFor(row: Alias) {
-  return domains.value.find((d) => d.domain === row.domain)?.id ?? null;
-}
-
 async function remove(row: Alias) {
-  const id = domainIdFor(row);
-  if (!id) return;
-  await call(`/domains/${id}/aliases/${row.id}`, { method: "DELETE" });
+  await call(`/domains/${domainStore.selected!.id}/aliases/${row.id}`, { method: "DELETE" });
   await load();
 }
 
@@ -103,22 +94,14 @@ onMounted(load);
       <template #header>
         <h2 class="font-semibold">{{ t("aliases.form.title") }}</h2>
       </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end" @submit="create">
-        <UFormField :label="t('aliases.form.domain')" name="domainId">
-          <USelect
-            v-model="form.domainId"
-            :items="domains.map((d) => ({ label: d.domain, value: d.id }))"
-            :placeholder="t('aliases.form.domainPlaceholder')"
-            class="w-full"
-          />
-        </UFormField>
+      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end" @submit="create">
         <UFormField :label="t('aliases.form.localPart')" name="localPart">
           <UInput v-model="form.localPart" placeholder="local-part" class="w-full" />
         </UFormField>
         <UFormField :label="t('aliases.form.destination')" name="destination">
           <UInput v-model="form.destination" :placeholder="t('aliases.form.destinationPlaceholder')" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-plus" block class="lg:w-auto">{{ t("aliases.form.submit") }}</UButton>
+        <UButton type="submit" icon="i-lucide-plus" block class="sm:w-auto">{{ t("aliases.form.submit") }}</UButton>
       </UForm>
     </UCard>
 

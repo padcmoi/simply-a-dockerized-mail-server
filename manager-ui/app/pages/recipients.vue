@@ -4,25 +4,18 @@ definePageMeta({});
 interface Recipient {
   id: number;
   email: string;
-  domain: string;
   quota: string;
   active: number;
 }
-interface Domain {
-  id: number;
-  domain: string;
-}
 
-const domains = ref<Domain[]>([]);
 const items = ref<Recipient[]>([]);
 const loading = ref(false);
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
-const form = reactive({ domainId: 0, localPart: "", password: "", quota: 524288000 });
+const form = reactive({ localPart: "", password: "", quota: 524288000 });
 
 const columns = computed(() => [
   { accessorKey: "email", header: t("recipients.table.address") },
-  { accessorKey: "domain", header: t("recipients.table.domain") },
   { accessorKey: "quota", header: t("recipients.table.quota") },
   { accessorKey: "active", header: t("recipients.table.active") },
   { id: "actions", header: "" },
@@ -31,27 +24,30 @@ const columns = computed(() => [
 const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
+const domainStore = useDomainStore();
+const { set: setBreadcrumb } = useBreadcrumb();
+
+watchEffect(() => {
+  const d = domainStore.selected;
+  setBreadcrumb([
+    { label: t("nav.domains"), to: "/domains" },
+    { label: d?.domain ?? "...", to: d ? `/domains/${d.domain}` : "/domains" },
+    { label: t("nav.recipients") },
+  ]);
+});
 
 async function load() {
   loading.value = true;
   try {
-    domains.value = await call<Domain[]>("/domains");
-    const first = domains.value[0];
-    if (!form.domainId && first) form.domainId = first.id;
-    const lists = await Promise.all(domains.value.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`)));
-    items.value = lists.flat();
+    items.value = await call<Recipient[]>(`/domains/${domainStore.selected!.id}/recipients`);
   } finally {
     loading.value = false;
   }
 }
 
 async function create() {
-  if (!form.domainId) {
-    toast.add({ title: t("recipients.toast.pickDomain"), color: "error" });
-    return;
-  }
   try {
-    await call(`/domains/${form.domainId}/recipients`, {
+    await call(`/domains/${domainStore.selected!.id}/recipients`, {
       method: "POST",
       body: { localPart: form.localPart, password: form.password, quota: form.quota },
     });
@@ -64,14 +60,8 @@ async function create() {
   }
 }
 
-function domainIdFor(row: Recipient) {
-  return domains.value.find((d) => d.domain === row.domain)?.id ?? null;
-}
-
 async function remove(row: Recipient) {
-  const id = domainIdFor(row);
-  if (!id) return;
-  await call(`/domains/${id}/recipients/${row.id}`, { method: "DELETE" });
+  await call(`/domains/${domainStore.selected!.id}/recipients/${row.id}`, { method: "DELETE" });
   await load();
 }
 
@@ -106,15 +96,7 @@ onMounted(load);
       <template #header>
         <h2 class="font-semibold">{{ t("recipients.form.title") }}</h2>
       </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end" @submit="create">
-        <UFormField :label="t('recipients.form.domain')" name="domainId">
-          <USelect
-            v-model="form.domainId"
-            :items="domains.map((d) => ({ label: d.domain, value: d.id }))"
-            :placeholder="t('recipients.form.domainPlaceholder')"
-            class="w-full"
-          />
-        </UFormField>
+      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end" @submit="create">
         <UFormField :label="t('recipients.form.localPart')" name="localPart">
           <UInput v-model="form.localPart" placeholder="local-part" class="w-full" />
         </UFormField>

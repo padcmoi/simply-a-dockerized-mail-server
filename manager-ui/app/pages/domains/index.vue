@@ -40,6 +40,10 @@ const columns = computed(() => [
 const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
+const domainStore = useDomainStore();
+const { set: setBreadcrumb } = useBreadcrumb();
+
+setBreadcrumb([{ label: t("nav.domains") }]);
 
 async function load() {
   loading.value = true;
@@ -75,6 +79,7 @@ async function create() {
 
 async function remove(id: number) {
   await call(`/domains/${id}`, { method: "DELETE" });
+  if (domainStore.selected?.id === id) domainStore.clear();
   await load();
 }
 
@@ -92,6 +97,11 @@ function quotaToMb(raw: string) {
   const bytes = Number(raw);
   if (!Number.isFinite(bytes) || bytes <= 0) return "0";
   return String(Math.round(bytes / MB));
+}
+
+function openDomain(d: Domain) {
+  domainStore.select(d);
+  navigateTo(`/domains/${d.domain}`);
 }
 
 onMounted(load);
@@ -165,6 +175,11 @@ onMounted(load);
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
       <UTable :columns="columns" :data="items" :loading="loading" sticky>
+        <template #domain-cell="{ row }">
+          <button class="font-medium text-primary hover:underline text-left" @click="openDomain(row.original)">
+            {{ row.original.domain }}
+          </button>
+        </template>
         <template #active-cell="{ row }">
           <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
             {{ row.original.active ? t("common.yes") : t("common.no") }}
@@ -191,7 +206,14 @@ onMounted(load);
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>
       <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
-      <DomainCard v-for="item in items" v-else :key="item.id" :item="item" @delete="requestDelete(() => remove(item.id))" />
+      <DomainCard
+        v-for="item in items"
+        v-else
+        :key="item.id"
+        :item="item"
+        @open="openDomain(item)"
+        @delete="requestDelete(() => remove(item.id))"
+      />
     </div>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />

@@ -9,10 +9,6 @@ interface QuotaRow {
   messages: string;
   lastActivity: string;
 }
-interface Domain {
-  id: number;
-  domain: string;
-}
 interface DomainQuotaPayload {
   domain: QuotaRow | null;
   recipients: QuotaRow[];
@@ -37,16 +33,24 @@ const recipientCols = computed(() => [
 
 const { t } = useI18n();
 const { call } = useApi();
+const domainStore = useDomainStore();
+const { set: setBreadcrumb } = useBreadcrumb();
+
+watchEffect(() => {
+  const d = domainStore.selected;
+  setBreadcrumb([
+    { label: t("nav.domains"), to: "/domains" },
+    { label: d?.domain ?? "...", to: d ? `/domains/${d.domain}` : "/domains" },
+    { label: t("nav.quotas") },
+  ]);
+});
 
 async function load() {
   loading.value = true;
   try {
-    const domains = await call<Domain[]>("/domains");
-    const snapshots = await Promise.all(domains.map((d) => call<DomainQuotaPayload>(`/domains/${d.id}/quotas`)));
-    const doms: QuotaRow[] = [];
-    for (const s of snapshots) if (s.domain) doms.push(s.domain);
-    domainRows.value = doms;
-    recipientRows.value = snapshots.flatMap((s) => s.recipients);
+    const data = await call<DomainQuotaPayload>(`/domains/${domainStore.selected!.id}/quotas`);
+    domainRows.value = data.domain ? [data.domain] : [];
+    recipientRows.value = data.recipients;
   } finally {
     loading.value = false;
   }
