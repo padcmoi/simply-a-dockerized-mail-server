@@ -1,5 +1,6 @@
 # Changelog
 
+- chore(dev): auto re-stage files reformatted by pre-commit's prettier.sh, enforce dated CHANGELOG entry format with clear per-line error messages (01-07-2026)
 - fix(dev): pre-push hook reads git stdin to diff pushed commits instead of staged files
 - chore(dev): trigger test-mailservers.sh on pre-push when images/ or tests/ are modified
 - chore(dev): move CHANGELOG check to pre-commit, tests to pre-push
