@@ -6,6 +6,7 @@ This is a custom changelog format, generated from git history.
 
 - docs(changelog): add commit hash link and date to every entry [e123f14](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e123f14f867609dd61a70eee03cf60675d67ce25) (01-07-2026)
 - chore(dev): auto re-stage reformatted files and enforce dated CHANGELOG entries in pre-commit [639ca6b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/639ca6b3ef37e4b19c390e0130dc2a784c61ee91) (01-07-2026)
+- feat(ui): add domain Pinia store with localStorage persistence (01-07-2026)
 - fix(dev): pre-push hook reads pushed commits range from git stdin [e42f78f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e42f78f8fa915ce7e5884ff98d8796c770d823c7) (01-07-2026)
 - chore(dev): trigger test-mailservers.sh on pre-push for images/ and tests/ changes [b75856b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b75856bbca0596381bddf39fb5822e745589c00a) (01-07-2026)
 - chore(dev): move CHANGELOG check to pre-commit, tests to pre-push [4af78f6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4af78f6a932f1b0da59a6577cc386e5a1a0b802b) (01-07-2026)
