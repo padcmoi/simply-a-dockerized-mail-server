@@ -1,18 +1,63 @@
 name: simply-mailserver
 
-# Dev overlay for manager-api and manager-ui (hot-reload).
-# Pulls in the full stack via include, then replaces both manager services
-# with dev builds that mount source files as volumes.
-#
-# Usage (no antivirus):
-#   docker compose -f docker-compose.dev.yml up -d
-# Usage (with antivirus):
-#   docker compose -f docker-compose.dev.yml --profile antivirus up -d
-
-include:
-  - docker-compose.yml
+networks:
+  mail:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.200.0.0/24
 
 services:
+  mariadb:
+    extends:
+      file: ./docker/services/mariadb.yml
+      service: mariadb
+
+  redis:
+    extends:
+      file: ./docker/services/redis.yml
+      service: redis
+
+  clamav:
+    extends:
+      file: ./docker/services/clamav.yml
+      service: clamav
+
+  opendkim:
+    extends:
+      file: ./docker/services/opendkim.yml
+      service: opendkim
+
+  opendmarc:
+    extends:
+      file: ./docker/services/opendmarc.yml
+      service: opendmarc
+
+  rspamd:
+    extends:
+      file: ./docker/services/rspamd.yml
+      service: rspamd
+
+  dovecot:
+    extends:
+      file: ./docker/services/dovecot.yml
+      service: dovecot
+
+  postfix:
+    extends:
+      file: ./docker/services/postfix.yml
+      service: postfix
+
+  fail2ban:
+    extends:
+      file: ./docker/services/fail2ban.yml
+      service: fail2ban
+
+  phpmyadmin:
+    extends:
+      file: ./docker/services/phpmyadmin.yml
+      service: phpmyadmin
+
   manager-api:
     extends:
       file: ./docker/services/manager-api.dev.yml

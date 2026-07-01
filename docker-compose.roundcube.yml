@@ -1,15 +1,73 @@
 name: simply-mailserver
 
-# Webmail overlay. `include:` pulls in the main stack so the depends_on
-# chain (mariadb + dovecot healthy) resolves and the `mail` network exists
-# when this file is invoked on its own:
-#   docker compose -f docker-compose.roundcube.yml up -d
-# Running just `docker compose up -d` (no `-f`) gives the main stack with
-# no webmail.
-include:
-  - docker-compose.yml
+networks:
+  mail:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.200.0.0/24
 
 services:
+  mariadb:
+    extends:
+      file: ./docker/services/mariadb.yml
+      service: mariadb
+
+  redis:
+    extends:
+      file: ./docker/services/redis.yml
+      service: redis
+
+  clamav:
+    extends:
+      file: ./docker/services/clamav.yml
+      service: clamav
+
+  opendkim:
+    extends:
+      file: ./docker/services/opendkim.yml
+      service: opendkim
+
+  opendmarc:
+    extends:
+      file: ./docker/services/opendmarc.yml
+      service: opendmarc
+
+  rspamd:
+    extends:
+      file: ./docker/services/rspamd.yml
+      service: rspamd
+
+  dovecot:
+    extends:
+      file: ./docker/services/dovecot.yml
+      service: dovecot
+
+  postfix:
+    extends:
+      file: ./docker/services/postfix.yml
+      service: postfix
+
+  fail2ban:
+    extends:
+      file: ./docker/services/fail2ban.yml
+      service: fail2ban
+
+  phpmyadmin:
+    extends:
+      file: ./docker/services/phpmyadmin.yml
+      service: phpmyadmin
+
+  manager-api:
+    extends:
+      file: ./docker/services/manager-api.yml
+      service: manager-api
+
+  manager-ui:
+    extends:
+      file: ./docker/services/manager-ui.yml
+      service: manager-ui
+
   roundcube:
     extends:
       file: ./docker/services/roundcube.yml
