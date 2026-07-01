@@ -30,6 +30,7 @@ This is a custom changelog format, generated from git history.
 - style: apply prettier formatting to all TypeScript and Vue source files (01-07-2026)
 - chore: prettier reformatting pass on remaining managers sources (01-07-2026)
 - fix(ui): wrap onClick handlers in void-returning arrow functions to satisfy vue-tsc (01-07-2026)
+- fix(ui): explicit Ref type annotation in provideBreadcrumb to avoid TS2589, replace non-null injection (01-07-2026)
 - fix(dev): pre-push hook reads pushed commits range from git stdin [e42f78f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e42f78f8fa915ce7e5884ff98d8796c770d823c7) (01-07-2026)
 - chore(dev): trigger test-mailservers.sh on pre-push for images/ and tests/ changes [b75856b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b75856bbca0596381bddf39fb5822e745589c00a) (01-07-2026)
 - chore(dev): move CHANGELOG check to pre-commit, tests to pre-push [4af78f6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4af78f6a932f1b0da59a6577cc386e5a1a0b802b) (01-07-2026)
