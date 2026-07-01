@@ -23,20 +23,20 @@ set -eu
 # redis-cli would not be reachable without a PATH.
 export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
 
-ACTION="${1:-}"
-USER="${2:-}"
+ACTION="${1-}"
+USER="${2-}"
 
 if [ -z "$ACTION" ] || [ -z "$USER" ]; then
-  echo "sa-learn-pipe: missing args (action=$ACTION user=$USER)" >&2
-  exit 0
+	echo "sa-learn-pipe: missing args (action=$ACTION user=$USER)" >&2
+	exit 0
 fi
 
 case "$ACTION" in
-  spam|ham) ;;
-  *)
-    echo "sa-learn-pipe: unknown action $ACTION" >&2
-    exit 0
-    ;;
+spam | ham) ;;
+*)
+	echo "sa-learn-pipe: unknown action $ACTION" >&2
+	exit 0
+	;;
 esac
 
 # Shared connection / policy env for all hooks. Hooks read these but never
@@ -50,14 +50,14 @@ export BLOCKLIST_THRESHOLD="${BLOCKLIST_THRESHOLD:-3}"
 
 MESSAGE_FILE="$(mktemp)"
 trap 'rm -f "$MESSAGE_FILE"' EXIT
-cat - > "$MESSAGE_FILE"
+cat - >"$MESSAGE_FILE"
 
 # Extract the first From: header, then the bare address inside any "...<x@y>"
 # brackets (or take the line as-is when no brackets are present).
 FROM_LINE="$(awk 'BEGIN{IGNORECASE=1} /^from:/ {sub(/^[Ff]rom:[ \t]*/, ""); print; exit}' "$MESSAGE_FILE")"
 case "$FROM_LINE" in
-  *"<"*">"*) FROM_ADDR="$(printf '%s' "$FROM_LINE" | sed -n 's/.*<\([^>]*\)>.*/\1/p')" ;;
-  *)         FROM_ADDR="$(printf '%s' "$FROM_LINE" | tr -d ' \t\r\n')" ;;
+*"<"*">"*) FROM_ADDR="$(printf '%s' "$FROM_LINE" | sed -n 's/.*<\([^>]*\)>.*/\1/p')" ;;
+*) FROM_ADDR="$(printf '%s' "$FROM_LINE" | tr -d ' \t\r\n')" ;;
 esac
 FROM_ADDR="$(printf '%s' "$FROM_ADDR" | tr '[:upper:]' '[:lower:]')"
 USER_LC="$(printf '%s' "$USER" | tr '[:upper:]' '[:lower:]')"
@@ -67,16 +67,16 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")"
 HOOKS_DIR="${SCRIPT_DIR}/hooks"
 
 if [ ! -d "$HOOKS_DIR" ]; then
-  echo "sa-learn-pipe: hooks dir missing: $HOOKS_DIR" >&2
-  exit 0
+	echo "sa-learn-pipe: hooks dir missing: $HOOKS_DIR" >&2
+	exit 0
 fi
 
 # Run every hook in lexical order. Each hook is responsible for its own
 # action/no-op decision and must never abort the chain on failure.
 for hook in "$HOOKS_DIR"/*.sh; do
-  [ -f "$hook" ] || continue
-  [ -x "$hook" ] || continue
-  "$hook" "$ACTION" "$USER_LC" "$FROM_ADDR" "$MESSAGE_FILE" || true
+	[ -f "$hook" ] || continue
+	[ -x "$hook" ] || continue
+	"$hook" "$ACTION" "$USER_LC" "$FROM_ADDR" "$MESSAGE_FILE" || true
 done
 
 exit 0

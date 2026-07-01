@@ -9,7 +9,7 @@ export FAIL2BAN_MAXRETRY FAIL2BAN_FINDTIME FAIL2BAN_BANTIME
 CONF_DIR=/etc/fail2ban
 mkdir -p "$CONF_DIR"
 for src in /etc/fail2ban-templates/*.local; do
-  [ -f "$src" ] && envsubst < "$src" > "$CONF_DIR/$(basename "$src")"
+	[ -f "$src" ] && envsubst <"$src" >"$CONF_DIR/$(basename "$src")"
 done
 
 mkdir -p /var/run/fail2ban /var/lib/fail2ban
@@ -20,10 +20,11 @@ mkdir -p /var/run/fail2ban /var/lib/fail2ban
 # an enabled jail points at a missing logpath and otherwise enters a
 # restart loop on a fresh stack startup (every CI run).
 for f in /var/log/mail/postfix.log /var/log/mail/dovecot.log; do
-  T=60
-  until [ -f "$f" ] || [ "$T" -le 0 ]; do
-    sleep 1; T=$((T-1))
-  done
+	T=60
+	until [ -f "$f" ] || [ "$T" -le 0 ]; do
+		sleep 1
+		T=$((T - 1))
+	done
 done
 
 exec "$@"

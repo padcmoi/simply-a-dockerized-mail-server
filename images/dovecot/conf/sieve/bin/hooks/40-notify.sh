@@ -15,14 +15,14 @@ FROM="$3"
 FLAG="notified:${USER}:${FROM}"
 
 case "$ACTION" in
-  ham)
-    # User changed their mind: clear the flag so a future re-block re-arms
-    # the notification.
-    redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" DEL "$FLAG" >/dev/null || true
-    exit 0
-    ;;
-  spam) ;;
-  *) exit 0 ;;
+ham)
+	# User changed their mind: clear the flag so a future re-block re-arms
+	# the notification.
+	redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" DEL "$FLAG" >/dev/null || true
+	exit 0
+	;;
+spam) ;;
+*) exit 0 ;;
 esac
 
 COUNT_KEY="spam_count:${USER}:${FROM}"

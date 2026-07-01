@@ -25,11 +25,11 @@ ACTIVE_LINK="${HOME_DIR}/.dovecot.sieve"
 
 ACTIVE_SCRIPT=""
 if [ -L "$ACTIVE_LINK" ]; then
-  target="$(readlink "$ACTIVE_LINK")"
-  case "$target" in
-    /*) ACTIVE_SCRIPT="$target" ;;
-    *)  ACTIVE_SCRIPT="${HOME_DIR}/${target}" ;;
-  esac
+	target="$(readlink "$ACTIVE_LINK")"
+	case "$target" in
+	/*) ACTIVE_SCRIPT="$target" ;;
+	*) ACTIVE_SCRIPT="${HOME_DIR}/${target}" ;;
+	esac
 fi
 
 # Nothing to undo if the user never had a sieve script.
@@ -42,7 +42,7 @@ SUFFIX=" ${FROM}]"
 TMP_NORM="$(mktemp)"
 TMP_NEW="$(mktemp)"
 
-tr -d '\r' < "$ACTIVE_SCRIPT" > "$TMP_NORM"
+tr -d '\r' <"$ACTIVE_SCRIPT" >"$TMP_NORM"
 
 # Fast path via awk (no regex - substr only - so a sender with regex-special
 # chars like `+` does not break the match).
@@ -50,15 +50,15 @@ if ! awk -v P="$PREFIX" -v S="$SUFFIX" '
   substr($0, 1, length(P)) == P && substr($0, length($0) - length(S) + 1) == S { found = 1; exit }
   END { exit (found ? 0 : 1) }
 ' "$TMP_NORM"; then
-  rm -f "$TMP_NORM" "$TMP_NEW"
-  exit 0
+	rm -f "$TMP_NORM" "$TMP_NEW"
+	exit 0
 fi
 
 awk -v P="$PREFIX" -v S="$SUFFIX" '
   in_block { if ($0 == "}") { in_block = 0 }; next }
   substr($0, 1, length(P)) == P && substr($0, length($0) - length(S) + 1) == S { in_block = 1; next }
   { print }
-' "$TMP_NORM" > "$TMP_NEW"
+' "$TMP_NORM" >"$TMP_NEW"
 
 sed -i 's/$/\r/' "$TMP_NEW"
 

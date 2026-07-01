@@ -13,15 +13,15 @@ TAG="cert-watcher[dovecot]"
 log() { printf "%s %s\n" "$TAG" "$*"; }
 
 while [ ! -d "$CERT_DIR" ]; do
-  sleep 5
+	sleep 5
 done
 
 log "watching $CERT_DIR, will restart container on rotation"
 while inotifywait -q -e close_write,moved_to,create,delete "$CERT_DIR" >/dev/null; do
-  sleep 3
-  if [ -f "${CERT_DIR}/fullchain.pem" ] && [ -f "${CERT_DIR}/privkey.pem" ]; then
-    log "cert rotation detected, restarting container (kill -TERM 1)"
-    kill -TERM 1
-    exit 0
-  fi
+	sleep 3
+	if [ -f "${CERT_DIR}/fullchain.pem" ] && [ -f "${CERT_DIR}/privkey.pem" ]; then
+		log "cert rotation detected, restarting container (kill -TERM 1)"
+		kill -TERM 1
+		exit 0
+	fi
 done

@@ -10,10 +10,10 @@ export RSPAMD_PASSWORD_HASH="$(rspamadm pw -p "$RSPAMD_PASSWORD" 2>/dev/null || 
 mkdir -p "$CONF_DIR/local.d" "$CONF_DIR/override.d"
 SUBST='${RSPAMD_PASSWORD_HASH}'
 while IFS= read -r -d '' src; do
-  rel="${src#$TEMPLATE_DIR/}"
-  dst="$CONF_DIR/$rel"
-  mkdir -p "$(dirname "$dst")"
-  envsubst "$SUBST" < "$src" > "$dst"
+	rel="${src#$TEMPLATE_DIR/}"
+	dst="$CONF_DIR/$rel"
+	mkdir -p "$(dirname "$dst")"
+	envsubst "$SUBST" <"$src" >"$dst"
 done < <(find "$TEMPLATE_DIR" -type f -print0)
 
 mkdir -p /var/lib/rspamd /var/log/rspamd

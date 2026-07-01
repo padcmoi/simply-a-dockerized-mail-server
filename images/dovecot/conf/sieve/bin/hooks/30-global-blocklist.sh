@@ -13,12 +13,12 @@ FROM="$3"
 KEY="senders:${FROM}:reporters"
 
 case "$ACTION" in
-  spam)
-    redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" SADD "$KEY" "$USER" >/dev/null || true
-    redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" EXPIRE "$KEY" "$BLOCKLIST_TTL" >/dev/null || true
-    ;;
-  ham)
-    redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" SREM "$KEY" "$USER" >/dev/null || true
-    ;;
+spam)
+	redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" SADD "$KEY" "$USER" >/dev/null || true
+	redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" EXPIRE "$KEY" "$BLOCKLIST_TTL" >/dev/null || true
+	;;
+ham)
+	redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" SREM "$KEY" "$USER" >/dev/null || true
+	;;
 esac
 exit 0

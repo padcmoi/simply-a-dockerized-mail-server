@@ -6,12 +6,12 @@ set -euo pipefail
 
 CONF_DIR=/etc/opendkim
 mkdir -p "$CONF_DIR/keys"
-envsubst '${MAIL_HOSTNAME}' < /etc/opendkim-template.conf > "$CONF_DIR/opendkim.conf"
+envsubst '${MAIL_HOSTNAME}' </etc/opendkim-template.conf >"$CONF_DIR/opendkim.conf"
 
-[ -f "$CONF_DIR/key.table" ]     || : > "$CONF_DIR/key.table"
-[ -f "$CONF_DIR/signing.table" ] || : > "$CONF_DIR/signing.table"
+[ -f "$CONF_DIR/key.table" ] || : >"$CONF_DIR/key.table"
+[ -f "$CONF_DIR/signing.table" ] || : >"$CONF_DIR/signing.table"
 if [ ! -f "$CONF_DIR/trusted.hosts" ]; then
-  cat > "$CONF_DIR/trusted.hosts" <<EOF
+	cat >"$CONF_DIR/trusted.hosts" <<EOF
 127.0.0.1
 ::1
 localhost

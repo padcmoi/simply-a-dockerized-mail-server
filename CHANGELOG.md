@@ -4,6 +4,8 @@ This is a custom changelog format, generated from git history.
 
 ## [Unreleased] - yyyy-mm-dd
 
+- chore(scripts): format all shell scripts with shfmt -s (01-07-2026)
+
 - refactor(api): move Rspamd and Postfix business logic to src/core, api layer is route-only (01-07-2026)
 - feat(api): Rspamd stats proxy endpoint with JWT auth (01-07-2026)
 - feat(api): Postfix spool queue stats endpoint with per-domain filter and JWT auth (01-07-2026)

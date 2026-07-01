@@ -50,17 +50,17 @@ mkdir -p "$SIEVE_DIR"
 # that Roundcube can see and edit.
 ACTIVE_SCRIPT=""
 if [ -L "$ACTIVE_LINK" ]; then
-  target="$(readlink "$ACTIVE_LINK")"
-  case "$target" in
-    /*) ACTIVE_SCRIPT="$target" ;;
-    *)  ACTIVE_SCRIPT="${HOME_DIR}/${target}" ;;
-  esac
+	target="$(readlink "$ACTIVE_LINK")"
+	case "$target" in
+	/*) ACTIVE_SCRIPT="$target" ;;
+	*) ACTIVE_SCRIPT="${HOME_DIR}/${target}" ;;
+	esac
 fi
 
 if [ -z "$ACTIVE_SCRIPT" ] || [ ! -f "$ACTIVE_SCRIPT" ]; then
-  ACTIVE_SCRIPT="$DEFAULT_SCRIPT"
-  : > "$ACTIVE_SCRIPT"
-  ln -sf "sieve/${DEFAULT_NAME}.sieve" "$ACTIVE_LINK"
+	ACTIVE_SCRIPT="$DEFAULT_SCRIPT"
+	: >"$ACTIVE_SCRIPT"
+	ln -sf "sieve/${DEFAULT_NAME}.sieve" "$ACTIVE_LINK"
 fi
 
 # Drop the "/* empty script */" placeholder that Roundcube writes when the
@@ -69,18 +69,18 @@ fi
 # parser's inner comment loop only handles `#` lines, so a `/*` line breaks
 # it out before reaching our rule and the rule never shows up in Filtres).
 if grep -q '^/\* empty script \*/' "$ACTIVE_SCRIPT"; then
-  TMP_STRIP="$(mktemp)"
-  grep -v '^/\* empty script \*/' "$ACTIVE_SCRIPT" > "$TMP_STRIP"
-  mv "$TMP_STRIP" "$ACTIVE_SCRIPT"
+	TMP_STRIP="$(mktemp)"
+	grep -v '^/\* empty script \*/' "$ACTIVE_SCRIPT" >"$TMP_STRIP"
+	mv "$TMP_STRIP" "$ACTIVE_SCRIPT"
 fi
 
 # Ensure require ["fileinto"]; is present at the top. We never edit existing
 # require lines, only prepend our own when nothing useful is there yet.
 if ! grep -Eq '^[[:space:]]*require[[:space:]]+\[[^]]*"fileinto"' "$ACTIVE_SCRIPT"; then
-  TMP_REQ="$(mktemp)"
-  printf 'require ["fileinto"];\n\n' > "$TMP_REQ"
-  cat "$ACTIVE_SCRIPT" >> "$TMP_REQ"
-  mv "$TMP_REQ" "$ACTIVE_SCRIPT"
+	TMP_REQ="$(mktemp)"
+	printf 'require ["fileinto"];\n\n' >"$TMP_REQ"
+	cat "$ACTIVE_SCRIPT" >>"$TMP_REQ"
+	mv "$TMP_REQ" "$ACTIVE_SCRIPT"
 fi
 
 MARKER="# rule:[AUTOROUTER ${DEST} ${FROM}]"
@@ -91,7 +91,7 @@ TMP_NEW="$(mktemp)"
 
 # Normalise CRLF -> LF for awk processing; the file is re-written in CRLF at
 # the end so Roundcube's parser keeps seeing its native line endings.
-tr -d '\r' < "$ACTIVE_SCRIPT" > "$TMP_NORM"
+tr -d '\r' <"$ACTIVE_SCRIPT" >"$TMP_NORM"
 
 # Drop any existing AUTOROUTER block for this sender, regardless of which
 # folder it currently routes to. A block matches when its marker line both
@@ -102,24 +102,24 @@ awk -v P="$PREFIX" -v S="$SUFFIX" '
   in_block { if ($0 == "}") { in_block = 0 }; next }
   substr($0, 1, length(P)) == P && substr($0, length($0) - length(S) + 1) == S { in_block = 1; next }
   { print }
-' "$TMP_NORM" > "$TMP_NEW"
+' "$TMP_NORM" >"$TMP_NEW"
 
 # Strip trailing blank lines, then guarantee a single trailing newline so
 # our block starts cleanly on its own line.
 sed -i -e :a -e '/^$/{$d;N;ba' -e '}' "$TMP_NEW" 2>/dev/null || true
 if [ -s "$TMP_NEW" ] && [ "$(tail -c1 "$TMP_NEW" | od -An -c | tr -d ' ')" != '\n' ]; then
-  printf '\n' >> "$TMP_NEW"
+	printf '\n' >>"$TMP_NEW"
 fi
 
 # Append the fresh block (still LF; CRLF conversion happens below).
 {
-  printf '%s\n' "$MARKER"
-  printf 'if allof (address :is "From" "%s")\n' "$FROM"
-  printf '{\n'
-  printf '\tfileinto "%s";\n' "$DEST"
-  printf '\tstop;\n'
-  printf '}\n'
-} >> "$TMP_NEW"
+	printf '%s\n' "$MARKER"
+	printf 'if allof (address :is "From" "%s")\n' "$FROM"
+	printf '{\n'
+	printf '\tfileinto "%s";\n' "$DEST"
+	printf '\tstop;\n'
+	printf '}\n'
+} >>"$TMP_NEW"
 
 # Re-normalise to CRLF so Roundcube re-reads its own dialect.
 sed -i 's/$/\r/' "$TMP_NEW"

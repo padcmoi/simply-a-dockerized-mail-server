@@ -10,10 +10,10 @@ USER="$2"
 MESSAGE_FILE="$4"
 
 case "$ACTION" in
-  spam) cmd="learn_spam" ;;
-  ham)  cmd="learn_ham"  ;;
-  *) exit 0 ;;
+spam) cmd="learn_spam" ;;
+ham) cmd="learn_ham" ;;
+*) exit 0 ;;
 esac
 
-rspamc -h "${RSPAMD_HOST}:${RSPAMD_PORT}" -d "$USER" "$cmd" < "$MESSAGE_FILE" >&2 || true
+rspamc -h "${RSPAMD_HOST}:${RSPAMD_PORT}" -d "$USER" "$cmd" <"$MESSAGE_FILE" >&2 || true
 exit 0
