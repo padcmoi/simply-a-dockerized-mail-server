@@ -15,6 +15,8 @@ const avatarPreview = computed(() => {
 const { t } = useI18n();
 const auth = useAuthStore();
 const toast = useToast();
+const { set: setBreadcrumb } = useBreadcrumb();
+setBreadcrumb([{ label: t("nav.profile") }]);
 
 const schema = z.object({
   name: z.string().max(255).optional(),

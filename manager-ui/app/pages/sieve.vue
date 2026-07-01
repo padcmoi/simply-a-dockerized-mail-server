@@ -24,6 +24,9 @@ const columns = computed(() => [
 const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
+const { set: setBreadcrumb } = useBreadcrumb();
+
+setBreadcrumb([{ label: t("nav.sieveLong") }]);
 
 async function load() {
   loading.value = true;

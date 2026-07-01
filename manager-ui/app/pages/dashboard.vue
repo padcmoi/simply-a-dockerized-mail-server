@@ -1,6 +1,8 @@
 <script setup lang="ts">
 definePageMeta({});
 
+const { set: setBreadcrumb } = useBreadcrumb();
+
 interface Domain {
   id: number;
   domain: string;
@@ -94,6 +96,8 @@ const recipientsPerDomain = computed(() =>
 
 const { t } = useI18n();
 const { call } = useApi();
+
+setBreadcrumb([{ label: t("nav.dashboard") }]);
 
 async function load() {
   loading.value = true;
