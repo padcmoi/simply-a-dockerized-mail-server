@@ -61,7 +61,16 @@ function onActionConfirmed() {
           :title="t('domainDashboard.dkim.noKey')"
         >
           <template #actions>
-            <UButton icon="i-lucide-plus" color="primary" :loading="props.loading" @click="confirmActionOpen = true">
+            <UButton
+              icon="i-lucide-plus"
+              color="primary"
+              :loading="props.loading"
+              @click="
+                () => {
+                  confirmActionOpen = true;
+                }
+              "
+            >
               {{ t("domainDashboard.dkim.generate") }}
             </UButton>
           </template>
@@ -122,7 +131,11 @@ function onActionConfirmed() {
               color="warning"
               variant="soft"
               :loading="props.loading"
-              @click="confirmActionOpen = true"
+              @click="
+                () => {
+                  confirmActionOpen = true;
+                }
+              "
             >
               {{ t("domainDashboard.dkim.rotate") }}
             </UButton>
