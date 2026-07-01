@@ -1,261 +1,261 @@
 # Changelog
 
-- chore(dev): auto re-stage files reformatted by pre-commit's prettier.sh, enforce dated CHANGELOG entry format with clear per-line error messages (01-07-2026)
-- fix(dev): pre-push hook reads git stdin to diff pushed commits instead of staged files
-- chore(dev): trigger test-mailservers.sh on pre-push when images/ or tests/ are modified
-- chore(dev): move CHANGELOG check to pre-commit, tests to pre-push
-- chore(dev): add Husky pre-commit hook running lint and typecheck on both packages
-- feat(ui): migrate DiskDonutChart and DomainBarChart to vue-chartjs with reactive dark/light theming
-- feat(ui): enable Nuxt devtools in development mode only
-- chore(compose): promote roundcube to base stack in docker-compose.yml
-- chore(install): drop WEBMAIL env var and roundcube choice prompt from install.sh
-- feat(dev): dedicated dev overlay with hot-reload for manager-api and manager-ui
-- chore(ci): chain lint/typecheck/test jobs sequentially for 5-step pipeline view
-- chore(ci): split lint/typecheck jobs and rename mail server test job
-- feat(ui): reusable ConfirmModal with 10s countdown before deletion
-- chore: add prettier.sh to format manager-api and manager-ui
-- fix(ui): strip dead vue-router volar sfc-route-blocks plugin from tsconfig
-- fix(ui): wrap inviteOpen assignment in arrow fn to satisfy onClick void type
-- feat(ui): responsive card layout for all tables on mobile/tablet
-- chore(ci): merge lint jobs into test.yml, gate test on lint passing
-- fix(manager-ui): resolve all lint and typecheck violations for CI pipeline
-- chore(ci): add dedicated lint and typecheck workflow for manager-api and manager-ui
-- feat(accounts): manager ACL with root-only invite flow and per-domain access control
-- fix(ci,tests): align CI seed + test suite with current schema and stack behavior
-- feat(manager-ui,manager-api): mail volume capacity gauge + i18n FR/EN with typed contract
-- fix(manager-ui): refresh expired JWT on 401 and stop proxying /api/_nuxt_icon
-- chore(lint,typecheck): wire eslint + typecheck on both packages, fix all violations
-- feat(ui,api): v2 dashboard layout + account profile (email, name, avatar)
-- feat(install,dkim): persist dkim_keys + resumable install.sh
-- refactor(api): nest resources under /domains/:domainId, rename users -> recipients
-- feat(health): GET /api/v1/health returns a real cpu/mem/redis/db/mail snapshot
-- feat(ui): consume /api/v1, swagger moved to /api/doc
-- feat(manager-api): URI versioning /api/v1 + jwt auth in core/auth/jwt
-- refactor(manager-api): split src into /api (routes) + /core (shared)
-- feat(db): typeorm migrations split by business domain + db:* scripts
-- fix(tests): make roundcube optional, suite green on webmail-less stack
-- feat(sieve): rename date_creation -> created_at + cover blacklist with a test
-- ci(actions): bump checkout/upload-artifact to v5 to drop Node 20 deprecation
-- refactor(compose): split per-service files, optional roundcube overlay
-- fix(fail2ban): wait for postfix+dovecot logs to exist before booting
-- ci(mail): github actions workflow runs ./test-mailservers.sh on every branch
-- docs(changelog): consolidate duplicated Added/Changed/Fixed sections
-- feat(mail): snake_case tables, user_start_date/user_end_date activity window, dkim_keys table
-- fix(mail): drop first-mailbox provisioning and stop quota-row stacking
-- docs(changelog): postmaster reservation + fail2ban/postfix/log-perms fixes
-- fix(mail): reserve postmaster@<domain> as inactive write-only sender
-- fix(mail): fail2ban sshd-ddos, postfix lmdb, log perms, drop fail2ban skip
-- docs(mail): per-feature READMEs under docs/
-- fix(dovecot): bake dhparam at build time so cold start never trips the healthcheck
-- chore(redis): bind-mount redis data under ${VOLUMES_PATH}/redis
-- test(mail): end-to-end mail-server test suite
-- feat(AUTOROUTER): managesieve-visible per-sender auto-routing with system-folder-aware undo
-- fix(install): enable readline editing on every prompt
-- fix(install): wrap DKIM TXT value in double quotes in INSTALL_INFO.txt
-- feat(attachments): unified ATTACHMENT_MAX_SIZE_MB knob (default 25, Gmail parity)
-- feat(roundcube): enable markasjunk plugin for one-click spam toolbar button
-- docs(changelog): rspamd/dovecot per-user blocklist + notification + Junk-only policy
-- feat(dovecot): sa-learn-pipe orchestrator + per-concern hooks + postmaster one-shot
-- feat(dovecot): imap_sieve + learn-spam/ham sieves with Trash exemption
-- feat(rspamd): USER_BLOCKLIST + GLOBAL_BLOCKLIST + RECIPIENT_RECORDER lua rules
-- feat(rspamd): explicit action thresholds, sieve-aligned spam header, greylist off
-- feat(rspamd): always-on ClamAV antivirus with reject action
-- feat(rspamd): per-user bayes classifier wired to Redis selector
-- fix(tls): handle Let's Encrypt rotation inside postfix and dovecot containers (inotify watcher, no host install)
-- feat(install): install certbot deploy hook that restarts dovecot+postfix on cert renewal
-- fix(install): parse DKIM sidecar response with python3 instead of grep, emit compact JSON server-side
-- chore: add prettier (double quotes, semi, es5 trailing, printWidth 130) to manager-api and manager-ui
-- feat(dkim): manage keys through an opendkim Python sidecar consumed by manager-api and install.sh
-- feat(install): accept short language aliases (fr, FR, en, ...) for Roundcube locale prompt
-- chore(compose): dovecot healthcheck + postfix and roundcube wait for service_healthy
-- fix(sieve): route reject/redirect/vacation bounces through a milter-free internal postfix port
-- chore: gitignore INSTALL_INFO.txt
-- docs: rewrite INSTALL.md and update CHANGELOG for the installer overhaul
-- feat(roundcube): configurable default language via ROUNDCUBE_LANGUAGE
-- feat(install): one-shot interactive bootstrap with regex-validated prompts
-- chore(mariadb): split init scripts per database (roundcube, opendmarc)
-- refactor(manager-api): generate v1-compatible schema via TypeORM synchronize and install triggers via Nest bootstrap hook
-- fix(manager-api): bump TypeScript to 6.0 to accept ignoreDeprecations 6.0
-- chore: update CHANGELOG, gitignore and LICENSE for v2
-- docs: rewrite README, INSTALL and add DOMAIN_DNS for v2 stack
-- feat(ops): install.sh secret generation and service.sh compose wrapper
-- feat(manager-ui): Nuxt UI v4 admin pages with Nitro proxy to manager-api
-- feat(manager-api): JWT auth with refresh tokens backed by Accounts table
-- feat(manager-api): NestJS scaffold for domains, users, aliases, quotas and sieve
-- feat(security): fail2ban host-net jails for postfix and dovecot
-- feat(roundcube): internal docker DNS and plaintext managesieve over bridge
-- feat(antispam): opendkim, opendmarc, rspamd and clamav images
-- feat(dovecot): LMTP, IMAPS and managesieve with dict-sql quota
-- feat(postfix): MySQL-backed virtual delivery with milter chain
-- feat(mariadb): v1-compatible schema with live quota aggregation triggers
-- feat: multi-container docker-compose with BINDING_PORT/IP env scheme
-- chore: drop v1 monolithic stack (Dockerfile, docker-build, libs, webadmin)
-- chore: add to gitignore
-- Merge branch 'hotfix/1.1.7'
-- hotfix v1.1.7
-- Merge branch 'hotfix/v1.1.5'
-- fix(fail2ban): records SASL Login failed from postfix only if it has a domain
-- Merge branch 'hotfix/v1.1.4'
-- fix: supports 3 auth worker messages
-- fix(fail2ban): increase test time for postfix rules
-- fix: excessive auth failed on legitimate connections
-- Merge branch 'hotfix/v1.1.3'
-- fix: allow no tls connections
-- Merge branch 'bugfix/v1.1.2' into develop
-- refactor: logs are now in true realtime in menu script
-- style: add a category refactor to changelog
-- fix: reduces the risk of server crashes due to the antivirus consuming too many resources on a server with too low a memory capacity
-- fix(fail2ban): removes the ban from log legitime on postfix
-- Merge tag 'v1.1.1' into develop
-- Merge branch 'hotfix/v1.1.1'
-- fix(fail2ban): prevents bots from polluting logs with failed connection attempts
-- fix(opendmarc): provides the possibility of rejection or acceptation of dmarc evaluation failures, by default to false (before set to true)
-- fix: adds recursive to copy fail2ban conf folder
-- fix: add custom postfix fail2ban filter
-- fix: disable rspamd/greylist causing milter-reject 4.7.1 Try again later on some mails
-- Adds a menu for complete management, installation and configuration of the docker mail server with ease and simplicity
-- Adds a menu for complete management, installation and configuration of the docker mail server with ease and simplicity
-- feat(menu/opendkim): adds MultipleSignatures and MustBeSigned configuration to the menu
-- fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no
-- fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no
-- fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no
-- Feat: menu implementation for local server installation, configuration and management
-- Merge branch 'feature/server-management-menu' of https://github.com/padcmoi/simply-a-dockerized-mail-server into feature/server-management-menu
-- feat: adds menu for configuration, management and installation
-- fix: add to environment the key data DMARC_REPORT_HOUR
-- feat: adds menu for configuration, management and installation
-- fix: multiple bugs before prod
-- feat: postfix log file in dedicated file or syslog
-- perf: add firewall rules with ufw and add a basic config
-- refactor: cleans up architecture for easier upgrades
-- rfc: Moves docker folder to root folder
-- feat: customize the path where volumes will be stored
-- hotfixes: remove stdout 1 to avoid polluting with target mails root@domainFQDN
-- feat: Adds the ability to enable e-mailing of dmarc reports
-- hotfixes: Change ambiguous system password
-- docs: update title
-- hotfixes: missing reports at 0h
-- chore: update datetime file, file constantly modified
-- Merge pull request #13 from padcmoi/debian11-bullseye
-- Merge pull request #12 from padcmoi/bugfix/mail-server
-- hotfixes: enable SSL mode for phpmyadmin
-- hotfixes: fix sql search sql to conf
-- hotfixes: install roundcube in the image build, to solve the problem of creating databases from APT, add a SQL dump file
-- hotfixes: dmarc report script didn't work (overwrite)
-- hotfixes: dmarc report script didn't work
-- rfc: remove useless mysql command
-- rfc complete ll command
-- hotfixes: install opendmarc in the image build, to solve the problem of creating databases from APT, add a SQL dump file
-- check_policy_service doesn't seem to accept multiple servers, already used by policy-spf
-- chore: move sample config in parent folder
-- rfc: Improves the visual appearance of started services
-- rfc: improve network command
-- hotfixes: remove duplicate roundcube configuration in apache.conf, this configuration file becomes a site available to activate
-- fix: To avoid fail2ban crashing if these logs dont exist
-- fix, show state services
-- feat: add network utility
-- rfc: Move services in each setup script, add default configuration to have functional services
-- rfc: adds run after container in the docker setup sequence
-- Merge pull request #5 from padcmoi/feature/e-mail-transfer-policy-dmarc
-- feat: implementation complete of opendmarc, default setup, cron added
-- feat: add utility reusable
-- feat: add dmarc report for opendmarc, add a new volume
-- rfc: connections to postfix milter
-- fix: change default dmarc
-- feat: add opendmarc with configuration
-- docs: remove duplicate element
-- fix: moves part dmarc in dedicated file
-- feat: add dmarc configuration with rspamd, disable dkim in rspamd
-- Merge branch 'trunk' into feature/e-mail-transfer-policy-dmarc
-- fix: move apache2 concerning rspamd web in 24-rspamd
-- fix: opens a socket to allow applications to add content to the database during the image build
-- fix: opens a socket to allow applications to add content to the database during the image build
-- fix: separates phpmyadmin from the apache2 module as an optional module
-- rfc: remove the clear command, for better observation
-- fix: separates save spaces from folders destined to become docker volumes
-- hotfixes: dovecot permissions issues on etc folder
-- chore: disable roundcube installation temp
-- fix cp after build database
-- chore: doesnt work
-- Merge branch 'trunk' into feature/e-mail-transfer-policy-dmarc
-- merge
-- Merge pull request #8 from padcmoi/chore/clean-architecture
-- fix: ambigous name password
-- hotfix: force permission on opendkim keys folder
-- fix: issue of permissions on dkim keys once created
-- chore: remove some useless features
-- chore: remove some useless features
-- fix: crash postfix boot, permission issues resolved
-- fix: permissions on folders clamav, rspamd
-- feat: copies volumes during docker build and renames them in a temporary folder, then reinjects them when the container is launched
-- rfc system file and configuration, packages are now created in the Docker image, allowing faster restart/startup.
-- rfc: add original configuration as reference
-- fix add template folder and removes useless instructions
-- Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall
-- feat: customizable jail rules
-- fix: transfer fail2ban log to syslog, notify ban & unban
-- feat: implement a firewall and fail2ban to combat brute force attacks
-- Merge branch 'main' into feature/e-mail-transfer-policy-dmarc
-- Merge branch 'main' into feature/security-fail2ban-firewall
-- fix: remove mysql log from syslog and move warn mysql log in dedicated file
-- check fail2ban implementation
-- check dmarc implementation
-- Merge pull request #4 from padcmoi/feature/sign-with-opendkim
-- fix attempt fix mysql error log
-- Merge branch 'main' into feature/sign-with-opendkim
-- fix: add roundcube table to mailuser mysql user
-- Merge branch 'main' into feature/sign-with-opendkim
-- disable logs mysql server
-- rfc: also provides a nice, ready-to-use public key file for sending to DNS
-- feat: implementation SPF
-- feat: implementation successful opendkim with antivirus ok
-- feat: add util command ll
-- feat: add spf rules
-- check opendkim
-- fix api details
-- disable API instruction (no create) to reduce build time
-- Merge pull request #3 from padcmoi/feature/migrate-antivirus-filtering-from-amavis-to-rspam
-- feat: add notification on spam rejection
-- feat: add clamav rules to rspamd
-- rfc: remove old amavis
-- feat: persist clamav database
-- rfc: remove useless old mail daemon and add tool
-- fix: syslog missing
-- Update spam module readme
-- Update modules added, rspam, postscreen
-- Merge pull request #1 from padcmoi/feat/spam-implementation
-- fix: chown errors with unknow vmail user and group
-- feat: persist config data from rspamd
-- feat: add spam flag with redirect in spam folder
-- fix: default sieve rules to new user
-- fix: enable upstream spam flag
-- feat: persist redis data from rspamd
-- feat: implement rspamd web interface
-- feat: add custom virtual hosts for apache 2 & change access port
-- fix: add whistlist ip to postscreen
-- feat: add rspamd with settings & implement Bayesian self-learning ham, spam in dovecot
-- fix postscreen volume lost after diff merge
-- resolve conflict from main branch
-- rfc: move volumes folder to the root project
-- feat; implement postscreen
-- Merge branch 'main' into feat/spam-implementation
-- fix: sql tables numeric values with bigint
-- fix: roundcube adress imap, smtp server
-- feat: add update auto certificate script
-- fix: disable IPV6 & restrictions rules & spamd missing conf
-- Merge branch 'main' into feat/spam-implementation
-- feat: implements the ability to enable or disable antivirus
-- init rspam implement
-- feat: add postfix volume
-- feat: add task cron, refresh antivirus
-- feat: add sieve rules
-- fix: sieve error on recipient autoresponses
-- fix: hostname ambigous key by fqdn_domain
-- feat: add roundcube webmail with basic configuration
-- fix: provide start ssl cert
-- feat: Adds functional container with postfix, dovecot, database and configuration
-- add license
-- feat: separate dockerfiles in dedicated folder && import repository in docker container
-- feat: add environnement file at nest api
-- Create README.md
-- initial commit
+- chore(dev): auto re-stage files reformatted by pre-commit's prettier.sh, enforce dated CHANGELOG entry format with clear per-line error messages [639ca6b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/639ca6b3ef37e4b19c390e0130dc2a784c61ee91) (01-07-2026)
+- fix(dev): pre-push hook reads git stdin to diff pushed commits instead of staged files [e42f78f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e42f78f8fa915ce7e5884ff98d8796c770d823c7) (01-07-2026)
+- chore(dev): trigger test-mailservers.sh on pre-push when images/ or tests/ are modified [b75856b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b75856bbca0596381bddf39fb5822e745589c00a) (01-07-2026)
+- chore(dev): move CHANGELOG check to pre-commit, tests to pre-push [4af78f6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4af78f6a932f1b0da59a6577cc386e5a1a0b802b) (01-07-2026)
+- chore(dev): add Husky pre-commit hook running lint and typecheck on both packages [57b3fde](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/57b3fde391df8ccfc94588d65e0eb32168cbdfc0) (01-07-2026)
+- feat(ui): migrate DiskDonutChart and DomainBarChart to vue-chartjs with reactive dark/light theming [57b3fde](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/57b3fde391df8ccfc94588d65e0eb32168cbdfc0) (01-07-2026)
+- feat(ui): enable Nuxt devtools in development mode only [57b3fde](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/57b3fde391df8ccfc94588d65e0eb32168cbdfc0) (01-07-2026)
+- chore(compose): promote roundcube to base stack in docker-compose.yml [aede609](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/aede609237a885254637dbe2421d69288c28a908) (01-07-2026)
+- chore(install): drop WEBMAIL env var and roundcube choice prompt from install.sh [d5e8933](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d5e89334f15860a18e445e6acd3c98acd0a94dba) (01-07-2026)
+- feat(dev): dedicated dev overlay with hot-reload for manager-api and manager-ui [b415517](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b4155174dd6b715f596d5380171863e9900a2209) (01-07-2026)
+- chore(ci): chain lint/typecheck/test jobs sequentially for 5-step pipeline view [555869a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/555869acb7d0d370169412bdced8cd0784d5a511) (01-07-2026)
+- chore(ci): split lint/typecheck jobs and rename mail server test job [c4d1938](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c4d19382ae52a666738653fe0513a03139c123de) (01-07-2026)
+- feat(ui): reusable ConfirmModal with 10s countdown before deletion [1f0bc8a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1f0bc8a528060003fed93357d9bf242cf68a57fc) (01-07-2026)
+- chore: add prettier.sh to format manager-api and manager-ui [e6f8be7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e6f8be733c94b6ff0c331e84b65fac7751fc8eb3) (01-07-2026)
+- fix(ui): strip dead vue-router volar sfc-route-blocks plugin from tsconfig [827e775](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/827e7757252d86639d72e690a9c50d03aad4692c) (30-06-2026)
+- fix(ui): wrap inviteOpen assignment in arrow fn to satisfy onClick void type [14a69cb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/14a69cbd5cc8c2d16e28cce065925cb530c17445) (30-06-2026)
+- feat(ui): responsive card layout for all tables on mobile/tablet [1742f2b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1742f2b168b815bcb474553470e098a16cd7f5ae) (30-06-2026)
+- chore(ci): merge lint jobs into test.yml, gate test on lint passing [22753b9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/22753b9d0e477aec86d0dfd18240f4d8c4d97ef8) (30-06-2026)
+- fix(manager-ui): resolve all lint and typecheck violations for CI pipeline [46a2110](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/46a2110d17e185b906c390e81c0e3077bb9a2d43) (30-06-2026)
+- chore(ci): add dedicated lint and typecheck workflow for manager-api and manager-ui [0055cd1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0055cd1f4c64348e76aff1a42976be574ef6c5a0) (30-06-2026)
+- feat(accounts): manager ACL with root-only invite flow and per-domain access control [784d369](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/784d36963b1defee6900567a9a72657155040b20) (30-06-2026)
+- fix(ci,tests): align CI seed + test suite with current schema and stack behavior [9965428](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/996542861ed17f06142c2852ffc137d425a1f3d1) (30-06-2026)
+- feat(manager-ui,manager-api): mail volume capacity gauge + i18n FR/EN with typed contract [ef02569](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ef0256946f7c7cd9edeaef77243fe2b449d8b1bf) (30-06-2026)
+- fix(manager-ui): refresh expired JWT on 401 and stop proxying /api/_nuxt_icon [c78b711](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c78b7113e8b09928b39a9dc6e8b2989b438e27d5) (30-06-2026)
+- chore(lint,typecheck): wire eslint + typecheck on both packages, fix all violations [4ff1b13](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4ff1b137d18a7db62ea09aa824fc695adb04ae3d) (30-06-2026)
+- feat(ui,api): v2 dashboard layout + account profile (email, name, avatar) [f5f4ac4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f5f4ac4b3f3b7eba908ca73d9a59834442f663e7) (30-06-2026)
+- feat(install,dkim): persist dkim_keys + resumable install.sh [31a3e3e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/31a3e3e912657c5cb1f1014bea57e740468fc0f1) (30-06-2026)
+- refactor(api): nest resources under /domains/:domainId, rename users -> recipients [64f5876](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/64f5876a85a7d28da9a17f4a1a995602a0f65536) (30-06-2026)
+- feat(health): GET /api/v1/health returns a real cpu/mem/redis/db/mail snapshot [26f8f40](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/26f8f40858375977fdf56181f273724ccd08672c) (30-06-2026)
+- feat(ui): consume /api/v1, swagger moved to /api/doc [9c12cd9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9c12cd9cde0efc37e111c68d888ec61e3dad32fe) (29-06-2026)
+- feat(manager-api): URI versioning /api/v1 + jwt auth in core/auth/jwt [a3f9a76](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a3f9a76b6ab62f7b44ff6da57e05938378e8f36d) (29-06-2026)
+- refactor(manager-api): split src into /api (routes) + /core (shared) [5cb1007](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5cb1007907a48f11f694ccdafde79811f1d5db1b) (29-06-2026)
+- feat(db): typeorm migrations split by business domain + db:* scripts [06b44f4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/06b44f4a1810f3fae777a6590d7eeaa442464d8b) (29-06-2026)
+- fix(tests): make roundcube optional, suite green on webmail-less stack [583731b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/583731beee40d65ee77ca9f0867d2584bded981f) (29-06-2026)
+- feat(sieve): rename date_creation -> created_at + cover blacklist with a test [3a14987](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3a149877351d03758c7564cd82b6c56296d8eeda) (29-06-2026)
+- ci(actions): bump checkout/upload-artifact to v5 to drop Node 20 deprecation [4c5066f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4c5066f5f4022873051fdfdfbd2984367b84b3d1) (29-06-2026)
+- refactor(compose): split per-service files, optional roundcube overlay [49dac01](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/49dac0155025c33855caa1bfe4e6cb9cef9abbdb) (29-06-2026)
+- fix(fail2ban): wait for postfix+dovecot logs to exist before booting [1a7dc2d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1a7dc2d8e829f63e8cc64b757587512bf8d8c945) (29-06-2026)
+- ci(mail): github actions workflow runs ./test-mailservers.sh on every branch [2446c1a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2446c1ac677821cbae9a9c268b92c25c4059c550) (29-06-2026)
+- docs(changelog): consolidate duplicated Added/Changed/Fixed sections [970a8e4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/970a8e485025064bf09077979655cf01bcb5c765) (29-06-2026)
+- feat(mail): snake_case tables, user_start_date/user_end_date activity window, dkim_keys table [f5b7446](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f5b74463ad034b986b292b76db7548dc4fdef937) (29-06-2026)
+- fix(mail): drop first-mailbox provisioning and stop quota-row stacking [dc1aaf3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/dc1aaf3e19622971134e8a24eaea837c1960aaab) (28-06-2026)
+- docs(changelog): postmaster reservation + fail2ban/postfix/log-perms fixes [fe64c7c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fe64c7cdc621d5b472033dfe3df433f95aec991c) (28-06-2026)
+- fix(mail): reserve postmaster@<domain> as inactive write-only sender [b4b59f6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b4b59f6097cf0891d78b2a7eb67efa6e6c8c72e3) (28-06-2026)
+- fix(mail): fail2ban sshd-ddos, postfix lmdb, log perms, drop fail2ban skip [b6336d6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b6336d6f7ff5dc16d8abd3132ecff9a9b2f91cf5) (28-06-2026)
+- docs(mail): per-feature READMEs under docs/ [0671d1b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0671d1b9d5acbbc147ad3e861ca590adf4fd705d) (28-06-2026)
+- fix(dovecot): bake dhparam at build time so cold start never trips the healthcheck [1bbc7ae](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1bbc7aeb253b9e3fc164d4f9255b30af5c4ecc41) (28-06-2026)
+- chore(redis): bind-mount redis data under ${VOLUMES_PATH}/redis [bf3a373](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bf3a373d79bf527a15d4500c4d58528425855dc2) (28-06-2026)
+- test(mail): end-to-end mail-server test suite [9baebc1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9baebc1f09e3c53da6697fd8be640e2891dabd2c) (28-06-2026)
+- feat(AUTOROUTER): managesieve-visible per-sender auto-routing with system-folder-aware undo [03e8efc](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/03e8efc061ee54800fbf550834ef84f79cdf44cf) (28-06-2026)
+- fix(install): enable readline editing on every prompt [9724a30](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9724a309ce20a458251e4d1fa5b2a11712689312) (28-06-2026)
+- fix(install): wrap DKIM TXT value in double quotes in INSTALL_INFO.txt [bd23ac3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bd23ac3c68101f8beeb56cbb26db1522c9f597ba) (28-06-2026)
+- feat(attachments): unified ATTACHMENT_MAX_SIZE_MB knob (default 25, Gmail parity) [6a7357f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6a7357f5e9655e72698a4f85a27b9809cad25d2a) (28-06-2026)
+- feat(roundcube): enable markasjunk plugin for one-click spam toolbar button [1fe8bae](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1fe8bae3685d0b5637bae3e896f929fb4c97bd43) (28-06-2026)
+- docs(changelog): rspamd/dovecot per-user blocklist + notification + Junk-only policy [88bf742](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/88bf74258db516fd09900f6faab746437e431584) (28-06-2026)
+- feat(dovecot): sa-learn-pipe orchestrator + per-concern hooks + postmaster one-shot [071d585](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/071d5850758d6a2d04cf024e2fe7436ba3f6b8fd) (28-06-2026)
+- feat(dovecot): imap_sieve + learn-spam/ham sieves with Trash exemption [9a18c6c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9a18c6c9a045443a17b35c35d422ba5e6bf6587a) (28-06-2026)
+- feat(rspamd): USER_BLOCKLIST + GLOBAL_BLOCKLIST + RECIPIENT_RECORDER lua rules [0947696](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/09476961ce53bb7909cf57f39886115009aeadc4) (28-06-2026)
+- feat(rspamd): explicit action thresholds, sieve-aligned spam header, greylist off [1e90eba](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1e90eba3daaaa5966c947aaccafad1edefd3c8d0) (28-06-2026)
+- feat(rspamd): always-on ClamAV antivirus with reject action [1967b60](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1967b60e018ab31c615c5f3eda8b8e373544346d) (28-06-2026)
+- feat(rspamd): per-user bayes classifier wired to Redis selector [eed5daf](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/eed5daf1fa818c9fdefeb9fdd1534fef2cfbaf8b) (28-06-2026)
+- fix(tls): handle Let's Encrypt rotation inside postfix and dovecot containers (inotify watcher, no host install) [fd9eb64](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fd9eb64f31d1f363cc842252281a4d5fce0acee3) (27-06-2026)
+- feat(install): install certbot deploy hook that restarts dovecot+postfix on cert renewal [6b93ea2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6b93ea23759d482c8ad67c3c5a70598f0628c798) (27-06-2026)
+- fix(install): parse DKIM sidecar response with python3 instead of grep, emit compact JSON server-side [06014a5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/06014a519f9b6304fa38b07f86defe03c069d380) (27-06-2026)
+- chore: add prettier (double quotes, semi, es5 trailing, printWidth 130) to manager-api and manager-ui [4832ec5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4832ec5d3ac9008a649186cf5d63a0d70199bfa1) (27-06-2026)
+- feat(dkim): manage keys through an opendkim Python sidecar consumed by manager-api and install.sh [c5073fd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c5073fd87fcd8d15ed7012834e40ad67e063e33e) (27-06-2026)
+- feat(install): accept short language aliases (fr, FR, en, ...) for Roundcube locale prompt [2ac7ad0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2ac7ad0b5056836df1df6ad2d525110cdc229b05) (27-06-2026)
+- chore(compose): dovecot healthcheck + postfix and roundcube wait for service_healthy [e339d32](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e339d3235e9868ad57cbc2f09b9a3e05458c8a19) (27-06-2026)
+- fix(sieve): route reject/redirect/vacation bounces through a milter-free internal postfix port [08ffc5b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/08ffc5bf968add582b60337319ffe169a559df63) (27-06-2026)
+- chore: gitignore INSTALL_INFO.txt [1bbdb1e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1bbdb1ef2f4922b1500c55f61448ba387f3969a4) (27-06-2026)
+- docs: rewrite INSTALL.md and update CHANGELOG for the installer overhaul [7c3f786](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7c3f786a91ccd5159a097b3e0d983b5d09cb9396) (27-06-2026)
+- feat(roundcube): configurable default language via ROUNDCUBE_LANGUAGE [f471b81](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f471b8163ded4cd760ca34cff25ef7341ed29efb) (27-06-2026)
+- feat(install): one-shot interactive bootstrap with regex-validated prompts [3ce61af](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3ce61afe04263b9dfe08324aabd99ccf6a604e18) (27-06-2026)
+- chore(mariadb): split init scripts per database (roundcube, opendmarc) [28d21d3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/28d21d3921d135cae9d8f31add0b3f20432996ec) (27-06-2026)
+- refactor(manager-api): generate v1-compatible schema via TypeORM synchronize and install triggers via Nest bootstrap hook [ac30865](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ac3086576078fa94c9e2c067c11de441576cda9d) (27-06-2026)
+- fix(manager-api): bump TypeScript to 6.0 to accept ignoreDeprecations 6.0 [42e42f7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/42e42f78a3f29d6297151128f8e9b3a205152846) (27-06-2026)
+- chore: update CHANGELOG, gitignore and LICENSE for v2 [08b9120](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/08b91203020d20ed7ef35a6b0832e1e13d02e907) (27-06-2026)
+- docs: rewrite README, INSTALL and add DOMAIN_DNS for v2 stack [0cfcc7e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0cfcc7efe4e2a01dc41987051a6e502b70c6f145) (27-06-2026)
+- feat(ops): install.sh secret generation and service.sh compose wrapper [ff17bb2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ff17bb288c59e3885ed74d4afd58b8cb8027f799) (27-06-2026)
+- feat(manager-ui): Nuxt UI v4 admin pages with Nitro proxy to manager-api [1b6007e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1b6007e109edbedadedecfab4d3ebd7c48ada098) (27-06-2026)
+- feat(manager-api): JWT auth with refresh tokens backed by Accounts table [84997ff](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/84997ffdd16e3e1f63938492c01daac78db1362b) (27-06-2026)
+- feat(manager-api): NestJS scaffold for domains, users, aliases, quotas and sieve [d7b4944](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d7b49448367da9a6f80a9c65f53cb4b3d457a938) (27-06-2026)
+- feat(security): fail2ban host-net jails for postfix and dovecot [5a927a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5a927a1bfd2ff6ddb27fc1d61079b9370c6c9fc0) (27-06-2026)
+- feat(roundcube): internal docker DNS and plaintext managesieve over bridge [3b64680](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3b64680585731dbac764f477aad61313eba53700) (27-06-2026)
+- feat(antispam): opendkim, opendmarc, rspamd and clamav images [0a68108](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0a681088e8c73be40a00abc4be7104df774640b7) (27-06-2026)
+- feat(dovecot): LMTP, IMAPS and managesieve with dict-sql quota [ceb685f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ceb685fbcf2a5232e19cd7f6d357ef9a41a5753e) (27-06-2026)
+- feat(postfix): MySQL-backed virtual delivery with milter chain [efc8a49](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/efc8a4982bb45bcd627bad4c8471f38c22413f5b) (27-06-2026)
+- feat(mariadb): v1-compatible schema with live quota aggregation triggers [3bce30d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3bce30d28fb0c2992a03af59fb96b595b8026ef2) (27-06-2026)
+- feat: multi-container docker-compose with BINDING_PORT/IP env scheme [1f19b91](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1f19b916a941bd31c841c94c689a325820ceb5a1) (27-06-2026)
+- chore: drop v1 monolithic stack (Dockerfile, docker-build, libs, webadmin) [0e139b1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0e139b171175f7e26894786d286629e32ca3495c) (27-06-2026)
+- chore: add to gitignore [81aea8d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/81aea8d103e51f72853098be1a1c10ffe02a6245) (26-06-2026)
+- Merge branch 'hotfix/1.1.7' [45e0400](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/45e04001c90abdf0a4db3ab4903471cf48c5d90c) (24-09-2025)
+- hotfix v1.1.7 [0b8b2f6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0b8b2f6f5578763043386aa7d38c8fc106047326) (24-09-2025)
+- Merge branch 'hotfix/v1.1.5' [d2f1217](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d2f1217876453959c794ef6ee5135791d567be0f) (07-02-2025)
+- fix(fail2ban): records SASL Login failed from postfix only if it has a domain [990fb28](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/990fb2823d6249795f2a5d6bf5aafdfc6bf5f154) (07-02-2025)
+- Merge branch 'hotfix/v1.1.4' [ea4077c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ea4077c452e58db92ce71743eedf2e6da6e92486) (07-02-2025)
+- fix: supports 3 auth worker messages [2ba848f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2ba848fb6f150382cb6d1fa73f005f155b67198a) (07-02-2025)
+- fix(fail2ban): increase test time for postfix rules [2d9f116](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2d9f116b54f3ef316d8a5c0760643dd171a115b8) (07-02-2025)
+- fix: excessive auth failed on legitimate connections [5d6e5bb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5d6e5bbb75c44ab93efff309a084d2f2bcf7346e) (07-02-2025)
+- Merge branch 'hotfix/v1.1.3' [1c9b1dd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1c9b1dd681931ac03b0ed52bac0d723ee57a0710) (06-02-2025)
+- fix: allow no tls connections [9f02f4c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9f02f4cf43c40e78abafbb15f33a385925f3e632) (06-02-2025)
+- Merge branch 'bugfix/v1.1.2' into develop [1b26447](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1b26447dcbe3754335dd290a0a903f89b597e389) (31-01-2025)
+- refactor: logs are now in true realtime in menu script [9f6e17f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9f6e17fb7fdd80251f801eb1411d45ad1e4afa0f) (31-01-2025)
+- style: add a category refactor to changelog [9456de2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9456de2da5d83a53e637204bf3526471b5954826) (31-01-2025)
+- fix: reduces the risk of server crashes due to the antivirus consuming too many resources on a server with too low a memory capacity [eabb9ab](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/eabb9abb8a71815206978b790352c8d11b96e7b3) (31-01-2025)
+- fix(fail2ban): removes the ban from log legitime on postfix [e802513](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e80251376a886269ae12cc94e51c51c4448ca10c) (27-01-2025)
+- Merge tag 'v1.1.1' into develop [bf46bbd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bf46bbdcda4c8158089444ec133e81e49d4060f0) (27-01-2025)
+- Merge branch 'hotfix/v1.1.1' [5dccb20](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5dccb20bb628ea2103a8d1ae2403085c5a9aca68) (27-01-2025)
+- fix(fail2ban): prevents bots from polluting logs with failed connection attempts [b0afffa](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b0afffab924942db19db9f6be1c28d7d5f77f615) (27-01-2025)
+- fix(opendmarc): provides the possibility of rejection or acceptation of dmarc evaluation failures, by default to false (before set to true) [3502328](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/350232881a67950b83a875ed9afd33a9fa11d67b) (27-01-2025)
+- fix: adds recursive to copy fail2ban conf folder [722015a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/722015a633969c7511c68dd183b946e5b54378ba) (27-01-2025)
+- fix: add custom postfix fail2ban filter [f452c19](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f452c19e98ab32a0c0bcff1291ff715bbac0954a) (27-01-2025)
+- fix: disable rspamd/greylist causing milter-reject 4.7.1 Try again later on some mails [8ba3637](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8ba363704571cde526f26330e1fc6dd7df411419) (27-01-2025)
+- Adds a menu for complete management, installation and configuration of the docker mail server with ease and simplicity [03d5279](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/03d52792b0663cf28ad1dd9783ac2dd156b20b96) (26-01-2025)
+- Adds a menu for complete management, installation and configuration of the docker mail server with ease and simplicity [ed56269](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ed56269618d06e4fc6fa6c75160389d5f31ebbdf) (26-01-2025)
+- feat(menu/opendkim): adds MultipleSignatures and MustBeSigned configuration to the menu [37b9a14](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/37b9a14fd967b733e779c844c5195bd3189eb5b9) (26-01-2025)
+- fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no [d9c863e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d9c863eba716f36abbf448d0301468048e0a024d) (26-01-2025)
+- fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no [7c202bb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7c202bbc7fa18a3ff222c35ca4da9f63bbd31969) (26-01-2025)
+- fix(opendkim): if an incoming mail has been sent by a misconfigured mail server that doesn't sign with dkim, the default server policy is to refuse, this commit allows you to set the choice to the administrator with a default value of no [c69a083](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c69a083a9aa775a604367a9e6171e1b02947cb59) (26-01-2025)
+- Feat: menu implementation for local server installation, configuration and management [71c0c12](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/71c0c123aeada32099c74731e521f4da354e3484) (26-01-2025)
+- Merge branch 'feature/server-management-menu' of https://github.com/padcmoi/simply-a-dockerized-mail-server into feature/server-management-menu [d4a3aa1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d4a3aa19aa7366e92fafbbc8467924bb10a04487) (26-01-2025)
+- feat: adds menu for configuration, management and installation [fe3e030](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fe3e030ee2b2434362cc117dc90c394b373ed1dd) (26-01-2025)
+- fix: add to environment the key data DMARC_REPORT_HOUR [e83bb10](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e83bb10242d5544da6e55828399a3a111ee7d501) (26-01-2025)
+- feat: adds menu for configuration, management and installation [8ab4504](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8ab450467b4c4482c0009db3aa2e7d9af0b1d9df) (26-01-2025)
+- fix: multiple bugs before prod [a20a2a5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a20a2a570287e64886a55efe7e4f80d59ff86018) (26-01-2025)
+- feat: postfix log file in dedicated file or syslog [b09e21e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b09e21edeebfcea30d740aa1951e2ef08e3db439) (18-01-2025)
+- perf: add firewall rules with ufw and add a basic config [d7d9fc5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d7d9fc59bf41498c20b52679f2dc37b068decb9a) (17-01-2025)
+- refactor: cleans up architecture for easier upgrades [8e2a6f9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8e2a6f92f079b9f1931a739b1db3ee1a7f5eb3ce) (17-01-2025)
+- rfc: Moves docker folder to root folder [c04d1bd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c04d1bdefe2e8b8e32014ce73ecb058b91c8e961) (17-01-2025)
+- feat: customize the path where volumes will be stored [6e4acea](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6e4acea0df656f1c10056bb62d0b88ec4ea52827) (17-01-2025)
+- hotfixes: remove stdout 1 to avoid polluting with target mails root@domainFQDN [efef5e2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/efef5e200ae40d59ce7b5fffce9842ee104e49bf) (17-01-2025)
+- feat: Adds the ability to enable e-mailing of dmarc reports [b449f7d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b449f7dfc5ab652e695cffb0319f14a7705f6db2) (16-01-2025)
+- hotfixes: Change ambiguous system password [4e09e82](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4e09e82b8c729e0243ad3edf7e29c5e9d4197578) (16-01-2025)
+- docs: update title [6e736c7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6e736c7b73a22226f1c23bc985b43da425a3ad60) (16-01-2025)
+- hotfixes: missing reports at 0h [0a47651](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0a47651c02b890972ef617e31ddbdd4378c4d26f) (16-01-2025)
+- chore: update datetime file, file constantly modified [1e6fc2a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1e6fc2ad1d76ddd557c739e150ae0ffe1d3f2472) (16-01-2025)
+- Merge pull request #13 from padcmoi/debian11-bullseye [cc6a79d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cc6a79d6a0e7fae2141a1b56658644ce3576236a) (15-01-2025)
+- Merge pull request #12 from padcmoi/bugfix/mail-server [442127b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/442127b0ad6ed529baca5b616088e4bb5c3575ce) (15-01-2025)
+- hotfixes: enable SSL mode for phpmyadmin [205e966](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/205e9669643cab60b9e23a1dbf8727589bca2c04) (15-01-2025)
+- hotfixes: fix sql search sql to conf [bbbaac1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bbbaac122d146ddde39329361e6b0b52a13feaa2) (15-01-2025)
+- hotfixes: install roundcube in the image build, to solve the problem of creating databases from APT, add a SQL dump file [3aec3a9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3aec3a905ee5fe1fd7dc1a7a62b78b7770f2b485) (15-01-2025)
+- hotfixes: dmarc report script didn't work (overwrite) [911b443](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/911b44331a7b6e185de101f7f2799cae9e3b2b17) (15-01-2025)
+- hotfixes: dmarc report script didn't work [a8cb981](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a8cb9810f0e4c5a614b5436c1dcae8095e0d246b) (15-01-2025)
+- rfc: remove useless mysql command [1c54fd8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1c54fd83dd3d2f71731e50396c2a87f48ff0b23e) (15-01-2025)
+- rfc complete ll command [863e01a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/863e01aa991ae72068c767e7ce0b42b93ec2866f) (15-01-2025)
+- hotfixes: install opendmarc in the image build, to solve the problem of creating databases from APT, add a SQL dump file [138a4be](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/138a4be4481ef69aad28dafdab2ae1843fb62d2b) (15-01-2025)
+- check_policy_service doesn't seem to accept multiple servers, already used by policy-spf [1284dce](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1284dce268bc35f4370ab3dc31b745102920c368) (14-01-2025)
+- chore: move sample config in parent folder [fb2c50b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fb2c50b80089dc2b92b73ccf7724630c1c6a2f81) (14-01-2025)
+- rfc: Improves the visual appearance of started services [8a73452](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8a734522cb0b970e67bb24c3c93a4b0ede5cc187) (14-01-2025)
+- rfc: improve network command [d60ce7c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d60ce7c76bb47dcbc988f5dc659eee5ec0a40936) (13-01-2025)
+- hotfixes: remove duplicate roundcube configuration in apache.conf, this configuration file becomes a site available to activate [8df7841](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8df78416c321740b3459de1415c941f7548b520a) (13-01-2025)
+- fix: To avoid fail2ban crashing if these logs dont exist [68f93a0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/68f93a0c3cd1eb36d2396c33a0d1e3156cec0c4e) (13-01-2025)
+- fix, show state services [4277241](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4277241f7564e84812b7fcb9c92cf99e19207f0b) (13-01-2025)
+- feat: add network utility [c73a0ed](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c73a0edaf0b2109b0c59b705bcaa5bece47540b1) (13-01-2025)
+- rfc: Move services in each setup script, add default configuration to have functional services [6ca228d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6ca228d6b07adaf8d07d00892338712086436d44) (13-01-2025)
+- rfc: adds run after container in the docker setup sequence [162dd08](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/162dd0870e662786f288057a889bf1b60a3dcfe3) (13-01-2025)
+- Merge pull request #5 from padcmoi/feature/e-mail-transfer-policy-dmarc [ed85dd7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ed85dd7515c2e743b582be6fc9e9cef82677d59d) (13-01-2025)
+- feat: implementation complete of opendmarc, default setup, cron added [67bc614](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/67bc6142c23fc9551770a8d8b0a30eaf9e2888ba) (13-01-2025)
+- feat: add utility reusable [8c4e86c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8c4e86c536fb8690414ccf0cd516cc280e1f4937) (13-01-2025)
+- feat: add dmarc report for opendmarc, add a new volume [d61e5f9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d61e5f998fdb848f80623639b6ad220a76deece0) (13-01-2025)
+- rfc: connections to postfix milter [d24b0cb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d24b0cbe8dc33a74b464c137a6474797bfbd7973) (13-01-2025)
+- fix: change default dmarc [a1a457e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a1a457eb2a496320ac9085e0ad65eb88eff9175e) (13-01-2025)
+- feat: add opendmarc with configuration [24dfd76](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/24dfd76568811756db83bd1575670e63c1787705) (13-01-2025)
+- docs: remove duplicate element [def5cdd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/def5cdd34643dd8046af787079ef831b0a68af27) (12-01-2025)
+- fix: moves part dmarc in dedicated file [763d6da](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/763d6daa350506c41d64ca5dd78e3c369b647a81) (12-01-2025)
+- feat: add dmarc configuration with rspamd, disable dkim in rspamd [f3201bd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f3201bde61af2456137883d14bd5795bdc71481e) (12-01-2025)
+- Merge branch 'trunk' into feature/e-mail-transfer-policy-dmarc [d8015aa](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d8015aa4f15b3608b5bfa6f10c1abd1e3b034314) (11-01-2025)
+- fix: move apache2 concerning rspamd web in 24-rspamd [bf66609](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bf6660943e4373b280cd394b927b4f0e700b386b) (11-01-2025)
+- fix: opens a socket to allow applications to add content to the database during the image build [461ec3e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/461ec3e937a828552c45f2d280c524912a881712) (11-01-2025)
+- fix: opens a socket to allow applications to add content to the database during the image build [8612c6f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8612c6f920584ba0c28302330cb740817c86a6bd) (11-01-2025)
+- fix: separates phpmyadmin from the apache2 module as an optional module [002a6a8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/002a6a8deca764504baf68a1904a5cd85e8a5563) (11-01-2025)
+- rfc: remove the clear command, for better observation [de940a4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/de940a4d94583b0479ecfada2052489b502ace41) (11-01-2025)
+- fix: separates save spaces from folders destined to become docker volumes [237c204](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/237c204d37219f07427ff070d202206c17b22c48) (11-01-2025)
+- hotfixes: dovecot permissions issues on etc folder [01c22e0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/01c22e02c135ede81594229714efe8be8af70072) (10-01-2025)
+- chore: disable roundcube installation temp [b0ac7d2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b0ac7d2f630ed938ef57bb276114d8158ba99845) (10-01-2025)
+- fix cp after build database [d0197b4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d0197b40487cd5808762044f8ffd5c6d42a044d1) (10-01-2025)
+- chore: doesnt work [7e753af](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7e753afaa5fd14d85a78978343e3c637e1bef221) (10-01-2025)
+- Merge branch 'trunk' into feature/e-mail-transfer-policy-dmarc [e1b03ce](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e1b03cee6888c8ad12eb624e79c5d8f51ca2001b) (09-01-2025)
+- merge [f933378](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f93337818381ccb47e4702bd5208aacb69d958b9) (09-01-2025)
+- Merge pull request #8 from padcmoi/chore/clean-architecture [6a2f461](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6a2f46138b189ea6a8c3d22060e161a04b359d45) (09-01-2025)
+- fix: ambigous name password [a394aaa](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a394aaa2f29ab0c04a86432f5d8e3f055f58c3b7) (09-01-2025)
+- hotfix: force permission on opendkim keys folder [cf0d7a2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf0d7a2a97003b2512b773fa11cc0f22b9313359) (09-01-2025)
+- fix: issue of permissions on dkim keys once created [7ef64ed](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7ef64ed992f95e02dec01f7dcc3f3d6a2192f625) (09-01-2025)
+- chore: remove some useless features [44c2d58](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/44c2d587cc237797e5fc17196156deff8eff3afe) (09-01-2025)
+- chore: remove some useless features [4c587e6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4c587e6d3f3ecf9570373098878a24fd89be93c0) (09-01-2025)
+- fix: crash postfix boot, permission issues resolved [1ffa9db](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1ffa9db823675257dc1713d98060fbcbd380410f) (09-01-2025)
+- fix: permissions on folders clamav, rspamd [dadd147](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/dadd147955a7c1e362f31eaab071e5d0a40e6be9) (09-01-2025)
+- feat: copies volumes during docker build and renames them in a temporary folder, then reinjects them when the container is launched [2077d7a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2077d7a2f4231208e2aa31c6863809a4496c14ed) (09-01-2025)
+- rfc system file and configuration, packages are now created in the Docker image, allowing faster restart/startup. [434045d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/434045de82732146149ce77bde1d941829468f64) (09-01-2025)
+- rfc: add original configuration as reference [3a4deb4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3a4deb4a5686e268e113802e6960b16e5ae9c591) (09-01-2025)
+- fix add template folder and removes useless instructions [d53d5f0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d53d5f0f689ccef4c2f8514183a86ba559725399) (08-01-2025)
+- Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [95fb1eb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/95fb1eb08c566d6cda35935ef86dd09832480d5e) (08-01-2025)
+- feat: customizable jail rules [99d762c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/99d762cde7d6df4446cd9cf2d7acafc15d44c9f2) (08-01-2025)
+- fix: transfer fail2ban log to syslog, notify ban & unban [577f6c5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/577f6c51759d4201419a785d919da47f41572f60) (08-01-2025)
+- feat: implement a firewall and fail2ban to combat brute force attacks [c582e13](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c582e138ff68714ac755af16d3cb1ec0299898d5) (07-01-2025)
+- Merge branch 'main' into feature/e-mail-transfer-policy-dmarc [768ee36](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/768ee3638b78d840821c83ef0f61255b8005b9ee) (07-01-2025)
+- Merge branch 'main' into feature/security-fail2ban-firewall [3159e57](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3159e5743ec55587645e5af9f0c8cff7ba906476) (07-01-2025)
+- fix: remove mysql log from syslog and move warn mysql log in dedicated file [5cbf86d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5cbf86dbac985349269344bab0b756dae9402088) (07-01-2025)
+- check fail2ban implementation [8663cd2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8663cd28a7c6962e97e3c735917c200ef9f62527) (07-01-2025)
+- check dmarc implementation [4bc24d7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4bc24d709da82470fe5c035dec33b920b440e64d) (07-01-2025)
+- Merge pull request #4 from padcmoi/feature/sign-with-opendkim [bd4da71](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bd4da71ea3ef9bfeb736d3975609504caeda4169) (07-01-2025)
+- fix attempt fix mysql error log [93d389f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/93d389fb481c4d8333318957a28719cd85e549fb) (07-01-2025)
+- Merge branch 'main' into feature/sign-with-opendkim [430d5f9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/430d5f98b84faad829f7eff4b5d42617f8263be7) (06-01-2025)
+- fix: add roundcube table to mailuser mysql user [5f177f8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5f177f8af10bce0f6d1d1163438b208ea3d77ceb) (06-01-2025)
+- Merge branch 'main' into feature/sign-with-opendkim [589b712](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/589b7122df6615b0d8eeab027b65806fe1bf496f) (06-01-2025)
+- disable logs mysql server [f7767ab](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f7767ab4798ced9cf6d79d33c4b25083674a4394) (06-01-2025)
+- rfc: also provides a nice, ready-to-use public key file for sending to DNS [98e6de6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/98e6de661445ec8f7a500954ec00111037033766) (06-01-2025)
+- feat: implementation SPF [ac44ffc](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ac44ffca5447090813d8febc58df4cd82dda9ef2) (06-01-2025)
+- feat: implementation successful opendkim with antivirus ok [2f4b03f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2f4b03fad2645714a5eb5e5aae06dc3ce42b6c17) (06-01-2025)
+- feat: add util command ll [1538caa](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1538caa9232be93011f56be858a49a2091972d16) (06-01-2025)
+- feat: add spf rules [558f70f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/558f70f0c5ade13810af001b57ac48cefc50b7ee) (06-01-2025)
+- check opendkim [1b26895](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1b2689582573f8bad60ddb8e95a0345eb96a2894) (05-01-2025)
+- fix api details [11a7f92](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/11a7f9252091c6dfb74756433379bc0f10624688) (05-01-2025)
+- disable API instruction (no create) to reduce build time [d47ce15](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d47ce154c5e7cf3217e41441989084a35e45ee3f) (05-01-2025)
+- Merge pull request #3 from padcmoi/feature/migrate-antivirus-filtering-from-amavis-to-rspam [fbd8206](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fbd8206af499c5f4816b0a7713909db1d5406474) (05-01-2025)
+- feat: add notification on spam rejection [47fb1a6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/47fb1a62bf896f8389fcc9eab5b5617eead071ec) (05-01-2025)
+- feat: add clamav rules to rspamd [926b8ed](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/926b8ed3d46eb555219b01805d307e359ee3a13c) (05-01-2025)
+- rfc: remove old amavis [2e12c88](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2e12c88c906e2e69e7d3e054be55449b678bf17a) (05-01-2025)
+- feat: persist clamav database [d9affeb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d9affeb5bb5a31fd5801d09b897a02cedc9c2c7d) (05-01-2025)
+- rfc: remove useless old mail daemon and add tool [b01b3ad](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b01b3ad875ba8de90b43ffc1904a536cbb1a5d08) (05-01-2025)
+- fix: syslog missing [e12ae24](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e12ae2481c2eb05bea1b856af5606e3782acb161) (03-01-2025)
+- Update spam module readme [793cfbe](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/793cfbebcb3254ce5869b1a88b6dc7ebf4c887a1) (03-01-2025)
+- Update modules added, rspam, postscreen [89edc07](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/89edc0754517c034d4c9d10da741806a33961fd5) (03-01-2025)
+- Merge pull request #1 from padcmoi/feat/spam-implementation [929b9e1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/929b9e134011c115be04eaceee3fa28c8335c2b7) (03-01-2025)
+- fix: chown errors with unknow vmail user and group [170bc1c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/170bc1c909eb2342b51b3b04d89f0f28b71421b0) (02-01-2025)
+- feat: persist config data from rspamd [bf59115](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bf59115b6ec9bd522d9d8c547d6bf81e390e2153) (02-01-2025)
+- feat: add spam flag with redirect in spam folder [9de63b3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9de63b3eea9fcde300af273d57167f184cd4ceb7) (02-01-2025)
+- fix: default sieve rules to new user [80ec596](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/80ec59611d2753d6af3dd600131bb789396a35b8) (02-01-2025)
+- fix: enable upstream spam flag [8499858](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8499858f3c09163e9f3fb100ca2bc7d9108c391e) (01-01-2025)
+- feat: persist redis data from rspamd [4666ab1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4666ab1bf40833990a75e91821f7471464a8366a) (01-01-2025)
+- feat: implement rspamd web interface [00756d7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/00756d7ead92e3bdcdc8cefcffbffa3483fe9965) (01-01-2025)
+- feat: add custom virtual hosts for apache 2 & change access port [a484268](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a484268b08c90643e14de249ece61e8d0ad8df48) (01-01-2025)
+- fix: add whistlist ip to postscreen [e6b0c9d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e6b0c9dd2d28d15381cb1e7f5a4fdb2f8d4806f4) (01-01-2025)
+- feat: add rspamd with settings & implement Bayesian self-learning ham, spam in dovecot [ee7448a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ee7448a3c8423db11ac2abadcf1fb55ada758f2b) (01-01-2025)
+- fix postscreen volume lost after diff merge [d8cd1e7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d8cd1e70a2a00aebce32bed4721f364ef42e9ead) (31-12-2024)
+- resolve conflict from main branch [2f76f66](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2f76f66bc4c283365b437d528295345e201c7a5d) (31-12-2024)
+- rfc: move volumes folder to the root project [7191071](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/71910719ef76e5940cf88b0cb4be3dfe946c79ee) (31-12-2024)
+- feat; implement postscreen [a782c46](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a782c462f26cc11b718a4a97331d786a17987f00) (31-12-2024)
+- Merge branch 'main' into feat/spam-implementation [7ff6287](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7ff62878087c294a5911436c344954c4d09785e7) (30-12-2024)
+- fix: sql tables numeric values with bigint [be7ee6e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/be7ee6e0ce9cfa9583c74c821e1f1e28f99d14e8) (30-12-2024)
+- fix: roundcube adress imap, smtp server [7c04c92](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7c04c92214151ed4542274b60c6294645026f112) (30-12-2024)
+- feat: add update auto certificate script [ff71f4e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ff71f4e3e4f326e0f6871a5fe1f5c8773959a897) (30-12-2024)
+- fix: disable IPV6 & restrictions rules & spamd missing conf [8cc7bee](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8cc7bee5ad263b3419bca305260e32079a4a750b) (29-12-2024)
+- Merge branch 'main' into feat/spam-implementation [8719b39](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8719b39ca29c988d89fd2c8c8d8eebf3c6a71deb) (28-12-2024)
+- feat: implements the ability to enable or disable antivirus [ac89d21](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ac89d21ed497c407feb9b4b435253c5d61780143) (28-12-2024)
+- init rspam implement [3778de7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3778de77ceee5fe26ab27f3d08e56e7b0ae92b7b) (28-12-2024)
+- feat: add postfix volume [f765b63](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f765b63595903f854fdeadfe2fca3f50314f4236) (28-12-2024)
+- feat: add task cron, refresh antivirus [bd63796](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bd637963d67e38a486b8273e12718ecfd7b65d68) (28-12-2024)
+- feat: add sieve rules [23e97de](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/23e97de6bf23e53e27914602086449d1fd52c2a9) (27-12-2024)
+- fix: sieve error on recipient autoresponses [fde84e5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fde84e5a62830b51c3a07fb6c1741dfdc17bdb19) (27-12-2024)
+- fix: hostname ambigous key by fqdn_domain [5f8e6e4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5f8e6e4d6cde11d4daac02c1da48e6d13b6590f6) (27-12-2024)
+- feat: add roundcube webmail with basic configuration [e199da6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e199da659c92c1e6fc4dbe6d06736aca89fcef0b) (27-12-2024)
+- fix: provide start ssl cert [94044bf](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/94044bf4c8febf54fd96a616a873349bb004d36b) (25-12-2024)
+- feat: Adds functional container with postfix, dovecot, database and configuration [585880b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/585880ba1ed2104f73e2ba6d67251962830b6c24) (25-12-2024)
+- add license [1eebe61](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1eebe6176e444fb9474ea5310e67441ec7071681) (17-12-2024)
+- feat: separate dockerfiles in dedicated folder && import repository in docker container [73a2a3f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/73a2a3f4016efd111037a0a54eb2392b4a800fda) (17-12-2024)
+- feat: add environnement file at nest api [b71d069](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b71d069b931bea4ed719a61675fe2b5b67b3225e) (17-12-2024)
+- Create README.md [2ba1668](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2ba1668e1ee96c5143ca4f069812ae376a3ae4d7) (17-12-2024)
+- initial commit [bf0942e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bf0942e282278c9ed1805b8dbdd15aaf0edccd7b) (17-12-2024)
