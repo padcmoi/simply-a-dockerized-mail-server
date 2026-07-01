@@ -36,6 +36,7 @@ jobs:
 
   typecheck-api:
     name: manager-api · typecheck
+    needs: [lint-api]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -58,6 +59,7 @@ jobs:
 
   lint-ui:
     name: manager-ui · lint
+    needs: [typecheck-api]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -82,6 +84,7 @@ jobs:
 
   typecheck-ui:
     name: manager-ui · typecheck
+    needs: [lint-ui]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -106,7 +109,7 @@ jobs:
 
   test-mailserver:
     name: ./test-mailservers.sh
-    needs: [lint-api, typecheck-api, lint-ui, typecheck-ui]
+    needs: [typecheck-ui]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
