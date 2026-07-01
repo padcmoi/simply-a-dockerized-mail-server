@@ -1,5 +1,17 @@
 # Changelog
 
+feat(dev): dedicated dev overlay with hot-reload for manager-api and manager-ui
+chore(ci): chain lint/typecheck/test jobs sequentially for 5-step pipeline view
+chore(ci): split lint/typecheck jobs and rename mail server test job
+feat(ui): reusable ConfirmModal with 10s countdown before deletion
+chore: add prettier.sh to format manager-api and manager-ui
+fix(ui): strip dead vue-router volar sfc-route-blocks plugin from tsconfig
+fix(ui): wrap inviteOpen assignment in arrow fn to satisfy onClick void type
+feat(ui): responsive card layout for all tables on mobile/tablet
+chore(ci): merge lint jobs into test.yml, gate test on lint passing
+fix(manager-ui): resolve all lint and typecheck violations for CI pipeline
+chore(ci): add dedicated lint and typecheck workflow for manager-api and manager-ui
+feat(accounts): manager ACL with root-only invite flow and per-domain access control
 fix(ci,tests): align CI seed + test suite with current schema and stack behavior
 feat(manager-ui,manager-api): mail volume capacity gauge + i18n FR/EN with typed contract
 fix(manager-ui): refresh expired JWT on 401 and stop proxying /api/_nuxt_icon
