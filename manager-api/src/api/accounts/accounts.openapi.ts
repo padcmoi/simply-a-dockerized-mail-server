@@ -1,7 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
-import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
-export const AccountsApi = () => applyDecorators(ApiTags("accounts"), ApiBearerAuth());
+export const AccountsApi = () => applyDecorators(ApiTags("accounts"), ApiSecurity("apiToken"));
 
 export const ListAccountsDocs = () =>
   applyDecorators(

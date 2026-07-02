@@ -1,8 +1,7 @@
-import { applyDecorators, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { applyDecorators } from "@nestjs/common";
+import { ApiOperation, ApiQuery, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
-export const PostfixApi = () => applyDecorators(ApiTags("postfix"), ApiBearerAuth(), UseGuards(AuthGuard("jwt")));
+export const PostfixApi = () => applyDecorators(ApiTags("postfix"), ApiSecurity("apiToken"));
 
 export const GetQueueDocs = () =>
   applyDecorators(

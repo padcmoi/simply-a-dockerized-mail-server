@@ -1,8 +1,7 @@
-import { applyDecorators, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { applyDecorators } from "@nestjs/common";
+import { ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
-export const RejectSendersApi = () => applyDecorators(ApiTags("sieve"), ApiBearerAuth(), UseGuards(AuthGuard("jwt")));
+export const RejectSendersApi = () => applyDecorators(ApiTags("sieve"), ApiSecurity("apiToken"));
 
 export const ListRejectSendersDocs = () =>
   applyDecorators(

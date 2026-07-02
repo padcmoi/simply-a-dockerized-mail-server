@@ -1,6 +1,5 @@
-import { applyDecorators, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { applyDecorators } from "@nestjs/common";
+import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
 export const JwtAuthApi = () => applyDecorators(ApiTags("auth-jwt"));
 
@@ -24,12 +23,11 @@ export const JwtRefreshDocs = () =>
     })
   );
 
-export const JwtLogoutDocs = () =>
-  applyDecorators(ApiBearerAuth(), UseGuards(AuthGuard("jwt")), ApiOperation({ summary: "Revoke a refresh token (idempotent)" }));
+export const JwtLogoutDocs = () => applyDecorators(ApiOperation({ summary: "Revoke a refresh token (idempotent)" }));
 
 export const JwtMeDocs = () =>
   applyDecorators(
-    ApiBearerAuth(),
+    ApiSecurity("apiToken"),
     ApiOperation({
       summary: "Return the profile of the authenticated account",
     }),
@@ -42,7 +40,7 @@ export const JwtMeDocs = () =>
 
 export const JwtUpdateProfileDocs = () =>
   applyDecorators(
-    ApiBearerAuth(),
+    ApiSecurity("apiToken"),
     ApiOperation({
       summary: "Update the authenticated account's display name, email or avatar URL",
     }),

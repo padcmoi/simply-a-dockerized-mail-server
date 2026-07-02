@@ -15,7 +15,10 @@ async function bootstrap() {
     .setTitle("Simply Mail Server - Manager API")
     .setDescription("REST API for managing domains, mailboxes, aliases, quotas and sieve rules.")
     .setVersion("1.0.0")
-    .addBearerAuth()
+    .addApiKey(
+      { type: "apiKey", in: "header", name: "X-Api-Key", description: "Full API token: sms_clientId.secret" },
+      "apiToken"
+    )
     .build();
   SwaggerModule.setup("api/doc", app, SwaggerModule.createDocument(app, swagger));
 

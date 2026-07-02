@@ -1,8 +1,7 @@
-import { applyDecorators, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { applyDecorators } from "@nestjs/common";
+import { ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
-export const DomainsApi = () => applyDecorators(ApiTags("domains"), ApiBearerAuth(), UseGuards(AuthGuard("jwt")));
+export const DomainsApi = () => applyDecorators(ApiTags("domains"), ApiSecurity("apiToken"));
 
 export const ListDomainsDocs = () => applyDecorators(ApiOperation({ summary: "List managed domains" }));
 

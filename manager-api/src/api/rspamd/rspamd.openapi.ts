@@ -1,8 +1,7 @@
-import { applyDecorators, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { applyDecorators } from "@nestjs/common";
+import { ApiOperation, ApiQuery, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
-export const RspamdApi = () => applyDecorators(ApiTags("rspamd"), ApiBearerAuth(), UseGuards(AuthGuard("jwt")));
+export const RspamdApi = () => applyDecorators(ApiTags("rspamd"), ApiSecurity("apiToken"));
 
 export const GetStatsDocs = () =>
   applyDecorators(

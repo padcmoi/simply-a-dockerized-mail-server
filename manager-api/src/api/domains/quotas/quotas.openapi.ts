@@ -1,12 +1,10 @@
-import { applyDecorators, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
+import { applyDecorators } from "@nestjs/common";
+import { ApiOperation, ApiParam, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
 export const QuotasApi = () =>
   applyDecorators(
     ApiTags("domain-quotas"),
-    ApiBearerAuth(),
-    UseGuards(AuthGuard("jwt")),
+    ApiSecurity("apiToken"),
     ApiParam({
       name: "domainId",
       type: Number,
