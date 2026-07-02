@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api): dual JWT + API token auth with X-Api-Key header sms_clientId.secret and full CRUD (02-07-2026)
+- feat(ui): API token management page with CRUD, regenerate and optimistic state updates (02-07-2026)
+- feat(ui): reveal modal clipboard guard and auto-delete token on dismiss without confirm (02-07-2026)
+- feat(api): Swagger single X-Api-Key field, remove JWT from OpenAPI security schemes (02-07-2026)
+
 - Domains spamd sub-module with per-domain history and stats routes, fix DKIM generate button _(api)_ [459d114](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/459d114ef8367fdbc6c797acf34405230ed1179f) (01-07-2026)
 - DKIM confirm dialogs and collapse-aware generate button _(ui)_ [c7d5fa5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c7d5fa53ec2cb58203f71242692f7baa49b1e5b3) (01-07-2026)
 - Account domain ACL and invitation management _(api)_ [2b0c776](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2b0c776df759325a4fbd904ac48fee513c5dc391) (01-07-2026)

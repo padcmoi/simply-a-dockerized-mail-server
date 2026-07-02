@@ -1,4 +1,5 @@
 import { join } from "path";
+import { APP_GUARD } from "@nestjs/core";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
@@ -8,6 +9,8 @@ import { HealthModule } from "./api/health/health.module";
 import { PostfixModule } from "./api/postfix/postfix.module";
 import { RspamdModule } from "./api/rspamd/rspamd.module";
 import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.module";
+import { ApiTokenModule } from "./core/auth/api-token/api-token.module";
+import { CombinedAuthGuard } from "./core/auth/auth.guard";
 import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
 
 @Module({
@@ -29,11 +32,13 @@ import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
     }),
     HealthModule,
     JwtAuthModule,
+    ApiTokenModule,
     DomainsModule,
     RejectSendersModule,
     AccountsModule,
     RspamdModule,
     PostfixModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: CombinedAuthGuard }],
 })
 export class AppModule {}

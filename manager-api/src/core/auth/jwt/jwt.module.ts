@@ -12,6 +12,6 @@ import { JwtStrategy } from "./jwt.strategy";
   imports: [PassportModule, JwtModule.register({}), TypeOrmModule.forFeature([Account, RefreshToken])],
   providers: [JwtAuthService, JwtStrategy],
   controllers: [JwtAuthController],
-  exports: [JwtAuthService],
+  exports: [JwtAuthService, JwtModule],
 })
 export class JwtAuthModule {}
