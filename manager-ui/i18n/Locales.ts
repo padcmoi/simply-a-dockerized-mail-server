@@ -14,6 +14,7 @@ export interface Locales {
     sieveLong: string;
     accounts: string;
     profile: string;
+    apiTokens: string;
     signOut: string;
     appearance: string;
     light: string;
@@ -342,6 +343,60 @@ export interface Locales {
       score: string;
       size: string;
       time: string;
+    };
+  };
+  apiTokens: {
+    alertTitle: string;
+    alertDescription: string;
+    listTitle: string;
+    newToken: string;
+    empty: string;
+    active: string;
+    expired: string;
+    revoked: string;
+    regenerate: string;
+    revokeToken: string;
+    deleteToken: string;
+    allIps: string;
+    noExpiry: string;
+    never: string;
+    modal: {
+      createTitle: string;
+      editTitle: string;
+      name: string;
+      namePlaceholder: string;
+      allowedIps: string;
+      allowedIpsHint: string;
+      expiresAt: string;
+      expiresAtHint: string;
+    };
+    reveal: {
+      title: string;
+      warning: string;
+      keyLabel: string;
+      copy: string;
+      copied: string;
+      done: string;
+    };
+    table: {
+      clientId: string;
+      ips: string;
+      expires: string;
+      lastUsed: string;
+    };
+    toast: {
+      created: string;
+      updated: string;
+      revoked: string;
+      revokeFailed: string;
+      regenerated: string;
+      regenerateFailed: string;
+      deleted: string;
+      deleteFailed: string;
+      keySaved: string;
+      keyNotSaved: string;
+      saveFailed: string;
+      loadFailed: string;
     };
   };
 }

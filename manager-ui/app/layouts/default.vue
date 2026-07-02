@@ -40,7 +40,10 @@ const domainNavItems = computed<NavigationMenuItem[]>(() => {
 });
 
 const userItems = computed<DropdownMenuItem[][]>(() => [
-  [{ label: t("nav.profile"), icon: "i-lucide-user", to: "/profile" }],
+  [
+    { label: t("nav.profile"), icon: "i-lucide-user", to: "/profile" },
+    { label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens" },
+  ],
   [
     {
       label: t("app.language"),
@@ -117,6 +120,7 @@ const headerTitle = computed(() => {
     "/sieve": t("nav.sieveLong"),
     "/accounts": t("nav.accounts"),
     "/profile": t("nav.profile"),
+    "/api-tokens": t("nav.apiTokens"),
   };
   for (const k of Object.keys(map)) if (route.path.startsWith(k)) return map[k];
   return t("app.name");
