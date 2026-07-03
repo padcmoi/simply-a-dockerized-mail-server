@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): core composables - useAutosave, useGroups, useHeaderTitle, useNav, usePermissions, useSessionRefresh, useWindowFocus (03-07-2026)
+- feat(api): full ACL enforcement - PermissionGuard applied to all controllers (domains, recipients, aliases, quotas, dkim, spamd, sieve, rspamd, postfix, accounts/names) (02-07-2026)
+- feat(api): GET /auth/jwt/me/permissions endpoint returning effective global and domain permissions for the current user (02-07-2026)
+- feat(ui): standalone /postfix page (global queue stats) + nav item gated on postfix.view permission (03-07-2026)
+- feat(ui): profile page permissions section showing group, global and domain permissions with action badges, refreshed on mount (02-07-2026)
+- feat(ui): nav items filtered by user permissions, page-level guard redirects to dashboard on 403 (02-07-2026)
+- feat(api): GET /accounts/names endpoint (id+username+name) accessible to any authenticated user for group selectors (02-07-2026)
+- feat(api): group ownership (owner_id FK ON DELETE SET NULL, PATCH owner, member add/remove for owner or root) (02-07-2026)
+- feat(api): permission self-check: non-root can only assign permissions they already hold (02-07-2026)
+- feat(ui): group detail page with owner section, member management, and separate edit page (02-07-2026)
+- feat(api): groups ACL with global and domain permissions, PermissionGuard, seed operator account (02-07-2026)
+- feat(api): direct account creation and group assignment endpoints for root (02-07-2026)
+- feat(ui): groups management page with inline UTree permissions panel (resource+action checkboxes, no modal) (02-07-2026)
 - feat(api): dual JWT + API token auth with X-Api-Key header sms_clientId.secret and full CRUD (02-07-2026)
 - feat(ui): API token management page with CRUD, regenerate and optimistic state updates (02-07-2026)
 - feat(ui): reveal modal clipboard guard and auto-delete token on dismiss without confirm (02-07-2026)
