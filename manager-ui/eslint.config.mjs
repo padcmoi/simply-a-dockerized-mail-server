@@ -26,7 +26,7 @@ const scriptSetupOrder = [
   "provide",
   "inject",
 
-  "use*",
+  // "use*" disabled: not practical here, some composables need to be called at different points rather than strictly at setup top-level.
 
   "watch",
   "watchEffect",
