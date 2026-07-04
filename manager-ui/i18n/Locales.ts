@@ -112,6 +112,8 @@ export interface Locales {
       fqdn: string;
       quotaMb: string;
       quotaMax: string;
+      quotaMin: string;
+      quotaRange: string;
       active: string;
       submit: string;
     };
@@ -126,6 +128,7 @@ export interface Locales {
       addFailed: string;
       loadFailed: string;
       quotaTooHigh: string;
+      quotaTooLow: string;
     };
   };
   recipients: {
@@ -138,6 +141,7 @@ export interface Locales {
       localPart: string;
       password: string;
       quotaBytes: string;
+      quotaMin: string;
       submit: string;
     };
     table: {
@@ -150,6 +154,11 @@ export interface Locales {
       pickDomain: string;
       created: string;
       createFailed: string;
+      quotaTooLow: string;
+    };
+    postmaster: {
+      badge: string;
+      locked: string;
     };
   };
   aliases: {

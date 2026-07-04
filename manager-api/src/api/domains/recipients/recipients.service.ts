@@ -1,10 +1,20 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { sha512crypt } from "../../../core/common/sha512-crypt";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { CreateRecipientDto, UpdateRecipientDto } from "./recipients.validation";
+
+// postmaster@<domain> is provisioned automatically by DomainsService.reservePostmaster
+// (inactive, quota 0) and must stay that way for its lifetime: it's the
+// envelope-from dovecot-lda uses for system notifications, never a real
+// mailbox, so activating it, giving it quota, renaming it, or deleting it
+// would either let it accept mail it must never accept or silently reserve
+// disk space for nothing.
+function isPostmaster(email: string, domain: string) {
+  return email.toLowerCase() === `postmaster@${domain.toLowerCase()}`;
+}
 
 // VirtualUser is the ORM mapping for the `virtual_users` postfix table; the
 // table name is dictated by postfix conventions and not under our control.
@@ -41,6 +51,9 @@ export class RecipientsService {
   }
 
   async create(input: CreateRecipientDto, domain: string) {
+    if (input.localPart.toLowerCase() === "postmaster") {
+      throw new ConflictException("postmaster@ is reserved and provisioned automatically for every domain");
+    }
     const email = `${input.localPart}@${domain}`;
     if (await this.recipients.findOne({ where: { email } })) {
       throw new ConflictException(`Recipient ${email} already exists`);
@@ -51,7 +64,7 @@ export class RecipientsService {
         domain,
         password: await sha512crypt(input.password),
         maildir: `${domain}/${input.localPart}/`,
-        quota: String(input.quota ?? 524_288_000),
+        quota: String(input.quota),
         active: input.active === false ? 0 : 1,
         uid: "vmail",
         gid: "vmail",
@@ -63,6 +76,9 @@ export class RecipientsService {
 
   async update(id: number, input: UpdateRecipientDto, domain: string) {
     const current = await this.get(id, domain);
+    if (isPostmaster(current.email, domain)) {
+      throw new ForbiddenException("postmaster@ is managed automatically and cannot be modified");
+    }
     if (input.password) current.password = await sha512crypt(input.password);
     if (input.quota !== undefined) current.quota = String(input.quota);
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
@@ -71,7 +87,11 @@ export class RecipientsService {
   }
 
   async remove(id: number, domain: string) {
-    await this.recipients.remove(await this.get(id, domain));
+    const current = await this.get(id, domain);
+    if (isPostmaster(current.email, domain)) {
+      throw new ForbiddenException("postmaster@ cannot be deleted");
+    }
+    await this.recipients.remove(current);
     return { ok: true };
   }
 }

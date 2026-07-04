@@ -8,11 +8,15 @@ interface Recipient {
   active: number;
 }
 
+const MIN_QUOTA_BYTES = 1024 * 1024;
+
 const items = ref<Recipient[]>([]);
 const loading = ref(false);
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 const form = reactive({ localPart: "", password: "", quota: 524288000 });
+
+const quotaUnderLimit = computed(() => form.quota < MIN_QUOTA_BYTES);
 
 const columns = computed(() => [
   { accessorKey: "email", header: t("recipients.table.address") },
@@ -36,6 +40,10 @@ watchEffect(() => {
   ]);
 });
 
+function isPostmaster(item: Recipient) {
+  return item.email.toLowerCase().startsWith("postmaster@");
+}
+
 async function load() {
   loading.value = true;
   try {
@@ -46,6 +54,10 @@ async function load() {
 }
 
 async function create() {
+  if (quotaUnderLimit.value) {
+    toast.add({ title: t("recipients.toast.quotaTooLow", { value: MIN_QUOTA_BYTES / (1024 * 1024) }), color: "error" });
+    return;
+  }
   try {
     await call(`/domains/${domainStore.selected!.id}/recipients`, {
       method: "POST",
@@ -113,15 +125,29 @@ onMounted(load);
         <UFormField :label="t('recipients.form.password')" name="password">
           <UInput v-model="form.password" type="password" :placeholder="t('recipients.form.password')" class="w-full" />
         </UFormField>
-        <UFormField :label="t('recipients.form.quotaBytes')" name="quota">
-          <UInput v-model.number="form.quota" type="number" class="w-full" />
+        <UFormField
+          :label="t('recipients.form.quotaBytes')"
+          name="quota"
+          :error="quotaUnderLimit ? t('recipients.form.quotaMin', { value: MIN_QUOTA_BYTES / (1024 * 1024) }) : undefined"
+        >
+          <UInput v-model.number="form.quota" type="number" :min="MIN_QUOTA_BYTES" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-plus" block class="lg:w-auto">{{ t("recipients.form.submit") }}</UButton>
+        <UButton type="submit" icon="i-lucide-plus" :disabled="quotaUnderLimit" block class="lg:w-auto">{{
+          t("recipients.form.submit")
+        }}</UButton>
       </UForm>
     </UCard>
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
       <UTable :columns="columns" :data="items" :loading="loading" sticky>
+        <template #email-cell="{ row }">
+          <div class="flex items-center gap-2">
+            <span>{{ row.original.email }}</span>
+            <UBadge v-if="isPostmaster(row.original)" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock">
+              {{ t("recipients.postmaster.badge") }}
+            </UBadge>
+          </div>
+        </template>
         <template #active-cell="{ row }">
           <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
             {{ row.original.active ? t("common.yes") : t("common.no") }}
@@ -129,6 +155,7 @@ onMounted(load);
         </template>
         <template #actions-cell="{ row }">
           <UButton
+            v-if="!isPostmaster(row.original)"
             icon="i-lucide-trash-2"
             color="error"
             variant="ghost"
@@ -136,6 +163,9 @@ onMounted(load);
             square
             @click="requestDelete(() => remove(row.original))"
           />
+          <UTooltip v-else :text="t('recipients.postmaster.locked')">
+            <UIcon name="i-lucide-lock" class="text-dimmed" />
+          </UTooltip>
         </template>
       </UTable>
     </UCard>
@@ -145,7 +175,14 @@ onMounted(load);
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>
       <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
-      <RecipientCard v-for="item in items" v-else :key="item.id" :item="item" @delete="requestDelete(() => remove(item))" />
+      <RecipientCard
+        v-for="item in items"
+        v-else
+        :key="item.id"
+        :item="item"
+        :is-postmaster="isPostmaster(item)"
+        @delete="requestDelete(() => remove(item))"
+      />
     </div>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />

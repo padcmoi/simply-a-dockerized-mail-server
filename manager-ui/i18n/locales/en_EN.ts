@@ -103,7 +103,7 @@ export default {
     alertDescription: "Creating one provisions the inactive postmaster and the DKIM key.",
     capacity: {
       title: "Mail volume capacity",
-      hint: "Quota 0 means unlimited (capped only by disk)",
+      hint: "Every domain reserves at least 10 MB — no unlimited quota",
       total: "Total",
       free: "Free on disk",
       reserved: "Reserved by domains",
@@ -114,6 +114,8 @@ export default {
       fqdn: "FQDN",
       quotaMb: "Quota (MB)",
       quotaMax: "Max {value} MB",
+      quotaMin: "Minimum {value} MB",
+      quotaRange: "{min}–{max} MB",
       active: "Active",
       submit: "Add",
     },
@@ -128,6 +130,7 @@ export default {
       addFailed: "Add failed",
       loadFailed: "Failed",
       quotaTooHigh: "Quota exceeds available capacity",
+      quotaTooLow: "Quota must be at least {value} MB",
     },
   },
   recipients: {
@@ -140,6 +143,7 @@ export default {
       localPart: "Local part",
       password: "Password",
       quotaBytes: "Quota (bytes)",
+      quotaMin: "Minimum {value} MB",
       submit: "Create",
     },
     table: {
@@ -152,6 +156,11 @@ export default {
       pickDomain: "Pick a domain first",
       created: "Recipient created",
       createFailed: "Create failed",
+      quotaTooLow: "Quota must be at least {value} MB",
+    },
+    postmaster: {
+      badge: "System",
+      locked: "postmaster@ is managed automatically and cannot be edited, activated or deleted",
     },
   },
   aliases: {

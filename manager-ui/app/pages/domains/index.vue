@@ -15,13 +15,14 @@ interface Disk {
 }
 
 const MB = 1024 * 1024;
+const MIN_QUOTA_MB = 10;
 
 const items = ref<Domain[]>([]);
 const disk = ref<Disk | null>(null);
 const loading = ref(false);
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
-const form = reactive({ domain: "", active: true, quotaMb: 0 });
+const form = reactive({ domain: "", active: true, quotaMb: MIN_QUOTA_MB });
 
 const assignableMb = computed(() => (disk.value ? Math.floor(disk.value.assignableBytes / MB) : 0));
 const totalGb = computed(() => (disk.value ? (disk.value.totalBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
@@ -29,6 +30,7 @@ const freeGb = computed(() => (disk.value ? (disk.value.freeBytes / (1024 * 1024
 const reservedGb = computed(() => (disk.value ? (disk.value.reservedBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
 const assignableGb = computed(() => (disk.value ? (disk.value.assignableBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
 const quotaOverLimit = computed(() => form.quotaMb > assignableMb.value);
+const quotaUnderLimit = computed(() => form.quotaMb < MIN_QUOTA_MB);
 const columns = computed(() => [
   { accessorKey: "id", header: t("domains.table.id") },
   { accessorKey: "domain", header: t("domains.table.domain") },
@@ -63,6 +65,10 @@ async function load() {
 }
 
 async function create() {
+  if (quotaUnderLimit.value) {
+    toast.add({ title: t("domains.toast.quotaTooLow", { value: MIN_QUOTA_MB }), color: "error" });
+    return;
+  }
   if (quotaOverLimit.value) {
     toast.add({ title: t("domains.toast.quotaTooHigh"), color: "error" });
     return;
@@ -77,7 +83,7 @@ async function create() {
       },
     });
     form.domain = "";
-    form.quotaMb = 0;
+    form.quotaMb = MIN_QUOTA_MB;
     await load();
     toast.add({ title: t("domains.toast.added"), color: "success" });
   } catch (err) {
@@ -171,15 +177,21 @@ onMounted(load);
         <UFormField
           :label="t('domains.form.quotaMb')"
           name="quotaMb"
-          :error="quotaOverLimit ? t('domains.form.quotaMax', { value: assignableMb }) : undefined"
-          :hint="t('domains.form.quotaMax', { value: assignableMb })"
+          :error="
+            quotaUnderLimit
+              ? t('domains.form.quotaMin', { value: MIN_QUOTA_MB })
+              : quotaOverLimit
+                ? t('domains.form.quotaMax', { value: assignableMb })
+                : undefined
+          "
+          :hint="t('domains.form.quotaRange', { min: MIN_QUOTA_MB, max: assignableMb })"
         >
-          <UInput v-model.number="form.quotaMb" type="number" min="0" :max="assignableMb" class="w-32" />
+          <UInput v-model.number="form.quotaMb" type="number" :min="MIN_QUOTA_MB" :max="assignableMb" class="w-32" />
         </UFormField>
         <UFormField :label="t('domains.form.active')" name="active">
           <USwitch v-model="form.active" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-plus" :disabled="!form.domain || quotaOverLimit" block class="sm:w-auto">
+        <UButton type="submit" icon="i-lucide-plus" :disabled="!form.domain || quotaOverLimit || quotaUnderLimit" block class="sm:w-auto">
           {{ t("domains.form.submit") }}
         </UButton>
       </UForm>
