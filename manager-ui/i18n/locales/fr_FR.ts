@@ -160,7 +160,7 @@ export default {
     },
     postmaster: {
       badge: "Système",
-      locked: "postmaster@ est géré automatiquement et ne peut être ni modifié, ni activé, ni supprimé",
+      locked: "La boîte postmaster est gérée automatiquement et ne peut être ni modifiée, ni activée, ni supprimée",
     },
   },
   aliases: {

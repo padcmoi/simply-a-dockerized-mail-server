@@ -160,7 +160,7 @@ export default {
     },
     postmaster: {
       badge: "System",
-      locked: "postmaster@ is managed automatically and cannot be edited, activated or deleted",
+      locked: "The postmaster mailbox is managed automatically and cannot be edited, activated or deleted",
     },
   },
   aliases: {
