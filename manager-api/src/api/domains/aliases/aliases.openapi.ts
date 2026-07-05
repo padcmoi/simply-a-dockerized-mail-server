@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common";
-import { ApiOperation, ApiParam, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
 export const AliasesApi = () =>
   applyDecorators(
@@ -12,12 +12,82 @@ export const AliasesApi = () =>
     })
   );
 
-export const ListAliasesDocs = () => applyDecorators(ApiOperation({ summary: "List aliases that belong to this domain" }));
+export const ListAliasesDocs = () =>
+  applyDecorators(
+    ApiOperation({ summary: "List aliases that belong to this domain" }),
+    ApiResponse({
+      status: 200,
+      description: "Aliases returned",
+      schema: {
+        example: [
+          {
+            id: 1,
+            ownerId: null,
+            domain: "example.com",
+            source: "sales@example.com",
+            destination: "jdoe@example.com",
+            userStartDate: "2026-01-01",
+            userEndDate: null,
+            lastActivity: "2026-07-01T12:00:00.000Z",
+          },
+        ],
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: "domainId is not a valid integer",
+      schema: {
+        example: { statusCode: 400, message: "Validation failed (numeric string is expected)", error: "Bad Request" },
+      },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission aliases:access or aliases:read for this domain",
+    }),
+    ApiResponse({
+      status: 404,
+      description: "Parent domain not found",
+      schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
+    })
+  );
 
 export const GetAliasDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: "Fetch an alias by id (must belong to this domain)",
+    }),
+    ApiParam({ name: "id", type: Number, example: 1, description: "virtual_aliases.id" }),
+    ApiResponse({
+      status: 200,
+      description: "Alias returned",
+      schema: {
+        example: {
+          id: 1,
+          ownerId: null,
+          domain: "example.com",
+          source: "sales@example.com",
+          destination: "jdoe@example.com",
+          userStartDate: "2026-01-01",
+          userEndDate: null,
+          lastActivity: "2026-07-01T12:00:00.000Z",
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: "domainId or id is not a valid integer",
+      schema: {
+        example: { statusCode: 400, message: "Validation failed (numeric string is expected)", error: "Bad Request" },
+      },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission aliases:access or aliases:read for this domain",
+    }),
+    ApiResponse({
+      status: 404,
+      description: "Parent domain not found, or alias not found in this domain",
+      schema: { example: { statusCode: 404, message: "Alias #1 not found in example.com" } },
     })
   );
 
@@ -25,6 +95,50 @@ export const CreateAliasDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: "Create a source -> destination alias under this domain; body carries the local-part and the destination",
+      description: "The final source address is composed as `${localPart}@${domain}`.",
+    }),
+    ApiBody({
+      schema: {
+        example: {
+          localPart: "sales",
+          destination: "jdoe@example.com",
+          userEndDate: null,
+        },
+      },
+    }),
+    ApiResponse({
+      status: 201,
+      description: "Alias created",
+      schema: {
+        example: {
+          id: 1,
+          ownerId: null,
+          domain: "example.com",
+          source: "sales@example.com",
+          destination: "jdoe@example.com",
+          userStartDate: "2026-07-04",
+          userEndDate: null,
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: "Body validation failed, or domainId is not a valid integer",
+      schema: { example: { message: "Validation failed", issues: [] } },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission aliases:access or aliases:create for this domain",
+    }),
+    ApiResponse({
+      status: 404,
+      description: "Parent domain not found",
+      schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
+    }),
+    ApiResponse({
+      status: 409,
+      description: "Alias source already exists",
+      schema: { example: { statusCode: 409, message: "Alias sales@example.com already exists" } },
     })
   );
 
@@ -32,7 +146,71 @@ export const UpdateAliasDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: "Update destination / end-date of an alias in this domain",
+    }),
+    ApiParam({ name: "id", type: Number, example: 1, description: "virtual_aliases.id" }),
+    ApiBody({
+      schema: {
+        example: {
+          destination: "jdoe@example.com",
+          userEndDate: null,
+        },
+      },
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Alias updated",
+      schema: {
+        example: {
+          id: 1,
+          ownerId: null,
+          domain: "example.com",
+          source: "sales@example.com",
+          destination: "jdoe@example.com",
+          userStartDate: "2026-01-01",
+          userEndDate: null,
+          lastActivity: "2026-07-04T12:00:00.000Z",
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: "Body validation failed, or domainId/id is not a valid integer",
+      schema: { example: { message: "Validation failed", issues: [] } },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission aliases:access or aliases:modify for this domain",
+    }),
+    ApiResponse({
+      status: 404,
+      description: "Parent domain not found, or alias not found in this domain",
+      schema: { example: { statusCode: 404, message: "Alias #1 not found in example.com" } },
     })
   );
 
-export const RemoveAliasDocs = () => applyDecorators(ApiOperation({ summary: "Delete an alias from this domain" }));
+export const RemoveAliasDocs = () =>
+  applyDecorators(
+    ApiOperation({ summary: "Delete an alias from this domain" }),
+    ApiParam({ name: "id", type: Number, example: 1, description: "virtual_aliases.id" }),
+    ApiResponse({
+      status: 200,
+      description: "Alias deleted",
+      schema: { example: { ok: true } },
+    }),
+    ApiResponse({
+      status: 400,
+      description: "domainId or id is not a valid integer",
+      schema: {
+        example: { statusCode: 400, message: "Validation failed (numeric string is expected)", error: "Bad Request" },
+      },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission aliases:access or aliases:delete for this domain",
+    }),
+    ApiResponse({
+      status: 404,
+      description: "Parent domain not found, or alias not found in this domain",
+      schema: { example: { statusCode: 404, message: "Alias #1 not found in example.com" } },
+    })
+  );
