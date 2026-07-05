@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import { Public } from "../../core/auth/auth.decorator";
@@ -6,22 +6,14 @@ import { IsRootGuard } from "../../core/guards/is-root.guard";
 import {
   AcceptInvitationDocs,
   AccountsApi,
-  GetAclDocs,
   GetInvitationDocs,
+  ListAccountNamesDocs,
   ListAccountsDocs,
   RevokeAccountDocs,
   SendInvitationDocs,
-  SetAclDocs,
 } from "./accounts.openapi";
 import { AccountsService } from "./accounts.service";
-import {
-  AcceptInvitationDto,
-  SendInvitationDto,
-  SetAclDto,
-  acceptInvitationSchema,
-  sendInvitationSchema,
-  setAclSchema,
-} from "./accounts.validation";
+import { AcceptInvitationDto, SendInvitationDto, acceptInvitationSchema, sendInvitationSchema } from "./accounts.validation";
 
 type AuthedRequest = Request & {
   user: { id: number; username: string; isRoot: boolean };
@@ -31,6 +23,12 @@ type AuthedRequest = Request & {
 @Controller({ path: "accounts", version: "1" })
 export class AccountsController {
   constructor(private readonly svc: AccountsService) {}
+
+  @Get("names")
+  @ListAccountNamesDocs()
+  listNames() {
+    return this.svc.listNames();
+  }
 
   @Get()
   @ListAccountsDocs()
@@ -44,20 +42,6 @@ export class AccountsController {
   @UseGuards(IsRootGuard)
   revoke(@Param("id", ParseIntPipe) id: number) {
     return this.svc.revokeAccount(id);
-  }
-
-  @Get(":id/acl")
-  @GetAclDocs()
-  @UseGuards(IsRootGuard)
-  getAcl(@Param("id", ParseIntPipe) id: number) {
-    return this.svc.getAcl(id);
-  }
-
-  @Put(":id/acl")
-  @SetAclDocs()
-  @UseGuards(IsRootGuard)
-  setAcl(@Param("id", ParseIntPipe) id: number, @Body(new ZodValidationPipe(setAclSchema)) body: SetAclDto) {
-    return this.svc.setAcl(id, body);
   }
 
   @Post("invite")

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api): migrate ACL engine to the published `@naskot/custom-permission-guard` npm package (assertOne/assertAll, domain ownership bypass, global→domain bridge, dependsOn gate, cross-group anti-lockout); root stays an external, unconditional bypass composed on top, never a library concept (05-07-2026)
+- docs(api): complete OpenAPI/Swagger coverage on every route (params, request bodies, every real HTTP status code) + fix login/refresh/logout/revoke to return 200 instead of 201 (05-07-2026)
+- feat(api,ui): domain ownership (auto-assigned to the creator, single owner or none, PATCH owner transfer restricted to root or the current owner, ownerUsername resolved in API responses) (04-07-2026)
+- feat(api): groups anti-lockout - a permission write can never leave zero groups able to manage groups themselves, root exempt (04-07-2026)
+- feat(api,ui): Administration > Domains acts as a system-wide override (bridge) for the domain-scoped "domain" resource only, never recipients/aliases/quotas/dkim/spamd (04-07-2026)
+- feat(ui): account badge (Root / group name / no group) next to the username in the sidebar (04-07-2026)
+- feat(api,ui): domains.access alone unlocks nav + disk stats, domains.read additionally unlocks the domain list (04-07-2026)
+- feat(ui): page data refreshes on window focus / tab visibility regain, not just session and permissions (04-07-2026)
+- feat(api,ui): enforce minimum quotas (10 MB domains / 1 MB recipients) and lock postmaster@<domain> against activation, edits, deletion and recreation (03-07-2026)
 - feat(ui): core composables - useAutosave, useGroups, useHeaderTitle, useNav, usePermissions, useSessionRefresh, useWindowFocus (03-07-2026)
 - feat(api): full ACL enforcement - PermissionGuard applied to all controllers (domains, recipients, aliases, quotas, dkim, spamd, sieve, rspamd, postfix, accounts/names) (02-07-2026)
 - feat(api): GET /auth/jwt/me/permissions endpoint returning effective global and domain permissions for the current user (02-07-2026)

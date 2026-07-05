@@ -1,5 +1,8 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
+import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
+import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
+import { RequireDomainPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
 import {
   CreateRecipientDocs,
   GetRecipientDocs,
@@ -13,10 +16,12 @@ import { CreateRecipientDto, UpdateRecipientDto, createRecipientSchema, updateRe
 
 @RecipientsApi()
 @Controller({ path: "domains/:domainId/recipients", version: "1" })
+@UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class RecipientsController {
   constructor(private readonly svc: RecipientsService) {}
 
   @Get()
+  @RequireDomainPermissions([{ resource: "recipients", actions: ["access", "read"] }])
   @ListRecipientsDocs()
   async list(@Param("domainId", ParseIntPipe) domainId: number) {
     const domain = await this.svc.resolveDomain(domainId);
@@ -24,6 +29,7 @@ export class RecipientsController {
   }
 
   @Get(":id")
+  @RequireDomainPermissions([{ resource: "recipients", actions: ["access", "read"] }])
   @GetRecipientDocs()
   async get(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
@@ -31,6 +37,7 @@ export class RecipientsController {
   }
 
   @Post()
+  @RequireDomainPermissions([{ resource: "recipients", actions: ["access", "create"] }])
   @CreateRecipientDocs()
   async create(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -42,6 +49,7 @@ export class RecipientsController {
   }
 
   @Patch(":id")
+  @RequireDomainPermissions([{ resource: "recipients", actions: ["access", "modify"] }])
   @UpdateRecipientDocs()
   async update(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -54,6 +62,7 @@ export class RecipientsController {
   }
 
   @Delete(":id")
+  @RequireDomainPermissions([{ resource: "recipients", actions: ["access", "delete"] }])
   @RemoveRecipientDocs()
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);

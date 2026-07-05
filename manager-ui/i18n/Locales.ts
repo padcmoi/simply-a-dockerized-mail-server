@@ -7,12 +7,14 @@ export interface Locales {
     dashboard: string;
     domains: string;
     rspamd: string;
+    postfix: string;
     recipients: string;
     aliases: string;
     quotas: string;
     sieve: string;
     sieveLong: string;
     accounts: string;
+    groups: string;
     profile: string;
     apiTokens: string;
     signOut: string;
@@ -21,6 +23,8 @@ export interface Locales {
     dark: string;
     system: string;
     toggleSidebar: string;
+    rootBadge: string;
+    noGroupBadge: string;
   };
   common: {
     active: string;
@@ -99,6 +103,7 @@ export interface Locales {
   domains: {
     alertTitle: string;
     alertDescription: string;
+    listLocked: string;
     capacity: {
       title: string;
       hint: string;
@@ -224,6 +229,14 @@ export interface Locales {
       updateFailed: string;
       loadFailed: string;
     };
+    permissions: {
+      title: string;
+      root: string;
+      globalTitle: string;
+      domainTitle: string;
+      empty: string;
+      loadFailed: string;
+    };
   };
   accounts: {
     alertTitle: string;
@@ -233,29 +246,29 @@ export interface Locales {
       username: string;
       name: string;
       email: string;
-      domains: string;
+      group: string;
+      noGroup: string;
+      noGroupOption: string;
+      changeGroup: string;
+      rootAccess: string;
       status: string;
       lastLogin: string;
     };
     invite: {
       title: string;
       emailLabel: string;
-      domainsLabel: string;
-      domainsHint: string;
+      groupLabel: string;
+      groupHint: string;
+      groupPlaceholder: string;
       submit: string;
-    };
-    acl: {
-      title: string;
-      hint: string;
-      save: string;
     };
     toast: {
       invited: string;
       inviteFailed: string;
       revoked: string;
       revokeFailed: string;
-      aclSaved: string;
-      aclFailed: string;
+      groupUpdated: string;
+      groupUpdateFailed: string;
       loadFailed: string;
     };
     confirmRevoke: string;
@@ -266,8 +279,8 @@ export interface Locales {
     title: string;
     subtitle: string;
     emailLabel: string;
-    domainsLabel: string;
-    allDomains: string;
+    groupLabel: string;
+    noGroup: string;
     usernameLabel: string;
     usernameHint: string;
     nameLabel: string;
@@ -337,6 +350,17 @@ export interface Locales {
       label: string;
       off: string;
     };
+    owner: {
+      title: string;
+      unassigned: string;
+      pickPlaceholder: string;
+      change: string;
+      saved: string;
+      saveFailed: string;
+    };
+  };
+  postfixPage: {
+    subtitle: string;
   };
   rspamdPage: {
     subtitle: string;
@@ -406,6 +430,105 @@ export interface Locales {
       keyNotSaved: string;
       saveFailed: string;
       loadFailed: string;
+    };
+  };
+  groups: {
+    alertTitle: string;
+    alertDescription: string;
+    newGroup: string;
+    empty: string;
+    backToList: string;
+    noDescription: string;
+    defaultBadge: string;
+    table: {
+      name: string;
+      description: string;
+      owner: string;
+      members: string;
+    };
+    form: {
+      title: string;
+      name: string;
+      description: string;
+      submit: string;
+      isDefault: string;
+      isDefaultHint: string;
+    };
+    toast: {
+      loadFailed: string;
+      created: string;
+      createFailed: string;
+      updated: string;
+      updateFailed: string;
+      deleted: string;
+      deleteFailed: string;
+    };
+    confirmDelete: string;
+    detail: {
+      nameLabel: string;
+      descriptionLabel: string;
+      save: string;
+      saved: string;
+      saveFailed: string;
+      owner: {
+        title: string;
+        unassigned: string;
+        pickPlaceholder: string;
+        change: string;
+        saved: string;
+        saveFailed: string;
+      };
+      members: {
+        title: string;
+        empty: string;
+        pickPlaceholder: string;
+        add: string;
+        addFailed: string;
+        remove: string;
+        removeFailed: string;
+      };
+      permissions: {
+        saved: string;
+        saveFailed: string;
+      };
+    };
+    permissions: {
+      tabs: {
+        global: string;
+        domain: string;
+      };
+      resources: {
+        sieve: string;
+        rspamd: string;
+        postfix: string;
+        accounts: string;
+        apiTokens: string;
+        groups: string;
+        domains: string;
+        domain: string;
+        recipients: string;
+        aliases: string;
+        quotas: string;
+        dkim: string;
+        spamd: string;
+      };
+      actionsLabel: {
+        access: string;
+        read: string;
+        create: string;
+        modify: string;
+        delete: string;
+      };
+      autosaveHint: string;
+      saving: string;
+      checkAll: string;
+      uncheckAll: string;
+      checkAllVisible: string;
+      uncheckAllVisible: string;
+      selectDomain: string;
+      selectDomainPlaceholder: string;
+      noDomainsAssigned: string;
+      clearDomainPermissions: string;
     };
   };
 }

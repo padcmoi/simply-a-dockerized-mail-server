@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { ZodValidationPipe } from "../../common/zod.pipe";
 import { Auth } from "../auth.decorator";
@@ -45,6 +45,7 @@ export class ApiTokenController {
   }
 
   @Post(":id/revoke")
+  @HttpCode(200)
   @RevokeApiTokenDocs()
   revoke(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
     return this.svc.revoke(req.user.id, id);

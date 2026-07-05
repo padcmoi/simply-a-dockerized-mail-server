@@ -1,12 +1,16 @@
-import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query } from "@nestjs/common";
+import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query, UseGuards } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
+import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
+import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
+import { RequireDomainPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
 import { RspamdService } from "../../../core/rspamd/rspamd.service";
 import { GetDomainSpamdHistoryDocs, GetDomainSpamdStatsDocs, SpamdApi } from "./spamd.openapi";
 
 @SpamdApi()
 @Controller({ path: "domains/:domainId/spamd", version: "1" })
+@UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class DomainsSpamdController {
   constructor(
     @InjectRepository(VirtualDomain)
@@ -21,6 +25,7 @@ export class DomainsSpamdController {
   }
 
   @Get("history")
+  @RequireDomainPermissions([{ resource: "spamd", actions: ["access", "read"] }])
   @GetDomainSpamdHistoryDocs()
   async history(@Param("domainId", ParseIntPipe) domainId: number, @Query("size") size?: string) {
     const fqdn = await this.resolveFqdn(domainId);
@@ -28,6 +33,7 @@ export class DomainsSpamdController {
   }
 
   @Get("stats")
+  @RequireDomainPermissions([{ resource: "spamd", actions: ["access", "read"] }])
   @GetDomainSpamdStatsDocs()
   async stats(@Param("domainId", ParseIntPipe) domainId: number) {
     const fqdn = await this.resolveFqdn(domainId);

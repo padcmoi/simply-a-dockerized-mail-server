@@ -1,112 +1,15 @@
 <script setup lang="ts">
-import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { useAuthStore } from "~/stores/auth";
 import { useDomainStore } from "~/stores/domain";
 
 const open = ref(true);
 
-const globalNavItems = computed<NavigationMenuItem[]>(() => [
-  {
-    label: t("nav.dashboard"),
-    icon: "i-lucide-layout-dashboard",
-    to: "/dashboard",
-  },
-  { label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains" },
-  { label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/rspamd" },
-  { label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" },
-  ...(auth.session?.isRoot
-    ? [
-        {
-          label: t("nav.accounts"),
-          icon: "i-lucide-shield-check",
-          to: "/accounts",
-        },
-      ]
-    : []),
-]);
+async function onSignOut() {
+  await auth.logout();
+  await navigateTo("/login");
+}
 
-const domainNavItems = computed<NavigationMenuItem[]>(() => {
-  if (!domainStore.selected) return [];
-  return [
-    {
-      label: t("nav.dashboard"),
-      icon: "i-lucide-layout-dashboard",
-      to: `/domains/${domainStore.selected.domain}`,
-    },
-    { label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients" },
-    { label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" },
-    { label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" },
-  ];
-});
-
-const userItems = computed<DropdownMenuItem[][]>(() => [
-  [
-    { label: t("nav.profile"), icon: "i-lucide-user", to: "/profile" },
-    { label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens" },
-  ],
-  [
-    {
-      label: t("app.language"),
-      icon: "i-lucide-languages",
-      children: locales.value.map((l) => ({
-        label: l.name ?? l.code,
-        icon: "i-lucide-globe",
-        type: "checkbox",
-        checked: locale.value === l.code,
-        onUpdateChecked: (c: boolean) => {
-          if (c) setLocale(l.code);
-        },
-        onSelect: (e: Event) => e.preventDefault(),
-      })),
-    },
-    {
-      label: t("nav.appearance"),
-      icon: "i-lucide-sun-moon",
-      children: [
-        {
-          label: t("nav.light"),
-          icon: "i-lucide-sun",
-          type: "checkbox",
-          checked: colorMode.value === "light",
-          onUpdateChecked: (c: boolean) => {
-            if (c) colorMode.preference = "light";
-          },
-          onSelect: (e: Event) => e.preventDefault(),
-        },
-        {
-          label: t("nav.dark"),
-          icon: "i-lucide-moon",
-          type: "checkbox",
-          checked: colorMode.value === "dark",
-          onUpdateChecked: (c: boolean) => {
-            if (c) colorMode.preference = "dark";
-          },
-          onSelect: (e: Event) => e.preventDefault(),
-        },
-        {
-          label: t("nav.system"),
-          icon: "i-lucide-monitor",
-          type: "checkbox",
-          checked: colorMode.preference === "system",
-          onUpdateChecked: (c: boolean) => {
-            if (c) colorMode.preference = "system";
-          },
-          onSelect: (e: Event) => e.preventDefault(),
-        },
-      ],
-    },
-  ],
-  [
-    {
-      label: t("nav.signOut"),
-      icon: "i-lucide-log-out",
-      onSelect: async () => {
-        await auth.logout();
-        await navigateTo("/login");
-      },
-    },
-  ],
-]);
+const { globalNavItems, domainNavItems, userItems } = useNav(onSignOut);
 
 const headerTitle = computed(() => {
   if (route.path.startsWith("/domains/") && domainStore.selected) return domainStore.selected.domain;
@@ -117,8 +20,10 @@ const headerTitle = computed(() => {
     "/aliases": t("nav.aliases"),
     "/quotas": t("nav.quotas"),
     "/rspamd": t("nav.rspamd"),
+    "/postfix": t("nav.postfix"),
     "/sieve": t("nav.sieveLong"),
     "/accounts": t("nav.accounts"),
+    "/groups": t("nav.groups"),
     "/profile": t("nav.profile"),
     "/api-tokens": t("nav.apiTokens"),
   };
@@ -136,10 +41,15 @@ const userAvatar = computed(() => {
   return { alt: auth.session?.name ?? auth.session?.username ?? "?" };
 });
 
+const userBadge = computed(() => {
+  if (auth.session?.isRoot) return { label: t("nav.rootBadge"), color: "warning" as const };
+  if (auth.session?.group) return { label: auth.session.group.name, color: "primary" as const };
+  return { label: t("nav.noGroupBadge"), color: "neutral" as const };
+});
+
 const domainStore = useDomainStore();
-const { t, locale, locales, setLocale } = useI18n();
+const { t } = useI18n();
 const route = useRoute();
-const colorMode = useColorMode();
 const auth = useAuthStore();
 
 function toggleSidebar() {
@@ -222,14 +132,18 @@ function closeDomain() {
         >
           <UButton
             :avatar="userAvatar"
-            :label="auth.session?.name ?? auth.session?.username ?? 'Account'"
             trailing-icon="i-lucide-chevrons-up-down"
             color="neutral"
             variant="ghost"
             square
             class="w-full data-[state=open]:bg-elevated overflow-hidden"
-            :ui="{ trailingIcon: 'text-dimmed ms-auto' }"
-          />
+            :ui="{ trailingIcon: 'text-dimmed ms-auto', label: 'flex items-center gap-1.5 min-w-0' }"
+          >
+            <span class="truncate min-w-0">{{ auth.session?.name ?? auth.session?.username ?? "Account" }}</span>
+            <UBadge :color="userBadge.color" variant="subtle" size="xs" class="min-w-0 max-w-24 shrink-0">
+              <span class="truncate block">{{ userBadge.label }}</span>
+            </UBadge>
+          </UButton>
         </UDropdownMenu>
       </template>
     </USidebar>

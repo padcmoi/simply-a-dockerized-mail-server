@@ -1,5 +1,10 @@
 <script setup lang="ts">
-definePageMeta({});
+definePageMeta({
+  requiredDomain: [
+    { resource: "quotas", action: "access" },
+    { resource: "quotas", action: "read" },
+  ],
+});
 
 interface QuotaRow {
   id: number;
@@ -35,6 +40,8 @@ const { t } = useI18n();
 const { call } = useApi();
 const domainStore = useDomainStore();
 const { set: setBreadcrumb } = useBreadcrumb();
+
+watch(useDataRefresh().tick, load);
 
 watchEffect(() => {
   const d = domainStore.selected;

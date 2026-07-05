@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth";
 
-definePageMeta({});
+definePageMeta({
+  requiredGlobal: [
+    { resource: "accounts", action: "access" },
+    { resource: "accounts", action: "read" },
+  ],
+});
 
-interface AccountDomain {
-  id: number;
-  domain: string;
-}
 interface ManagerAccount {
   id: number;
   username: string;
@@ -16,36 +17,18 @@ interface ManagerAccount {
   enabled: boolean;
   lastLogin: string | null;
   createdAt: string;
-  domains: AccountDomain[];
-}
-interface Domain {
-  id: number;
-  domain: string;
+  group: { id: number; name: string } | null;
 }
 
 const loading = ref(false);
 const accounts = ref<ManagerAccount[]>([]);
-const allDomains = ref<Domain[]>([]);
 
 const inviteOpen = ref(false);
 const inviteSending = ref(false);
 
-const aclOpen = ref(false);
-const aclAccount = ref<ManagerAccount | null>(null);
-const aclSaving = ref(false);
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
-
-const domainOptions = computed(() => allDomains.value.map((d) => ({ label: d.domain, value: d.id })));
-
-const columns = computed(() => [
-  { accessorKey: "username", header: t("accounts.table.username") },
-  { accessorKey: "name", header: t("accounts.table.name") },
-  { accessorKey: "email", header: t("accounts.table.email") },
-  { id: "domains", header: t("accounts.table.domains") },
-  { id: "status", header: t("accounts.table.status") },
-  { id: "actions", header: "" },
-]);
+const groupChangingId = ref<number | null>(null);
 
 const { t } = useI18n();
 const { call } = useApi();
@@ -53,11 +36,29 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("nav.accounts") }]);
 const auth = useAuthStore();
+const { groups, addMember, removeMember } = useGroups();
+
+const groupInviteOptions = computed(() => groups.value.map((g) => ({ label: g.name, value: g.id })));
+const groupChangeOptions = computed(() => [
+  { label: t("accounts.table.noGroupOption"), value: null },
+  ...groups.value.map((g) => ({ label: g.name, value: g.id })),
+]);
+
+const columns = computed(() => [
+  { accessorKey: "username", header: t("accounts.table.username") },
+  { accessorKey: "name", header: t("accounts.table.name") },
+  { accessorKey: "email", header: t("accounts.table.email") },
+  { id: "group", header: t("accounts.table.group") },
+  { id: "status", header: t("accounts.table.status") },
+  { id: "actions", header: "" },
+]);
+
+watch(useDataRefresh().tick, load);
 
 async function load() {
   loading.value = true;
   try {
-    [accounts.value, allDomains.value] = await Promise.all([call<ManagerAccount[]>("/accounts"), call<Domain[]>("/domains")]);
+    accounts.value = await call<ManagerAccount[]>("/accounts");
   } catch {
     toast.add({ title: t("accounts.toast.loadFailed"), color: "error" });
   } finally {
@@ -65,7 +66,7 @@ async function load() {
   }
 }
 
-async function sendInvite(data: { email: string; domainIds: number[] | null }) {
+async function sendInvite(data: { email: string; groupId: number | null }) {
   inviteSending.value = true;
   try {
     await call("/accounts/invite", { method: "POST", body: data });
@@ -99,26 +100,21 @@ async function onDeleteConfirmed() {
   pendingDeleteFn.value = null;
 }
 
-function openAcl(acc: ManagerAccount) {
-  aclAccount.value = acc;
-  aclOpen.value = true;
-}
-
-async function saveAcl(domainIds: number[]) {
-  if (!aclAccount.value) return;
-  aclSaving.value = true;
+async function changeGroup(acc: ManagerAccount, newGroupId: number | null) {
+  if (newGroupId === (acc.group?.id ?? null)) return;
+  groupChangingId.value = acc.id;
   try {
-    await call(`/accounts/${aclAccount.value.id}/acl`, {
-      method: "PUT",
-      body: { domainIds },
-    });
-    toast.add({ title: t("accounts.toast.aclSaved"), color: "success" });
-    aclOpen.value = false;
+    if (newGroupId === null) {
+      if (acc.group) await removeMember(acc.group.id, acc.id);
+    } else {
+      await addMember(newGroupId, acc.id);
+    }
+    toast.add({ title: t("accounts.toast.groupUpdated"), color: "success" });
     await load();
   } catch {
-    toast.add({ title: t("accounts.toast.aclFailed"), color: "error" });
+    toast.add({ title: t("accounts.toast.groupUpdateFailed"), color: "error" });
   } finally {
-    aclSaving.value = false;
+    groupChangingId.value = null;
   }
 }
 
@@ -166,18 +162,24 @@ onMounted(load);
         <template #email-cell="{ row }">
           <span class="text-muted text-sm">{{ row.original.email ?? "-" }}</span>
         </template>
-        <template #domains-cell="{ row }">
+        <template #group-cell="{ row }">
           <div v-if="row.original.isRoot" class="text-xs text-muted italic">
-            {{ t("invite.allDomains") }}
+            {{ t("accounts.table.rootAccess") }}
           </div>
-          <div v-else-if="row.original.domains.length === 0" class="text-xs text-dimmed">-</div>
-          <div v-else class="flex flex-wrap gap-1">
-            <UBadge v-for="d in row.original.domains.slice(0, 3)" :key="d.id" color="neutral" variant="subtle" size="xs">{{
-              d.domain
-            }}</UBadge>
-            <UBadge v-if="row.original.domains.length > 3" color="neutral" variant="subtle" size="xs"
-              >+{{ row.original.domains.length - 3 }}</UBadge
-            >
+          <div v-else class="flex items-center gap-2">
+            <UBadge v-if="row.original.group" color="neutral" variant="subtle" size="xs">{{ row.original.group.name }}</UBadge>
+            <span v-else class="text-xs text-dimmed">{{ t("accounts.table.noGroup") }}</span>
+            <USelectMenu
+              :model-value="row.original.group?.id ?? null"
+              value-key="value"
+              :items="groupChangeOptions"
+              :loading="groupChangingId === row.original.id"
+              :disabled="groupChangingId === row.original.id"
+              size="xs"
+              class="w-36"
+              :placeholder="t('accounts.table.changeGroup')"
+              @update:model-value="(val) => changeGroup(row.original, val as number | null)"
+            />
           </div>
         </template>
         <template #status-cell="{ row }">
@@ -187,15 +189,6 @@ onMounted(load);
         </template>
         <template #actions-cell="{ row }">
           <div class="flex items-center gap-1 justify-end">
-            <UButton
-              v-if="!row.original.isRoot"
-              icon="i-lucide-shield"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              :title="t('accounts.acl.title')"
-              @click="openAcl(row.original)"
-            />
             <UButton
               v-if="!row.original.isRoot && row.original.enabled"
               icon="i-lucide-user-x"
@@ -220,21 +213,14 @@ onMounted(load);
         v-else
         :key="acc.id"
         :account="acc"
-        @open-acl="openAcl(acc)"
+        :group-options="groupChangeOptions"
+        :group-changing="groupChangingId === acc.id"
+        @change-group="(val) => changeGroup(acc, val)"
         @revoke="requestDelete(() => revokeAccount(acc))"
       />
     </div>
 
-    <AccountInviteModal v-model:open="inviteOpen" :domain-options="domainOptions" :sending="inviteSending" @submit="sendInvite" />
-
-    <AccountAclModal
-      v-model:open="aclOpen"
-      :username="aclAccount?.username ?? ''"
-      :domain-options="domainOptions"
-      :initial-selected="aclAccount?.domains.map((d) => d.id) ?? []"
-      :saving="aclSaving"
-      @save="saveAcl"
-    />
+    <AccountInviteModal v-model:open="inviteOpen" :group-options="groupInviteOptions" :sending="inviteSending" @submit="sendInvite" />
 
     <ConfirmModal v-model:open="confirmOpen" :title="t('accounts.confirmRevoke')" @confirm="onDeleteConfirmed" />
   </div>

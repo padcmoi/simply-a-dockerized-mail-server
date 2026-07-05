@@ -1,24 +1,37 @@
 import { z } from "zod";
 
+// FQDNs are case-insensitive by spec but postfix/dovecot's virtual_domains
+// lookups are plain string matches -- "Naskot.com" and "naskot.com" would
+// silently become two different mail domains, so every domain name is
+// normalized to lowercase before it ever reaches the database.
 const fqdn = z
   .string()
   .min(3)
   .max(255)
-  .regex(/^[a-z0-9.-]+\.[a-z]{2,}$/i, "must be a FQDN");
+  .regex(/^[a-z0-9.-]+\.[a-z]{2,}$/i, "must be a FQDN")
+  .transform((v) => v.toLowerCase());
 
 // A domain must always reserve real disk space -- no such thing as an
 // "unlimited" mail domain here (see MIN_DOMAIN_QUOTA_BYTES usage below).
 export const MIN_DOMAIN_QUOTA_BYTES = 10 * 1024 * 1024; // 10 MB
 
+// `ownerId` is intentionally not settable through create/update: the creating
+// account always becomes the owner (see DomainsController.create), and
+// transferring ownership afterwards goes exclusively through the dedicated
+// PATCH /:domainId/owner endpoint (root-or-current-owner, audited).
 export const createDomainSchema = z.object({
   domain: fqdn,
   quota: z.number().int().min(MIN_DOMAIN_QUOTA_BYTES, `Domain quota must be at least ${MIN_DOMAIN_QUOTA_BYTES} bytes (10 MB)`),
   active: z.boolean().optional(),
-  ownerId: z.number().int().positive().nullable().optional(),
   userEndDate: z.string().date().nullable().optional(),
 });
 
 export const updateDomainSchema = createDomainSchema.partial();
 
+export const transferDomainOwnerSchema = z.object({
+  newOwnerId: z.number().int().positive(),
+});
+
 export type CreateDomainDto = z.infer<typeof createDomainSchema>;
 export type UpdateDomainDto = z.infer<typeof updateDomainSchema>;
+export type TransferDomainOwnerDto = z.infer<typeof transferDomainOwnerSchema>;

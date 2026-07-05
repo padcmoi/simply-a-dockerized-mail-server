@@ -1,7 +1,12 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
-import { IsRootGuard } from "../../core/guards/is-root.guard";
+import { DomainPermissionGuard } from "../../core/custom-permission-guard/domain-permission.guard";
+import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global-permission.guard";
+import {
+  RequireDomainPermissions,
+  RequireGlobalPermissions,
+} from "../../core/custom-permission-guard/require-permissions.decorator";
 import {
   CreateDomainDocs,
   DiskUsageDocs,
@@ -9,10 +14,18 @@ import {
   GetDomainDocs,
   ListDomainsDocs,
   RemoveDomainDocs,
+  TransferDomainOwnerDocs,
   UpdateDomainDocs,
 } from "./domains.openapi";
 import { DomainsService } from "./domains.service";
-import { CreateDomainDto, UpdateDomainDto, createDomainSchema, updateDomainSchema } from "./domains.validation";
+import {
+  CreateDomainDto,
+  TransferDomainOwnerDto,
+  UpdateDomainDto,
+  createDomainSchema,
+  transferDomainOwnerSchema,
+  updateDomainSchema,
+} from "./domains.validation";
 
 type AuthedRequest = Request & {
   user: { id: number; username: string; isRoot: boolean };
@@ -20,37 +33,46 @@ type AuthedRequest = Request & {
 
 @DomainsApi()
 @Controller({ path: "domains", version: "1" })
+@UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class DomainsController {
   constructor(private readonly svc: DomainsService) {}
 
   @Get()
+  @RequireGlobalPermissions([{ resource: "domains", actions: ["access", "read"] }])
   @ListDomainsDocs()
-  list(@Req() req: AuthedRequest) {
-    return this.svc.list({ id: req.user.id, isRoot: req.user.isRoot });
+  list() {
+    return this.svc.list();
   }
 
+  // Disk capacity overview is visible with `domains.access` alone -- it's
+  // aggregate stats, not the domain list itself. `domains.read` is what
+  // gates the actual per-domain list (see `list()` above).
   @Get("disk")
+  @RequireGlobalPermissions([{ resource: "domains", actions: ["access"] }])
   @DiskUsageDocs()
   disk() {
     return this.svc.disk();
   }
 
   @Get(":domainId")
+  @RequireDomainPermissions([{ resource: "domain", actions: ["access", "read"] }])
   @GetDomainDocs()
-  get(@Req() req: AuthedRequest, @Param("domainId", ParseIntPipe) domainId: number) {
-    return this.svc.get(domainId, { id: req.user.id, isRoot: req.user.isRoot });
+  get(@Param("domainId", ParseIntPipe) domainId: number) {
+    return this.svc.get(domainId);
   }
 
+  // Domain creation is a global act (domains.create); the creating account
+  // becomes the domain's owner (see DomainsService.create).
   @Post()
+  @RequireGlobalPermissions([{ resource: "domains", actions: ["access", "create"] }])
   @CreateDomainDocs()
-  @UseGuards(IsRootGuard)
-  create(@Body(new ZodValidationPipe(createDomainSchema)) body: CreateDomainDto) {
-    return this.svc.create(body);
+  create(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(createDomainSchema)) body: CreateDomainDto) {
+    return this.svc.create(body, req.user.id);
   }
 
   @Patch(":domainId")
+  @RequireDomainPermissions([{ resource: "domain", actions: ["access", "modify"] }])
   @UpdateDomainDocs()
-  @UseGuards(IsRootGuard)
   update(
     @Param("domainId", ParseIntPipe) domainId: number,
     @Body(new ZodValidationPipe(updateDomainSchema)) body: UpdateDomainDto
@@ -59,9 +81,21 @@ export class DomainsController {
   }
 
   @Delete(":domainId")
+  @RequireDomainPermissions([{ resource: "domain", actions: ["access", "delete"] }])
   @RemoveDomainDocs()
-  @UseGuards(IsRootGuard)
   remove(@Param("domainId", ParseIntPipe) domainId: number) {
     return this.svc.remove(domainId);
+  }
+
+  // Ownership transfer keeps its own service-level owner-or-root check, no
+  // generic permission decorator (see DomainsService.transferOwner).
+  @Patch(":domainId/owner")
+  @TransferDomainOwnerDocs()
+  transferOwner(
+    @Req() req: AuthedRequest,
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Body(new ZodValidationPipe(transferDomainOwnerSchema)) body: TransferDomainOwnerDto
+  ) {
+    return this.svc.transferOwner(domainId, { id: req.user.id, isRoot: req.user.isRoot }, body.newOwnerId);
   }
 }

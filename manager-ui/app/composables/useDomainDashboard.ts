@@ -5,6 +5,8 @@ export interface Domain {
   domain: string;
   quota: string;
   active: number;
+  ownerId?: number | null;
+  ownerUsername?: string | null;
 }
 export interface Recipient {
   id: number;

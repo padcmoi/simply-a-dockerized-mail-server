@@ -85,6 +85,7 @@ export function useApiTokens() {
     return created;
   }
 
+  watch(useDataRefresh().tick, load);
   onMounted(load);
 
   return { tokens, loading, load, create, update, revoke, deleteToken, abandonToken, regenerate };

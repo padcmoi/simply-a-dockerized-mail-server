@@ -1,5 +1,10 @@
 <script setup lang="ts">
-definePageMeta({});
+definePageMeta({
+  requiredDomain: [
+    { resource: "recipients", action: "access" },
+    { resource: "recipients", action: "read" },
+  ],
+});
 
 interface Recipient {
   id: number;
@@ -30,6 +35,8 @@ const { call } = useApi();
 const toast = useToast();
 const domainStore = useDomainStore();
 const { set: setBreadcrumb } = useBreadcrumb();
+
+watch(useDataRefresh().tick, load);
 
 watchEffect(() => {
   const d = domainStore.selected;

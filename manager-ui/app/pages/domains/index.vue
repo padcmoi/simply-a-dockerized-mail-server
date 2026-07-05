@@ -1,5 +1,13 @@
 <script setup lang="ts">
-definePageMeta({});
+import { useAuthStore } from "~/stores/auth";
+import { usePermissionsStore } from "~/stores/permissions";
+
+// `access` alone is enough to reach this page (it shows the disk capacity
+// overview) -- the domain list itself is separately gated on `read` inside
+// the page (see `canReadList`), not at the page-meta level.
+definePageMeta({
+  requiredGlobal: [{ resource: "domains", action: "access" }],
+});
 
 interface Domain {
   id: number;
@@ -31,6 +39,7 @@ const reservedGb = computed(() => (disk.value ? (disk.value.reservedBytes / (102
 const assignableGb = computed(() => (disk.value ? (disk.value.assignableBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
 const quotaOverLimit = computed(() => form.quotaMb > assignableMb.value);
 const quotaUnderLimit = computed(() => form.quotaMb < MIN_QUOTA_MB);
+const canReadList = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "read"));
 const columns = computed(() => [
   { accessorKey: "id", header: t("domains.table.id") },
   { accessorKey: "domain", header: t("domains.table.domain") },
@@ -43,16 +52,19 @@ const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
 const domainStore = useDomainStore();
+const auth = useAuthStore();
+const perms = usePermissionsStore();
 const { set: setBreadcrumb } = useBreadcrumb();
 
 setBreadcrumb([{ label: t("nav.domains") }]);
 
+watch(useDataRefresh().tick, load);
+
 async function load() {
   loading.value = true;
   try {
-    const [list, d] = await Promise.all([call<Domain[]>("/domains"), call<Disk>("/domains/disk")]);
-    items.value = list;
-    disk.value = d;
+    disk.value = await call<Disk>("/domains/disk");
+    items.value = canReadList.value ? await call<Domain[]>("/domains") : [];
   } catch (err) {
     toast.add({
       title: t("domains.toast.loadFailed"),
@@ -197,48 +209,58 @@ onMounted(load);
       </UForm>
     </UCard>
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-      <UTable :columns="columns" :data="items" :loading="loading" sticky>
-        <template #domain-cell="{ row }">
-          <button class="font-medium text-primary hover:underline text-left" @click="openDomain(row.original)">
-            {{ row.original.domain }}
-          </button>
-        </template>
-        <template #active-cell="{ row }">
-          <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
-            {{ row.original.active ? t("common.yes") : t("common.no") }}
-          </UBadge>
-        </template>
-        <template #quota-cell="{ row }">
-          {{ quotaToMb(row.original.quota) }}
-        </template>
-        <template #actions-cell="{ row }">
-          <UButton
-            icon="i-lucide-trash-2"
-            color="error"
-            variant="ghost"
-            size="xs"
-            square
-            @click="requestDelete(() => remove(row.original.id))"
-          />
-        </template>
-      </UTable>
-    </UCard>
+    <UAlert
+      v-if="!canReadList"
+      color="neutral"
+      variant="subtle"
+      icon="i-lucide-lock"
+      :title="t('domains.listLocked')"
+    />
 
-    <div class="lg:hidden space-y-3">
-      <div v-if="loading" class="flex justify-center py-8">
-        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+    <template v-else>
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+        <UTable :columns="columns" :data="items" :loading="loading" sticky>
+          <template #domain-cell="{ row }">
+            <button class="font-medium text-primary hover:underline text-left" @click="openDomain(row.original)">
+              {{ row.original.domain }}
+            </button>
+          </template>
+          <template #active-cell="{ row }">
+            <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
+              {{ row.original.active ? t("common.yes") : t("common.no") }}
+            </UBadge>
+          </template>
+          <template #quota-cell="{ row }">
+            {{ quotaToMb(row.original.quota) }}
+          </template>
+          <template #actions-cell="{ row }">
+            <UButton
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="ghost"
+              size="xs"
+              square
+              @click="requestDelete(() => remove(row.original.id))"
+            />
+          </template>
+        </UTable>
+      </UCard>
+
+      <div class="lg:hidden space-y-3">
+        <div v-if="loading" class="flex justify-center py-8">
+          <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+        </div>
+        <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
+        <DomainCard
+          v-for="item in items"
+          v-else
+          :key="item.id"
+          :item="item"
+          @open="openDomain(item)"
+          @delete="requestDelete(() => remove(item.id))"
+        />
       </div>
-      <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
-      <DomainCard
-        v-for="item in items"
-        v-else
-        :key="item.id"
-        :item="item"
-        @open="openDomain(item)"
-        @delete="requestDelete(() => remove(item.id))"
-      />
-    </div>
+    </template>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
   </div>

@@ -10,17 +10,36 @@ export function useNav(onSignOut: () => Promise<void>) {
   const { t, locale, locales, setLocale } = useI18n();
   const colorMode = useColorMode();
 
+  // A nav entry is only worth showing if the account can both see it exists (`access`)
+  // and actually read its content (`read`) — matching each page's `requiredGlobal`/
+  // `requiredDomain` meta, which requires both. `root` ignores groups entirely and
+  // has full access to everything (acls.md), so it must bypass every one of these
+  // checks, not just a couple — a root account has no group and thus no permission
+  // rows, so without this bypass the whole nav would collapse to just Dashboard.
+  function canViewGlobal(resource: string) {
+    return auth.session?.isRoot === true || (perms.hasGlobal(resource, "access") && perms.hasGlobal(resource, "read"));
+  }
+  // Domains is the one nav entry with a lower bar: `access` alone is enough
+  // to reach the page (it shows the disk capacity overview even without
+  // `read`) — the domain list itself still requires `read`, gated inside the
+  // page, not at the nav/page-meta level.
+  function canAccessGlobal(resource: string) {
+    return auth.session?.isRoot === true || perms.hasGlobal(resource, "access");
+  }
+  function canViewDomain(domainId: number, resource: string) {
+    return auth.session?.isRoot === true || (perms.hasDomain(domainId, resource, "access") && perms.hasDomain(domainId, resource, "read"));
+  }
+
   const globalNavItems = computed<NavigationMenuItem[]>(() => [
     { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard" },
-    ...(perms.hasGlobal("domains", "view") ? [{ label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains" }] : []),
-    ...(perms.hasGlobal("rspamd", "view") ? [{ label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/rspamd" }] : []),
-    ...(perms.hasGlobal("postfix", "view") ? [{ label: t("nav.postfix"), icon: "i-lucide-send", to: "/postfix" }] : []),
-    ...(perms.hasGlobal("sieve", "view") ? [{ label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" }] : []),
-    ...(auth.session?.isRoot || perms.hasGlobal("accounts", "view")
-      ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts" }]
-      : []),
-    ...(auth.session?.isRoot || perms.hasGlobal("groups", "view")
-      ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/groups" }]
+    ...(canAccessGlobal("domains") ? [{ label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains" }] : []),
+    ...(canViewGlobal("rspamd") ? [{ label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/rspamd" }] : []),
+    ...(canViewGlobal("postfix") ? [{ label: t("nav.postfix"), icon: "i-lucide-send", to: "/postfix" }] : []),
+    ...(canViewGlobal("sieve") ? [{ label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" }] : []),
+    ...(canViewGlobal("accounts") ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts" }] : []),
+    ...(canViewGlobal("groups") ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/groups" }] : []),
+    ...(auth.session?.isRoot || canViewGlobal("api-tokens")
+      ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens" }]
       : []),
   ]);
 
@@ -29,28 +48,23 @@ export function useNav(onSignOut: () => Promise<void>) {
     if (!sel) return [];
     const domainId = sel.id;
     return [
-      ...(perms.hasDomain(domainId, "domain", "view")
+      ...(canViewDomain(domainId, "domain")
         ? [{ label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: `/domains/${sel.domain}` }]
         : []),
-      ...(perms.hasDomain(domainId, "recipients", "view")
+      ...(canViewDomain(domainId, "recipients")
         ? [{ label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients" }]
         : []),
-      ...(perms.hasDomain(domainId, "aliases", "view")
+      ...(canViewDomain(domainId, "aliases")
         ? [{ label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" }]
         : []),
-      ...(perms.hasDomain(domainId, "quotas", "view")
+      ...(canViewDomain(domainId, "quotas")
         ? [{ label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" }]
         : []),
     ];
   });
 
   const userItems = computed<DropdownMenuItem[][]>(() => [
-    [
-      { label: t("nav.profile"), icon: "i-lucide-user", to: "/profile" },
-      ...(auth.session?.isRoot || perms.hasGlobal("api-tokens", "view")
-        ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens" }]
-        : []),
-    ],
+    [{ label: t("nav.profile"), icon: "i-lucide-user", to: "/profile" }],
     [
       {
         label: t("app.language"),

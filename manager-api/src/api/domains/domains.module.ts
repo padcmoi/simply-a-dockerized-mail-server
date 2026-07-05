@@ -1,9 +1,11 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { AuditLogModule } from "../../core/audit/audit-log.module";
 import { DkimModule } from "../../core/dkim/dkim.module";
-import { AccountDomainAcl } from "../../core/entities/account-domain-acl.entity";
+import { Account } from "../../core/entities/account.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../core/entities/virtual-user.entity";
+import { CustomPermissionGuardModule } from "../../core/custom-permission-guard/custom-permission-guard.module";
 import { DomainsAliasesModule } from "./aliases/aliases.module";
 import { DomainsDkimModule } from "./dkim/dkim.module";
 import { DomainsController } from "./domains.controller";
@@ -14,7 +16,9 @@ import { DomainsSpamdModule } from "./spamd/spamd.module";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([VirtualDomain, VirtualUser, AccountDomainAcl]),
+    TypeOrmModule.forFeature([VirtualDomain, VirtualUser, Account]),
+    CustomPermissionGuardModule,
+    AuditLogModule,
     DkimModule,
     DomainsRecipientsModule,
     DomainsAliasesModule,

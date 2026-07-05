@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@naskot/custom-permission-guard':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@nestjs/common':
         specifier: ^11.0.0
         version: 11.1.27(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -375,6 +378,10 @@ packages:
 
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
+
+  '@naskot/custom-permission-guard@1.0.0':
+    resolution: {integrity: sha512-E7rHQPGTM9JNLZTWpobF2RGPi1oANKhOKjVR4PF2Jd5gueoEt46wNUwiSrm0AYdzVcHMfGQ3IT9mFya3RJflVQ==}
+    engines: {node: '>=18'}
 
   '@nestjs/cli@11.0.23':
     resolution: {integrity: sha512-2V0Bf5jz0KXhUZk3eJi9GljIyqH04otwsE/mYLbqJR+X0iiYx+6bkNJ2Qz28uHNFj1cpHgimf9xDzHkqarie0g==}
@@ -2687,6 +2694,8 @@ snapshots:
       - supports-color
 
   '@microsoft/tsdoc@0.16.0': {}
+
+  '@naskot/custom-permission-guard@1.0.0': {}
 
   '@nestjs/cli@11.0.23(@types/node@22.20.0)(prettier@3.9.3)':
     dependencies:

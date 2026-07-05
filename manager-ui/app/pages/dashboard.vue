@@ -104,6 +104,8 @@ const { call } = useApi();
 
 setBreadcrumb([{ label: t("nav.dashboard") }]);
 
+watch(useDataRefresh().tick, load);
+
 async function load() {
   loading.value = true;
   try {

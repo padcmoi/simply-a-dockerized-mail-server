@@ -1,5 +1,7 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
+import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
+import { RequireGlobalPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
 import {
   CreateRejectSenderDocs,
   ListRejectSendersDocs,
@@ -17,16 +19,19 @@ import {
 
 @RejectSendersApi()
 @Controller({ path: "sieve/reject-senders", version: "1" })
+@UseGuards(GlobalPermissionGuard)
 export class RejectSendersController {
   constructor(private readonly svc: RejectSendersService) {}
 
   @Get()
+  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "read"] }])
   @ListRejectSendersDocs()
   list() {
     return this.svc.list();
   }
 
   @Post()
+  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "create"] }])
   @CreateRejectSenderDocs()
   create(
     @Body(new ZodValidationPipe(createRejectSenderSchema))
@@ -36,6 +41,7 @@ export class RejectSendersController {
   }
 
   @Patch(":id")
+  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "modify"] }])
   @ToggleRejectSenderDocs()
   toggle(
     @Param("id", ParseIntPipe) id: number,
@@ -46,6 +52,7 @@ export class RejectSendersController {
   }
 
   @Delete(":id")
+  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "delete"] }])
   @RemoveRejectSenderDocs()
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.svc.remove(id);

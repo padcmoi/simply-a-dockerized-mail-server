@@ -1,5 +1,10 @@
 <script setup lang="ts">
-definePageMeta({});
+definePageMeta({
+  requiredGlobal: [
+    { resource: "sieve", action: "access" },
+    { resource: "sieve", action: "read" },
+  ],
+});
 
 interface Reject {
   id: number;
@@ -27,6 +32,8 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 
 setBreadcrumb([{ label: t("nav.sieveLong") }]);
+
+watch(useDataRefresh().tick, load);
 
 async function load() {
   loading.value = true;

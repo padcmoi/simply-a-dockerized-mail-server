@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const sendInvitationSchema = z.object({
   email: z.string().email(),
-  domainIds: z.array(z.number().int().positive()).nullable().default(null),
+  groupId: z.number().int().positive().nullable().default(null),
 });
 
 export const acceptInvitationSchema = z.object({
@@ -15,10 +15,5 @@ export const acceptInvitationSchema = z.object({
   name: z.string().max(255).optional(),
 });
 
-export const setAclSchema = z.object({
-  domainIds: z.array(z.number().int().positive()),
-});
-
 export type SendInvitationDto = z.infer<typeof sendInvitationSchema>;
 export type AcceptInvitationDto = z.infer<typeof acceptInvitationSchema>;
-export type SetAclDto = z.infer<typeof setAclSchema>;

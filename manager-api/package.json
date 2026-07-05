@@ -20,6 +20,7 @@
     "db:show": "pnpm typeorm migration:show -d src/core/database/data-source.ts"
   },
   "dependencies": {
+    "@naskot/custom-permission-guard": "^1.0.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",

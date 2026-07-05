@@ -3,12 +3,11 @@ import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { In, IsNull, Repository } from "typeorm";
-import { AccountDomainAcl } from "../../core/entities/account-domain-acl.entity";
 import { AccountInvitation } from "../../core/entities/account-invitation.entity";
 import { Account } from "../../core/entities/account.entity";
-import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
+import { Group } from "../../core/entities/group.entity";
 import { MailerService } from "../../core/mailer/mailer.service";
-import type { AcceptInvitationDto, SendInvitationDto, SetAclDto } from "./accounts.validation";
+import type { AcceptInvitationDto, SendInvitationDto } from "./accounts.validation";
 
 @Injectable()
 export class AccountsService {
@@ -16,23 +15,27 @@ export class AccountsService {
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(AccountInvitation)
     private readonly invitations: Repository<AccountInvitation>,
-    @InjectRepository(AccountDomainAcl)
-    private readonly acl: Repository<AccountDomainAcl>,
-    @InjectRepository(VirtualDomain)
-    private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(Group) private readonly groups: Repository<Group>,
     private readonly mailer: MailerService
   ) {}
+
+  async listNames() {
+    const allAccounts = await this.accounts.find({
+      select: ["id", "username", "name"],
+      order: { username: "ASC" },
+    });
+    return allAccounts.map((acc) => ({ id: acc.id, username: acc.username, name: acc.name }));
+  }
 
   async list() {
     const allAccounts = await this.accounts.find({
       order: { username: "ASC" },
     });
-    const aclRows = await this.acl.find();
-    const domainIds = [...new Set(aclRows.map((a) => a.domainId))];
-    const domainMap = new Map<number, string>();
-    if (domainIds.length) {
-      const domList = await this.domains.findBy({ id: In(domainIds) });
-      domList.forEach((d) => domainMap.set(d.id, d.domain));
+    const groupIds = [...new Set(allAccounts.map((acc) => acc.groupId).filter((id): id is number => id !== null))];
+    const groupMap = new Map<number, string>();
+    if (groupIds.length) {
+      const groupRows = await this.groups.findBy({ id: In(groupIds) });
+      groupRows.forEach((g) => groupMap.set(g.id, g.name));
     }
     return allAccounts.map((acc) => ({
       id: acc.id,
@@ -43,12 +46,7 @@ export class AccountsService {
       enabled: acc.enabled === 1,
       lastLogin: acc.lastLogin,
       createdAt: acc.createdAt,
-      domains: aclRows
-        .filter((a) => a.accountId === acc.id)
-        .map((a) => ({
-          id: a.domainId,
-          domain: domainMap.get(a.domainId) ?? "",
-        })),
+      group: acc.groupId !== null ? { id: acc.groupId, name: groupMap.get(acc.groupId) ?? "" } : null,
     }));
   }
 
@@ -61,37 +59,6 @@ export class AccountsService {
     return { ok: true };
   }
 
-  async getAcl(accountId: number) {
-    const account = await this.accounts.findOne({ where: { id: accountId } });
-    if (!account) throw new NotFoundException(`Account #${accountId} not found`);
-    const rows = await this.acl.find({ where: { accountId } });
-    if (!rows.length) return { accountId, domains: [] };
-    const domList = await this.domains.findBy({
-      id: In(rows.map((r) => r.domainId)),
-    });
-    return {
-      accountId,
-      domains: rows.map((r) => ({
-        id: r.domainId,
-        domain: domList.find((d) => d.id === r.domainId)?.domain ?? "",
-      })),
-    };
-  }
-
-  async setAcl(accountId: number, input: SetAclDto) {
-    const account = await this.accounts.findOne({ where: { id: accountId } });
-    if (!account) throw new NotFoundException(`Account #${accountId} not found`);
-    if (input.domainIds.length) {
-      const found = await this.domains.findBy({ id: In(input.domainIds) });
-      if (found.length !== input.domainIds.length) throw new BadRequestException("One or more domain IDs not found");
-    }
-    await this.acl.delete({ accountId });
-    if (input.domainIds.length) {
-      await this.acl.insert(input.domainIds.map((domainId) => ({ accountId, domainId })));
-    }
-    return this.getAcl(accountId);
-  }
-
   async sendInvitation(invitedBy: number, input: SendInvitationDto) {
     const existing = await this.invitations.findOne({
       where: { email: input.email, acceptedAt: IsNull() },
@@ -100,6 +67,15 @@ export class AccountsService {
       existing.expiresAt = new Date();
       await this.invitations.save(existing);
     }
+
+    let group: Group | null = null;
+    if (input.groupId) {
+      group = await this.groups.findOne({ where: { id: input.groupId } });
+      if (!group) throw new NotFoundException(`Group #${input.groupId} not found`);
+    } else {
+      group = await this.groups.findOne({ where: { isDefault: 1 } });
+    }
+
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
     await this.invitations.save(
@@ -107,17 +83,13 @@ export class AccountsService {
         token,
         email: input.email,
         invitedBy,
-        domainIds: input.domainIds,
+        groupId: group?.id ?? null,
         expiresAt,
       })
     );
-    let domainNames: string[] = [];
-    if (input.domainIds?.length) {
-      const domList = await this.domains.findBy({ id: In(input.domainIds) });
-      domainNames = domList.map((d) => d.domain);
-    }
+
     const uiUrl = (process.env.MANAGER_UI_URL ?? "http://localhost").replace(/\/$/, "");
-    await this.mailer.sendInvitation(input.email, `${uiUrl}/invite/${token}`, domainNames);
+    await this.mailer.sendInvitation(input.email, `${uiUrl}/invite/${token}`, group?.name ?? null);
     return { ok: true };
   }
 
@@ -126,12 +98,12 @@ export class AccountsService {
     if (!inv) throw new NotFoundException("Invitation not found");
     if (inv.acceptedAt) throw new BadRequestException("Invitation already used");
     if (inv.expiresAt < new Date()) throw new BadRequestException("Invitation expired");
-    let domainNames: string[] = [];
-    if (inv.domainIds?.length) {
-      const domList = await this.domains.findBy({ id: In(inv.domainIds) });
-      domainNames = domList.map((d) => d.domain);
+    let groupName: string | null = null;
+    if (inv.groupId !== null) {
+      const group = await this.groups.findOne({ where: { id: inv.groupId } });
+      groupName = group?.name ?? null;
     }
-    return { email: inv.email, domains: domainNames, expiresAt: inv.expiresAt };
+    return { email: inv.email, groupName, expiresAt: inv.expiresAt };
   }
 
   async acceptInvitation(token: string, input: AcceptInvitationDto) {
@@ -151,11 +123,9 @@ export class AccountsService {
         password: passwordHash,
         isRoot: 0,
         enabled: 1,
+        groupId: inv.groupId,
       })
     );
-    if (inv.domainIds?.length) {
-      await this.acl.insert(inv.domainIds.map((domainId) => ({ accountId: account.id, domainId })));
-    }
     inv.acceptedAt = new Date();
     await this.invitations.save(inv);
     return { ok: true, username: account.username };

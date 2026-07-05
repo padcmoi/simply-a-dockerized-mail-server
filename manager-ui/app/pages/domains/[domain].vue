@@ -1,5 +1,10 @@
 <script setup lang="ts">
-definePageMeta({});
+definePageMeta({
+  requiredDomain: [
+    { resource: "domain", action: "access" },
+    { resource: "domain", action: "read" },
+  ],
+});
 
 const {
   REFRESH_OPTIONS,
@@ -29,6 +34,54 @@ const {
   deleteDkim,
   copyToClipboard,
 } = useDomainDashboard();
+
+const { isRoot, hasDomain } = usePermissions();
+
+// Domain ownership transfer: restricted to root or the domain's current owner
+// (mirrors the group owner-transfer control on the group detail page).
+const auth = useAuthStore();
+const { call } = useApi();
+const toast = useToast();
+const { t } = useI18n();
+
+const ownerPick = ref<number | null>(null);
+const savingOwner = ref(false);
+const accountOptions = ref<{ label: string; value: number }[]>([]);
+
+// `rspamd`/`dkim` history sections below are scoped to the `spamd`/`dkim` domain
+// resources specifically (not the generic `domain` gate this page's own route
+// already requires) — only render them if the current user actually has access.
+const canViewSpamd = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "spamd", "access")));
+const canViewDkim = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "dkim", "access")));
+
+const canTransferOwner = computed(
+  () => isRoot.value || (domain.value?.ownerUsername != null && domain.value.ownerUsername === auth.session?.username)
+);
+
+watch(
+  () => domain.value?.id,
+  async (id) => {
+    if (id == null || !canTransferOwner.value || accountOptions.value.length) return;
+    const accounts = await call<{ id: number; username: string; name: string | null }[]>("/accounts/names").catch(() => []);
+    accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
+  },
+  { immediate: true }
+);
+
+async function changeDomainOwner() {
+  if (!domain.value || ownerPick.value === null) return;
+  savingOwner.value = true;
+  try {
+    await call(`/domains/${domain.value.id}/owner`, { method: "PATCH", body: { newOwnerId: ownerPick.value } });
+    await load();
+    ownerPick.value = null;
+    toast.add({ title: t("domainDashboard.owner.saved"), color: "success" });
+  } catch (e) {
+    toast.add({ title: t("domainDashboard.owner.saveFailed"), description: (e as Error).message, color: "error" });
+  } finally {
+    savingOwner.value = false;
+  }
+}
 </script>
 
 <template>
@@ -191,16 +244,41 @@ const {
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <DomainRspamdCard :history="rspamdHistory" :loading="loading" />
+      <DomainRspamdCard v-if="canViewSpamd" :history="rspamdHistory" :loading="loading" />
       <DomainPostfixCard :queue="postfixQueue" />
     </div>
 
     <DomainDkimSection
+      v-if="canViewDkim"
       :keys="dkimKeys"
       :loading="dkimLoading"
       @rotate="rotateDkim"
       @delete="deleteDkim"
       @copy="copyToClipboard"
     />
+
+    <UCard v-if="canTransferOwner">
+      <template #header>
+        <h3 class="font-semibold">{{ $t("domainDashboard.owner.title") }}</h3>
+      </template>
+      <p class="text-sm mb-3">
+        {{ domain?.ownerUsername ?? $t("domainDashboard.owner.unassigned") }}
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <select v-model.number="ownerPick" class="border border-default rounded-md px-2 py-1.5 text-sm bg-default min-w-[12rem]">
+          <option :value="null">{{ $t("domainDashboard.owner.pickPlaceholder") }}</option>
+          <option v-for="opt in accountOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+        </select>
+        <UButton
+          color="neutral"
+          variant="outline"
+          :loading="savingOwner"
+          :disabled="ownerPick === null"
+          @click="changeDomainOwner"
+        >
+          {{ $t("domainDashboard.owner.change") }}
+        </UButton>
+      </div>
+    </UCard>
   </div>
 </template>

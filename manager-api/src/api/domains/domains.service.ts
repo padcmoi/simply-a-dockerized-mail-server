@@ -1,11 +1,19 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { randomBytes } from "crypto";
 import { statfs } from "fs/promises";
 import { In, Repository } from "typeorm";
+import { AuditLogService } from "../../core/audit/audit-log.service";
 import { sha512crypt } from "../../core/common/sha512-crypt";
 import { DkimKey, DkimService } from "../../core/dkim/dkim.service";
-import { AccountDomainAcl } from "../../core/entities/account-domain-acl.entity";
+import { Account } from "../../core/entities/account.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { CreateDomainDto, UpdateDomainDto } from "./domains.validation";
@@ -21,31 +29,39 @@ export class DomainsService {
     private readonly repo: Repository<VirtualDomain>,
     @InjectRepository(VirtualUser)
     private readonly users: Repository<VirtualUser>,
-    @InjectRepository(AccountDomainAcl)
-    private readonly acl: Repository<AccountDomainAcl>,
-    private readonly dkim: DkimService
+    @InjectRepository(Account)
+    private readonly accounts: Repository<Account>,
+    private readonly dkim: DkimService,
+    private readonly auditLog: AuditLogService
   ) {}
 
-  async list(caller: CallerCtx) {
-    if (caller.isRoot) return this.repo.find({ order: { domain: "ASC" } });
-    const rows = await this.acl.find({ where: { accountId: caller.id } });
-    if (!rows.length) return [];
-    return this.repo.find({
-      where: { id: In(rows.map((r) => r.domainId)) },
-      order: { domain: "ASC" },
-    });
+  // Access is already gated by GlobalPermissionGuard/DomainPermissionGuard at
+  // the controller level (group-based ACL, see CustomPermissionGuardService) --
+  // no extra filtering is needed here.
+  async list() {
+    const domains = await this.repo.find({ order: { domain: "ASC" } });
+    return this.attachOwnerUsername(domains);
   }
 
-  async get(id: number, caller?: CallerCtx) {
+  async get(id: number) {
     const found = await this.repo.findOne({ where: { id } });
     if (!found) throw new NotFoundException(`Domain #${id} not found`);
-    if (caller && !caller.isRoot) {
-      const allowed = await this.acl.findOne({
-        where: { accountId: caller.id, domainId: id },
-      });
-      if (!allowed) throw new NotFoundException(`Domain #${id} not found`);
+    const [withOwner] = await this.attachOwnerUsername([found]);
+    return withOwner;
+  }
+
+  // `virtual_domains.owner_id` is a plain FK column (no ORM relation), so the
+  // owning account's username never comes back for free -- the UI's owner
+  // display/transfer control (domains/[domain].vue) reads `ownerUsername`,
+  // not the raw `ownerId`, so this must run on every list()/get() response.
+  private async attachOwnerUsername<T extends VirtualDomain>(domains: T[]) {
+    const ownerIds = [...new Set(domains.map((d) => d.ownerId).filter((id): id is number => id !== null))];
+    const byId = new Map<number, string>();
+    if (ownerIds.length) {
+      const owners = await this.accounts.findBy({ id: In(ownerIds) });
+      owners.forEach((o) => byId.set(o.id, o.username));
     }
-    return found;
+    return domains.map((d) => ({ ...d, ownerUsername: d.ownerId !== null ? (byId.get(d.ownerId) ?? null) : null }));
   }
 
   async disk() {
@@ -63,24 +79,25 @@ export class DomainsService {
     return { totalBytes, freeBytes, reservedBytes, assignableBytes };
   }
 
-  async create(input: CreateDomainDto) {
+  // The creating account becomes the domain's owner, with full scoped rights
+  // on it (backend-acl-domain.md) -- this is never taken from the request
+  // body, always from the authenticated caller.
+  async create(input: CreateDomainDto, ownerId: number) {
     if (await this.repo.findOne({ where: { domain: input.domain } })) {
       throw new ConflictException(`Domain ${input.domain} already exists`);
     }
-    if (input.quota && input.quota > 0) {
-      const { assignableBytes } = await this.disk();
-      if (input.quota > assignableBytes) {
-        throw new BadRequestException(
-          `Quota ${input.quota} exceeds the ${assignableBytes} bytes still assignable on the mail volume`
-        );
-      }
+    const { assignableBytes } = await this.disk();
+    if (input.quota > assignableBytes) {
+      throw new BadRequestException(
+        `Quota ${input.quota} exceeds the ${assignableBytes} bytes still assignable on the mail volume`
+      );
     }
     const saved = await this.repo.save(
       this.repo.create({
         domain: input.domain,
-        quota: String(input.quota ?? 0),
+        quota: String(input.quota),
         active: input.active ? 1 : 0,
-        ownerId: input.ownerId ?? null,
+        ownerId,
         userStartDate: new Date().toISOString().slice(0, 10),
         userEndDate: input.userEndDate ?? null,
       })
@@ -136,7 +153,6 @@ export class DomainsService {
     if (input.domain !== undefined) current.domain = input.domain;
     if (input.quota !== undefined) current.quota = String(input.quota);
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
-    if (input.ownerId !== undefined) current.ownerId = input.ownerId;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
     return this.repo.save(current);
   }
@@ -148,5 +164,35 @@ export class DomainsService {
     });
     await this.repo.remove(target);
     return { ok: true };
+  }
+
+  // A domain must never end up without an owner (security-hardening.md
+  // anti-lockout); this is the only path that may change `owner_id`, and it
+  // always designates a new one.
+  async transferOwner(id: number, actingUser: CallerCtx, newOwnerId: number) {
+    const domain = await this.repo.findOne({ where: { id } });
+    if (!domain) throw new NotFoundException(`Domain #${id} not found`);
+
+    if (!actingUser.isRoot && domain.ownerId !== actingUser.id) {
+      throw new ForbiddenException("Only root or the current domain owner can transfer ownership");
+    }
+
+    const newOwner = await this.accounts.findOne({ where: { id: newOwnerId } });
+    if (!newOwner) throw new NotFoundException(`Account #${newOwnerId} not found`);
+
+    const before = domain.ownerId;
+    domain.ownerId = newOwnerId;
+    await this.repo.save(domain);
+
+    await this.auditLog.record({
+      actorId: actingUser.id,
+      action: "domain.owner.changed",
+      entityType: "domain",
+      entityId: id,
+      before: { ownerId: before },
+      after: { ownerId: newOwnerId },
+    });
+
+    return domain;
   }
 }

@@ -2,12 +2,14 @@ import { useWindowFocus as useVueWindowFocus } from "@vueuse/core";
 import { useAuthStore } from "~/stores/auth";
 import { usePermissionsStore } from "~/stores/permissions";
 import { useDomainStore } from "~/stores/domain";
+import { useDataRefresh } from "~/composables/useDataRefresh";
 
 export function useWindowFocus() {
   const auth = useAuthStore();
   const perms = usePermissionsStore();
   const domain = useDomainStore();
   const focused = useVueWindowFocus();
+  const { bump } = useDataRefresh();
 
   async function checkCurrentRoute() {
     const route = useRoute();
@@ -51,6 +53,7 @@ export function useWindowFocus() {
     await Promise.all([auth.fetchProfile(), perms.fetch()]).catch(() => undefined);
     console.info("[windowFocus] profile + permissions refreshed");
     await checkCurrentRoute();
+    bump();
   }
 
   function onFocusLoss() {

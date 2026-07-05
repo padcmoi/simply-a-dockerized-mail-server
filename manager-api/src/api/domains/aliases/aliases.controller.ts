@@ -1,15 +1,20 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
+import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
+import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
+import { RequireDomainPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
 import { AliasesApi, CreateAliasDocs, GetAliasDocs, ListAliasesDocs, RemoveAliasDocs, UpdateAliasDocs } from "./aliases.openapi";
 import { AliasesService } from "./aliases.service";
 import { CreateAliasDto, UpdateAliasDto, createAliasSchema, updateAliasSchema } from "./aliases.validation";
 
 @AliasesApi()
 @Controller({ path: "domains/:domainId/aliases", version: "1" })
+@UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class AliasesController {
   constructor(private readonly svc: AliasesService) {}
 
   @Get()
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "read"] }])
   @ListAliasesDocs()
   async list(@Param("domainId", ParseIntPipe) domainId: number) {
     const domain = await this.svc.resolveDomain(domainId);
@@ -17,6 +22,7 @@ export class AliasesController {
   }
 
   @Get(":id")
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "read"] }])
   @GetAliasDocs()
   async get(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
@@ -24,6 +30,7 @@ export class AliasesController {
   }
 
   @Post()
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "create"] }])
   @CreateAliasDocs()
   async create(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -34,6 +41,7 @@ export class AliasesController {
   }
 
   @Patch(":id")
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "modify"] }])
   @UpdateAliasDocs()
   async update(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -45,6 +53,7 @@ export class AliasesController {
   }
 
   @Delete(":id")
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "delete"] }])
   @RemoveAliasDocs()
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);

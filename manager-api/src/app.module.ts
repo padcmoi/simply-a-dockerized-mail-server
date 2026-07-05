@@ -5,6 +5,7 @@ import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AccountsModule } from "./api/accounts/accounts.module";
 import { DomainsModule } from "./api/domains/domains.module";
+import { GroupsModule } from "./api/groups/groups.module";
 import { HealthModule } from "./api/health/health.module";
 import { PostfixModule } from "./api/postfix/postfix.module";
 import { RspamdModule } from "./api/rspamd/rspamd.module";
@@ -12,6 +13,7 @@ import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.m
 import { ApiTokenModule } from "./core/auth/api-token/api-token.module";
 import { CombinedAuthGuard } from "./core/auth/auth.guard";
 import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
+import { CustomPermissionGuardModule } from "./core/custom-permission-guard/custom-permission-guard.module";
 
 @Module({
   imports: [
@@ -33,9 +35,11 @@ import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
     HealthModule,
     JwtAuthModule,
     ApiTokenModule,
+    CustomPermissionGuardModule,
     DomainsModule,
     RejectSendersModule,
     AccountsModule,
+    GroupsModule,
     RspamdModule,
     PostfixModule,
   ],

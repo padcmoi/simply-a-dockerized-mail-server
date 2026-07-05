@@ -52,6 +52,7 @@ export function useRspamdPage() {
     }
   }
 
+  watch(useDataRefresh().tick, load);
   onMounted(load);
 
   return { stats, history, loading, statsUnavailable, load };

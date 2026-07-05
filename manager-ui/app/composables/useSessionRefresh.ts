@@ -1,11 +1,13 @@
 import { useDocumentVisibility } from "@vueuse/core";
 import { useAuthStore } from "~/stores/auth";
 import { usePermissionsStore } from "~/stores/permissions";
+import { useDataRefresh } from "~/composables/useDataRefresh";
 
 export function useSessionRefresh() {
   const auth = useAuthStore();
   const perms = usePermissionsStore();
   const { checkCurrentRoute } = useWindowFocus();
+  const { bump } = useDataRefresh();
 
   async function refresh() {
     if (!auth.isAuthenticated) return;
@@ -19,6 +21,7 @@ export function useSessionRefresh() {
     }
     await Promise.all([auth.fetchProfile(), perms.fetch()]).catch(() => undefined);
     await checkCurrentRoute();
+    bump();
   }
 
   const visibility = useDocumentVisibility();

@@ -3,7 +3,7 @@ definePageMeta({ layout: "auth" });
 
 interface InviteInfo {
   email: string;
-  domains: string[];
+  groupName: string | null;
   expiresAt: string;
 }
 
@@ -100,13 +100,11 @@ onMounted(loadInvitation);
           <span class="text-muted">{{ t("invite.emailLabel") }}:</span>
           <span class="font-medium">{{ info?.email }}</span>
         </div>
-        <div class="flex items-start gap-2">
-          <UIcon name="i-lucide-globe" class="text-muted mt-0.5" />
-          <span class="text-muted">{{ t("invite.domainsLabel") }}:</span>
-          <span v-if="!info?.domains.length" class="italic text-muted">{{ t("invite.allDomains") }}</span>
-          <div v-else class="flex flex-wrap gap-1">
-            <UBadge v-for="d in info?.domains" :key="d" color="neutral" variant="subtle" size="xs">{{ d }}</UBadge>
-          </div>
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-users" class="text-muted" />
+          <span class="text-muted">{{ t("invite.groupLabel") }}:</span>
+          <span v-if="info?.groupName" class="font-medium">{{ info.groupName }}</span>
+          <span v-else class="italic text-muted">{{ t("invite.noGroup") }}</span>
         </div>
       </div>
 

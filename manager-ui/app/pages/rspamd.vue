@@ -2,7 +2,12 @@
 import type { ChartData, ChartOptions } from "chart.js";
 import { rspamdActionColor, useRspamdPage } from "~/composables/useRspamdPage";
 
-definePageMeta({});
+definePageMeta({
+  requiredGlobal: [
+    { resource: "rspamd", action: "access" },
+    { resource: "rspamd", action: "read" },
+  ],
+});
 
 interface HistoryRow {
   id: string;

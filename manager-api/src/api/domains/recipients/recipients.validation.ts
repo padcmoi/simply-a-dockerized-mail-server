@@ -17,7 +17,10 @@ export const createRecipientSchema = z.object({
     .max(64)
     .regex(/^[a-z0-9._+-]+$/i, "must be a valid mailbox local-part"),
   password: z.string().min(8).max(255),
-  quota: z.number().int().min(MIN_RECIPIENT_QUOTA_BYTES, `Recipient quota must be at least ${MIN_RECIPIENT_QUOTA_BYTES} bytes (1 MB)`),
+  quota: z
+    .number()
+    .int()
+    .min(MIN_RECIPIENT_QUOTA_BYTES, `Recipient quota must be at least ${MIN_RECIPIENT_QUOTA_BYTES} bytes (1 MB)`),
   active: z.boolean().optional(),
   userEndDate: z.string().date().nullable().optional(),
 });

@@ -14,8 +14,8 @@ export class AccountInvitation {
   @Column({ name: "invited_by", type: "int", nullable: true })
   invitedBy!: number | null;
 
-  @Column({ name: "domain_ids", type: "json", nullable: true })
-  domainIds!: number[] | null;
+  @Column({ name: "group_id", type: "int", nullable: true })
+  groupId!: number | null;
 
   @Column({ name: "accepted_at", type: "datetime", nullable: true })
   acceptedAt!: Date | null;

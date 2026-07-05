@@ -1,9 +1,4 @@
 <script setup lang="ts">
-interface AccountDomain {
-  id: number;
-  domain: string;
-}
-
 interface ManagerAccount {
   id: number;
   username: string;
@@ -11,12 +6,16 @@ interface ManagerAccount {
   email: string | null;
   isRoot: boolean;
   enabled: boolean;
-  domains: AccountDomain[];
+  group: { id: number; name: string } | null;
 }
 
-const emit = defineEmits<{ openAcl: []; revoke: [] }>();
+const emit = defineEmits<{ revoke: []; changeGroup: [number | null] }>();
 
-defineProps<{ account: ManagerAccount }>();
+defineProps<{
+  account: ManagerAccount;
+  groupOptions: { label: string; value: number | null }[];
+  groupChanging: boolean;
+}>();
 
 const { t } = useI18n();
 </script>
@@ -43,18 +42,24 @@ const { t } = useI18n();
         <span class="break-all">{{ account.email }}</span>
       </div>
       <div class="flex gap-2 items-start">
-        <span class="text-muted w-20 shrink-0">{{ t("accounts.table.domains") }}</span>
-        <span v-if="account.isRoot" class="italic text-muted text-xs">{{ t("invite.allDomains") }}</span>
-        <span v-else-if="account.domains.length === 0" class="text-dimmed">-</span>
-        <div v-else class="flex flex-wrap gap-1">
-          <UBadge v-for="d in account.domains" :key="d.id" color="neutral" variant="subtle" size="xs">{{ d.domain }}</UBadge>
-        </div>
+        <span class="text-muted w-20 shrink-0">{{ t("accounts.table.group") }}</span>
+        <span v-if="account.isRoot" class="italic text-muted text-xs">{{ t("accounts.table.rootAccess") }}</span>
+        <UBadge v-else-if="account.group" color="neutral" variant="subtle" size="xs">{{ account.group.name }}</UBadge>
+        <span v-else class="text-dimmed text-xs">{{ t("accounts.table.noGroup") }}</span>
       </div>
     </div>
-    <div v-if="!account.isRoot" class="mt-3 pt-3 border-t border-default flex flex-wrap gap-2">
-      <UButton icon="i-lucide-shield" size="sm" color="neutral" variant="outline" @click="emit('openAcl')">
-        {{ t("accounts.acl.title") }}
-      </UButton>
+    <div v-if="!account.isRoot" class="mt-3 pt-3 border-t border-default flex flex-wrap items-center gap-2">
+      <USelectMenu
+        :model-value="account.group?.id ?? null"
+        value-key="value"
+        :items="groupOptions"
+        :loading="groupChanging"
+        :disabled="groupChanging"
+        size="sm"
+        class="w-40"
+        :placeholder="t('accounts.table.changeGroup')"
+        @update:model-value="(val) => emit('changeGroup', val as number | null)"
+      />
       <UButton v-if="account.enabled" icon="i-lucide-user-x" size="sm" color="error" variant="outline" @click="emit('revoke')">
         {{ t("common.revoke") }}
       </UButton>

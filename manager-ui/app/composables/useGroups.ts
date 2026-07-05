@@ -6,6 +6,7 @@ export interface GroupItem {
   ownerId: number | null;
   ownerUsername: string | null;
   memberCount: number;
+  isDefault?: boolean;
 }
 
 export interface GroupPermission {
@@ -54,14 +55,14 @@ export function useGroups() {
     }
   }
 
-  async function create(input: { name: string; description?: string | null }) {
+  async function create(input: { name: string; description?: string | null; isDefault?: boolean }) {
     const created = await call<GroupItem>("/groups", { method: "POST", body: input });
     groups.value.push(created);
     groups.value.sort((a, b) => a.name.localeCompare(b.name));
     return created;
   }
 
-  async function update(id: number, input: { name?: string; description?: string | null }) {
+  async function update(id: number, input: { name?: string; description?: string | null; isDefault?: boolean }) {
     const updated = await call<GroupItem>(`/groups/${id}`, { method: "PATCH", body: input });
     const idx = groups.value.findIndex((g) => g.id === id);
     if (idx !== -1) {
@@ -104,6 +105,7 @@ export function useGroups() {
     return call<GroupMember[]>(`/groups/${id}/members/${accountId}`, { method: "DELETE" });
   }
 
+  watch(useDataRefresh().tick, load);
   onMounted(load);
 
   return {
