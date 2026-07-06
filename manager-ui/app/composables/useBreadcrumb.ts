@@ -7,11 +7,12 @@ const BreadcrumbKey: InjectionKey<{
 }> = Symbol("breadcrumb");
 
 export function provideBreadcrumb() {
+  const { t } = useI18n();
   const items: Ref<BreadcrumbItem[]> = ref([]);
   provide(BreadcrumbKey, {
     items,
     set: (v) => {
-      items.value = v;
+      items.value = [{ label: t("nav.home"), icon: "i-lucide-house", to: "/" }, ...v];
     },
   });
   return items;
