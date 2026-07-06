@@ -4,6 +4,7 @@ export interface Locales {
     language: string;
   };
   nav: {
+    home: string;
     dashboard: string;
     domains: string;
     rspamd: string;
@@ -242,14 +243,15 @@ export interface Locales {
     alertTitle: string;
     alertDescription: string;
     inviteButton: string;
+    backToList: string;
     table: {
       username: string;
       name: string;
       email: string;
       group: string;
       noGroup: string;
-      noGroupOption: string;
-      changeGroup: string;
+      manageGroups: string;
+      editAccount: string;
       rootAccess: string;
       status: string;
       lastLogin: string;
@@ -261,6 +263,31 @@ export interface Locales {
       groupHint: string;
       groupPlaceholder: string;
       submit: string;
+    };
+    groupsPage: {
+      alertTitle: string;
+      alertDescription: string;
+      title: string;
+      pickPlaceholder: string;
+      add: string;
+      removeTooltip: string;
+      empty: string;
+    };
+    editPage: {
+      alertTitle: string;
+      alertDescription: string;
+      title: string;
+      nameLabel: string;
+      emailLabel: string;
+      avatarUrlLabel: string;
+      enabledLabel: string;
+      enabledHint: string;
+      save: string;
+      toast: {
+        saved: string;
+        saveFailed: string;
+        loadFailed: string;
+      };
     };
     toast: {
       invited: string;
@@ -465,6 +492,8 @@ export interface Locales {
     };
     confirmDelete: string;
     detail: {
+      alertTitle: string;
+      alertDescription: string;
       nameLabel: string;
       descriptionLabel: string;
       save: string;

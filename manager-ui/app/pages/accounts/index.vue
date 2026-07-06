@@ -17,7 +17,7 @@ interface ManagerAccount {
   enabled: boolean;
   lastLogin: string | null;
   createdAt: string;
-  group: { id: number; name: string } | null;
+  groups: { id: number; name: string }[];
 }
 
 const loading = ref(false);
@@ -28,7 +28,6 @@ const inviteSending = ref(false);
 
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
-const groupChangingId = ref<number | null>(null);
 
 const { t } = useI18n();
 const { call } = useApi();
@@ -36,13 +35,9 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("nav.accounts") }]);
 const auth = useAuthStore();
-const { groups, addMember, removeMember } = useGroups();
+const { groups } = useGroups();
 
 const groupInviteOptions = computed(() => groups.value.map((g) => ({ label: g.name, value: g.id })));
-const groupChangeOptions = computed(() => [
-  { label: t("accounts.table.noGroupOption"), value: null },
-  ...groups.value.map((g) => ({ label: g.name, value: g.id })),
-]);
 
 const columns = computed(() => [
   { accessorKey: "username", header: t("accounts.table.username") },
@@ -100,24 +95,6 @@ async function onDeleteConfirmed() {
   pendingDeleteFn.value = null;
 }
 
-async function changeGroup(acc: ManagerAccount, newGroupId: number | null) {
-  if (newGroupId === (acc.group?.id ?? null)) return;
-  groupChangingId.value = acc.id;
-  try {
-    if (newGroupId === null) {
-      if (acc.group) await removeMember(acc.group.id, acc.id);
-    } else {
-      await addMember(newGroupId, acc.id);
-    }
-    toast.add({ title: t("accounts.toast.groupUpdated"), color: "success" });
-    await load();
-  } catch {
-    toast.add({ title: t("accounts.toast.groupUpdateFailed"), color: "error" });
-  } finally {
-    groupChangingId.value = null;
-  }
-}
-
 onMounted(load);
 </script>
 
@@ -127,7 +104,7 @@ onMounted(load);
       icon="i-lucide-users"
       :title="t('accounts.alertTitle')"
       :description="t('accounts.alertDescription')"
-      color="info"
+      color="neutral"
       variant="subtle"
     />
 
@@ -166,21 +143,10 @@ onMounted(load);
           <div v-if="row.original.isRoot" class="text-xs text-muted italic">
             {{ t("accounts.table.rootAccess") }}
           </div>
-          <div v-else class="flex items-center gap-2">
-            <UBadge v-if="row.original.group" color="neutral" variant="subtle" size="xs">{{ row.original.group.name }}</UBadge>
-            <span v-else class="text-xs text-dimmed">{{ t("accounts.table.noGroup") }}</span>
-            <USelectMenu
-              :model-value="row.original.group?.id ?? null"
-              value-key="value"
-              :items="groupChangeOptions"
-              :loading="groupChangingId === row.original.id"
-              :disabled="groupChangingId === row.original.id"
-              size="xs"
-              class="w-36"
-              :placeholder="t('accounts.table.changeGroup')"
-              @update:model-value="(val) => changeGroup(row.original, val as number | null)"
-            />
+          <div v-else-if="row.original.groups.length" class="flex flex-wrap gap-1">
+            <UBadge v-for="g in row.original.groups" :key="g.id" color="neutral" variant="subtle" size="xs">{{ g.name }}</UBadge>
           </div>
+          <span v-else class="text-xs text-dimmed">{{ t("accounts.table.noGroup") }}</span>
         </template>
         <template #status-cell="{ row }">
           <UBadge :color="row.original.enabled ? 'success' : 'neutral'" variant="subtle" size="sm">
@@ -189,6 +155,24 @@ onMounted(load);
         </template>
         <template #actions-cell="{ row }">
           <div class="flex items-center gap-1 justify-end">
+            <UButton
+              v-if="!row.original.isRoot"
+              icon="i-lucide-users-round"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              :title="t('accounts.table.manageGroups')"
+              :to="`/accounts/${row.original.id}/groups`"
+            />
+            <UButton
+              v-if="!row.original.isRoot"
+              icon="i-lucide-pencil"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              :title="t('accounts.table.editAccount')"
+              :to="`/accounts/${row.original.id}`"
+            />
             <UButton
               v-if="!row.original.isRoot && row.original.enabled"
               icon="i-lucide-user-x"
@@ -213,9 +197,6 @@ onMounted(load);
         v-else
         :key="acc.id"
         :account="acc"
-        :group-options="groupChangeOptions"
-        :group-changing="groupChangingId === acc.id"
-        @change-group="(val) => changeGroup(acc, val)"
         @revoke="requestDelete(() => revokeAccount(acc))"
       />
     </div>

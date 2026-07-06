@@ -8,7 +8,7 @@ export default defineNuxtRouteMiddleware((to) => {
   const isPublicRoute = to.path.startsWith("/invite/");
   if (!auth.isAuthenticated && !isAuthRoute && !isPublicRoute) return navigateTo("/login");
   if (auth.isAuthenticated && isAuthRoute) return navigateTo("/dashboard");
-  if (auth.isAuthenticated && to.path === "/accounts" && !auth.session?.isRoot) return navigateTo("/dashboard");
+  if (auth.isAuthenticated && to.path.startsWith("/accounts") && !auth.session?.isRoot) return navigateTo("/dashboard");
   const domainRequired = ["/recipients", "/aliases", "/quotas"];
   if (auth.isAuthenticated && domainRequired.includes(to.path) && !domain.selected) {
     return navigateTo("/domains");

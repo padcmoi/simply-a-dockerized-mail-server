@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): dedicated per-account pages to manage group membership and edit profile fields, reachable from the accounts table (06-07-2026)
 - feat(api): account detail endpoints (`GET`/`PATCH /accounts/:id`) for editing profile fields and enabled status (06-07-2026)
 - feat(api,ui): support multiple groups per account, replacing the single `group_id` column with a `group_members` join table (06-07-2026)
 - feat(api): migrate ACL engine to the published `@naskot/custom-permission-guard` npm package (assertOne/assertAll, domain ownership bypass, global→domain bridge, dependsOn gate, cross-group anti-lockout); root stays an external, unconditional bypass composed on top, never a library concept (05-07-2026)

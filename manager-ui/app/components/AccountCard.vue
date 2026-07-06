@@ -6,15 +6,13 @@ interface ManagerAccount {
   email: string | null;
   isRoot: boolean;
   enabled: boolean;
-  group: { id: number; name: string } | null;
+  groups: { id: number; name: string }[];
 }
 
-const emit = defineEmits<{ revoke: []; changeGroup: [number | null] }>();
+const emit = defineEmits<{ revoke: [] }>();
 
 defineProps<{
   account: ManagerAccount;
-  groupOptions: { label: string; value: number | null }[];
-  groupChanging: boolean;
 }>();
 
 const { t } = useI18n();
@@ -44,22 +42,19 @@ const { t } = useI18n();
       <div class="flex gap-2 items-start">
         <span class="text-muted w-20 shrink-0">{{ t("accounts.table.group") }}</span>
         <span v-if="account.isRoot" class="italic text-muted text-xs">{{ t("accounts.table.rootAccess") }}</span>
-        <UBadge v-else-if="account.group" color="neutral" variant="subtle" size="xs">{{ account.group.name }}</UBadge>
+        <div v-else-if="account.groups.length" class="flex flex-wrap gap-1">
+          <UBadge v-for="g in account.groups" :key="g.id" color="neutral" variant="subtle" size="xs">{{ g.name }}</UBadge>
+        </div>
         <span v-else class="text-dimmed text-xs">{{ t("accounts.table.noGroup") }}</span>
       </div>
     </div>
     <div v-if="!account.isRoot" class="mt-3 pt-3 border-t border-default flex flex-wrap items-center gap-2">
-      <USelectMenu
-        :model-value="account.group?.id ?? null"
-        value-key="value"
-        :items="groupOptions"
-        :loading="groupChanging"
-        :disabled="groupChanging"
-        size="sm"
-        class="w-40"
-        :placeholder="t('accounts.table.changeGroup')"
-        @update:model-value="(val) => emit('changeGroup', val as number | null)"
-      />
+      <UButton icon="i-lucide-users-round" size="sm" color="neutral" variant="outline" :to="`/accounts/${account.id}/groups`">
+        {{ t("accounts.table.manageGroups") }}
+      </UButton>
+      <UButton icon="i-lucide-pencil" size="sm" color="neutral" variant="outline" :to="`/accounts/${account.id}`">
+        {{ t("accounts.table.editAccount") }}
+      </UButton>
       <UButton v-if="account.enabled" icon="i-lucide-user-x" size="sm" color="error" variant="outline" @click="emit('revoke')">
         {{ t("common.revoke") }}
       </UButton>
