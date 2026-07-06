@@ -1,6 +1,7 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Like, Repository } from "typeorm";
+import type { PaginationQuery } from "../../../core/common/pagination.validation";
 import { sha512crypt } from "../../../core/common/sha512-crypt";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
@@ -40,8 +41,21 @@ export class RecipientsService {
     return found.domain;
   }
 
-  list(domain: string) {
-    return this.recipients.find({ where: { domain }, order: { email: "ASC" } });
+  // `query.limit` absent = legacy unpaginated behavior, still relied on by
+  // dashboard.vue and useDomainDashboard.ts (need every recipient of a
+  // domain for aggregation, not a page of 10).
+  async list(domain: string, query: PaginationQuery) {
+    if (query.limit === undefined) {
+      return this.recipients.find({ where: { domain }, order: { email: "ASC" } });
+    }
+    const where = query.search ? { domain, email: Like(`%${query.search}%`) } : { domain };
+    const [items, total] = await this.recipients.findAndCount({
+      where,
+      order: { id: query.sortDir === "asc" ? "ASC" : "DESC" },
+      skip: query.offset,
+      take: query.limit,
+    });
+    return { items, total };
   }
 
   async get(id: number, domain: string) {

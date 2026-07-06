@@ -1,6 +1,8 @@
-import { Controller, Get, NotFoundException, Param, ParseIntPipe, UseGuards } from "@nestjs/common";
+import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query, UseGuards } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Like, Repository } from "typeorm";
+import { paginationQuerySchema, type PaginationQuery } from "../../../core/common/pagination.validation";
+import { ZodValidationPipe } from "../../../core/common/zod.pipe";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualQuotaDomain } from "../../../core/entities/virtual-quota-domain.entity";
 import { VirtualQuotaUser } from "../../../core/entities/virtual-quota-user.entity";
@@ -28,15 +30,31 @@ export class QuotasController {
     return found.domain;
   }
 
+  // `query.limit` absent = legacy unpaginated behavior: `recipients` stays a
+  // bare array, still relied on by useDomainDashboard.ts (needs every
+  // recipient's quota to compute the top-mailboxes widget).
   @Get()
   @RequireDomainPermissions([{ resource: "quotas", actions: ["access", "read"] }])
   @GetDomainQuotasDocs()
-  async snapshot(@Param("domainId", ParseIntPipe) domainId: number) {
+  async snapshot(
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery
+  ) {
     const domain = await this.resolveDomain(domainId);
-    const [aggregate, recipients] = await Promise.all([
-      this.domainQuotas.findOne({ where: { domain } }),
-      this.recipientQuotas.find({ where: { domain }, order: { email: "ASC" } }),
-    ]);
-    return { domain: aggregate, recipients };
+    const aggregate = await this.domainQuotas.findOne({ where: { domain } });
+
+    if (query.limit === undefined) {
+      const recipients = await this.recipientQuotas.find({ where: { domain }, order: { email: "ASC" } });
+      return { domain: aggregate, recipients };
+    }
+
+    const where = query.search ? { domain, email: Like(`%${query.search}%`) } : { domain };
+    const [items, total] = await this.recipientQuotas.findAndCount({
+      where,
+      order: { id: query.sortDir === "asc" ? "ASC" : "DESC" },
+      skip: query.offset,
+      take: query.limit,
+    });
+    return { domain: aggregate, recipients: { items, total } };
   }
 }

@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../../core/common/pagination.openapi";
 
 export const RejectSendersApi = () => applyDecorators(ApiTags("sieve"), ApiSecurity("apiToken"));
 
@@ -51,15 +52,16 @@ const NotFoundRejectSenderResponse = () =>
 
 export const ListRejectSendersDocs = () =>
   applyDecorators(
+    ApiPaginationQuery(),
     ApiOperation({
-      summary: "List entries on the postfix SMTP-time sender blacklist",
-      description: "Returns every blocked sender/domain entry, ordered alphabetically by sender.",
+      summary: "List entries on the postfix SMTP-time sender blacklist, paginated",
     }),
     ApiResponse({
       status: 200,
-      description: "All blacklist entries",
-      schema: { example: [rejectSenderExample] },
+      description: "Blacklist entries",
+      schema: { example: paginatedExample(rejectSenderExample) },
     }),
+    ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     ForbiddenSieveResponse("read")
   );
 

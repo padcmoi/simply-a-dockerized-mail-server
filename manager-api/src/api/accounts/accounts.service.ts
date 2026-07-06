@@ -2,7 +2,8 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
-import { In, IsNull, Not, Repository } from "typeorm";
+import { In, IsNull, Like, Not, Repository } from "typeorm";
+import type { PaginationQuery } from "../../core/common/pagination.validation";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { AccountInvitation } from "../../core/entities/account-invitation.entity";
 import { Account } from "../../core/entities/account.entity";
@@ -31,10 +32,28 @@ export class AccountsService {
     return allAccounts.map((acc) => ({ id: acc.id, username: acc.username, name: acc.name }));
   }
 
-  async list() {
-    const allAccounts = await this.accounts.find({
-      order: { username: "ASC" },
+  // `query.limit` absent = legacy unpaginated behavior, relied on by no
+  // other consumer today but kept for consistency with every other list
+  // endpoint (see pagination.validation.ts).
+  async list(query: PaginationQuery) {
+    if (query.limit === undefined) {
+      const allAccounts = await this.accounts.find({ order: { username: "ASC" } });
+      return this.enrichWithGroups(allAccounts);
+    }
+
+    const where = query.search
+      ? [{ username: Like(`%${query.search}%`) }, { name: Like(`%${query.search}%`) }, { email: Like(`%${query.search}%`) }]
+      : {};
+    const [rows, total] = await this.accounts.findAndCount({
+      where,
+      order: { createdAt: query.sortDir === "asc" ? "ASC" : "DESC" },
+      skip: query.offset,
+      take: query.limit,
     });
+    return { items: await this.enrichWithGroups(rows), total };
+  }
+
+  private async enrichWithGroups(allAccounts: Account[]) {
     const accountIds = allAccounts.map((acc) => acc.id);
     const memberRows = accountIds.length ? await this.groupMembers.find({ where: { accountId: In(accountIds) } }) : [];
     const groupIds = [...new Set(memberRows.map((m) => m.groupId))];

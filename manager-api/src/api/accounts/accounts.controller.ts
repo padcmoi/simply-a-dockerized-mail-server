@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
+import { paginationQuerySchema, type PaginationQuery } from "../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import { Public } from "../../core/auth/auth.decorator";
 import { IsRootGuard } from "../../core/guards/is-root.guard";
@@ -42,8 +43,8 @@ export class AccountsController {
   @Get()
   @ListAccountsDocs()
   @UseGuards(IsRootGuard)
-  list() {
-    return this.svc.list();
+  list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
+    return this.svc.list(query);
   }
 
   @Get(":id")

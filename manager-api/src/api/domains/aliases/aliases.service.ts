@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Like, Repository } from "typeorm";
+import type { PaginationQuery } from "../../../core/common/pagination.validation";
 import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { CreateAliasDto, UpdateAliasDto } from "./aliases.validation";
@@ -20,8 +21,26 @@ export class AliasesService {
     return found.domain;
   }
 
-  list(domain: string) {
-    return this.aliases.find({ where: { domain }, order: { source: "ASC" } });
+  // `query.limit` absent = legacy unpaginated behavior, still relied on by
+  // dashboard.vue and useDomainDashboard.ts (need every alias of a domain
+  // for aggregation, not a page of 10).
+  async list(domain: string, query: PaginationQuery) {
+    if (query.limit === undefined) {
+      return this.aliases.find({ where: { domain }, order: { source: "ASC" } });
+    }
+    const where = query.search
+      ? [
+          { domain, source: Like(`%${query.search}%`) },
+          { domain, destination: Like(`%${query.search}%`) },
+        ]
+      : { domain };
+    const [items, total] = await this.aliases.findAndCount({
+      where,
+      order: { id: query.sortDir === "asc" ? "ASC" : "DESC" },
+      skip: query.offset,
+      take: query.limit,
+    });
+    return { items, total };
   }
 
   async get(id: number, domain: string) {

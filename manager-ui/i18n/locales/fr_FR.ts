@@ -54,6 +54,11 @@ export default {
     invite: "Inviter",
     revoke: "Révoquer",
     manage: "Gérer",
+    search: "Rechercher...",
+    itemsPerPage: "Par page",
+    sortNewestFirst: "Plus récent d'abord",
+    sortOldestFirst: "Plus ancien d'abord",
+    noResults: "Aucun résultat",
   },
   confirm: {
     title: "Confirmer la suppression",

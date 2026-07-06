@@ -93,7 +93,7 @@ const tableRows = computed<HistoryRow[]>(() =>
   }))
 );
 
-const { stats, history, loading, statsUnavailable, load } = useRspamdPage();
+const { stats, history, total, loading, statsUnavailable, page, limit, search, sortDir, load } = useRspamdPage();
 const colorMode = useColorMode();
 const { t } = useI18n();
 </script>
@@ -148,9 +148,13 @@ const { t } = useI18n();
       <template #header>
         <div class="flex items-center justify-between gap-2">
           <h2 class="font-semibold">{{ t("rspamdPage.history.title") }}</h2>
-          <UBadge color="neutral" variant="subtle">{{ history.length }}</UBadge>
+          <UBadge color="neutral" variant="subtle">{{ total }}</UBadge>
         </div>
       </template>
+
+      <div class="mb-4">
+        <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+      </div>
 
       <div v-if="loading && history.length === 0" class="flex justify-center py-8">
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
@@ -174,6 +178,10 @@ const { t } = useI18n();
             {{ formatBytes(row.original.size) }}
           </template>
         </UTable>
+      </div>
+
+      <div class="flex justify-center mt-4">
+        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
       </div>
     </UCard>
   </div>

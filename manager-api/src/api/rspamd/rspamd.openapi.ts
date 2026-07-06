@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
 
 export const RspamdApi = () => applyDecorators(ApiTags("rspamd"), ApiSecurity("apiToken"));
 
@@ -65,15 +66,33 @@ export const GetStatsDocs = () =>
     RspamdBadGatewayResponse()
   );
 
+const historyRowExample = {
+  "message-id": "abc123@example.com",
+  ip: "203.0.113.10",
+  action: "reject",
+  score: 15.2,
+  required_score: 15,
+  size: 4096,
+  time_real: 0.42,
+  unix_time: 1751500000,
+  sender_smtp: "spam@baddomain.example",
+  sender_mime: "spam@baddomain.example",
+  rcpt_smtp: ["user@example.com"],
+  rcpt_mime: ["user@example.com"],
+  subject: "Sample subject",
+  user: "",
+};
+
 export const GetHistoryDocs = () =>
   applyDecorators(
+    ApiPaginationQuery(),
     ApiOperation({
-      summary: "Rspamd scan history, optionally filtered by recipient domain",
+      summary: "Rspamd scan history, optionally filtered by recipient domain, paginated",
       description:
-        "Proxies Rspamd's own `/history` controller endpoint. When `domain` is given, rows are filtered in-memory " +
-        "to only those whose `rcpt_smtp` list contains an address ending in `@<domain>` (the filter is applied " +
-        "after fetching `size` rows from Rspamd, so a narrow domain filter combined with a small `size` may return " +
-        "fewer rows than expected).",
+        "Proxies Rspamd's own `/history` controller endpoint (a ring buffer, `size` rows fetched). When `domain` " +
+        "is given, rows are filtered in-memory to only those whose `rcpt_smtp` list contains an address ending in " +
+        "`@<domain>`. `search`/pagination/`sortDir` are likewise applied in-memory over that same fetched window " +
+        "-- there is no deeper archive to page into, so `total` is bounded by `size`.",
     }),
     ApiQuery({
       name: "domain",
@@ -92,27 +111,9 @@ export const GetHistoryDocs = () =>
     ApiResponse({
       status: 200,
       description: "Rspamd scan history rows, newest first",
-      schema: {
-        example: [
-          {
-            "message-id": "abc123@example.com",
-            ip: "203.0.113.10",
-            action: "reject",
-            score: 15.2,
-            required_score: 15,
-            size: 4096,
-            time_real: 0.42,
-            unix_time: 1751500000,
-            sender_smtp: "spam@baddomain.example",
-            sender_mime: "spam@baddomain.example",
-            rcpt_smtp: ["user@example.com"],
-            rcpt_mime: ["user@example.com"],
-            subject: "Sample subject",
-            user: "",
-          },
-        ],
-      },
+      schema: { example: paginatedExample(historyRowExample) },
     }),
+    ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     RspamdForbiddenResponse(),
     RspamdUnreachableResponse(),
     RspamdBadGatewayResponse()

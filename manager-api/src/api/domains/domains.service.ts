@@ -9,7 +9,8 @@ import {
 import { InjectRepository } from "@nestjs/typeorm";
 import { randomBytes } from "crypto";
 import { statfs } from "fs/promises";
-import { In, Repository } from "typeorm";
+import { In, Like, Repository } from "typeorm";
+import type { PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { sha512crypt } from "../../core/common/sha512-crypt";
 import { DkimKey, DkimService } from "../../core/dkim/dkim.service";
@@ -38,9 +39,24 @@ export class DomainsService {
   // Access is already gated by GlobalPermissionGuard/DomainPermissionGuard at
   // the controller level (group-based ACL, see CustomPermissionGuardService) --
   // no extra filtering is needed here.
-  async list() {
-    const domains = await this.repo.find({ order: { domain: "ASC" } });
-    return this.attachOwnerUsername(domains);
+  //
+  // `query.limit` absent = legacy unpaginated behavior, still relied on by
+  // dashboard.vue, useDomainDashboard.ts, groups/[id]/index.vue and
+  // profile.vue (they need the full domain list, not a page of 10).
+  async list(query: PaginationQuery) {
+    if (query.limit === undefined) {
+      const domains = await this.repo.find({ order: { domain: "ASC" } });
+      return this.attachOwnerUsername(domains);
+    }
+
+    const where = query.search ? { domain: Like(`%${query.search}%`) } : {};
+    const [rows, total] = await this.repo.findAndCount({
+      where,
+      order: { id: query.sortDir === "asc" ? "ASC" : "DESC" },
+      skip: query.offset,
+      take: query.limit,
+    });
+    return { items: await this.attachOwnerUsername(rows), total };
   }
 
   async get(id: number) {

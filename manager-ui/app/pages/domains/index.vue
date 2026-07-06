@@ -25,9 +25,8 @@ interface Disk {
 const MB = 1024 * 1024;
 const MIN_QUOTA_MB = 10;
 
-const items = ref<Domain[]>([]);
 const disk = ref<Disk | null>(null);
-const loading = ref(false);
+const diskLoading = ref(false);
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 const form = reactive({ domain: "", active: true, quotaMb: MIN_QUOTA_MB });
@@ -58,13 +57,23 @@ const { set: setBreadcrumb } = useBreadcrumb();
 
 setBreadcrumb([{ label: t("nav.domains") }]);
 
-watch(useDataRefresh().tick, load);
+const {
+  items,
+  total,
+  loading,
+  page,
+  limit,
+  search,
+  sortDir,
+  load: loadDomains,
+} = usePaginatedList<Domain>(() => (canReadList.value ? "/domains" : null));
 
-async function load() {
-  loading.value = true;
+watch(useDataRefresh().tick, loadDisk);
+
+async function loadDisk() {
+  diskLoading.value = true;
   try {
     disk.value = await call<Disk>("/domains/disk");
-    items.value = canReadList.value ? await call<Domain[]>("/domains") : [];
   } catch (err) {
     toast.add({
       title: t("domains.toast.loadFailed"),
@@ -72,8 +81,12 @@ async function load() {
       color: "error",
     });
   } finally {
-    loading.value = false;
+    diskLoading.value = false;
   }
+}
+
+async function load() {
+  await Promise.all([loadDisk(), loadDomains()]);
 }
 
 async function create() {
@@ -134,7 +147,7 @@ function openDomain(d: Domain) {
   navigateTo(`/domains/${d.domain}`);
 }
 
-onMounted(load);
+onMounted(loadDisk);
 </script>
 
 <template>
@@ -148,7 +161,14 @@ onMounted(load);
         :description="t('domains.alertDescription')"
         class="flex-1 min-w-[16rem]"
       />
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+      <UButton
+        icon="i-lucide-refresh-cw"
+        color="neutral"
+        variant="ghost"
+        :loading="loading || diskLoading"
+        square
+        @click="load"
+      />
     </div>
 
     <UCard>
@@ -218,6 +238,8 @@ onMounted(load);
     <UAlert v-if="!canReadList" color="neutral" variant="subtle" icon="i-lucide-lock" :title="t('domains.listLocked')" />
 
     <template v-else>
+      <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
           <template #domain-cell="{ row }">
@@ -250,7 +272,7 @@ onMounted(load);
         <div v-if="loading" class="flex justify-center py-8">
           <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
         </div>
-        <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">-</p>
+        <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
         <DomainCard
           v-for="item in items"
           v-else
@@ -259,6 +281,10 @@ onMounted(load);
           @open="openDomain(item)"
           @delete="requestDelete(() => remove(item.id))"
         />
+      </div>
+
+      <div class="flex justify-center">
+        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
       </div>
     </template>
 

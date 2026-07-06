@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { paginationQuerySchema, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
 import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
 import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
@@ -16,9 +17,12 @@ export class AliasesController {
   @Get()
   @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "read"] }])
   @ListAliasesDocs()
-  async list(@Param("domainId", ParseIntPipe) domainId: number) {
+  async list(
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery
+  ) {
     const domain = await this.svc.resolveDomain(domainId);
-    return this.svc.list(domain);
+    return this.svc.list(domain, query);
   }
 
   @Get(":id")

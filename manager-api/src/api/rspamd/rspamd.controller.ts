@@ -1,4 +1,6 @@
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { paginationQuerySchema, type PaginationQuery } from "../../core/common/pagination.validation";
+import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global-permission.guard";
 import { RequireGlobalPermissions } from "../../core/custom-permission-guard/require-permissions.decorator";
 import type { RspamdStats } from "../../core/rspamd/rspamd.service";
@@ -23,7 +25,11 @@ export class RspamdController {
   @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "read"] }])
   @GetHistoryDocs()
   @Get("history")
-  history(@Query("domain") domain?: string, @Query("size") size?: string) {
-    return this.rspamd.history(domain, size ? parseInt(size, 10) : undefined);
+  history(
+    @Query("domain") domain: string | undefined,
+    @Query("size") size: string | undefined,
+    @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery
+  ) {
+    return this.rspamd.history(domain, size ? parseInt(size, 10) : undefined, query);
   }
 }

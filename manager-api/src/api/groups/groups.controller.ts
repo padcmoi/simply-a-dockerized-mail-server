@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
+import { paginationQuerySchema, type PaginationQuery } from "../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import { DomainPermissionGuard } from "../../core/custom-permission-guard/domain-permission.guard";
 import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global-permission.guard";
@@ -47,8 +48,8 @@ export class GroupsController {
   @Get()
   @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "read"] }])
   @ListGroupsDocs()
-  list() {
-    return this.svc.list();
+  list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
+    return this.svc.list(query);
   }
 
   @Post()

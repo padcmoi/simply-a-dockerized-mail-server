@@ -20,8 +20,7 @@ interface ManagerAccount {
   groups: { id: number; name: string }[];
 }
 
-const loading = ref(false);
-const accounts = ref<ManagerAccount[]>([]);
+const { items: accounts, total, loading, page, limit, search, sortDir, load } = usePaginatedList<ManagerAccount>("/accounts");
 
 const inviteOpen = ref(false);
 const inviteSending = ref(false);
@@ -47,19 +46,6 @@ const columns = computed(() => [
   { id: "status", header: t("accounts.table.status") },
   { id: "actions", header: "" },
 ]);
-
-watch(useDataRefresh().tick, load);
-
-async function load() {
-  loading.value = true;
-  try {
-    accounts.value = await call<ManagerAccount[]>("/accounts");
-  } catch {
-    toast.add({ title: t("accounts.toast.loadFailed"), color: "error" });
-  } finally {
-    loading.value = false;
-  }
-}
 
 async function sendInvite(data: { email: string; groupId: number | null }) {
   inviteSending.value = true;
@@ -94,8 +80,6 @@ async function onDeleteConfirmed() {
   await pendingDeleteFn.value?.();
   pendingDeleteFn.value = null;
 }
-
-onMounted(load);
 </script>
 
 <template>
@@ -123,6 +107,8 @@ onMounted(load);
         {{ t("accounts.inviteButton") }}
       </UButton>
     </div>
+
+    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
 
     <UCard class="hidden lg:block">
       <UTable :loading="loading" :data="accounts" :columns="columns" sticky>
@@ -191,7 +177,7 @@ onMounted(load);
       <div v-if="loading" class="flex justify-center py-8">
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>
-      <p v-else-if="accounts.length === 0" class="text-sm text-muted text-center py-6">-</p>
+      <p v-else-if="accounts.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
       <AccountCard
         v-for="acc in accounts"
         v-else
@@ -199,6 +185,10 @@ onMounted(load);
         :account="acc"
         @revoke="requestDelete(() => revokeAccount(acc))"
       />
+    </div>
+
+    <div class="flex justify-center">
+      <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
     </div>
 
     <AccountInviteModal

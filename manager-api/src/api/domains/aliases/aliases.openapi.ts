@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../../core/common/pagination.openapi";
 
 export const AliasesApi = () =>
   applyDecorators(
@@ -12,30 +13,29 @@ export const AliasesApi = () =>
     })
   );
 
+const aliasListItemExample = {
+  id: 1,
+  ownerId: null,
+  domain: "example.com",
+  source: "sales@example.com",
+  destination: "jdoe@example.com",
+  userStartDate: "2026-01-01",
+  userEndDate: null,
+  lastActivity: "2026-07-01T12:00:00.000Z",
+};
+
 export const ListAliasesDocs = () =>
   applyDecorators(
-    ApiOperation({ summary: "List aliases that belong to this domain" }),
+    ApiPaginationQuery(),
+    ApiOperation({ summary: "List aliases that belong to this domain, paginated" }),
     ApiResponse({
       status: 200,
       description: "Aliases returned",
-      schema: {
-        example: [
-          {
-            id: 1,
-            ownerId: null,
-            domain: "example.com",
-            source: "sales@example.com",
-            destination: "jdoe@example.com",
-            userStartDate: "2026-01-01",
-            userEndDate: null,
-            lastActivity: "2026-07-01T12:00:00.000Z",
-          },
-        ],
-      },
+      schema: { example: paginatedExample(aliasListItemExample) },
     }),
     ApiResponse({
       status: 400,
-      description: "domainId is not a valid integer",
+      description: "domainId is not a valid integer, or invalid pagination query",
       schema: {
         example: { statusCode: 400, message: "Validation failed (numeric string is expected)", error: "Bad Request" },
       },

@@ -54,6 +54,11 @@ export default {
     invite: "Invite",
     revoke: "Revoke",
     manage: "Manage",
+    search: "Search...",
+    itemsPerPage: "Per page",
+    sortNewestFirst: "Newest first",
+    sortOldestFirst: "Oldest first",
+    noResults: "No results",
   },
   confirm: {
     title: "Confirm deletion",

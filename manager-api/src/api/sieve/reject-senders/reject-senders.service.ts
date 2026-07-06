@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Like, Repository } from "typeorm";
+import type { PaginationQuery } from "../../../core/common/pagination.validation";
 import { SieveRejectSender } from "../../../core/entities/sieve-reject-sender.entity";
 
 @Injectable()
@@ -10,8 +11,20 @@ export class RejectSendersService {
     private readonly repo: Repository<SieveRejectSender>
   ) {}
 
-  list() {
-    return this.repo.find({ order: { sender: "ASC" } });
+  // `query.limit` absent = legacy unpaginated behavior, still relied on by
+  // dashboard.vue's blocked-senders stat card (needs the full count/list).
+  async list(query: PaginationQuery) {
+    if (query.limit === undefined) {
+      return this.repo.find({ order: { sender: "ASC" } });
+    }
+    const where = query.search ? { sender: Like(`%${query.search}%`) } : {};
+    const [items, total] = await this.repo.findAndCount({
+      where,
+      order: { createdAt: query.sortDir === "asc" ? "ASC" : "DESC" },
+      skip: query.offset,
+      take: query.limit,
+    });
+    return { items, total };
   }
 
   async create(sender: string) {

@@ -14,14 +14,15 @@ interface QuotaRow {
   messages: string;
   lastActivity: string;
 }
-interface DomainQuotaPayload {
-  domain: QuotaRow | null;
-  recipients: QuotaRow[];
-}
 
 const domainRows = ref<QuotaRow[]>([]);
 const recipientRows = ref<QuotaRow[]>([]);
 const loading = ref(false);
+const page = ref(1);
+const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
+const search = ref("");
+const sortDir = ref<"asc" | "desc">("desc");
+const total = ref(0);
 
 const domainCols = computed(() => [
   { accessorKey: "domain", header: t("common.domain") },
@@ -41,6 +42,14 @@ const { call } = useApi();
 const domainStore = useDomainStore();
 const { set: setBreadcrumb } = useBreadcrumb();
 
+watch(
+  search,
+  useDebounceFn(() => {
+    page.value = 1;
+    load();
+  }, 1000)
+);
+watch([page, limit, sortDir], load);
 watch(useDataRefresh().tick, load);
 
 watchEffect(() => {
@@ -52,12 +61,26 @@ watchEffect(() => {
   ]);
 });
 
+// The "per domain" table is a single aggregate row, never paginated -- only
+// "per recipient" is (nested `recipients: { items, total }` in the same
+// response, see quotas.controller.ts). Not `usePaginatedList` since that
+// composable expects the endpoint's top-level shape to be `{items,total}`,
+// not nested under `recipients`.
 async function load() {
   loading.value = true;
   try {
-    const data = await call<DomainQuotaPayload>(`/domains/${domainStore.selected!.id}/quotas`);
+    const qs = new URLSearchParams({
+      limit: String(limit.value),
+      offset: String((page.value - 1) * limit.value),
+      sortDir: sortDir.value,
+    });
+    if (search.value) qs.set("search", search.value);
+    const data = await call<{ domain: QuotaRow | null; recipients: { items: QuotaRow[]; total: number } }>(
+      `/domains/${domainStore.selected!.id}/quotas?${qs.toString()}`
+    );
     domainRows.value = data.domain ? [data.domain] : [];
-    recipientRows.value = data.recipients;
+    recipientRows.value = data.recipients.items;
+    total.value = data.recipients.total;
   } finally {
     loading.value = false;
   }
@@ -97,6 +120,8 @@ onMounted(load);
       <QuotaCard v-for="item in domainRows" v-else :key="item.id" :item="item" />
     </div>
 
+    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+
     <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
       <template #header>
         <h2 class="font-semibold">{{ t("quotas.perRecipient") }}</h2>
@@ -111,8 +136,12 @@ onMounted(load);
       <div v-if="loading" class="flex justify-center py-8">
         <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
       </div>
-      <p v-else-if="recipientRows.length === 0" class="text-sm text-muted text-center py-6">-</p>
+      <p v-else-if="recipientRows.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
       <QuotaCard v-for="item in recipientRows" v-else :key="item.id" :item="item" />
+    </div>
+
+    <div class="flex justify-center">
+      <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
     </div>
   </div>
 </template>

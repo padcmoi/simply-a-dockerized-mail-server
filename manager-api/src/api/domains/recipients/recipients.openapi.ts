@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../../core/common/pagination.openapi";
 
 export const RecipientsApi = () =>
   applyDecorators(
@@ -12,34 +13,33 @@ export const RecipientsApi = () =>
     })
   );
 
+const recipientListItemExample = {
+  id: 1,
+  ownerId: null,
+  domain: "example.com",
+  email: "jdoe@example.com",
+  maildir: "example.com/jdoe/",
+  quota: "104857600",
+  active: 1,
+  uid: "vmail",
+  gid: "vmail",
+  userStartDate: "2026-01-01",
+  userEndDate: null,
+  lastActivity: "2026-07-01T12:00:00.000Z",
+};
+
 export const ListRecipientsDocs = () =>
   applyDecorators(
-    ApiOperation({ summary: "List recipients that belong to this domain" }),
+    ApiPaginationQuery(),
+    ApiOperation({ summary: "List recipients that belong to this domain, paginated" }),
     ApiResponse({
       status: 200,
       description: "Recipients returned",
-      schema: {
-        example: [
-          {
-            id: 1,
-            ownerId: null,
-            domain: "example.com",
-            email: "jdoe@example.com",
-            maildir: "example.com/jdoe/",
-            quota: "104857600",
-            active: 1,
-            uid: "vmail",
-            gid: "vmail",
-            userStartDate: "2026-01-01",
-            userEndDate: null,
-            lastActivity: "2026-07-01T12:00:00.000Z",
-          },
-        ],
-      },
+      schema: { example: paginatedExample(recipientListItemExample) },
     }),
     ApiResponse({
       status: 400,
-      description: "domainId is not a valid integer",
+      description: "domainId is not a valid integer, or invalid pagination query",
       schema: {
         example: { statusCode: 400, message: "Validation failed (numeric string is expected)", error: "Bad Request" },
       },

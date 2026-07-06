@@ -1,7 +1,8 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { CustomPermissionGuardConfigError } from "@naskot/custom-permission-guard";
-import { In, Not, Repository } from "typeorm";
+import { In, Like, Not, Repository } from "typeorm";
+import type { PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { Account } from "../../core/entities/account.entity";
@@ -23,8 +24,26 @@ export class GroupsService {
     private readonly auditLog: AuditLogService
   ) {}
 
-  async list() {
-    const allGroups = await this.groups.find({ order: { name: "ASC" } });
+  // `query.limit` absent = legacy unpaginated behavior, still relied on by
+  // useGroups() picker consumers (accounts/index.vue's invite modal,
+  // accounts/[id]/groups.vue's group picker) which need the full list.
+  async list(query: PaginationQuery) {
+    if (query.limit === undefined) {
+      const allGroups = await this.groups.find({ order: { name: "ASC" } });
+      return this.enrichGroups(allGroups);
+    }
+
+    const where = query.search ? [{ name: Like(`%${query.search}%`) }, { description: Like(`%${query.search}%`) }] : {};
+    const [rows, total] = await this.groups.findAndCount({
+      where,
+      order: { createdAt: query.sortDir === "asc" ? "ASC" : "DESC" },
+      skip: query.offset,
+      take: query.limit,
+    });
+    return { items: await this.enrichGroups(rows), total };
+  }
+
+  private async enrichGroups(allGroups: Group[]) {
     if (!allGroups.length) return [];
 
     const groupIds = allGroups.map((g) => g.id);

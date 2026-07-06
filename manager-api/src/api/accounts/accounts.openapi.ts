@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
 
 export const AccountsApi = () => applyDecorators(ApiTags("accounts"), ApiSecurity("apiToken"));
 
@@ -28,10 +29,16 @@ export const ListAccountNamesDocs = () =>
 
 export const ListAccountsDocs = () =>
   applyDecorators(
+    ApiPaginationQuery(),
     ApiOperation({
-      summary: "List all manager accounts with their groups (root only)",
+      summary: "List all manager accounts with their groups, paginated (root only)",
     }),
-    ApiResponse({ status: 200, description: "Accounts returned", schema: { example: [accountListItemExample] } }),
+    ApiResponse({
+      status: 200,
+      description: "Accounts returned",
+      schema: { example: paginatedExample(accountListItemExample) },
+    }),
+    ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
     ApiResponse({ status: 403, description: "Root access required" })
   );

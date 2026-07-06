@@ -1,33 +1,34 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
 
 export const DomainsApi = () => applyDecorators(ApiTags("domains"), ApiSecurity("apiToken"));
 
+const domainListItemExample = {
+  id: 1,
+  ownerId: 7,
+  ownerUsername: "jdoe",
+  domain: "example.com",
+  quota: "104857600",
+  active: 1,
+  userStartDate: "2026-01-01",
+  userEndDate: null,
+  lastActivity: "2026-07-01T12:00:00.000Z",
+};
+
 export const ListDomainsDocs = () =>
   applyDecorators(
+    ApiPaginationQuery(),
     ApiOperation({
-      summary: "List managed domains",
+      summary: "List managed domains, paginated",
       description: "Every domain row also carries a computed `ownerUsername`, resolved from `ownerId`.",
     }),
     ApiResponse({
       status: 200,
       description: "Domains returned",
-      schema: {
-        example: [
-          {
-            id: 1,
-            ownerId: 7,
-            ownerUsername: "jdoe",
-            domain: "example.com",
-            quota: "104857600",
-            active: 1,
-            userStartDate: "2026-01-01",
-            userEndDate: null,
-            lastActivity: "2026-07-01T12:00:00.000Z",
-          },
-        ],
-      },
+      schema: { example: paginatedExample(domainListItemExample) },
     }),
+    ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     ApiResponse({
       status: 403,
       description: "Missing permission domains:access or domains:read",

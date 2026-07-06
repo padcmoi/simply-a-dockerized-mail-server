@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { paginationQuerySchema, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
 import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
 import { RequireGlobalPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
@@ -26,8 +27,8 @@ export class RejectSendersController {
   @Get()
   @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "read"] }])
   @ListRejectSendersDocs()
-  list() {
-    return this.svc.list();
+  list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
+    return this.svc.list(query);
   }
 
   @Post()

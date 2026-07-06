@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery } from "../../../core/common/pagination.openapi";
 
 export const QuotasApi = () =>
   applyDecorators(
@@ -12,14 +13,24 @@ export const QuotasApi = () =>
     })
   );
 
+const recipientQuotaExample = {
+  id: 5,
+  domain: "example.com",
+  email: "user@example.com",
+  bytes: "52428800",
+  messages: "21",
+  lastActivity: "2026-07-04T11:30:00.000Z",
+};
+
 export const GetDomainQuotasDocs = () =>
   applyDecorators(
+    ApiPaginationQuery(),
     ApiOperation({
-      summary: "Live quota snapshot for this domain: aggregate counters + per-recipient counters from dovecot",
+      summary: "Live quota snapshot for this domain: aggregate counters + paginated per-recipient counters from dovecot",
       description:
         "Reads virtual_quota_domains and virtual_quota_users as-is (no aggregation performed here). `domain` is " +
-        "null if dovecot has not yet written an aggregate row for this domain; `recipients` is an empty array if " +
-        "none exist yet, sorted by email.",
+        "null if dovecot has not yet written an aggregate row for this domain. `recipients` is `{ items, total }` " +
+        "when `limit` is passed, or a bare array (unpaginated, sorted by email) otherwise.",
     }),
     ApiResponse({
       status: 200,
@@ -33,19 +44,11 @@ export const GetDomainQuotasDocs = () =>
             messages: "42",
             lastActivity: "2026-07-04T12:00:00.000Z",
           },
-          recipients: [
-            {
-              id: 5,
-              domain: "example.com",
-              email: "user@example.com",
-              bytes: "52428800",
-              messages: "21",
-              lastActivity: "2026-07-04T11:30:00.000Z",
-            },
-          ],
+          recipients: { items: [recipientQuotaExample], total: 1 },
         },
       },
     }),
+    ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     ApiResponse({
       status: 403,
       description: 'Missing the "quotas" resource\'s access+read domain permissions for this domain (and not its owner/root)',

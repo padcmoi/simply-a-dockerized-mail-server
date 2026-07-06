@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import type { PaginatedResult, PaginationQuery } from "../common/pagination.validation";
 
 interface RspamdActions {
   reject: number;
@@ -54,7 +55,24 @@ export class RspamdService {
     return res.json() as Promise<RspamdStats>;
   }
 
-  async history(domain?: string, size = 200): Promise<RspamdHistoryRow[]> {
+  // Overloads: called with 2 args (spamd.controller.ts, useDomainDashboard.ts's
+  // per-domain widget) keeps returning a plain array with zero changes; the
+  // 3-arg form (rspamd.controller.ts's table endpoint) opts into pagination.
+  async history(domain: string | undefined, size?: number): Promise<RspamdHistoryRow[]>;
+  async history(
+    domain: string | undefined,
+    size: number | undefined,
+    query: PaginationQuery
+  ): Promise<RspamdHistoryRow[] | PaginatedResult<RspamdHistoryRow>>;
+  // Rspamd itself has no deeper archive than its ring buffer (`size`,
+  // unchanged from before this feature) -- search/pagination/sortDir below
+  // operate in-memory over that already-fetched window, `total` is bounded
+  // to it.
+  async history(
+    domain: string | undefined,
+    size = 200,
+    query?: PaginationQuery
+  ): Promise<RspamdHistoryRow[] | PaginatedResult<RspamdHistoryRow>> {
     let res: Response;
     try {
       res = await fetch(`${RSPAMD_BASE_URL}/history?size=${size}`);
@@ -65,9 +83,27 @@ export class RspamdService {
       throw new HttpException(`Rspamd returned ${res.status}`, HttpStatus.BAD_GATEWAY);
     }
     const data = (await res.json()) as { rows?: RspamdHistoryRow[] };
-    const rows = data.rows ?? [];
-    if (!domain) return rows;
-    const suffix = `@${domain}`;
-    return rows.filter((r) => r.rcpt_smtp?.some((rcpt) => rcpt.endsWith(suffix)));
+    let rows = data.rows ?? [];
+    if (domain) {
+      const suffix = `@${domain}`;
+      rows = rows.filter((r) => r.rcpt_smtp?.some((rcpt) => rcpt.endsWith(suffix)));
+    }
+
+    if (!query || query.limit === undefined) return rows;
+
+    if (query.search) {
+      const term = query.search.toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          r.sender_smtp?.toLowerCase().includes(term) ||
+          r.rcpt_smtp?.some((rcpt) => rcpt.toLowerCase().includes(term)) ||
+          r.subject?.toLowerCase().includes(term)
+      );
+    }
+    if (query.sortDir === "asc") rows = [...rows].reverse();
+
+    const total = rows.length;
+    const items = rows.slice(query.offset, query.offset + query.limit);
+    return { items, total };
   }
 }

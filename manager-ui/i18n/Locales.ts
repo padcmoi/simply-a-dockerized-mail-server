@@ -52,6 +52,11 @@ export interface Locales {
     invite: string;
     revoke: string;
     manage: string;
+    search: string;
+    itemsPerPage: string;
+    sortNewestFirst: string;
+    sortOldestFirst: string;
+    noResults: string;
   };
   confirm: {
     title: string;

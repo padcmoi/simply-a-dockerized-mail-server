@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): persist the "items per page" list preference across every table in localStorage (06-07-2026)
+- feat(api,ui): server-side pagination (10/25/50 max), free-text search and chronological sort direction (newest/oldest first) on every tabular list (accounts, domains, groups, blocklist, recipients, aliases, quotas, Rspamd history); additive so the dashboard and picker selects keep receiving the full unpaginated set (06-07-2026)
 - feat(ui): Home breadcrumb entry linking to `/` on every page (06-07-2026)
 - feat(ui): dedicated per-account pages to manage group membership and edit profile fields, reachable from the accounts table (06-07-2026)
 - feat(api): account detail endpoints (`GET`/`PATCH /accounts/:id`) for editing profile fields and enabled status (06-07-2026)

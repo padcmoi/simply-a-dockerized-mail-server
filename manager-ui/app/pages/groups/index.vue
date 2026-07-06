@@ -26,7 +26,11 @@ const { set: setBreadcrumb } = useBreadcrumb();
 const toast = useToast();
 setBreadcrumb([{ label: t("nav.groups") }]);
 
-const { groups, loading, create, remove } = useGroups();
+// Table display is paginated separately from useGroups(), which stays
+// unpaginated for its other consumers (accounts invite modal, accounts/[id]/groups.vue's
+// group picker) -- only create/remove are reused here.
+const { create, remove } = useGroups();
+const { items: groups, total, loading, page, limit, search, sortDir, load } = usePaginatedList<GroupItem>("/groups");
 
 function openCreate() {
   modalOpen.value = true;
@@ -38,6 +42,7 @@ async function onSubmit(data: { name: string; description?: string | null }) {
     await create(data);
     toast.add({ title: t("groups.toast.created"), color: "success" });
     modalOpen.value = false;
+    await load();
   } catch (e) {
     toast.add({ title: t("groups.toast.createFailed"), description: (e as Error).message, color: "error" });
   } finally {
@@ -56,6 +61,7 @@ async function onDeleteConfirmed() {
   try {
     await remove(group.id);
     toast.add({ title: t("groups.toast.deleted"), color: "success" });
+    await load();
   } catch (e) {
     toast.add({ title: t("groups.toast.deleteFailed"), description: (e as Error).message, color: "error" });
   } finally {
@@ -79,6 +85,8 @@ async function onDeleteConfirmed() {
         {{ t("groups.newGroup") }}
       </UButton>
     </div>
+
+    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
 
     <UCard class="hidden lg:block">
       <UTable :loading="loading" :data="groups" :columns="columns" sticky>
@@ -119,6 +127,10 @@ async function onDeleteConfirmed() {
       </div>
       <p v-else-if="groups.length === 0" class="text-sm text-muted text-center py-6">{{ t("groups.empty") }}</p>
       <GroupCard v-for="group in groups" v-else :key="group.id" :group="group" @delete="requestDelete(group)" />
+    </div>
+
+    <div class="flex justify-center">
+      <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
     </div>
 
     <GroupFormModal v-model:open="modalOpen" :saving="saving" @submit="onSubmit" />

@@ -1,5 +1,6 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
 
 export const GroupsApi = () => applyDecorators(ApiTags("groups"), ApiSecurity("apiToken"));
 
@@ -30,8 +31,10 @@ const idParam = () => ApiParam({ name: "id", type: Number, description: "groups.
 
 export const ListGroupsDocs = () =>
   applyDecorators(
-    ApiOperation({ summary: "List all groups" }),
-    ApiResponse({ status: 200, description: "Groups returned", schema: { example: [groupItemExample] } }),
+    ApiPaginationQuery(),
+    ApiOperation({ summary: "List all groups, paginated" }),
+    ApiResponse({ status: 200, description: "Groups returned", schema: { example: paginatedExample(groupItemExample) } }),
+    ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
     ApiResponse({ status: 403, description: "Missing groups:access + groups:read global permission" })
   );
