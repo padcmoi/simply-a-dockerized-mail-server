@@ -1,14 +1,20 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { CustomPermissionGuardModule } from "../../core/custom-permission-guard/custom-permission-guard.module";
 import { AccountInvitation } from "../../core/entities/account-invitation.entity";
 import { Account } from "../../core/entities/account.entity";
+import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { MailerModule } from "../../core/mailer/mailer.module";
 import { AccountsController } from "./accounts.controller";
 import { AccountsService } from "./accounts.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Account, AccountInvitation, Group]), MailerModule],
+  imports: [
+    TypeOrmModule.forFeature([Account, AccountInvitation, Group, GroupMember]),
+    MailerModule,
+    CustomPermissionGuardModule,
+  ],
   providers: [AccountsService],
   controllers: [AccountsController],
 })

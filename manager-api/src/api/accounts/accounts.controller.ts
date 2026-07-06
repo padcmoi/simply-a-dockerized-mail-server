@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import { Public } from "../../core/auth/auth.decorator";
@@ -6,14 +6,23 @@ import { IsRootGuard } from "../../core/guards/is-root.guard";
 import {
   AcceptInvitationDocs,
   AccountsApi,
+  GetAccountDocs,
   GetInvitationDocs,
   ListAccountNamesDocs,
   ListAccountsDocs,
   RevokeAccountDocs,
   SendInvitationDocs,
+  UpdateAccountDocs,
 } from "./accounts.openapi";
 import { AccountsService } from "./accounts.service";
-import { AcceptInvitationDto, SendInvitationDto, acceptInvitationSchema, sendInvitationSchema } from "./accounts.validation";
+import {
+  AcceptInvitationDto,
+  SendInvitationDto,
+  UpdateAccountDto,
+  acceptInvitationSchema,
+  sendInvitationSchema,
+  updateAccountSchema,
+} from "./accounts.validation";
 
 type AuthedRequest = Request & {
   user: { id: number; username: string; isRoot: boolean };
@@ -35,6 +44,20 @@ export class AccountsController {
   @UseGuards(IsRootGuard)
   list() {
     return this.svc.list();
+  }
+
+  @Get(":id")
+  @GetAccountDocs()
+  @UseGuards(IsRootGuard)
+  getById(@Param("id", ParseIntPipe) id: number) {
+    return this.svc.getById(id);
+  }
+
+  @Patch(":id")
+  @UpdateAccountDocs()
+  @UseGuards(IsRootGuard)
+  update(@Param("id", ParseIntPipe) id: number, @Body(new ZodValidationPipe(updateAccountSchema)) body: UpdateAccountDto) {
+    return this.svc.updateAccount(id, body);
   }
 
   @Delete(":id")
