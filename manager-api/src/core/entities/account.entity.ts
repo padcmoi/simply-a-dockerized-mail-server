@@ -32,11 +32,6 @@ export class Account {
   @Column({ name: "is_root", type: "tinyint", width: 1, default: 0 })
   isRoot!: number;
 
-  // An account belongs to zero or one group (FK -> groups.id, ON DELETE SET
-  // NULL). No group = no permissions (root ignores this entirely).
-  @Column({ name: "group_id", type: "int", nullable: true })
-  groupId!: number | null;
-
   @Column({ name: "enabled", type: "tinyint", width: 1, default: 1 })
   enabled!: number;
 

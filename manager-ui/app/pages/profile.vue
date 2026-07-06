@@ -112,7 +112,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
+  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
     <UAlert
       color="neutral"
       variant="subtle"
@@ -130,15 +130,26 @@ onMounted(async () => {
           <UAvatar :src="avatarPreview.src" :alt="avatarPreview.alt" size="3xl" />
           <div class="min-w-0">
             <p class="font-medium truncate">{{ auth.session?.username }}</p>
-            <UBadge v-if="auth.session?.isRoot" color="warning" variant="subtle" icon="i-lucide-shield">
-              {{ t("nav.rootBadge") }}
-            </UBadge>
-            <UBadge v-else-if="auth.session?.group" color="primary" variant="subtle" icon="i-lucide-users-round" class="max-w-48">
-              <span class="truncate">{{ auth.session.group.name }}</span>
-            </UBadge>
-            <UBadge v-else color="neutral" variant="subtle" icon="i-lucide-user-x">
-              {{ t("nav.noGroupBadge") }}
-            </UBadge>
+            <div class="flex flex-wrap gap-1">
+              <UBadge v-if="auth.session?.isRoot" color="warning" variant="subtle" icon="i-lucide-shield">
+                {{ t("nav.rootBadge") }}
+              </UBadge>
+              <template v-else-if="auth.session?.groups?.length">
+                <UBadge
+                  v-for="group in auth.session.groups"
+                  :key="group.id"
+                  color="primary"
+                  variant="subtle"
+                  icon="i-lucide-users-round"
+                  class="max-w-48"
+                >
+                  <span class="truncate">{{ group.name }}</span>
+                </UBadge>
+              </template>
+              <UBadge v-else color="neutral" variant="subtle" icon="i-lucide-user-x">
+                {{ t("nav.noGroupBadge") }}
+              </UBadge>
+            </div>
           </div>
         </div>
 

@@ -29,7 +29,7 @@ const profileExample = {
   email: "jdoe@example.com",
   avatarUrl: "https://example.com/avatar.png",
   isRoot: false,
-  group: { id: 3, name: "support" },
+  groups: [{ id: 3, name: "support" }],
 };
 
 export const JwtLoginDocs = () =>

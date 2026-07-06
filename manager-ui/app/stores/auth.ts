@@ -9,7 +9,7 @@ interface Session {
   email?: string | null;
   avatarUrl?: string | null;
   isRoot?: boolean;
-  group?: { id: number; name: string } | null;
+  groups?: { id: number; name: string }[];
 }
 
 interface Profile {
@@ -18,7 +18,7 @@ interface Profile {
   email: string | null;
   avatarUrl: string | null;
   isRoot: boolean;
-  group: { id: number; name: string } | null;
+  groups: { id: number; name: string }[];
 }
 
 export const useAuthStore = defineStore("auth", {
@@ -49,7 +49,7 @@ export const useAuthStore = defineStore("auth", {
         email: me.email,
         avatarUrl: me.avatarUrl,
         isRoot: me.isRoot,
-        group: me.group,
+        groups: me.groups,
       };
     },
     async updateProfile(input: { name?: string | null; email?: string | null; avatarUrl?: string | null }) {
@@ -66,7 +66,7 @@ export const useAuthStore = defineStore("auth", {
         email: me.email,
         avatarUrl: me.avatarUrl,
         isRoot: me.isRoot,
-        group: me.group,
+        groups: me.groups,
       };
     },
     async logout() {

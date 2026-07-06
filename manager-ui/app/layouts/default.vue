@@ -41,11 +41,7 @@ const userAvatar = computed(() => {
   return { alt: auth.session?.name ?? auth.session?.username ?? "?" };
 });
 
-const userBadge = computed(() => {
-  if (auth.session?.isRoot) return { label: t("nav.rootBadge"), color: "warning" as const };
-  if (auth.session?.group) return { label: auth.session.group.name, color: "primary" as const };
-  return { label: t("nav.noGroupBadge"), color: "neutral" as const };
-});
+const rootBadge = computed(() => (auth.session?.isRoot ? { label: t("nav.rootBadge"), color: "warning" as const } : null));
 
 const domainStore = useDomainStore();
 const { t } = useI18n();
@@ -140,8 +136,8 @@ function closeDomain() {
             :ui="{ trailingIcon: 'text-dimmed ms-auto', label: 'flex items-center gap-1.5 min-w-0' }"
           >
             <span class="truncate min-w-0">{{ auth.session?.name ?? auth.session?.username ?? "Account" }}</span>
-            <UBadge :color="userBadge.color" variant="subtle" size="xs" class="min-w-0 max-w-24 shrink-0">
-              <span class="truncate block">{{ userBadge.label }}</span>
+            <UBadge v-if="rootBadge" :color="rootBadge.color" variant="subtle" size="xs" class="min-w-0 max-w-24 shrink-0">
+              <span class="truncate block">{{ rootBadge.label }}</span>
             </UBadge>
           </UButton>
         </UDropdownMenu>

@@ -5,6 +5,7 @@ import { In, Not, Repository } from "typeorm";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { Account } from "../../core/entities/account.entity";
+import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { CreateGroupDto, SetDomainPermissionsDto, SetGlobalPermissionsDto, UpdateGroupDto } from "./groups.validation";
@@ -16,6 +17,7 @@ export class GroupsService {
   constructor(
     @InjectRepository(Group) private readonly groups: Repository<Group>,
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
+    @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     private readonly cpg: CustomPermissionGuardService,
     private readonly auditLog: AuditLogService
@@ -26,11 +28,9 @@ export class GroupsService {
     if (!allGroups.length) return [];
 
     const groupIds = allGroups.map((g) => g.id);
-    const memberRows = await this.accounts.find({ where: { groupId: In(groupIds) } });
+    const memberRows = await this.groupMembers.find({ where: { groupId: In(groupIds) } });
     const countMap = new Map<number, number>();
-    memberRows.forEach((m) => {
-      if (m.groupId !== null) countMap.set(m.groupId, (countMap.get(m.groupId) ?? 0) + 1);
-    });
+    memberRows.forEach((m) => countMap.set(m.groupId, (countMap.get(m.groupId) ?? 0) + 1));
 
     const ownerIds = [...new Set(allGroups.map((g) => g.ownerId).filter((id): id is number => id !== null))];
     const ownerMap = new Map<number, string>();
@@ -118,13 +118,13 @@ export class GroupsService {
   async remove(id: number, actingUser: ActingUser) {
     await this.findOrFail(id);
 
-    // Members drop to zero permissions once detached (no group = no
-    // permissions) via `accounts.group_id` ON DELETE SET NULL; capture the
-    // list here purely so the audit trail isn't a silent FK side-effect.
-    // Read BEFORE deleting, and only audit AFTER a successful delete: the
-    // lib's deleteGroup can now throw (lockoutProtected), which the old
-    // code never risked between these two steps.
-    const members = await this.accounts.find({ where: { groupId: id }, select: { id: true } });
+    // Members drop this group's permissions once detached (ON DELETE CASCADE
+    // on `group_members`, keeping any other group memberships intact);
+    // capture the list here purely so the audit trail isn't a silent FK
+    // side-effect. Read BEFORE deleting, and only audit AFTER a successful
+    // delete: the lib's deleteGroup can now throw (lockoutProtected), which
+    // the old code never risked between these two steps.
+    const members = await this.groupMembers.find({ where: { groupId: id } });
     // Root is a 100% unconditional bypass of every ACL check, anti-lockout
     // included -- the lib's deleteGroup has no notion of "except root", so
     // root goes through the raw escape hatch instead.
@@ -138,7 +138,7 @@ export class GroupsService {
       action: "group.deleted",
       entityType: "group",
       entityId: id,
-      after: { detachedAccountIds: members.map((m) => m.id) },
+      after: { detachedAccountIds: members.map((m) => m.accountId) },
     });
 
     return { ok: true };
@@ -292,8 +292,6 @@ export class GroupsService {
     return this.memberList(id);
   }
 
-  // Single-group model: adding an account to a group *moves* it here, even
-  // if it already belonged to another group.
   async addMember(id: number, actingUser: ActingUser, accountId: number) {
     const group = await this.findOrFail(id);
     this.assertOwnerOrRoot(group, actingUser);
@@ -306,8 +304,8 @@ export class GroupsService {
   async removeMember(id: number, actingUser: ActingUser, accountId: number) {
     const group = await this.findOrFail(id);
     this.assertOwnerOrRoot(group, actingUser);
-    const account = await this.accounts.findOne({ where: { id: accountId } });
-    if (!account || account.groupId !== id) {
+    const membership = await this.groupMembers.findOne({ where: { accountId, groupId: id } });
+    if (!membership) {
       throw new NotFoundException(`Account #${accountId} is not a member of group #${id}`);
     }
     await this.cpg.guard.removeAccountFromGroup(accountId, id);
@@ -327,7 +325,7 @@ export class GroupsService {
   }
 
   private async toItem(group: Group) {
-    const memberCount = await this.accounts.count({ where: { groupId: group.id } });
+    const memberCount = await this.groupMembers.count({ where: { groupId: group.id } });
     let ownerUsername: string | null = null;
     if (group.ownerId !== null) {
       const owner = await this.accounts.findOne({ where: { id: group.ownerId } });
@@ -346,7 +344,9 @@ export class GroupsService {
   }
 
   private async memberList(id: number) {
-    const accs = await this.accounts.find({ where: { groupId: id }, order: { id: "ASC" } });
+    const rows = await this.groupMembers.find({ where: { groupId: id } });
+    if (!rows.length) return [];
+    const accs = await this.accounts.find({ where: { id: In(rows.map((r) => r.accountId)) }, order: { id: "ASC" } });
     return accs.map((a) => ({ id: a.id, username: a.username, name: a.name, email: a.email }));
   }
 }

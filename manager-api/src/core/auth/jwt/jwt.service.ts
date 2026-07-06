@@ -3,8 +3,9 @@ import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { createHash, randomBytes } from "crypto";
-import { Not, Repository } from "typeorm";
+import { In, Not, Repository } from "typeorm";
 import { Account } from "../../entities/account.entity";
+import { GroupMember } from "../../entities/group-member.entity";
 import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
 import { UpdateProfileDto } from "./jwt.validation";
@@ -15,7 +16,7 @@ export type ProfileResponse = {
   email: string | null;
   avatarUrl: string | null;
   isRoot: boolean;
-  group: { id: number; name: string } | null;
+  groups: { id: number; name: string }[];
 };
 
 const ACCESS_TTL = Number(process.env.MANAGER_JWT_ACCESS_TTL ?? 900);
@@ -27,6 +28,7 @@ export class JwtAuthService {
     private readonly jwt: JwtService,
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(Group) private readonly groups: Repository<Group>,
+    @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokens: Repository<RefreshToken>
   ) {}
@@ -90,14 +92,16 @@ export class JwtAuthService {
   }
 
   private async toProfile(account: Account): Promise<ProfileResponse> {
-    const group = account.groupId !== null ? await this.groups.findOne({ where: { id: account.groupId } }) : null;
+    const memberRows = await this.groupMembers.find({ where: { accountId: account.id } });
+    const groupIds = memberRows.map((m) => m.groupId);
+    const groupRows = groupIds.length ? await this.groups.findBy({ id: In(groupIds) }) : [];
     return {
       username: account.username,
       name: account.name,
       email: account.email,
       avatarUrl: account.avatarUrl,
       isRoot: account.isRoot === 1,
-      group: group ? { id: group.id, name: group.name } : null,
+      groups: groupRows.map((g) => ({ id: g.id, name: g.name })),
     };
   }
 

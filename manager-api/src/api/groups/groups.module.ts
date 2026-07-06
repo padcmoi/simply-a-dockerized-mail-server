@@ -3,13 +3,14 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AuditLogModule } from "../../core/audit/audit-log.module";
 import { CustomPermissionGuardModule } from "../../core/custom-permission-guard/custom-permission-guard.module";
 import { Account } from "../../core/entities/account.entity";
+import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { GroupsController } from "./groups.controller";
 import { GroupsService } from "./groups.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Group, Account, VirtualDomain]), CustomPermissionGuardModule, AuditLogModule],
+  imports: [TypeOrmModule.forFeature([Group, Account, GroupMember, VirtualDomain]), CustomPermissionGuardModule, AuditLogModule],
   providers: [GroupsService],
   controllers: [GroupsController],
 })

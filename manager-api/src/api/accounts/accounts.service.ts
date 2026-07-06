@@ -2,12 +2,14 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
-import { In, IsNull, Repository } from "typeorm";
+import { In, IsNull, Not, Repository } from "typeorm";
+import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { AccountInvitation } from "../../core/entities/account-invitation.entity";
 import { Account } from "../../core/entities/account.entity";
+import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { MailerService } from "../../core/mailer/mailer.service";
-import type { AcceptInvitationDto, SendInvitationDto } from "./accounts.validation";
+import type { AcceptInvitationDto, SendInvitationDto, UpdateAccountDto } from "./accounts.validation";
 
 @Injectable()
 export class AccountsService {
@@ -16,7 +18,9 @@ export class AccountsService {
     @InjectRepository(AccountInvitation)
     private readonly invitations: Repository<AccountInvitation>,
     @InjectRepository(Group) private readonly groups: Repository<Group>,
-    private readonly mailer: MailerService
+    @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
+    private readonly mailer: MailerService,
+    private readonly cpg: CustomPermissionGuardService
   ) {}
 
   async listNames() {
@@ -31,12 +35,20 @@ export class AccountsService {
     const allAccounts = await this.accounts.find({
       order: { username: "ASC" },
     });
-    const groupIds = [...new Set(allAccounts.map((acc) => acc.groupId).filter((id): id is number => id !== null))];
+    const accountIds = allAccounts.map((acc) => acc.id);
+    const memberRows = accountIds.length ? await this.groupMembers.find({ where: { accountId: In(accountIds) } }) : [];
+    const groupIds = [...new Set(memberRows.map((m) => m.groupId))];
     const groupMap = new Map<number, string>();
     if (groupIds.length) {
       const groupRows = await this.groups.findBy({ id: In(groupIds) });
       groupRows.forEach((g) => groupMap.set(g.id, g.name));
     }
+    const groupsByAccount = new Map<number, { id: number; name: string }[]>();
+    memberRows.forEach((m) => {
+      const list = groupsByAccount.get(m.accountId) ?? [];
+      list.push({ id: m.groupId, name: groupMap.get(m.groupId) ?? "" });
+      groupsByAccount.set(m.accountId, list);
+    });
     return allAccounts.map((acc) => ({
       id: acc.id,
       username: acc.username,
@@ -46,8 +58,50 @@ export class AccountsService {
       enabled: acc.enabled === 1,
       lastLogin: acc.lastLogin,
       createdAt: acc.createdAt,
-      group: acc.groupId !== null ? { id: acc.groupId, name: groupMap.get(acc.groupId) ?? "" } : null,
+      groups: groupsByAccount.get(acc.id) ?? [],
     }));
+  }
+
+  private async accountGroups(accountId: number) {
+    const memberRows = await this.groupMembers.find({ where: { accountId } });
+    if (!memberRows.length) return [];
+    const groupRows = await this.groups.findBy({ id: In(memberRows.map((m) => m.groupId)) });
+    return groupRows.map((g) => ({ id: g.id, name: g.name }));
+  }
+
+  async getById(id: number) {
+    const account = await this.accounts.findOne({ where: { id } });
+    if (!account) throw new NotFoundException(`Account #${id} not found`);
+    return {
+      id: account.id,
+      username: account.username,
+      name: account.name,
+      email: account.email,
+      avatarUrl: account.avatarUrl,
+      isRoot: account.isRoot === 1,
+      enabled: account.enabled === 1,
+      lastLogin: account.lastLogin,
+      createdAt: account.createdAt,
+      groups: await this.accountGroups(id),
+    };
+  }
+
+  async updateAccount(id: number, input: UpdateAccountDto) {
+    const account = await this.accounts.findOne({ where: { id } });
+    if (!account) throw new NotFoundException(`Account #${id} not found`);
+    if (input.email !== undefined && input.email !== null && input.email !== account.email) {
+      const clash = await this.accounts.findOne({ where: { email: input.email, id: Not(id) } });
+      if (clash) throw new ConflictException(`Email ${input.email} is already used by another account`);
+    }
+    if (input.name !== undefined) account.name = input.name;
+    if (input.email !== undefined) account.email = input.email;
+    if (input.avatarUrl !== undefined) account.avatarUrl = input.avatarUrl;
+    if (input.enabled !== undefined) {
+      if (account.isRoot === 1 && !input.enabled) throw new BadRequestException("Cannot disable a root account");
+      account.enabled = input.enabled ? 1 : 0;
+    }
+    await this.accounts.save(account);
+    return this.getById(id);
   }
 
   async revokeAccount(id: number) {
@@ -123,9 +177,11 @@ export class AccountsService {
         password: passwordHash,
         isRoot: 0,
         enabled: 1,
-        groupId: inv.groupId,
       })
     );
+    if (inv.groupId !== null) {
+      await this.cpg.guard.assignAccountToGroup(account.id, inv.groupId);
+    }
     inv.acceptedAt = new Date();
     await this.invitations.save(inv);
     return { ok: true, username: account.username };

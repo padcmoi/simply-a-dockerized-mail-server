@@ -6,6 +6,7 @@ import { Repository } from "typeorm";
 import { Account } from "../entities/account.entity";
 import { GroupDomainPermission } from "../entities/group-domain-permission.entity";
 import { GroupGlobalPermission } from "../entities/group-global-permission.entity";
+import { GroupMember } from "../entities/group-member.entity";
 import { Group } from "../entities/group.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
 
@@ -31,6 +32,7 @@ export class CustomPermissionGuardService {
     @InjectRepository(Group) private readonly groups: Repository<Group>,
     @InjectRepository(GroupGlobalPermission) private readonly globalPerms: Repository<GroupGlobalPermission>,
     @InjectRepository(GroupDomainPermission) private readonly domainPerms: Repository<GroupDomainPermission>,
+    @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>
   ) {
     this.guard = createCustomPermissionGuard({
@@ -62,8 +64,8 @@ export class CustomPermissionGuardService {
       },
       data: {
         findAccountGroupIds: async (accountId) => {
-          const account = await this.accounts.findOne({ where: { id: accountId as number } });
-          return account?.groupId != null ? [account.groupId] : [];
+          const rows = await this.groupMembers.find({ where: { accountId: accountId as number } });
+          return rows.map((gm) => gm.groupId);
         },
         findGlobalPermissions: async (groupId) => {
           const rows = await this.globalPerms.find({ where: { groupId } });
@@ -85,11 +87,9 @@ export class CustomPermissionGuardService {
         listGroups: async () => {
           const allGroups = await this.groups.find();
           if (!allGroups.length) return [];
-          const memberRows = await this.accounts.find({ select: { id: true, groupId: true } });
+          const memberRows = await this.groupMembers.find({ select: { groupId: true } });
           const countMap = new Map<number, number>();
-          memberRows.forEach((m) => {
-            if (m.groupId !== null) countMap.set(m.groupId, (countMap.get(m.groupId) ?? 0) + 1);
-          });
+          memberRows.forEach((m) => countMap.set(m.groupId, (countMap.get(m.groupId) ?? 0) + 1));
           return allGroups.map((g) => ({
             id: g.id,
             name: g.name,
@@ -151,14 +151,17 @@ export class CustomPermissionGuardService {
         },
 
         assignAccountToGroup: async (accountId, groupId) => {
-          await this.accounts.update({ id: accountId as number }, { groupId });
+          const exists = await this.groupMembers.findOne({ where: { accountId: accountId as number, groupId } });
+          if (!exists) {
+            await this.groupMembers.insert({ accountId: accountId as number, groupId });
+          }
         },
         findGroupMemberIds: async (groupId) => {
-          const rows = await this.accounts.find({ where: { groupId }, select: { id: true } });
-          return rows.map((a) => a.id);
+          const rows = await this.groupMembers.find({ where: { groupId } });
+          return rows.map((gm) => gm.accountId);
         },
         removeAccountFromGroup: async (accountId, groupId) => {
-          await this.accounts.update({ id: accountId as number, groupId }, { groupId: null });
+          await this.groupMembers.delete({ accountId: accountId as number, groupId });
         },
 
         setDefaultGroup: async (groupId) => {

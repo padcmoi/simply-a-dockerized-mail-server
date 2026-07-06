@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api,ui): support multiple groups per account, replacing the single `group_id` column with a `group_members` join table (06-07-2026)
 - feat(api): migrate ACL engine to the published `@naskot/custom-permission-guard` npm package (assertOne/assertAll, domain ownership bypass, global→domain bridge, dependsOn gate, cross-group anti-lockout); root stays an external, unconditional bypass composed on top, never a library concept (05-07-2026)
 - docs(api): complete OpenAPI/Swagger coverage on every route (params, request bodies, every real HTTP status code) + fix login/refresh/logout/revoke to return 200 instead of 201 (05-07-2026)
 - feat(api,ui): domain ownership (auto-assigned to the creator, single owner or none, PATCH owner transfer restricted to root or the current owner, ownerUsername resolved in API responses) (04-07-2026)

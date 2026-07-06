@@ -14,7 +14,7 @@ const accountListItemExample = {
   enabled: true,
   lastLogin: "2026-06-30T08:12:00.000Z",
   createdAt: "2026-01-10T09:00:00.000Z",
-  group: { id: 3, name: "Support Team" },
+  groups: [{ id: 3, name: "Support Team" }],
 };
 
 export const ListAccountNamesDocs = () =>
@@ -29,11 +29,39 @@ export const ListAccountNamesDocs = () =>
 export const ListAccountsDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: "List all manager accounts with their group (root only)",
+      summary: "List all manager accounts with their groups (root only)",
     }),
     ApiResponse({ status: 200, description: "Accounts returned", schema: { example: [accountListItemExample] } }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
     ApiResponse({ status: 403, description: "Root access required" })
+  );
+
+const accountDetailExample = { ...accountListItemExample, avatarUrl: "https://example.com/avatar.png" };
+
+export const GetAccountDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: Number, description: "accounts.id" }),
+    ApiOperation({ summary: "Get a single manager account by id, with its groups (root only)" }),
+    ApiResponse({ status: 200, description: "Account returned", schema: { example: accountDetailExample } }),
+    ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
+    ApiResponse({ status: 403, description: "Root access required" }),
+    ApiResponse({ status: 404, description: "Account not found" })
+  );
+
+export const UpdateAccountDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: Number, description: "accounts.id" }),
+    ApiOperation({
+      summary: "Update a manager account's profile fields and enabled status (root only)",
+      description: "Group membership is managed separately via the groups endpoints, not through this route.",
+    }),
+    ApiBody({ schema: { example: { name: "John Doe", email: "jdoe@example.com", enabled: true } } }),
+    ApiResponse({ status: 200, description: "Account updated", schema: { example: accountDetailExample } }),
+    ApiResponse({ status: 400, description: "Invalid body, or attempting to disable a root account" }),
+    ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
+    ApiResponse({ status: 403, description: "Root access required" }),
+    ApiResponse({ status: 404, description: "Account not found" }),
+    ApiResponse({ status: 409, description: "Email already used by another account" })
   );
 
 export const RevokeAccountDocs = () =>
