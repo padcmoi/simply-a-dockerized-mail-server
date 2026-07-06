@@ -7,8 +7,18 @@ export function useNav(onSignOut: () => Promise<void>) {
   const auth = useAuthStore();
   const perms = usePermissionsStore();
   const domainStore = useDomainStore();
+  const route = useRoute();
   const { t, locale, locales, setLocale } = useI18n();
   const colorMode = useColorMode();
+
+  // Nested account/group detail routes (e.g. /accounts/3/groups) are separate
+  // leaf pages, not children of /accounts in the router's matched chain, so
+  // NavigationMenuItem's own route-based active detection misses them --
+  // this explicit prefix check keeps the parent section highlighted at any
+  // depth under it.
+  function isActive(to: string) {
+    return route.path === to || route.path.startsWith(`${to}/`);
+  }
 
   // A nav entry is only worth showing if the account can both see it exists (`access`)
   // and actually read its content (`read`) — matching each page's `requiredGlobal`/
@@ -34,15 +44,27 @@ export function useNav(onSignOut: () => Promise<void>) {
   }
 
   const globalNavItems = computed<NavigationMenuItem[]>(() => [
-    { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard" },
-    ...(canAccessGlobal("domains") ? [{ label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains" }] : []),
-    ...(canViewGlobal("rspamd") ? [{ label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/rspamd" }] : []),
-    ...(canViewGlobal("postfix") ? [{ label: t("nav.postfix"), icon: "i-lucide-send", to: "/postfix" }] : []),
-    ...(canViewGlobal("sieve") ? [{ label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve" }] : []),
-    ...(canViewGlobal("accounts") ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts" }] : []),
-    ...(canViewGlobal("groups") ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/groups" }] : []),
+    { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard", active: isActive("/dashboard") },
+    ...(canAccessGlobal("domains")
+      ? [{ label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains", active: isActive("/domains") }]
+      : []),
+    ...(canViewGlobal("rspamd")
+      ? [{ label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/rspamd", active: isActive("/rspamd") }]
+      : []),
+    ...(canViewGlobal("postfix")
+      ? [{ label: t("nav.postfix"), icon: "i-lucide-send", to: "/postfix", active: isActive("/postfix") }]
+      : []),
+    ...(canViewGlobal("sieve")
+      ? [{ label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve", active: isActive("/sieve") }]
+      : []),
+    ...(canViewGlobal("accounts")
+      ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts", active: isActive("/accounts") }]
+      : []),
+    ...(canViewGlobal("groups")
+      ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/groups", active: isActive("/groups") }]
+      : []),
     ...(auth.session?.isRoot || canViewGlobal("api-tokens")
-      ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens" }]
+      ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens", active: isActive("/api-tokens") }]
       : []),
   ]);
 
@@ -50,15 +72,20 @@ export function useNav(onSignOut: () => Promise<void>) {
     const sel = domainStore.selected;
     if (!sel) return [];
     const domainId = sel.id;
+    const domainHome = `/domains/${sel.domain}`;
     return [
       ...(canViewDomain(domainId, "domain")
-        ? [{ label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: `/domains/${sel.domain}` }]
+        ? [{ label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: domainHome, active: isActive(domainHome) }]
         : []),
       ...(canViewDomain(domainId, "recipients")
-        ? [{ label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients" }]
+        ? [{ label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients", active: isActive("/recipients") }]
         : []),
-      ...(canViewDomain(domainId, "aliases") ? [{ label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" }] : []),
-      ...(canViewDomain(domainId, "quotas") ? [{ label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" }] : []),
+      ...(canViewDomain(domainId, "aliases")
+        ? [{ label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases", active: isActive("/aliases") }]
+        : []),
+      ...(canViewDomain(domainId, "quotas")
+        ? [{ label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas", active: isActive("/quotas") }]
+        : []),
     ];
   });
 
