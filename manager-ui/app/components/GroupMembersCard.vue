@@ -12,7 +12,7 @@ const props = defineProps<{
   adding: boolean;
 }>();
 
-const pickedId = ref<number | null>(null);
+const pickedId = ref<number | undefined>(undefined);
 
 const { t } = useI18n();
 
@@ -22,9 +22,9 @@ const availableOptions = computed(() => {
 });
 
 function onAdd() {
-  if (pickedId.value === null) return;
+  if (pickedId.value === undefined) return;
   emit("add", pickedId.value);
-  pickedId.value = null;
+  pickedId.value = undefined;
 }
 </script>
 
@@ -35,11 +35,21 @@ function onAdd() {
     </template>
 
     <div class="flex flex-wrap gap-2 mb-4">
-      <select v-model.number="pickedId" class="border border-default rounded-md px-2 py-1.5 text-sm bg-default min-w-[12rem]">
-        <option :value="null">{{ t("groups.detail.members.pickPlaceholder") }}</option>
-        <option v-for="opt in availableOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-      </select>
-      <UButton icon="i-lucide-user-plus" size="sm" color="primary" :loading="adding" :disabled="pickedId === null" @click="onAdd">
+      <USelectMenu
+        v-model="pickedId"
+        value-key="value"
+        :items="availableOptions"
+        :placeholder="t('groups.detail.members.pickPlaceholder')"
+        class="min-w-[12rem]"
+      />
+      <UButton
+        icon="i-lucide-user-plus"
+        size="sm"
+        color="primary"
+        :loading="adding"
+        :disabled="pickedId === undefined"
+        @click="onAdd"
+      >
         {{ t("groups.detail.members.add") }}
       </UButton>
     </div>

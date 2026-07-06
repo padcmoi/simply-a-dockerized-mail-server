@@ -92,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- refactor(ui): replace native `<select>` pickers with `USelectMenu` (group/member/owner assignment), showing each item's description (06-07-2026)
 - refactor(ui): full-width layout and consistent alert banners across every page (dashboard, rspamd, postfix, group detail, profile, api-tokens) (06-07-2026)
 - Format all shell scripts with shfmt _(scripts)_ [758161f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/758161fdbb963719439420ca590b2e5d52797c34) (01-07-2026)
 - Mailserver tests disabled as too heavy _(husky)_ [7010223](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7010223ef0009bebe8328f47945806099ece7b53) (01-07-2026)

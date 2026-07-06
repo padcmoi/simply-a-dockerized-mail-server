@@ -44,7 +44,7 @@ const { call } = useApi();
 const toast = useToast();
 const { t } = useI18n();
 
-const ownerPick = ref<number | null>(null);
+const ownerPick = ref<number | undefined>(undefined);
 const savingOwner = ref(false);
 const accountOptions = ref<{ label: string; value: number }[]>([]);
 
@@ -69,12 +69,12 @@ watch(
 );
 
 async function changeDomainOwner() {
-  if (!domain.value || ownerPick.value === null) return;
+  if (!domain.value || ownerPick.value === undefined) return;
   savingOwner.value = true;
   try {
     await call(`/domains/${domain.value.id}/owner`, { method: "PATCH", body: { newOwnerId: ownerPick.value } });
     await load();
-    ownerPick.value = null;
+    ownerPick.value = undefined;
     toast.add({ title: t("domainDashboard.owner.saved"), color: "success" });
   } catch (e) {
     toast.add({ title: t("domainDashboard.owner.saveFailed"), description: (e as Error).message, color: "error" });
@@ -265,15 +265,18 @@ async function changeDomainOwner() {
         {{ domain?.ownerUsername ?? $t("domainDashboard.owner.unassigned") }}
       </p>
       <div class="flex flex-wrap gap-2">
-        <select v-model.number="ownerPick" class="border border-default rounded-md px-2 py-1.5 text-sm bg-default min-w-[12rem]">
-          <option :value="null">{{ $t("domainDashboard.owner.pickPlaceholder") }}</option>
-          <option v-for="opt in accountOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-        </select>
+        <USelectMenu
+          v-model="ownerPick"
+          value-key="value"
+          :items="accountOptions"
+          :placeholder="$t('domainDashboard.owner.pickPlaceholder')"
+          class="min-w-[12rem]"
+        />
         <UButton
           color="neutral"
           variant="outline"
           :loading="savingOwner"
-          :disabled="ownerPick === null"
+          :disabled="ownerPick === undefined"
           @click="changeDomainOwner"
         >
           {{ $t("domainDashboard.owner.change") }}
