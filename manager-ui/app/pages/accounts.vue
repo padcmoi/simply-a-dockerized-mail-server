@@ -220,7 +220,12 @@ onMounted(load);
       />
     </div>
 
-    <AccountInviteModal v-model:open="inviteOpen" :group-options="groupInviteOptions" :sending="inviteSending" @submit="sendInvite" />
+    <AccountInviteModal
+      v-model:open="inviteOpen"
+      :group-options="groupInviteOptions"
+      :sending="inviteSending"
+      @submit="sendInvite"
+    />
 
     <ConfirmModal v-model:open="confirmOpen" :title="t('accounts.confirmRevoke')" @confirm="onDeleteConfirmed" />
   </div>

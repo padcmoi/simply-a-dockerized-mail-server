@@ -203,19 +203,19 @@ onMounted(load);
         <UFormField :label="t('domains.form.active')" name="active">
           <USwitch v-model="form.active" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-plus" :disabled="!form.domain || quotaOverLimit || quotaUnderLimit" block class="sm:w-auto">
+        <UButton
+          type="submit"
+          icon="i-lucide-plus"
+          :disabled="!form.domain || quotaOverLimit || quotaUnderLimit"
+          block
+          class="sm:w-auto"
+        >
           {{ t("domains.form.submit") }}
         </UButton>
       </UForm>
     </UCard>
 
-    <UAlert
-      v-if="!canReadList"
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-lock"
-      :title="t('domains.listLocked')"
-    />
+    <UAlert v-if="!canReadList" color="neutral" variant="subtle" icon="i-lucide-lock" :title="t('domains.listLocked')" />
 
     <template v-else>
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">

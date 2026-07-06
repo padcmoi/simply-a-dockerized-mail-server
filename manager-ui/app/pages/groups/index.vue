@@ -100,7 +100,14 @@ async function onDeleteConfirmed() {
         </template>
         <template #actions-cell="{ row }">
           <div class="flex justify-end">
-            <UButton icon="i-lucide-trash-2" size="xs" color="error" variant="ghost" square @click="requestDelete(row.original)" />
+            <UButton
+              icon="i-lucide-trash-2"
+              size="xs"
+              color="error"
+              variant="ghost"
+              square
+              @click="requestDelete(row.original)"
+            />
           </div>
         </template>
       </UTable>

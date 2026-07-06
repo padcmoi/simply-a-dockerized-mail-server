@@ -142,6 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(husky): pre-push checks never run when pushing main, unaffected on every other branch (06-07-2026)
 - Domain rspamd card shows recipient address instead of sender _(ui)_ [09f8b60](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/09f8b6068370c66a998dcac8a54d5bdacac2522d) (01-07-2026)
 - Explicit Ref type in provideBreadcrumb, replace non-null injection assert _(ui)_ [99b052b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/99b052b2a3fb8112232c8f48a91a1b10db02efb5) (01-07-2026)
 - Wrap onClick handlers in void-returning arrow functions to satisfy vue-tsc _(ui)_ [9228556](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9228556f51a6dfe8a40b7854bc4a1447548c6e1c) (01-07-2026)

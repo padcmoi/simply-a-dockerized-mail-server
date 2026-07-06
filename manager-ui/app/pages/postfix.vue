@@ -62,7 +62,11 @@ onMounted(load);
         <h2 class="font-semibold">{{ t("domainDashboard.postfix.title") }}</h2>
       </template>
       <div class="text-sm">
-        <div v-for="dir in QUEUE_DIRS" :key="dir" class="flex items-center justify-between py-2 border-b border-default last:border-0">
+        <div
+          v-for="dir in QUEUE_DIRS"
+          :key="dir"
+          class="flex items-center justify-between py-2 border-b border-default last:border-0"
+        >
           <div class="flex items-center gap-2">
             <span
               class="w-2 h-2 rounded-full"

@@ -14,7 +14,9 @@ const { t } = useI18n();
       <div class="min-w-0">
         <div class="flex items-center gap-2 min-w-0">
           <NuxtLink :to="`/groups/${group.id}`" class="font-semibold truncate hover:underline min-w-0">{{ group.name }}</NuxtLink>
-          <UBadge v-if="group.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">{{ t("groups.defaultBadge") }}</UBadge>
+          <UBadge v-if="group.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">{{
+            t("groups.defaultBadge")
+          }}</UBadge>
         </div>
         <p class="text-sm text-muted truncate">{{ group.description || t("groups.noDescription") }}</p>
       </div>

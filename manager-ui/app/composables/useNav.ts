@@ -27,7 +27,10 @@ export function useNav(onSignOut: () => Promise<void>) {
     return auth.session?.isRoot === true || perms.hasGlobal(resource, "access");
   }
   function canViewDomain(domainId: number, resource: string) {
-    return auth.session?.isRoot === true || (perms.hasDomain(domainId, resource, "access") && perms.hasDomain(domainId, resource, "read"));
+    return (
+      auth.session?.isRoot === true ||
+      (perms.hasDomain(domainId, resource, "access") && perms.hasDomain(domainId, resource, "read"))
+    );
   }
 
   const globalNavItems = computed<NavigationMenuItem[]>(() => [
@@ -54,12 +57,8 @@ export function useNav(onSignOut: () => Promise<void>) {
       ...(canViewDomain(domainId, "recipients")
         ? [{ label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients" }]
         : []),
-      ...(canViewDomain(domainId, "aliases")
-        ? [{ label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" }]
-        : []),
-      ...(canViewDomain(domainId, "quotas")
-        ? [{ label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" }]
-        : []),
+      ...(canViewDomain(domainId, "aliases") ? [{ label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases" }] : []),
+      ...(canViewDomain(domainId, "quotas") ? [{ label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas" }] : []),
     ];
   });
 

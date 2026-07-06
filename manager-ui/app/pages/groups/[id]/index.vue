@@ -26,7 +26,8 @@ const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
-const { update, updateOwner, getDetail, setGlobalPermissions, setDomainPermissions, listMembers, addMember, removeMember } = useGroups();
+const { update, updateOwner, getDetail, setGlobalPermissions, setDomainPermissions, listMembers, addMember, removeMember } =
+  useGroups();
 
 const groupId = computed(() => Number(route.params.id));
 
@@ -63,7 +64,11 @@ async function load() {
 async function saveInfo() {
   savingInfo.value = true;
   try {
-    const updated = await update(groupId.value, { name: form.name, description: form.description || null, isDefault: form.isDefault });
+    const updated = await update(groupId.value, {
+      name: form.name,
+      description: form.description || null,
+      isDefault: form.isDefault,
+    });
     if (group.value) Object.assign(group.value, updated);
     toast.add({ title: t("groups.detail.saved"), color: "success" });
   } catch (e) {
@@ -181,7 +186,10 @@ onMounted(load);
           {{ group.owner?.username ?? t("groups.detail.owner.unassigned") }}
         </p>
         <div class="flex flex-wrap gap-2">
-          <select v-model.number="ownerPick" class="border border-default rounded-md px-2 py-1.5 text-sm bg-default min-w-[12rem]">
+          <select
+            v-model.number="ownerPick"
+            class="border border-default rounded-md px-2 py-1.5 text-sm bg-default min-w-[12rem]"
+          >
             <option :value="null">{{ t("groups.detail.owner.pickPlaceholder") }}</option>
             <option v-for="opt in accountOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
@@ -197,7 +205,13 @@ onMounted(load);
         </div>
       </UCard>
 
-      <GroupMembersCard :members="members" :account-options="accountOptions" :adding="addingMember" @add="onAddMember" @remove="onRemoveMember" />
+      <GroupMembersCard
+        :members="members"
+        :account-options="accountOptions"
+        :adding="addingMember"
+        @add="onAddMember"
+        @remove="onRemoveMember"
+      />
 
       <GroupPermissionsPanel
         :global-permissions="group.globalPermissions"
