@@ -12,7 +12,7 @@ const group = ref<GroupDetail | null>(null);
 const members = ref<GroupMember[]>([]);
 const accountOptions = ref<{ label: string; value: number }[]>([]);
 const domainOptions = ref<{ label: string; value: number }[]>([]);
-const ownerPick = ref<number | null>(null);
+const ownerPick = ref<number | undefined>(undefined);
 const loading = ref(false);
 const savingInfo = ref(false);
 const savingOwner = ref(false);
@@ -51,7 +51,7 @@ async function load() {
     form.name = detail.name;
     form.description = detail.description ?? "";
     form.isDefault = detail.isDefault ?? false;
-    ownerPick.value = detail.owner?.id ?? null;
+    ownerPick.value = detail.owner?.id ?? undefined;
     accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
     domainOptions.value = domains.map((d) => ({ label: d.domain, value: d.id }));
   } catch (e) {
@@ -79,7 +79,7 @@ async function saveInfo() {
 }
 
 async function changeOwner() {
-  if (ownerPick.value === null) return;
+  if (ownerPick.value === undefined) return;
   savingOwner.value = true;
   try {
     const updated = await updateOwner(groupId.value, ownerPick.value);
@@ -143,7 +143,15 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+    <UAlert
+      icon="i-lucide-users-round"
+      :title="t('groups.detail.alertTitle')"
+      :description="t('groups.detail.alertDescription')"
+      color="neutral"
+      variant="subtle"
+    />
+
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/groups" size="sm">
       {{ t("groups.backToList") }}
     </UButton>
@@ -186,18 +194,18 @@ onMounted(load);
           {{ group.owner?.username ?? t("groups.detail.owner.unassigned") }}
         </p>
         <div class="flex flex-wrap gap-2">
-          <select
-            v-model.number="ownerPick"
-            class="border border-default rounded-md px-2 py-1.5 text-sm bg-default min-w-[12rem]"
-          >
-            <option :value="null">{{ t("groups.detail.owner.pickPlaceholder") }}</option>
-            <option v-for="opt in accountOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-          </select>
+          <USelectMenu
+            v-model="ownerPick"
+            value-key="value"
+            :items="accountOptions"
+            :placeholder="t('groups.detail.owner.pickPlaceholder')"
+            class="min-w-[12rem]"
+          />
           <UButton
             color="neutral"
             variant="outline"
             :loading="savingOwner"
-            :disabled="ownerPick === null || ownerPick === group.owner?.id"
+            :disabled="ownerPick === undefined || ownerPick === group.owner?.id"
             @click="changeOwner"
           >
             {{ t("groups.detail.owner.change") }}
