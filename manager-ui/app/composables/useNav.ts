@@ -74,17 +74,43 @@ export function useNav(onSignOut: () => Promise<void>) {
     const domainId = sel.id;
     const domainHome = `/domains/${sel.domain}`;
     return [
+      // Exact match only (not the shared prefix-aware `isActive`): this entry
+      // now shares its `domainHome` prefix with its 3 siblings below, each
+      // with their own entry -- the prefix check exists for sections with no
+      // dedicated child entry (see `isActive`'s own comment), which no longer
+      // applies here and would otherwise double-highlight this item too.
       ...(canViewDomain(domainId, "domain")
-        ? [{ label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: domainHome, active: isActive(domainHome) }]
+        ? [{ label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: domainHome, active: route.path === domainHome }]
         : []),
       ...(canViewDomain(domainId, "recipients")
-        ? [{ label: t("nav.recipients"), icon: "i-lucide-users", to: "/recipients", active: isActive("/recipients") }]
+        ? [
+            {
+              label: t("nav.recipients"),
+              icon: "i-lucide-users",
+              to: `${domainHome}/recipients`,
+              active: isActive(`${domainHome}/recipients`),
+            },
+          ]
         : []),
       ...(canViewDomain(domainId, "aliases")
-        ? [{ label: t("nav.aliases"), icon: "i-lucide-at-sign", to: "/aliases", active: isActive("/aliases") }]
+        ? [
+            {
+              label: t("nav.aliases"),
+              icon: "i-lucide-at-sign",
+              to: `${domainHome}/aliases`,
+              active: isActive(`${domainHome}/aliases`),
+            },
+          ]
         : []),
       ...(canViewDomain(domainId, "quotas")
-        ? [{ label: t("nav.quotas"), icon: "i-lucide-bar-chart-3", to: "/quotas", active: isActive("/quotas") }]
+        ? [
+            {
+              label: t("nav.quotas"),
+              icon: "i-lucide-bar-chart-3",
+              to: `${domainHome}/quotas`,
+              active: isActive(`${domainHome}/quotas`),
+            },
+          ]
         : []),
     ];
   });

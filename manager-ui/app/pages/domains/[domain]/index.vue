@@ -63,6 +63,8 @@ const canTransferOwner = computed(
   () => isRoot.value || (domain.value?.ownerUsername != null && domain.value.ownerUsername === auth.session?.username)
 );
 
+const domainPath = computed(() => (domain.value ? `/domains/${domain.value.domain}` : null));
+
 watch(
   () => domain.value?.id,
   async (id) => {
@@ -146,7 +148,7 @@ async function changeDomainOwner() {
         icon="i-lucide-users"
         icon-color="text-info"
         :loading="loading && !domain"
-        to="/recipients"
+        :to="domainPath ? `${domainPath}/recipients` : undefined"
       />
       <DomainStatCard
         :label="$t('nav.aliases')"
@@ -155,7 +157,7 @@ async function changeDomainOwner() {
         icon="i-lucide-at-sign"
         icon-color="text-success"
         :loading="loading && !domain"
-        to="/aliases"
+        :to="domainPath ? `${domainPath}/aliases` : undefined"
       />
       <DomainStatCard
         :label="$t('domainDashboard.messages')"
@@ -229,21 +231,30 @@ async function changeDomainOwner() {
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <UCard :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }" @click="navigateTo('/recipients')">
+      <UCard
+        :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+        @click="domainPath && navigateTo(`${domainPath}/recipients`)"
+      >
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-users" class="text-info text-xl" />
           <span class="font-medium">{{ $t("nav.recipients") }}</span>
           <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
         </div>
       </UCard>
-      <UCard :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }" @click="navigateTo('/aliases')">
+      <UCard
+        :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+        @click="domainPath && navigateTo(`${domainPath}/aliases`)"
+      >
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-at-sign" class="text-success text-xl" />
           <span class="font-medium">{{ $t("nav.aliases") }}</span>
           <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
         </div>
       </UCard>
-      <UCard :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }" @click="navigateTo('/quotas')">
+      <UCard
+        :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+        @click="domainPath && navigateTo(`${domainPath}/quotas`)"
+      >
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-bar-chart-3" class="text-primary text-xl" />
           <span class="font-medium">{{ $t("nav.quotas") }}</span>

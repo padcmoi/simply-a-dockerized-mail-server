@@ -20,8 +20,12 @@ export const LIST_LIMIT_STORAGE_KEY = "manager-list-limit";
 // superseded in-flight call itself, so no manual AbortController bookkeeping
 // is needed here. `key` must be unique per call site (see call sites for the
 // literal strings used). `pathOrFn` is a function for domain-scoped routes
-// (recipients/aliases/quotas) so it can react to domainStore.selected.
-export function usePaginatedList<T>(key: string, pathOrFn: string | (() => string | null)) {
+// (recipients/aliases) so it can react to the resolved domain id. `extraWatch`
+// lets those same call sites also re-fetch when that id changes -- Vue
+// Router reuses the page instance across a `:domain` param-only navigation
+// (no remount), so without this an edited URL/back-forward between two
+// domains would silently keep showing the previous one's data.
+export function usePaginatedList<T>(key: string, pathOrFn: string | (() => string | null), extraWatch: Ref<unknown>[] = []) {
   const { call } = useApi();
   const { t } = useI18n();
   const toast = useToast();
@@ -41,8 +45,16 @@ export function usePaginatedList<T>(key: string, pathOrFn: string | (() => strin
   const { data, status, refresh } = useAsyncData<PaginatedResponse<T> | null>(
     key,
     async () => {
-      const path = typeof pathOrFn === "function" ? pathOrFn() : pathOrFn;
-      if (!path) return null;
+      // `until` resolves immediately when `pathOrFn()` is already truthy (the
+      // plain-string callers, and the common domain-scoped case of arriving
+      // via a page that already resolved the domain) and otherwise suspends
+      // this fetch -- keeping `status` genuinely "pending" -- until it
+      // becomes truthy. Plain `if (!path) return null` was tried first and
+      // was wrong: it resolves to "success" with empty data immediately,
+      // flashing "no results" for domain-scoped callers on a cold deep-link
+      // before the real fetch (triggered by `extraWatch` once the id
+      // resolves) corrects it.
+      const path = await until(() => (typeof pathOrFn === "function" ? pathOrFn() : pathOrFn)).toBeTruthy();
       const qs = new URLSearchParams({
         limit: String(limit.value),
         offset: String((page.value - 1) * limit.value),
@@ -56,7 +68,7 @@ export function usePaginatedList<T>(key: string, pathOrFn: string | (() => strin
         throw err;
       }
     },
-    { server: false, watch: [page, limit, sortDir, debouncedSearch, useDataRefresh().tick] }
+    { server: false, watch: [page, limit, sortDir, debouncedSearch, useDataRefresh().tick, ...extraWatch] }
   );
 
   const items = computed(() => data.value?.items ?? []);

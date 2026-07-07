@@ -29,7 +29,7 @@ const hasLoadedOnce = ref(false);
 
 const { t } = useI18n();
 const { call } = useApi();
-const domainStore = useDomainStore();
+const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { tick } = useDataRefresh();
 
@@ -56,18 +56,30 @@ const { data, status, refresh } = useAsyncData<{
   recipients: { items: QuotaRow[]; total: number };
 }>(
   "quotas-snapshot",
-  () => {
+  async () => {
+    // `until` resolves immediately if `domainId` is already set (the normal
+    // case: arriving via the domain dashboard, where it's resolved already)
+    // and otherwise suspends this fetch -- keeping `status` genuinely
+    // "pending" -- until useCurrentDomain's own resolve finishes. This also
+    // covers a same-instance domain switch (URL edit/back-forward), where
+    // `domainId` briefly drops back to null: `watch` below re-triggers this
+    // fetch on that change, and it just waits again for the new value.
+    // `immediate: false` was tried here first and was wrong: it skips the
+    // very first automatic run unconditionally, so when `domainId` is
+    // already resolved at mount (never transitions null -> value) no other
+    // watched source changes on its own, and the fetch never runs at all.
+    await until(domainId).toBeTruthy();
     const qs = new URLSearchParams({
       limit: String(limit.value),
       offset: String((page.value - 1) * limit.value),
       sortDir: sortDir.value,
     });
     if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
-    return call(`/domains/${domainStore.selected!.id}/quotas?${qs.toString()}`);
+    return call(`/domains/${domainId.value}/quotas?${qs.toString()}`);
   },
   {
     server: false,
-    watch: [page, limit, sortDir, debouncedSearch, tick],
+    watch: [page, limit, sortDir, debouncedSearch, tick, domainId],
     default: () => ({ domain: null, recipients: { items: [], total: 0 } }),
   }
 );
@@ -91,10 +103,9 @@ watch(
 );
 
 watchEffect(() => {
-  const d = domainStore.selected;
   setBreadcrumb([
     { label: t("nav.domains"), to: "/domains" },
-    { label: d?.domain ?? "...", to: d ? `/domains/${d.domain}` : "/domains" },
+    { label: domainFqdn.value, to: `/domains/${domainFqdn.value}` },
     { label: t("nav.quotas") },
   ]);
 });
@@ -132,7 +143,7 @@ async function load() {
       </div>
     </template>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
 
     <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
       {{ t("quotas.perRecipient") }}
@@ -149,8 +160,6 @@ async function load() {
       </div>
     </template>
 
-    <div class="flex justify-center">
-      <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-    </div>
+    <ListPagination v-model:page="page" :total="total" :limit="limit" />
   </div>
 </template>

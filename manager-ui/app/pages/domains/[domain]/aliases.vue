@@ -26,26 +26,27 @@ const columns = computed(() => [
 const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
-const domainStore = useDomainStore();
+const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 
 watchEffect(() => {
-  const d = domainStore.selected;
   setBreadcrumb([
     { label: t("nav.domains"), to: "/domains" },
-    { label: d?.domain ?? "...", to: d ? `/domains/${d.domain}` : "/domains" },
+    { label: domainFqdn.value, to: `/domains/${domainFqdn.value}` },
     { label: t("nav.aliases") },
   ]);
 });
 
 const { items, total, loading, hasLoadedOnce, page, limit, search, sortDir, load } = usePaginatedList<Alias>(
   "aliases-list",
-  () => `/domains/${domainStore.selected!.id}/aliases`
+  () => (domainId.value ? `/domains/${domainId.value}/aliases` : null),
+  [domainId]
 );
 
 async function create() {
+  if (!domainId.value) return;
   try {
-    await call(`/domains/${domainStore.selected!.id}/aliases`, {
+    await call(`/domains/${domainId.value}/aliases`, {
       method: "POST",
       body: { localPart: form.localPart, destination: form.destination },
     });
@@ -63,7 +64,8 @@ async function create() {
 }
 
 async function remove(row: Alias) {
-  await call(`/domains/${domainStore.selected!.id}/aliases/${row.id}`, {
+  if (!domainId.value) return;
+  await call(`/domains/${domainId.value}/aliases/${row.id}`, {
     method: "DELETE",
   });
   await load();
@@ -108,7 +110,7 @@ async function onDeleteConfirmed() {
       </UForm>
     </UCard>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="2" />
 
@@ -133,9 +135,7 @@ async function onDeleteConfirmed() {
         <AliasCard v-for="item in items" v-else :key="item.id" :item="item" @delete="requestDelete(() => remove(item))" />
       </div>
 
-      <div class="flex justify-center">
-        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-      </div>
+      <ListPagination v-model:page="page" :total="total" :limit="limit" />
     </template>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />

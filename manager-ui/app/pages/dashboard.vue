@@ -105,7 +105,10 @@ const stats = computed(() => [
     }),
     icon: "i-lucide-users",
     color: "info",
-    to: "/recipients",
+    // Aggregated across every domain -- no single nested route to point at,
+    // so this (like the "aliases" stat below) links to the domain picker
+    // instead of a specific /domains/:domain/recipients.
+    to: "/domains",
   },
   {
     key: "aliases",
@@ -114,7 +117,7 @@ const stats = computed(() => [
     sub: t("dashboard.stats.forwarders"),
     icon: "i-lucide-at-sign",
     color: "success",
-    to: "/aliases",
+    to: "/domains",
   },
   {
     key: "rejects",
@@ -247,7 +250,7 @@ const recipientsPerDomain = computed(() =>
             <h2 class="font-semibold">
               {{ t("dashboard.recent.recipients") }}
             </h2>
-            <UButton to="/recipients" variant="link" size="xs" trailing-icon="i-lucide-arrow-right">
+            <UButton to="/domains" variant="link" size="xs" trailing-icon="i-lucide-arrow-right">
               {{ t("common.viewAll") }}
             </UButton>
           </div>
@@ -262,13 +265,18 @@ const recipientsPerDomain = computed(() =>
           :description="t('dashboard.recent.noRecipientsHint')"
         >
           <template #actions>
-            <UButton to="/recipients" icon="i-lucide-plus" color="primary">
+            <UButton to="/domains" icon="i-lucide-plus" color="primary">
               {{ t("dashboard.recent.addRecipient") }}
             </UButton>
           </template>
         </UEmptyState>
         <ul v-else class="divide-y divide-default">
-          <li v-for="r in recentRecipients" :key="r.id" class="py-3 flex items-center gap-3">
+          <li
+            v-for="r in recentRecipients"
+            :key="r.id"
+            class="py-3 flex items-center gap-3 cursor-pointer hover:bg-elevated/50 transition-colors rounded-md px-1 -mx-1"
+            @click="navigateTo(`/domains/${r.domain}/recipients`)"
+          >
             <UAvatar :alt="r.email" size="sm" />
             <div class="min-w-0 flex-1">
               <p class="font-medium truncate">{{ r.email }}</p>

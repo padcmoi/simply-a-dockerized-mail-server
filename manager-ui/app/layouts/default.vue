@@ -16,9 +16,6 @@ const headerTitle = computed(() => {
   const map: Record<string, string> = {
     "/dashboard": t("nav.dashboard"),
     "/domains": t("nav.domains"),
-    "/recipients": t("nav.recipients"),
-    "/aliases": t("nav.aliases"),
-    "/quotas": t("nav.quotas"),
     "/rspamd": t("nav.rspamd"),
     "/postfix": t("nav.postfix"),
     "/sieve": t("nav.sieveLong"),
