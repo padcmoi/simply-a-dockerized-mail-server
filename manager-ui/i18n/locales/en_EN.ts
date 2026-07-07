@@ -214,6 +214,7 @@ export default {
       sender: "Sender",
       enabled: "Enabled",
       created: "Created",
+      updated: "Updated",
     },
     toast: {
       blocked: "Sender blocked",

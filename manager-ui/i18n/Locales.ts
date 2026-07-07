@@ -212,6 +212,7 @@ export interface Locales {
       sender: string;
       enabled: string;
       created: string;
+      updated: string;
     };
     toast: {
       blocked: string;

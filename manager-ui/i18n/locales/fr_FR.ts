@@ -214,6 +214,7 @@ export default {
       sender: "Expéditeur",
       enabled: "Activé",
       created: "Créé le",
+      updated: "Modifié le",
     },
     toast: {
       blocked: "Expéditeur bloqué",

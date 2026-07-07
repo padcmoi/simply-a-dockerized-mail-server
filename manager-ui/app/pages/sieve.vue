@@ -11,6 +11,7 @@ interface Reject {
   sender: string;
   enabled: number;
   createdAt: string;
+  updatedAt: string;
 }
 
 const confirmOpen = ref(false);
@@ -21,6 +22,7 @@ const columns = computed(() => [
   { accessorKey: "sender", header: t("sieve.table.sender") },
   { accessorKey: "enabled", header: t("sieve.table.enabled") },
   { accessorKey: "createdAt", header: t("sieve.table.created") },
+  { accessorKey: "updatedAt", header: t("sieve.table.updated") },
   { id: "actions", header: "" },
 ]);
 
@@ -98,7 +100,7 @@ async function onDeleteConfirmed() {
 
     <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
     <template v-else>
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
