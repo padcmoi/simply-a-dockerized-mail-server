@@ -62,6 +62,14 @@ export interface PostfixQueueStats {
   available: boolean;
 }
 
+interface MainData {
+  domain: Domain | null;
+  recipients: Recipient[];
+  aliases: Alias[];
+  quota: QuotaDomain | null;
+  topMailboxes: MailboxEntry[];
+}
+
 export const REFRESH_OPTIONS = [0, 15, 30, 60] as const;
 const REFRESH_STORAGE_KEY = "mail-manager:domain-refresh-interval";
 
@@ -78,21 +86,117 @@ export function useDomainDashboard() {
   const { set: setBreadcrumb } = useBreadcrumb();
   const toast = useToast();
   const { colors } = useChartColors();
+  const { tick } = useDataRefresh();
 
-  const domain = ref<Domain | null>(null);
-  const recipients = ref<Recipient[]>([]);
-  const aliases = ref<Alias[]>([]);
-  const quota = ref<QuotaDomain | null>(null);
-  const topMailboxes = ref<MailboxEntry[]>([]);
-  const dkimKeys = ref<DkimKey[]>([]);
-  const rspamdHistory = ref<RspamdHistoryRow[]>([]);
-  const postfixQueue = ref<PostfixQueueStats | null>(null);
-  const loading = ref(false);
-  const dkimLoading = ref(false);
   const refreshInterval = ref<number>(0);
   let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
   const domainFqdn = computed(() => String(route.params.domain));
+
+  // Main waterfall: resolve the domain by fqdn, then its recipients/aliases/quota
+  // in parallel. `loading` (derived from `status`, see below) drives the
+  // page's stat-card/disk/top-mailboxes skeletons.
+  const {
+    data: mainData,
+    status: mainStatus,
+    refresh: refreshMain,
+  } = useAsyncData<MainData>(
+    "domain-dashboard-main",
+    async () => {
+      const domains = await call<Domain[]>("/domains");
+      const found = domains.find((d) => d.domain === domainFqdn.value) ?? null;
+      if (!found) return { domain: null, recipients: [], aliases: [], quota: null, topMailboxes: [] };
+      domainStore.select(found);
+      const [recs, als, quotaData] = await Promise.all([
+        call<Recipient[]>(`/domains/${found.id}/recipients`),
+        call<Alias[]>(`/domains/${found.id}/aliases`),
+        call<QuotaPayload>(`/domains/${found.id}/quotas`),
+      ]);
+      const quotaByEmail = new Map(recs.map((r) => [r.email, r.quota]));
+      const enriched: MailboxEntry[] = quotaData.recipients.map((q) => ({
+        ...q,
+        quota: quotaByEmail.get(q.email) ?? "0",
+      }));
+      const topMailboxes = [...enriched].sort((a, b) => occupancyRate(b) - occupancyRate(a)).slice(0, 10);
+      return { domain: found, recipients: recs, aliases: als, quota: quotaData.domain, topMailboxes };
+    },
+    {
+      server: false,
+      default: () => ({ domain: null, recipients: [], aliases: [], quota: null, topMailboxes: [] }),
+    }
+  );
+
+  // NOT `pending`: with `server: false`, Nuxt defers the initial fetch to
+  // `onBeforeMount`, so `pending` stays false through SSR render AND the gap
+  // before that callback fires -- the SSR'd HTML would flash empty content
+  // before ever showing a skeleton. `status` starts at "idle" both server-
+  // and client-side and only flips once a fetch has genuinely settled.
+  const domain = computed(() => mainData.value?.domain ?? null);
+  const recipients = computed(() => mainData.value?.recipients ?? []);
+  const aliases = computed(() => mainData.value?.aliases ?? []);
+  const quota = computed(() => mainData.value?.quota ?? null);
+  const topMailboxes = computed(() => mainData.value?.topMailboxes ?? []);
+  const domainId = computed(() => domain.value?.id ?? null);
+  const loading = computed(() => mainStatus.value !== "success" && mainStatus.value !== "error");
+
+  // `immediate: false`: these three only make sense once `domainId` is known
+  // (set once the main waterfall above resolves). Without this, the default
+  // on-mount fetch would run immediately with `domainId` still null, resolve
+  // straight to "success" with empty data, and flash an empty/no-data state
+  // before `watch: [domainId]` fires the real fetch a moment later. Leaving
+  // them un-run until `domainId` actually changes avoids that entirely.
+  const {
+    data: dkimData,
+    status: dkimStatus,
+    refresh: refreshDkim,
+  } = useAsyncData<DkimKey[]>(
+    "domain-dashboard-dkim",
+    async () => {
+      if (!domainId.value) return [];
+      try {
+        return await call<DkimKey[]>(`/domains/${domainId.value}/dkim`);
+      } catch {
+        return [];
+      }
+    },
+    { server: false, immediate: false, watch: [domainId, tick], default: () => [] }
+  );
+  const dkimKeys = computed(() => dkimData.value ?? []);
+  const dkimLoading = computed(() => dkimStatus.value !== "success" && dkimStatus.value !== "error");
+
+  const { data: rspamdData, refresh: refreshRspamd } = useAsyncData<RspamdHistoryRow[]>(
+    "domain-dashboard-rspamd",
+    async () => {
+      if (!domainId.value) return [];
+      try {
+        return await call<RspamdHistoryRow[]>(`/domains/${domainId.value}/spamd/history?size=200`);
+      } catch {
+        return [];
+      }
+    },
+    { server: false, immediate: false, watch: [domainId, tick], default: () => [] }
+  );
+  const rspamdHistory = computed(() => rspamdData.value ?? []);
+
+  const {
+    data: postfixData,
+    status: postfixStatus,
+    refresh: refreshPostfix,
+  } = useAsyncData<PostfixQueueStats | null>(
+    "domain-dashboard-postfix",
+    async () => {
+      if (!domain.value) return null;
+      try {
+        return await call<PostfixQueueStats>(`/postfix/queue?domain=${encodeURIComponent(domain.value.domain)}`);
+      } catch {
+        return null;
+      }
+    },
+    { server: false, immediate: false, watch: [domainId, tick] }
+  );
+  const postfixQueue = computed(() => postfixData.value ?? null);
+  const postfixLoading = computed(() => postfixStatus.value !== "success" && postfixStatus.value !== "error");
+
   const activeRecipients = computed(() => recipients.value.filter((r) => r.active).length);
   const usedBytes = computed(() => Number(quota.value?.bytes ?? 0));
   const allocatedBytes = computed(() => Number(domain.value?.quota ?? 0));
@@ -224,67 +328,15 @@ export function useDomainDashboard() {
   }
 
   async function load() {
-    if (loading.value) return;
-    loading.value = true;
-    try {
-      const domains = await call<Domain[]>("/domains");
-      const found = domains.find((d) => d.domain === domainFqdn.value) ?? null;
-      domain.value = found;
-      if (!found) return;
-      domainStore.select(found);
-      const [recs, als, quotaData] = await Promise.all([
-        call<Recipient[]>(`/domains/${found.id}/recipients`),
-        call<Alias[]>(`/domains/${found.id}/aliases`),
-        call<QuotaPayload>(`/domains/${found.id}/quotas`),
-      ]);
-      recipients.value = recs;
-      aliases.value = als;
-      quota.value = quotaData.domain;
-      const quotaByEmail = new Map(recs.map((r) => [r.email, r.quota]));
-      const enriched: MailboxEntry[] = quotaData.recipients.map((q) => ({
-        ...q,
-        quota: quotaByEmail.get(q.email) ?? "0",
-      }));
-      topMailboxes.value = [...enriched].sort((a, b) => occupancyRate(b) - occupancyRate(a)).slice(0, 10);
-      await Promise.all([loadDkim(found.id), loadRspamdHistory(found.id), loadPostfixQueue(found.domain)]);
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  async function loadRspamdHistory(domainId: number) {
-    try {
-      rspamdHistory.value = await call<RspamdHistoryRow[]>(`/domains/${domainId}/spamd/history?size=200`);
-    } catch {
-      rspamdHistory.value = [];
-    }
-  }
-
-  async function loadPostfixQueue(fqdn: string) {
-    try {
-      postfixQueue.value = await call<PostfixQueueStats>(`/postfix/queue?domain=${encodeURIComponent(fqdn)}`);
-    } catch {
-      postfixQueue.value = null;
-    }
-  }
-
-  async function loadDkim(id: number) {
-    dkimLoading.value = true;
-    try {
-      dkimKeys.value = await call<DkimKey[]>(`/domains/${id}/dkim`);
-    } catch {
-      dkimKeys.value = [];
-    } finally {
-      dkimLoading.value = false;
-    }
+    await refreshMain();
+    await Promise.all([refreshDkim(), refreshRspamd(), refreshPostfix()]);
   }
 
   async function rotateDkim() {
     if (!domain.value) return;
-    dkimLoading.value = true;
     try {
       await call(`/domains/${domain.value.id}/dkim/rotate`, { method: "POST" });
-      await loadDkim(domain.value.id);
+      await refreshDkim();
       toast.add({
         title: t("domainDashboard.dkim.toast.rotated"),
         color: "success",
@@ -295,8 +347,6 @@ export function useDomainDashboard() {
         description: (err as Error).message,
         color: "error",
       });
-    } finally {
-      dkimLoading.value = false;
     }
   }
 
@@ -306,7 +356,7 @@ export function useDomainDashboard() {
       await call(`/domains/${domain.value.id}/dkim/${selector}`, {
         method: "DELETE",
       });
-      await loadDkim(domain.value.id);
+      await refreshDkim();
       toast.add({
         title: t("domainDashboard.dkim.toast.deleted"),
         color: "success",
@@ -338,7 +388,6 @@ export function useDomainDashboard() {
     }
     startAutoRefresh();
     document.addEventListener("visibilitychange", onVisibilityChange);
-    load();
   });
 
   onUnmounted(() => {
@@ -357,6 +406,7 @@ export function useDomainDashboard() {
     postfixQueue,
     loading,
     dkimLoading,
+    postfixLoading,
     refreshInterval,
     domainFqdn,
     activeRecipients,

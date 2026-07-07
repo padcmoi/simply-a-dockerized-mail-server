@@ -31,7 +31,10 @@ const { set: setBreadcrumb } = useBreadcrumb();
 
 setBreadcrumb([{ label: t("nav.sieveLong") }]);
 
-const { items, total, loading, page, limit, search, sortDir, load } = usePaginatedList<Reject>("/sieve/reject-senders");
+const { items, total, loading, hasLoadedOnce, page, limit, search, sortDir, load } = usePaginatedList<Reject>(
+  "sieve-reject-senders-list",
+  "/sieve/reject-senders"
+);
 
 async function create() {
   try {
@@ -76,7 +79,7 @@ async function onDeleteConfirmed() {
   <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
     <div class="flex items-start justify-between gap-3 flex-wrap">
       <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('sieve.alertTitle')" class="flex-1 min-w-[16rem]" />
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="() => load()" />
     </div>
 
     <UCard>
@@ -95,42 +98,43 @@ async function onDeleteConfirmed() {
 
     <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-      <UTable :columns="columns" :data="items" :loading="loading" sticky>
-        <template #enabled-cell="{ row }">
-          <USwitch :model-value="!!row.original.enabled" @update:model-value="toggle(row.original.id, row.original.enabled)" />
-        </template>
-        <template #actions-cell="{ row }">
-          <UButton
-            icon="i-lucide-trash-2"
-            color="error"
-            variant="ghost"
-            size="xs"
-            square
-            @click="requestDelete(() => remove(row.original.id))"
-          />
-        </template>
-      </UTable>
-    </UCard>
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
 
-    <div class="lg:hidden space-y-3">
-      <div v-if="loading" class="flex justify-center py-8">
-        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+    <template v-else>
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+        <UTable :columns="columns" :data="items" :loading="loading" sticky>
+          <template #enabled-cell="{ row }">
+            <USwitch :model-value="!!row.original.enabled" @update:model-value="toggle(row.original.id, row.original.enabled)" />
+          </template>
+          <template #actions-cell="{ row }">
+            <UButton
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="ghost"
+              size="xs"
+              square
+              @click="requestDelete(() => remove(row.original.id))"
+            />
+          </template>
+        </UTable>
+      </UCard>
+
+      <div class="lg:hidden space-y-3">
+        <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
+        <SieveRuleCard
+          v-for="item in items"
+          v-else
+          :key="item.id"
+          :item="item"
+          @delete="requestDelete(() => remove(item.id))"
+          @toggle="toggle(item.id, item.enabled)"
+        />
       </div>
-      <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-      <SieveRuleCard
-        v-for="item in items"
-        v-else
-        :key="item.id"
-        :item="item"
-        @delete="requestDelete(() => remove(item.id))"
-        @toggle="toggle(item.id, item.enabled)"
-      />
-    </div>
 
-    <div class="flex justify-center">
-      <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-    </div>
+      <div class="flex justify-center">
+        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
+      </div>
+    </template>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
   </div>

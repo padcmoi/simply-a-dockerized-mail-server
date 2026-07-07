@@ -32,12 +32,57 @@ interface DiskInfo {
   assignableBytes: number;
 }
 
-const loading = ref(false);
-const domains = ref<Domain[]>([]);
-const recipients = ref<Recipient[]>([]);
-const aliases = ref<Alias[]>([]);
-const rejects = ref<Reject[]>([]);
-const disk = ref<DiskInfo | null>(null);
+const { set: setBreadcrumb } = useBreadcrumb();
+const { t } = useI18n();
+const { call } = useApi();
+const { tick } = useDataRefresh();
+
+setBreadcrumb([{ label: t("nav.dashboard") }]);
+
+interface DashboardData {
+  domains: Domain[];
+  recipients: Recipient[];
+  aliases: Alias[];
+  rejects: Reject[];
+  disk: DiskInfo | null;
+}
+
+const {
+  data,
+  status,
+  refresh: load,
+} = useAsyncData<DashboardData>(
+  "dashboard-main",
+  async () => {
+    const [domainList, rejectList, diskData] = await Promise.all([
+      call<Domain[]>("/domains"),
+      call<Reject[]>("/sieve/reject-senders"),
+      call<DiskInfo>("/domains/disk"),
+    ]);
+    const [recs, als] = await Promise.all([
+      Promise.all(domainList.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`))),
+      Promise.all(domainList.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`))),
+    ]);
+    return { domains: domainList, recipients: recs.flat(), aliases: als.flat(), rejects: rejectList, disk: diskData };
+  },
+  {
+    server: false,
+    watch: [tick],
+    default: () => ({ domains: [], recipients: [], aliases: [], rejects: [], disk: null }),
+  }
+);
+
+// NOT `pending`: with `server: false`, Nuxt defers the initial fetch to
+// `onBeforeMount`, so `pending` stays false through SSR render AND the gap
+// before that callback fires -- the SSR'd HTML would flash "0" before ever
+// showing a skeleton. `status` starts at "idle" both server- and
+// client-side and only flips once a fetch has genuinely settled.
+const domains = computed(() => data.value?.domains ?? []);
+const recipients = computed(() => data.value?.recipients ?? []);
+const aliases = computed(() => data.value?.aliases ?? []);
+const rejects = computed(() => data.value?.rejects ?? []);
+const disk = computed(() => data.value?.disk ?? null);
+const loading = computed(() => status.value !== "success" && status.value !== "error");
 
 const stats = computed(() => [
   {
@@ -97,38 +142,6 @@ const recipientsPerDomain = computed(() =>
     .sort((a, b) => b.count - a.count)
     .slice(0, 8)
 );
-
-const { set: setBreadcrumb } = useBreadcrumb();
-const { t } = useI18n();
-const { call } = useApi();
-
-setBreadcrumb([{ label: t("nav.dashboard") }]);
-
-watch(useDataRefresh().tick, load);
-
-async function load() {
-  loading.value = true;
-  try {
-    const [domainList, rejectList, diskData] = await Promise.all([
-      call<Domain[]>("/domains"),
-      call<Reject[]>("/sieve/reject-senders"),
-      call<DiskInfo>("/domains/disk"),
-    ]);
-    domains.value = domainList;
-    rejects.value = rejectList;
-    disk.value = diskData;
-    const [recs, als] = await Promise.all([
-      Promise.all(domainList.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`))),
-      Promise.all(domainList.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`))),
-    ]);
-    recipients.value = recs.flat();
-    aliases.value = als.flat();
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(load);
 </script>
 
 <template>
@@ -141,30 +154,35 @@ onMounted(load);
         :title="t('dashboard.subtitle')"
         class="flex-1 min-w-[16rem]"
       />
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="() => load()" />
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      <UCard v-for="stat in stats" :key="stat.key" :ui="{ root: 'transition hover:shadow-lg' }">
-        <NuxtLink :to="stat.to" class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-sm text-muted">{{ stat.label }}</p>
-            <p class="text-3xl font-semibold mt-1">{{ stat.value }}</p>
-            <p class="text-xs text-muted mt-1">{{ stat.sub }}</p>
-          </div>
-          <div class="rounded-lg p-2 bg-elevated">
-            <UIcon :name="stat.icon" class="text-2xl text-primary" />
-          </div>
-        </NuxtLink>
-      </UCard>
+      <DomainStatCard
+        v-for="stat in stats"
+        :key="stat.key"
+        :label="stat.label"
+        :value="stat.value"
+        :sub="stat.sub"
+        :icon="stat.icon"
+        icon-color="text-primary"
+        :loading="loading && !disk"
+        :to="stat.to"
+      />
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <UCard v-if="disk">
+      <UCard>
         <template #header>
           <h2 class="font-semibold">{{ t("dashboard.disk.title") }}</h2>
         </template>
-        <DiskDonutChart :total-bytes="disk.totalBytes" :free-bytes="disk.freeBytes" :reserved-bytes="disk.reservedBytes" />
+        <USkeleton v-if="loading && !disk" class="h-36 w-36 rounded-full mx-auto" />
+        <DiskDonutChart
+          v-else-if="disk"
+          :total-bytes="disk.totalBytes"
+          :free-bytes="disk.freeBytes"
+          :reserved-bytes="disk.reservedBytes"
+        />
       </UCard>
 
       <UCard>
@@ -173,7 +191,10 @@ onMounted(load);
             {{ t("dashboard.chart.recipientsPerDomain") }}
           </h2>
         </template>
-        <DomainBarChart :items="recipientsPerDomain" />
+        <div v-if="loading && !disk" class="space-y-2 py-2">
+          <USkeleton v-for="i in 5" :key="i" class="h-6 w-full" />
+        </div>
+        <DomainBarChart v-else :items="recipientsPerDomain" />
       </UCard>
     </div>
 
@@ -187,8 +208,11 @@ onMounted(load);
             </UButton>
           </div>
         </template>
+        <div v-if="loading && !disk" class="space-y-3 py-1">
+          <USkeleton v-for="i in 5" :key="i" class="h-10 w-full" />
+        </div>
         <UEmptyState
-          v-if="!loading && recentDomains.length === 0"
+          v-else-if="recentDomains.length === 0"
           icon="i-lucide-globe"
           :title="t('dashboard.recent.noDomains')"
           :description="t('dashboard.recent.noDomainsHint')"
@@ -228,8 +252,11 @@ onMounted(load);
             </UButton>
           </div>
         </template>
+        <div v-if="loading && !disk" class="space-y-3 py-1">
+          <USkeleton v-for="i in 6" :key="i" class="h-10 w-full" />
+        </div>
         <UEmptyState
-          v-if="!loading && recentRecipients.length === 0"
+          v-else-if="recentRecipients.length === 0"
           icon="i-lucide-users"
           :title="t('dashboard.recent.noRecipients')"
           :description="t('dashboard.recent.noRecipientsHint')"

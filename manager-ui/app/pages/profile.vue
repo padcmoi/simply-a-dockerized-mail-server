@@ -6,7 +6,6 @@ import { usePermissionsStore } from "~/stores/permissions";
 definePageMeta({});
 
 const loading = ref(false);
-const permissionsLoading = ref(false);
 const domainNames = ref<Record<number, string>>({});
 const form = reactive({ name: "", email: "", avatarUrl: "" });
 
@@ -81,34 +80,50 @@ async function save() {
   }
 }
 
-onMounted(async () => {
-  try {
-    await auth.fetchProfile();
-    form.name = auth.session?.name ?? "";
-    form.email = auth.session?.email ?? "";
-    form.avatarUrl = auth.session?.avatarUrl ?? "";
-  } catch (e) {
-    toast.add({
-      title: t("profile.toast.loadFailed"),
-      description: (e as Error).message,
-      color: "error",
-    });
-  }
-
-  permissionsLoading.value = true;
-  try {
-    await perms.fetch();
-    const domainIds = [...new Set(perms.data.domain.map((p) => p.domainId))];
-    if (domainIds.length) {
-      const domains = await call<{ id: number; domain: string }[]>("/domains");
-      domainNames.value = Object.fromEntries(domains.map((d) => [d.id, d.domain]));
+// NOT `pending`: with `server: false`, Nuxt defers the initial fetch to
+// `onBeforeMount`, so `pending` stays false through SSR render AND the gap
+// before that callback fires -- the SSR'd HTML would flash empty content
+// before ever showing a skeleton. `status` starts at "idle" both server-
+// and client-side and only flips once a fetch has genuinely settled.
+const { status: identityStatus } = useAsyncData(
+  "profile-identity",
+  async () => {
+    try {
+      await auth.fetchProfile();
+      form.name = auth.session?.name ?? "";
+      form.email = auth.session?.email ?? "";
+      form.avatarUrl = auth.session?.avatarUrl ?? "";
+    } catch (e) {
+      toast.add({
+        title: t("profile.toast.loadFailed"),
+        description: (e as Error).message,
+        color: "error",
+      });
     }
-  } catch {
-    toast.add({ title: t("profile.permissions.loadFailed"), color: "error" });
-  } finally {
-    permissionsLoading.value = false;
-  }
-});
+    return null;
+  },
+  { server: false }
+);
+const identityLoading = computed(() => identityStatus.value !== "success" && identityStatus.value !== "error");
+
+const { status: permissionsStatus } = useAsyncData(
+  "profile-permissions",
+  async () => {
+    try {
+      await perms.fetch();
+      const domainIds = [...new Set(perms.data.domain.map((p) => p.domainId))];
+      if (domainIds.length) {
+        const domains = await call<{ id: number; domain: string }[]>("/domains");
+        domainNames.value = Object.fromEntries(domains.map((d) => [d.id, d.domain]));
+      }
+    } catch {
+      toast.add({ title: t("profile.permissions.loadFailed"), color: "error" });
+    }
+    return null;
+  },
+  { server: false }
+);
+const permissionsLoading = computed(() => permissionsStatus.value !== "success" && permissionsStatus.value !== "error");
 </script>
 
 <template>
@@ -125,7 +140,17 @@ onMounted(async () => {
       <template #header>
         <h2 class="font-semibold">{{ t("profile.identity") }}</h2>
       </template>
-      <UForm :schema="schema" :state="form" class="space-y-6" @submit="save">
+      <div v-if="identityLoading" class="space-y-6">
+        <div class="flex items-center gap-4">
+          <USkeleton class="w-16 h-16 rounded-full shrink-0" />
+          <div class="space-y-2">
+            <USkeleton class="h-4 w-32" />
+            <USkeleton class="h-5 w-24" />
+          </div>
+        </div>
+        <USkeleton v-for="i in 3" :key="i" class="h-9 w-full" />
+      </div>
+      <UForm v-else :schema="schema" :state="form" class="space-y-6" @submit="save">
         <div class="flex items-center gap-4">
           <UAvatar :src="avatarPreview.src" :alt="avatarPreview.alt" size="3xl" />
           <div class="min-w-0">

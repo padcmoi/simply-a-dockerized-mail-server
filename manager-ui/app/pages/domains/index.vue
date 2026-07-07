@@ -61,12 +61,13 @@ const {
   items,
   total,
   loading,
+  hasLoadedOnce,
   page,
   limit,
   search,
   sortDir,
   load: loadDomains,
-} = usePaginatedList<Domain>(() => (canReadList.value ? "/domains" : null));
+} = usePaginatedList<Domain>("domains-list", () => (canReadList.value ? "/domains" : null));
 
 watch(useDataRefresh().tick, loadDisk);
 
@@ -240,52 +241,53 @@ onMounted(loadDisk);
     <template v-else>
       <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
 
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-        <UTable :columns="columns" :data="items" :loading="loading" sticky>
-          <template #domain-cell="{ row }">
-            <button class="font-medium text-primary hover:underline text-left" @click="openDomain(row.original)">
-              {{ row.original.domain }}
-            </button>
-          </template>
-          <template #active-cell="{ row }">
-            <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
-              {{ row.original.active ? t("common.yes") : t("common.no") }}
-            </UBadge>
-          </template>
-          <template #quota-cell="{ row }">
-            {{ quotaToMb(row.original.quota) }}
-          </template>
-          <template #actions-cell="{ row }">
-            <UButton
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="ghost"
-              size="xs"
-              square
-              @click="requestDelete(() => remove(row.original.id))"
-            />
-          </template>
-        </UTable>
-      </UCard>
+      <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
-      <div class="lg:hidden space-y-3">
-        <div v-if="loading" class="flex justify-center py-8">
-          <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+      <template v-else>
+        <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+          <UTable :columns="columns" :data="items" :loading="loading" sticky>
+            <template #domain-cell="{ row }">
+              <button class="font-medium text-primary hover:underline text-left" @click="openDomain(row.original)">
+                {{ row.original.domain }}
+              </button>
+            </template>
+            <template #active-cell="{ row }">
+              <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
+                {{ row.original.active ? t("common.yes") : t("common.no") }}
+              </UBadge>
+            </template>
+            <template #quota-cell="{ row }">
+              {{ quotaToMb(row.original.quota) }}
+            </template>
+            <template #actions-cell="{ row }">
+              <UButton
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="ghost"
+                size="xs"
+                square
+                @click="requestDelete(() => remove(row.original.id))"
+              />
+            </template>
+          </UTable>
+        </UCard>
+
+        <div class="lg:hidden space-y-3">
+          <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
+          <DomainCard
+            v-for="item in items"
+            v-else
+            :key="item.id"
+            :item="item"
+            @open="openDomain(item)"
+            @delete="requestDelete(() => remove(item.id))"
+          />
         </div>
-        <p v-else-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <DomainCard
-          v-for="item in items"
-          v-else
-          :key="item.id"
-          :item="item"
-          @open="openDomain(item)"
-          @delete="requestDelete(() => remove(item.id))"
-        />
-      </div>
 
-      <div class="flex justify-center">
-        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-      </div>
+        <div class="flex justify-center">
+          <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
+        </div>
+      </template>
     </template>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />

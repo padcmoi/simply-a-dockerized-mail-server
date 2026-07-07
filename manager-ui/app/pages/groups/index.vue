@@ -30,7 +30,17 @@ setBreadcrumb([{ label: t("nav.groups") }]);
 // unpaginated for its other consumers (accounts invite modal, accounts/[id]/groups.vue's
 // group picker) -- only create/remove are reused here.
 const { create, remove } = useGroups();
-const { items: groups, total, loading, page, limit, search, sortDir, load } = usePaginatedList<GroupItem>("/groups");
+const {
+  items: groups,
+  total,
+  loading,
+  hasLoadedOnce,
+  page,
+  limit,
+  search,
+  sortDir,
+  load,
+} = usePaginatedList<GroupItem>("groups-list", "/groups");
 
 function openCreate() {
   modalOpen.value = true;
@@ -88,50 +98,51 @@ async function onDeleteConfirmed() {
 
     <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
 
-    <UCard class="hidden lg:block">
-      <UTable :loading="loading" :data="groups" :columns="columns" sticky>
-        <template #name-cell="{ row }">
-          <div class="flex items-center gap-2 min-w-0 max-w-64">
-            <NuxtLink :to="`/groups/${row.original.id}`" class="font-medium hover:underline truncate min-w-0">{{
-              row.original.name
-            }}</NuxtLink>
-            <UBadge v-if="row.original.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">{{
-              t("groups.defaultBadge")
-            }}</UBadge>
-          </div>
-        </template>
-        <template #description-cell="{ row }">
-          <span class="text-muted text-sm">{{ row.original.description || t("groups.noDescription") }}</span>
-        </template>
-        <template #ownerUsername-cell="{ row }">
-          <span class="text-muted text-sm">{{ row.original.ownerUsername ?? "-" }}</span>
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex justify-end">
-            <UButton
-              icon="i-lucide-trash-2"
-              size="xs"
-              color="error"
-              variant="ghost"
-              square
-              @click="requestDelete(row.original)"
-            />
-          </div>
-        </template>
-      </UTable>
-    </UCard>
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
-    <div class="lg:hidden space-y-3">
-      <div v-if="loading" class="flex justify-center py-8">
-        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+    <template v-else>
+      <UCard class="hidden lg:block">
+        <UTable :loading="loading" :data="groups" :columns="columns" sticky>
+          <template #name-cell="{ row }">
+            <div class="flex items-center gap-2 min-w-0 max-w-64">
+              <NuxtLink :to="`/groups/${row.original.id}`" class="font-medium hover:underline truncate min-w-0">{{
+                row.original.name
+              }}</NuxtLink>
+              <UBadge v-if="row.original.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">{{
+                t("groups.defaultBadge")
+              }}</UBadge>
+            </div>
+          </template>
+          <template #description-cell="{ row }">
+            <span class="text-muted text-sm">{{ row.original.description || t("groups.noDescription") }}</span>
+          </template>
+          <template #ownerUsername-cell="{ row }">
+            <span class="text-muted text-sm">{{ row.original.ownerUsername ?? "-" }}</span>
+          </template>
+          <template #actions-cell="{ row }">
+            <div class="flex justify-end">
+              <UButton
+                icon="i-lucide-trash-2"
+                size="xs"
+                color="error"
+                variant="ghost"
+                square
+                @click="requestDelete(row.original)"
+              />
+            </div>
+          </template>
+        </UTable>
+      </UCard>
+
+      <div class="lg:hidden space-y-3">
+        <p v-if="groups.length === 0" class="text-sm text-muted text-center py-6">{{ t("groups.empty") }}</p>
+        <GroupCard v-for="group in groups" v-else :key="group.id" :group="group" @delete="requestDelete(group)" />
       </div>
-      <p v-else-if="groups.length === 0" class="text-sm text-muted text-center py-6">{{ t("groups.empty") }}</p>
-      <GroupCard v-for="group in groups" v-else :key="group.id" :group="group" @delete="requestDelete(group)" />
-    </div>
 
-    <div class="flex justify-center">
-      <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-    </div>
+      <div class="flex justify-center">
+        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
+      </div>
+    </template>
 
     <GroupFormModal v-model:open="modalOpen" :saving="saving" @submit="onSubmit" />
 

@@ -15,14 +15,23 @@ interface QuotaRow {
   lastActivity: string;
 }
 
-const domainRows = ref<QuotaRow[]>([]);
-const recipientRows = ref<QuotaRow[]>([]);
-const loading = ref(false);
 const page = ref(1);
 const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
 const search = ref("");
+const debouncedSearch = ref("");
 const sortDir = ref<"asc" | "desc">("desc");
-const total = ref(0);
+// `hasLoadedOnce` (NOT `recipientRows.length === 0`) gates both skeletons
+// below: a genuinely empty result would otherwise re-show them on every
+// page/sort/search reload forever, since length stays 0 on every
+// subsequent fetch too. It flips true after the very first settle and
+// never reverts (see usePaginatedList.ts for the same pattern).
+const hasLoadedOnce = ref(false);
+
+const { t } = useI18n();
+const { call } = useApi();
+const domainStore = useDomainStore();
+const { set: setBreadcrumb } = useBreadcrumb();
+const { tick } = useDataRefresh();
 
 const domainCols = computed(() => [
   { accessorKey: "domain", header: t("common.domain") },
@@ -37,20 +46,49 @@ const recipientCols = computed(() => [
   { accessorKey: "lastActivity", header: t("common.lastActivity") },
 ]);
 
-const { t } = useI18n();
-const { call } = useApi();
-const domainStore = useDomainStore();
-const { set: setBreadcrumb } = useBreadcrumb();
-
-watch(
-  search,
-  useDebounceFn(() => {
-    page.value = 1;
-    load();
-  }, 1000)
+// The "per domain" table is a single aggregate row, never paginated -- only
+// "per recipient" is (nested `recipients: { items, total }` in the same
+// response, see quotas.controller.ts). Not `usePaginatedList` since that
+// composable expects the endpoint's top-level shape to be `{items,total}`,
+// not nested under `recipients`.
+const { data, status, refresh } = useAsyncData<{
+  domain: QuotaRow | null;
+  recipients: { items: QuotaRow[]; total: number };
+}>(
+  "quotas-snapshot",
+  () => {
+    const qs = new URLSearchParams({
+      limit: String(limit.value),
+      offset: String((page.value - 1) * limit.value),
+      sortDir: sortDir.value,
+    });
+    if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
+    return call(`/domains/${domainStore.selected!.id}/quotas?${qs.toString()}`);
+  },
+  {
+    server: false,
+    watch: [page, limit, sortDir, debouncedSearch, tick],
+    default: () => ({ domain: null, recipients: { items: [], total: 0 } }),
+  }
 );
-watch([page, limit, sortDir], load);
-watch(useDataRefresh().tick, load);
+
+const domainRows = computed(() => (data.value?.domain ? [data.value.domain] : []));
+const recipientRows = computed(() => data.value?.recipients.items ?? []);
+const total = computed(() => data.value?.recipients.total ?? 0);
+const loading = computed(() => status.value === "pending");
+
+const applyDebouncedSearch = useDebounceFn(() => {
+  page.value = 1;
+  debouncedSearch.value = search.value;
+}, 1000);
+watch(search, applyDebouncedSearch);
+watch(
+  status,
+  (s) => {
+    if (s === "success" || s === "error") hasLoadedOnce.value = true;
+  },
+  { immediate: true }
+);
 
 watchEffect(() => {
   const d = domainStore.selected;
@@ -61,32 +99,9 @@ watchEffect(() => {
   ]);
 });
 
-// The "per domain" table is a single aggregate row, never paginated -- only
-// "per recipient" is (nested `recipients: { items, total }` in the same
-// response, see quotas.controller.ts). Not `usePaginatedList` since that
-// composable expects the endpoint's top-level shape to be `{items,total}`,
-// not nested under `recipients`.
 async function load() {
-  loading.value = true;
-  try {
-    const qs = new URLSearchParams({
-      limit: String(limit.value),
-      offset: String((page.value - 1) * limit.value),
-      sortDir: sortDir.value,
-    });
-    if (search.value) qs.set("search", search.value);
-    const data = await call<{ domain: QuotaRow | null; recipients: { items: QuotaRow[]; total: number } }>(
-      `/domains/${domainStore.selected!.id}/quotas?${qs.toString()}`
-    );
-    domainRows.value = data.domain ? [data.domain] : [];
-    recipientRows.value = data.recipients.items;
-    total.value = data.recipients.total;
-  } finally {
-    loading.value = false;
-  }
+  await refresh();
 }
-
-onMounted(load);
 </script>
 
 <template>
@@ -102,43 +117,37 @@ onMounted(load);
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
     </div>
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-      <template #header>
-        <h2 class="font-semibold">{{ t("quotas.perDomain") }}</h2>
-      </template>
-      <UTable :columns="domainCols" :data="domainRows" :loading="loading" sticky />
-    </UCard>
+    <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
+      {{ t("quotas.perDomain") }}
+    </h2>
+    <USkeleton v-if="!hasLoadedOnce" class="h-16 w-full rounded-lg" />
+    <template v-else>
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+        <UTable :columns="domainCols" :data="domainRows" :loading="loading" sticky />
+      </UCard>
 
-    <div class="lg:hidden space-y-3">
-      <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
-        {{ t("quotas.perDomain") }}
-      </h2>
-      <div v-if="loading" class="flex justify-center py-8">
-        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+      <div class="lg:hidden space-y-3">
+        <p v-if="domainRows.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
+        <QuotaCard v-for="item in domainRows" v-else :key="item.id" :item="item" />
       </div>
-      <p v-else-if="domainRows.length === 0" class="text-sm text-muted text-center py-6">-</p>
-      <QuotaCard v-for="item in domainRows" v-else :key="item.id" :item="item" />
-    </div>
+    </template>
 
     <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
 
-    <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-      <template #header>
-        <h2 class="font-semibold">{{ t("quotas.perRecipient") }}</h2>
-      </template>
-      <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" sticky />
-    </UCard>
+    <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
+      {{ t("quotas.perRecipient") }}
+    </h2>
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
+    <template v-else>
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+        <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" sticky />
+      </UCard>
 
-    <div class="lg:hidden space-y-3">
-      <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
-        {{ t("quotas.perRecipient") }}
-      </h2>
-      <div v-if="loading" class="flex justify-center py-8">
-        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+      <div class="lg:hidden space-y-3">
+        <p v-if="recipientRows.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
+        <QuotaCard v-for="item in recipientRows" v-else :key="item.id" :item="item" />
       </div>
-      <p v-else-if="recipientRows.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-      <QuotaCard v-for="item in recipientRows" v-else :key="item.id" :item="item" />
-    </div>
+    </template>
 
     <div class="flex justify-center">
       <UPagination v-model:page="page" :total="total" :items-per-page="limit" />

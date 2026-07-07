@@ -20,7 +20,17 @@ interface ManagerAccount {
   groups: { id: number; name: string }[];
 }
 
-const { items: accounts, total, loading, page, limit, search, sortDir, load } = usePaginatedList<ManagerAccount>("/accounts");
+const {
+  items: accounts,
+  total,
+  loading,
+  hasLoadedOnce,
+  page,
+  limit,
+  search,
+  sortDir,
+  load,
+} = usePaginatedList<ManagerAccount>("accounts-list", "/accounts");
 
 const inviteOpen = ref(false);
 const inviteSending = ref(false);
@@ -93,7 +103,7 @@ async function onDeleteConfirmed() {
     />
 
     <div class="flex items-center justify-between gap-2">
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="() => load()" />
       <UButton
         v-if="auth.session?.isRoot"
         icon="i-lucide-mail-plus"
@@ -110,86 +120,89 @@ async function onDeleteConfirmed() {
 
     <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
 
-    <UCard class="hidden lg:block">
-      <UTable :loading="loading" :data="accounts" :columns="columns" sticky>
-        <template #username-cell="{ row }">
-          <div class="flex items-center gap-2">
-            <UAvatar :alt="row.original.name ?? row.original.username" size="xs" />
-            <span class="font-medium">{{ row.original.username }}</span>
-            <UBadge v-if="row.original.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
-          </div>
-        </template>
-        <template #name-cell="{ row }">
-          <span class="text-muted">{{ row.original.name ?? "-" }}</span>
-        </template>
-        <template #email-cell="{ row }">
-          <span class="text-muted text-sm">{{ row.original.email ?? "-" }}</span>
-        </template>
-        <template #group-cell="{ row }">
-          <div v-if="row.original.isRoot" class="text-xs text-muted italic">
-            {{ t("accounts.table.rootAccess") }}
-          </div>
-          <div v-else-if="row.original.groups.length" class="flex flex-wrap gap-1">
-            <UBadge v-for="g in row.original.groups" :key="g.id" color="neutral" variant="subtle" size="xs">{{ g.name }}</UBadge>
-          </div>
-          <span v-else class="text-xs text-dimmed">{{ t("accounts.table.noGroup") }}</span>
-        </template>
-        <template #status-cell="{ row }">
-          <UBadge :color="row.original.enabled ? 'success' : 'neutral'" variant="subtle" size="sm">
-            {{ row.original.enabled ? t("common.active") : t("common.inactive") }}
-          </UBadge>
-        </template>
-        <template #actions-cell="{ row }">
-          <div class="flex items-center gap-1 justify-end">
-            <UButton
-              v-if="!row.original.isRoot"
-              icon="i-lucide-users-round"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              :title="t('accounts.table.manageGroups')"
-              :to="`/accounts/${row.original.id}/groups`"
-            />
-            <UButton
-              v-if="!row.original.isRoot"
-              icon="i-lucide-pencil"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              :title="t('accounts.table.editAccount')"
-              :to="`/accounts/${row.original.id}`"
-            />
-            <UButton
-              v-if="!row.original.isRoot && row.original.enabled"
-              icon="i-lucide-user-x"
-              size="xs"
-              color="error"
-              variant="ghost"
-              :title="t('common.revoke')"
-              @click="requestDelete(() => revokeAccount(row.original))"
-            />
-          </div>
-        </template>
-      </UTable>
-    </UCard>
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
 
-    <div class="lg:hidden space-y-3">
-      <div v-if="loading" class="flex justify-center py-8">
-        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+    <template v-else>
+      <UCard class="hidden lg:block">
+        <UTable :loading="loading" :data="accounts" :columns="columns" sticky>
+          <template #username-cell="{ row }">
+            <div class="flex items-center gap-2">
+              <UAvatar :alt="row.original.name ?? row.original.username" size="xs" />
+              <span class="font-medium">{{ row.original.username }}</span>
+              <UBadge v-if="row.original.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
+            </div>
+          </template>
+          <template #name-cell="{ row }">
+            <span class="text-muted">{{ row.original.name ?? "-" }}</span>
+          </template>
+          <template #email-cell="{ row }">
+            <span class="text-muted text-sm">{{ row.original.email ?? "-" }}</span>
+          </template>
+          <template #group-cell="{ row }">
+            <div v-if="row.original.isRoot" class="text-xs text-muted italic">
+              {{ t("accounts.table.rootAccess") }}
+            </div>
+            <div v-else-if="row.original.groups.length" class="flex flex-wrap gap-1">
+              <UBadge v-for="g in row.original.groups" :key="g.id" color="neutral" variant="subtle" size="xs">{{
+                g.name
+              }}</UBadge>
+            </div>
+            <span v-else class="text-xs text-dimmed">{{ t("accounts.table.noGroup") }}</span>
+          </template>
+          <template #status-cell="{ row }">
+            <UBadge :color="row.original.enabled ? 'success' : 'neutral'" variant="subtle" size="sm">
+              {{ row.original.enabled ? t("common.active") : t("common.inactive") }}
+            </UBadge>
+          </template>
+          <template #actions-cell="{ row }">
+            <div class="flex items-center gap-1 justify-end">
+              <UButton
+                v-if="!row.original.isRoot"
+                icon="i-lucide-users-round"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :title="t('accounts.table.manageGroups')"
+                :to="`/accounts/${row.original.id}/groups`"
+              />
+              <UButton
+                v-if="!row.original.isRoot"
+                icon="i-lucide-pencil"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                :title="t('accounts.table.editAccount')"
+                :to="`/accounts/${row.original.id}`"
+              />
+              <UButton
+                v-if="!row.original.isRoot && row.original.enabled"
+                icon="i-lucide-user-x"
+                size="xs"
+                color="error"
+                variant="ghost"
+                :title="t('common.revoke')"
+                @click="requestDelete(() => revokeAccount(row.original))"
+              />
+            </div>
+          </template>
+        </UTable>
+      </UCard>
+
+      <div class="lg:hidden space-y-3">
+        <p v-if="accounts.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
+        <AccountCard
+          v-for="acc in accounts"
+          v-else
+          :key="acc.id"
+          :account="acc"
+          @revoke="requestDelete(() => revokeAccount(acc))"
+        />
       </div>
-      <p v-else-if="accounts.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-      <AccountCard
-        v-for="acc in accounts"
-        v-else
-        :key="acc.id"
-        :account="acc"
-        @revoke="requestDelete(() => revokeAccount(acc))"
-      />
-    </div>
 
-    <div class="flex justify-center">
-      <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-    </div>
+      <div class="flex justify-center">
+        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
+      </div>
+    </template>
 
     <AccountInviteModal
       v-model:open="inviteOpen"
