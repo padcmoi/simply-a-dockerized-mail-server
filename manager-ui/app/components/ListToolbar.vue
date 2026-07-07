@@ -13,6 +13,12 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+// `limit` is backed by useLocalStorage (see usePaginatedList.ts) -- its
+// real persisted value only lands after mount (SSR always renders the
+// default first). Skeleton the select until then instead of flashing the
+// default value.
+const ready = ref(false);
+
 const limitOptions = [
   { label: "10", value: 10 },
   { label: "25", value: 25 },
@@ -36,6 +42,10 @@ const sortDirModel = computed({
   get: () => props.sortDir,
   set: (v: "asc" | "desc") => emit("update:sortDir", v),
 });
+
+onMounted(() => {
+  ready.value = true;
+});
 </script>
 
 <template>
@@ -43,7 +53,8 @@ const sortDirModel = computed({
     <UInput v-model="searchModel" icon="i-lucide-search" :placeholder="t('common.search')" class="w-full sm:w-64" />
     <div class="flex items-center gap-2">
       <USelectMenu v-model="sortDirModel" value-key="value" :items="sortOptions" class="w-44" />
-      <USelectMenu v-model="limitModel" value-key="value" :items="limitOptions" class="w-24" />
+      <USkeleton v-if="!ready" class="h-8 w-24 rounded-md" />
+      <USelectMenu v-else v-model="limitModel" value-key="value" :items="limitOptions" class="w-24" />
     </div>
   </div>
 </template>

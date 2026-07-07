@@ -3,6 +3,7 @@ import type { PostfixQueueStats } from "~/composables/useDomainDashboard";
 
 defineProps<{
   queue: PostfixQueueStats | null;
+  loading?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -13,8 +14,11 @@ const { t } = useI18n();
     <template #header>
       <h2 class="font-semibold">{{ t("domainDashboard.postfix.title") }}</h2>
     </template>
+    <div v-if="loading && !queue" class="space-y-2 py-1">
+      <USkeleton v-for="i in 4" :key="i" class="h-6 w-full" />
+    </div>
     <UAlert
-      v-if="queue && !queue.available"
+      v-else-if="queue && !queue.available"
       color="warning"
       variant="subtle"
       icon="i-lucide-alert-triangle"
