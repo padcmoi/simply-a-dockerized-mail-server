@@ -93,7 +93,20 @@ const tableRows = computed<HistoryRow[]>(() =>
   }))
 );
 
-const { stats, history, total, loading, statsUnavailable, page, limit, search, sortDir, load } = useRspamdPage();
+const {
+  stats,
+  history,
+  total,
+  loading,
+  historyLoading,
+  historyHasLoadedOnce,
+  statsUnavailable,
+  page,
+  limit,
+  search,
+  sortDir,
+  load,
+} = useRspamdPage();
 const colorMode = useColorMode();
 const { t } = useI18n();
 </script>
@@ -119,11 +132,17 @@ const { t } = useI18n();
       :title="t('domainDashboard.rspamd.unavailable')"
     />
 
-    <UCard v-else-if="stats">
-      <template #header>
+    <UCard v-else>
+      <template v-if="stats" #header>
         <h2 class="font-semibold">{{ t("domainDashboard.rspamd.title") }}</h2>
       </template>
-      <div class="flex flex-col sm:flex-row items-center gap-6">
+      <div v-if="loading && !stats" class="flex flex-col sm:flex-row items-center gap-6">
+        <USkeleton class="shrink-0 w-40 h-40 rounded-full" />
+        <div class="space-y-2 w-full">
+          <USkeleton v-for="i in 5" :key="i" class="h-4 w-full" />
+        </div>
+      </div>
+      <div v-else-if="stats" class="flex flex-col sm:flex-row items-center gap-6">
         <div class="relative shrink-0 w-40 h-40">
           <ChartsDoughnutChart :data="donutData" :options="donutOptions" />
           <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -156,14 +175,14 @@ const { t } = useI18n();
         <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
       </div>
 
-      <div v-if="loading && history.length === 0" class="flex justify-center py-8">
-        <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
+      <div v-if="!historyHasLoadedOnce" class="space-y-2">
+        <USkeleton v-for="i in 5" :key="i" class="h-8 w-full" />
       </div>
       <p v-else-if="history.length === 0" class="text-sm text-muted text-center py-8">
         {{ t("rspamdPage.history.noData") }}
       </p>
       <div v-else class="overflow-x-auto">
-        <UTable :columns="tableColumns" :data="tableRows">
+        <UTable :columns="tableColumns" :data="tableRows" :loading="historyLoading">
           <template #action-cell="{ row }">
             <UBadge :color="rspamdActionColor(row.original.action)" variant="subtle" size="xs">
               {{ row.original.action }}

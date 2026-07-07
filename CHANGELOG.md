@@ -152,6 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(ui): avoid a Vue patch crash when swapping Rspamd's stats card between skeleton and loaded state, and show the table loading bar during history reloads instead of only on first load (07-07-2026)
 - fix(ui): sidebar navigation item stays highlighted for any nested route under it, not just an exact path match (06-07-2026)
 - fix(husky): pre-push checks never run when pushing main, unaffected on every other branch (06-07-2026)
 - Domain rspamd card shows recipient address instead of sender _(ui)_ [09f8b60](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/09f8b6068370c66a998dcac8a54d5bdacac2522d) (01-07-2026)
