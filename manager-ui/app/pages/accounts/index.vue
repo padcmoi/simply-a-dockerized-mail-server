@@ -118,7 +118,7 @@ async function onDeleteConfirmed() {
       </UButton>
     </div>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
 
@@ -199,9 +199,7 @@ async function onDeleteConfirmed() {
         />
       </div>
 
-      <div class="flex justify-center">
-        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-      </div>
+      <ListPagination v-model:page="page" :total="total" :limit="limit" />
     </template>
 
     <AccountInviteModal

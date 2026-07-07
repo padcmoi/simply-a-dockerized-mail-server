@@ -59,6 +59,7 @@ export default {
     sortNewestFirst: "Plus récent d'abord",
     sortOldestFirst: "Plus ancien d'abord",
     noResults: "Aucun résultat",
+    totalCount: "{count} au total",
   },
   confirm: {
     title: "Confirmer la suppression",

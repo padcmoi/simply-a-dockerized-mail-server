@@ -59,6 +59,7 @@ export default {
     sortNewestFirst: "Newest first",
     sortOldestFirst: "Oldest first",
     noResults: "No results",
+    totalCount: "{count} total",
   },
   confirm: {
     title: "Confirm deletion",

@@ -57,6 +57,7 @@ export interface Locales {
     sortNewestFirst: string;
     sortOldestFirst: string;
     noResults: string;
+    totalCount: string;
   };
   confirm: {
     title: string;

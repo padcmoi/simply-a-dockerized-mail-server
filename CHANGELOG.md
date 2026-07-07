@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): show each table's total row count next to its pagination control, via a single reusable component shared across every list (accounts, domains, groups, sieve, recipients, aliases, quotas, Rspamd history) (07-07-2026)
 - feat(ui): skeleton loaders for every page's initial data fetch (accounts, domains, groups, sieve, recipients, aliases, quotas, Rspamd, both dashboards, profile), replacing blank/zeroed flashes while data loads (07-07-2026)
 - feat(ui): persist the "items per page" list preference across every table in localStorage (06-07-2026)
 - feat(api,ui): server-side pagination (10/25/50 max), free-text search and chronological sort direction (newest/oldest first) on every tabular list (accounts, domains, groups, blocklist, recipients, aliases, quotas, Rspamd history); additive so the dashboard and picker selects keep receiving the full unpaginated set (06-07-2026)

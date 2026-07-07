@@ -165,10 +165,7 @@ const { t } = useI18n();
 
     <UCard>
       <template #header>
-        <div class="flex items-center justify-between gap-2">
-          <h2 class="font-semibold">{{ t("rspamdPage.history.title") }}</h2>
-          <UBadge color="neutral" variant="subtle">{{ total }}</UBadge>
-        </div>
+        <h2 class="font-semibold">{{ t("rspamdPage.history.title") }}</h2>
       </template>
 
       <div class="mb-4">
@@ -199,8 +196,8 @@ const { t } = useI18n();
         </UTable>
       </div>
 
-      <div class="flex justify-center mt-4">
-        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
+      <div class="mt-4">
+        <ListPagination v-model:page="page" :total="total" :limit="limit" />
       </div>
     </UCard>
   </div>

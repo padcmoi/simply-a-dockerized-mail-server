@@ -96,7 +96,7 @@ async function onDeleteConfirmed() {
       </UButton>
     </div>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
@@ -139,9 +139,7 @@ async function onDeleteConfirmed() {
         <GroupCard v-for="group in groups" v-else :key="group.id" :group="group" @delete="requestDelete(group)" />
       </div>
 
-      <div class="flex justify-center">
-        <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-      </div>
+      <ListPagination v-model:page="page" :total="total" :limit="limit" />
     </template>
 
     <GroupFormModal v-model:open="modalOpen" :saving="saving" @submit="onSubmit" />

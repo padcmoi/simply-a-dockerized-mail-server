@@ -239,7 +239,7 @@ onMounted(loadDisk);
     <UAlert v-if="!canReadList" color="neutral" variant="subtle" icon="i-lucide-lock" :title="t('domains.listLocked')" />
 
     <template v-else>
-      <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+      <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
 
       <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
@@ -284,9 +284,7 @@ onMounted(loadDisk);
           />
         </div>
 
-        <div class="flex justify-center">
-          <UPagination v-model:page="page" :total="total" :items-per-page="limit" />
-        </div>
+        <ListPagination v-model:page="page" :total="total" :limit="limit" />
       </template>
     </template>
 
