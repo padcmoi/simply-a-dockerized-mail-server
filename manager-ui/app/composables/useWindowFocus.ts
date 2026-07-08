@@ -38,7 +38,7 @@ export function useWindowFocus() {
   }
 
   async function onFocusGain() {
-    console.info("[windowFocus] focus gained — verifying session");
+    console.info("[windowFocus] focus gained, verifying session");
     if (!auth.isAuthenticated) {
       console.info("[windowFocus] not authenticated, skipping");
       return;

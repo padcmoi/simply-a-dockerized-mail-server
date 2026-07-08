@@ -19,7 +19,7 @@ interface PermissionsData {
 
 export const usePermissionsStore = defineStore("permissions", {
   // `loaded` tracks whether a fetch has completed at least once for the current
-  // session — see `app/middleware/permissions.global.ts`, which uses it to force
+  // session; see `app/middleware/permissions.global.ts`, which uses it to force
   // a fresh lookup on first navigation instead of trusting a stale/empty state.
   state: () => ({ data: { global: [], domain: [] } as PermissionsData, loaded: false }),
   actions: {

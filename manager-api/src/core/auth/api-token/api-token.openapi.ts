@@ -52,11 +52,11 @@ const revealedKeyExample = {
 export const CreateApiTokenDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: "Create a new API token — the secret is returned once and never stored in plain text",
+      summary: "Create a new API token: the secret is returned once and never stored in plain text",
       description:
-        "Self-scoped to the authenticated account (req.user.id) — the created token authenticates as its owner. " +
+        "Self-scoped to the authenticated account (req.user.id): the created token authenticates as its owner. " +
         "The full key (format `sms_clientId.secret`) is only ever present in this response's `key` field; only " +
-        "an HMAC hash of the secret is persisted, so it cannot be retrieved again — use /api-tokens/:id/regenerate " +
+        "an HMAC hash of the secret is persisted, so it cannot be retrieved again. Use /api-tokens/:id/regenerate " +
         "if it is lost. Send the key on later requests via the `X-Api-Key` header. Token names must be unique per " +
         "account.",
     }),
@@ -95,7 +95,7 @@ export const ListApiTokensDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: "List all API tokens for the authenticated account (secrets never exposed)",
-      description: "Self-scoped to the authenticated account (req.user.id) — only that account's own tokens are returned.",
+      description: "Self-scoped to the authenticated account (req.user.id): only that account's own tokens are returned.",
     }),
     ApiResponse({
       status: 200,
@@ -115,7 +115,7 @@ export const UpdateApiTokenDocs = () =>
     ApiOperation({
       summary: "Update name, allowed IPs or expiry of an API token",
       description:
-        "Self-scoped to the authenticated account (req.user.id) — a token id belonging to another account is " +
+        "Self-scoped to the authenticated account (req.user.id): a token id belonging to another account is " +
         "indistinguishable from a nonexistent one and returns 404, never 403. Fields omitted from the body are " +
         "left unchanged; allowedIps/expiresAt set to null clear the restriction.",
     }),
@@ -155,9 +155,9 @@ export const RevokeApiTokenDocs = () =>
   applyDecorators(
     ApiParam({ name: "id", type: Number, description: "API token id" }),
     ApiOperation({
-      summary: "Soft-revoke an API token — disables it without deleting",
+      summary: "Soft-revoke an API token: disables it without deleting",
       description:
-        "Self-scoped to the authenticated account (req.user.id) — a token id belonging to another account " +
+        "Self-scoped to the authenticated account (req.user.id): a token id belonging to another account " +
         "returns 404, never 403. The token remains visible via GET /api-tokens but can no longer authenticate " +
         "requests. Revoking an already-revoked token fails with 400 (not idempotent).",
     }),
@@ -187,9 +187,9 @@ export const RegenerateApiTokenDocs = () =>
   applyDecorators(
     ApiParam({ name: "id", type: Number, description: "API token id" }),
     ApiOperation({
-      summary: "Regenerate the secret of an active token — old secret is immediately invalid",
+      summary: "Regenerate the secret of an active token: old secret is immediately invalid",
       description:
-        "Self-scoped to the authenticated account (req.user.id) — a token id belonging to another account " +
+        "Self-scoped to the authenticated account (req.user.id): a token id belonging to another account " +
         "returns 404, never 403. The new key (format `sms_clientId.secret`) is only ever present in this " +
         "response's `key` field and is not retrievable afterwards. The clientId is unchanged; failed-attempt " +
         "lockout state is reset. Cannot be used on a revoked token.",
@@ -222,7 +222,7 @@ export const DeleteApiTokenDocs = () =>
     ApiOperation({
       summary: "Permanently delete a revoked token",
       description:
-        "Self-scoped to the authenticated account (req.user.id) — a token id belonging to another account " +
+        "Self-scoped to the authenticated account (req.user.id): a token id belonging to another account " +
         "returns 404, never 403. The token must already be revoked via /api-tokens/:id/revoke; deleting an " +
         "active token fails with 400. No response body is returned on success.",
     }),

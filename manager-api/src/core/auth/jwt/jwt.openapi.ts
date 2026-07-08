@@ -39,7 +39,7 @@ export const JwtLoginDocs = () =>
       description:
         "Public endpoint, no authentication required. On success, issues a short-lived JWT access token " +
         "(MANAGER_JWT_ACCESS_TTL, defaults to 900s) plus a long-lived refresh token (MANAGER_JWT_REFRESH_TTL, " +
-        "defaults to 30 days). The refresh token is only ever returned in this response and in /auth/jwt/refresh — " +
+        "defaults to 30 days). The refresh token is only ever returned in this response and in /auth/jwt/refresh; " +
         "only its SHA-256 hash is persisted.",
     }),
     ApiBody({
@@ -118,7 +118,7 @@ export const JwtLogoutDocs = () =>
     ApiOperation({
       summary: "Revoke a refresh token (idempotent)",
       description:
-        "Public endpoint, no authentication required — only knowledge of the refresh token itself is needed. " +
+        "Public endpoint, no authentication required: only knowledge of the refresh token itself is needed. " +
         "Revoking an already-revoked or unknown refresh token still returns 200; the operation never fails on " +
         'an unmatched token so callers can always safely "log out".',
     }),
@@ -146,7 +146,7 @@ export const JwtMeDocs = () =>
       summary: "Return the profile of the authenticated account",
       description:
         "Self-scoped: always operates on the caller's own account (req.user.id). There is no permission " +
-        "requirement beyond being authenticated — every account, regardless of group or global permissions, " +
+        "requirement beyond being authenticated: every account, regardless of group or global permissions, " +
         "can read its own profile.",
     }),
     ApiResponse({
@@ -172,7 +172,7 @@ export const JwtMePermissionsDocs = () =>
     ApiOperation({
       summary: "Return the effective global and domain-scoped permissions of the authenticated account",
       description:
-        "Self-scoped: always computed for the caller's own account (req.user.id) — no permission requirement " +
+        "Self-scoped: always computed for the caller's own account (req.user.id), no permission requirement " +
         "beyond being authenticated. Domain ownership implicitly grants full access/read/create/modify/delete " +
         "rights on that domain, independently of any group permission row, and is included in the result.",
     }),
@@ -202,7 +202,7 @@ export const JwtUpdateProfileDocs = () =>
     ApiOperation({
       summary: "Update the authenticated account's display name, email or avatar URL",
       description:
-        "Self-scoped: always updates the caller's own account (req.user.id) — no permission requirement beyond " +
+        "Self-scoped: always updates the caller's own account (req.user.id), no permission requirement beyond " +
         "being authenticated. Any field omitted from the body is left unchanged; any field explicitly set to " +
         "null clears it. Changing the email to one already used by another account fails with 409.",
     }),

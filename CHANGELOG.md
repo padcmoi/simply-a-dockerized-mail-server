@@ -110,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- style: remove em dashes from code comments, log/tooltip strings and UI copy across `manager-api` and `manager-ui` (08-07-2026)
 - refactor(ui): nest recipients/aliases/quotas under `/domains/:domain/` instead of flat routes driven by an implicit store selection, matching the domain dashboard's own URL and making each page directly bookmarkable and deep-linkable per domain (07-07-2026)
 - refactor(ui): migrate page and composable data fetching to `useAsyncData`, deriving the loading state from `status` instead of `pending` so the skeleton is what the server actually renders instead of flashing empty/zero values on hard reload, and gating it on a one-shot "has loaded once" flag so it never reappears on a page/sort/search reload of an already-empty list (07-07-2026)
 - refactor(ui): replace native `<select>` pickers with `USelectMenu` (group/member/owner assignment), showing each item's description (06-07-2026)

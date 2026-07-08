@@ -2,8 +2,8 @@ import { z } from "zod";
 
 // `limit` is left optional (no default) on purpose: its absence is what
 // signals "legacy full-list" behavior to every list service (see each
-// service's `list()` — internal consumers like dashboards/pickers never
-// send it, and keep getting the complete unpaginated array).
+// service's `list()`). Internal consumers like dashboards/pickers never
+// send it, and keep getting the complete unpaginated array.
 export const paginationQuerySchema = z.object({
   limit: z.coerce
     .number()

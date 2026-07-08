@@ -11,7 +11,7 @@ export const GetQueueDocs = () =>
         "Counts the files sitting in each postfix spool queue directory. When `domain` is supplied, an additional " +
         "`domain` breakdown is returned, counting only queued messages whose contents reference `@<domain>`. " +
         "If the spool directory cannot be read (e.g. it is not mounted into this container), the endpoint still " +
-        "answers 200 but with `available: false` and every count at 0 — it never throws for this condition.",
+        "answers 200 but with `available: false` and every count at 0; it never throws for this condition.",
     }),
     ApiQuery({
       name: "domain",
