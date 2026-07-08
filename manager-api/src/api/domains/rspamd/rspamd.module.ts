@@ -3,10 +3,10 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { RspamdCoreModule } from "../../../core/rspamd/rspamd.module";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { CustomPermissionGuardModule } from "../../../core/custom-permission-guard/custom-permission-guard.module";
-import { DomainsSpamdController } from "./spamd.controller";
+import { DomainsRspamdController } from "./rspamd.controller";
 
 @Module({
   imports: [TypeOrmModule.forFeature([VirtualDomain]), RspamdCoreModule, CustomPermissionGuardModule],
-  controllers: [DomainsSpamdController],
+  controllers: [DomainsRspamdController],
 })
-export class DomainsSpamdModule {}
+export class DomainsRspamdModule {}

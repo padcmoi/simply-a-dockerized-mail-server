@@ -36,7 +36,7 @@ async function isGranted(fn: () => Promise<void>): Promise<boolean> {
 //   3. the global "domains" resource acts as a system-wide override for the
 //      domain-scoped "domain" resource specifically (the lib's own
 //      bridgeFromGlobal, configured in custom-permission-guard.service.ts).
-//      This does NOT extend to recipients/aliases/quotas/dkim/spamd.
+//      This does NOT extend to recipients/aliases/quotas/dkim/rspamd.
 //   4. otherwise: a blanket global `domains:access` prerequisite for ANY
 //      remaining domain-tier requirement (this is a mail-server-specific
 //      rule, not expressible via the lib's dependsOn -- which is domain-tier

@@ -118,7 +118,7 @@ export default {
     listLocked: "Vous n'avez pas la permission de voir la liste des domaines.",
     capacity: {
       title: "Capacité du volume mail",
-      hint: "Chaque domaine réserve au minimum 10 Mo — aucun quota illimité",
+      hint: "Chaque domaine réserve au minimum 10 Mo, aucun quota illimité",
       total: "Total",
       free: "Libre sur disque",
       reserved: "Réservé par les domaines",
@@ -245,7 +245,7 @@ export default {
     },
     permissions: {
       title: "Permissions",
-      root: "Root — accès total",
+      root: "Root (accès total)",
       globalTitle: "Permissions globales",
       domainTitle: "Permissions par domaine",
       empty: "Aucune permission accordée",
@@ -281,7 +281,7 @@ export default {
     groupsPage: {
       alertTitle: "Appartenance aux groupes de ce compte.",
       alertDescription: "Assignez ou retirez des groupes ; les permissions se mettent à jour immédiatement.",
-      title: "Gérer les groupes — {username}",
+      title: "Gérer les groupes ({username})",
       pickPlaceholder: "Choisir un groupe à ajouter",
       add: "Ajouter",
       removeTooltip: "Retirer de ce groupe",
@@ -290,7 +290,7 @@ export default {
     editPage: {
       alertTitle: "Modifier le profil de ce compte.",
       alertDescription: "Nom affiché, email, avatar et statut d'activation.",
-      title: "Modifier le compte — {username}",
+      title: "Modifier le compte ({username})",
       nameLabel: "Nom affiché",
       emailLabel: "Email",
       avatarUrlLabel: "URL de l'avatar",
@@ -355,6 +355,10 @@ export default {
       copied: "Copié dans le presse-papiers",
       statusGenerated: "Clé DKIM générée",
       statusMissing: "Aucune clé DKIM générée",
+      statusMatch: "DKIM OK, conforme au DNS",
+      statusMismatch: "La clé DKIM ne correspond pas au DNS",
+      dnsMatch: "Correspond à l'enregistrement DNS publié",
+      dnsMismatch: "Ne correspond pas à l'enregistrement DNS publié",
       confirmGenerate: "Générer la clé DKIM ?",
       confirmGenerateDesc: "Une nouvelle clé de signature sera créée pour ce domaine.",
       confirmRotate: "Régénérer la clé DKIM ?",
@@ -374,7 +378,9 @@ export default {
       greylist: "Greylisting",
       unavailable: "Rspamd inaccessible",
       noHistory: "Aucun historique de scan pour ce domaine",
-      recentScans: "Scans récents",
+    },
+    rspamdPage: {
+      subtitle: "Statistiques du filtre anti-spam et historique des scans pour ce domaine.",
     },
     postfix: {
       title: "File d'attente Postfix",
@@ -421,7 +427,7 @@ export default {
     uptime: "uptime {s}s",
     history: {
       title: "Historique des scans",
-      noData: "Aucun historique — l'historique est persisté dans Redis et s'accumule dans le temps.",
+      noData: "Aucun historique. L'historique est persisté dans Redis et s'accumule dans le temps.",
     },
     col: {
       from: "De",
@@ -594,7 +600,6 @@ export default {
         aliases: "Alias",
         quotas: "Quotas",
         dkim: "Gestion DKIM",
-        spamd: "Filtrage antispam",
         admin: "Administration",
       },
       actionsLabel: {

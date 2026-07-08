@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { RspamdHistoryRow } from "~/composables/useDomainDashboard";
-import { rspamdActionColor } from "~/composables/useRspamdPage";
 
 const props = defineProps<{
   history: RspamdHistoryRow[];
@@ -12,7 +11,6 @@ const rejected = computed(() => props.history.filter((r) => r.action === "reject
 const greylisted = computed(() => props.history.filter((r) => r.action === "greylist").length);
 const clean = computed(() => props.history.filter((r) => r.action === "no action").length);
 const spamRate = computed(() => (scanned.value > 0 ? ((rejected.value / scanned.value) * 100).toFixed(1) : "0"));
-const recent = computed(() => props.history.slice(0, 5));
 
 const { t } = useI18n();
 </script>
@@ -66,21 +64,6 @@ const { t } = useI18n();
             {{ clean.toLocaleString() }}
           </p>
         </div>
-      </div>
-
-      <div v-if="recent.length" class="space-y-1">
-        <p class="text-xs text-muted font-medium">
-          {{ t("domainDashboard.rspamd.recentScans") }}
-        </p>
-        <ul class="divide-y divide-default">
-          <li v-for="row in recent" :key="row['message-id']" class="flex items-center justify-between gap-2 py-1.5 text-xs">
-            <span class="truncate text-muted min-w-0 flex-1">{{ row.rcpt_smtp?.[0] ?? row.sender_smtp }}</span>
-            <UBadge :color="rspamdActionColor(row.action)" variant="subtle" size="xs" class="shrink-0">
-              {{ row.action }}
-            </UBadge>
-            <span class="text-dimmed shrink-0">{{ row.score.toFixed(1) }}</span>
-          </li>
-        </ul>
       </div>
     </div>
   </UCard>

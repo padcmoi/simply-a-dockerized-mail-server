@@ -4,7 +4,7 @@
 
 export const GLOBAL_RESOURCES = ["sieve", "rspamd", "postfix", "accounts", "api-tokens", "groups", "domains"] as const;
 
-export const DOMAIN_RESOURCES = ["domain", "recipients", "aliases", "quotas", "spamd", "admin", "dkim"] as const;
+export const DOMAIN_RESOURCES = ["domain", "recipients", "aliases", "quotas", "rspamd", "admin", "dkim"] as const;
 
 type Actions = "access" | "read" | "create" | "modify" | "delete";
 
@@ -24,7 +24,7 @@ export const DOMAIN_RESOURCE_DEPENDS_ON: DependsOnTable = [
   { resource: "recipients", dependsOn: [{ resource: "domain", action: ["access"] }] },
   { resource: "aliases", dependsOn: [{ resource: "domain", action: ["access"] }] },
   { resource: "quotas", dependsOn: [{ resource: "domain", action: ["access"] }] },
-  { resource: "spamd", dependsOn: [{ resource: "domain", action: ["access"] }] },
+  { resource: "rspamd", dependsOn: [{ resource: "domain", action: ["access"] }] },
   { resource: "admin", dependsOn: [{ resource: "domain", action: ["access"] }] },
   {
     resource: "dkim",

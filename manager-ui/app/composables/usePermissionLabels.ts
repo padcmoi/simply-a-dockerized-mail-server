@@ -20,7 +20,6 @@ export function usePermissionLabels() {
     quotas: t("groups.permissions.resources.quotas"),
     dkim: t("groups.permissions.resources.dkim"),
     admin: t("groups.permissions.resources.admin"),
-    spamd: t("groups.permissions.resources.spamd"),
   }));
 
   const actionLabels = computed<Record<string, string>>(() => ({

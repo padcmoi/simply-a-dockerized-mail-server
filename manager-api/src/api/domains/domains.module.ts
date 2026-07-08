@@ -8,11 +8,12 @@ import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { CustomPermissionGuardModule } from "../../core/custom-permission-guard/custom-permission-guard.module";
 import { DomainsAliasesModule } from "./aliases/aliases.module";
 import { DomainsDkimModule } from "./dkim/dkim.module";
+import { DomainsDkimCheckModule } from "./dkim-check/dkim-check.module";
 import { DomainsController } from "./domains.controller";
 import { DomainsService } from "./domains.service";
 import { DomainsQuotasModule } from "./quotas/quotas.module";
 import { DomainsRecipientsModule } from "./recipients/recipients.module";
-import { DomainsSpamdModule } from "./spamd/spamd.module";
+import { DomainsRspamdModule } from "./rspamd/rspamd.module";
 
 @Module({
   imports: [
@@ -23,8 +24,9 @@ import { DomainsSpamdModule } from "./spamd/spamd.module";
     DomainsRecipientsModule,
     DomainsAliasesModule,
     DomainsDkimModule,
+    DomainsDkimCheckModule,
     DomainsQuotasModule,
-    DomainsSpamdModule,
+    DomainsRspamdModule,
   ],
   providers: [DomainsService],
   controllers: [DomainsController],

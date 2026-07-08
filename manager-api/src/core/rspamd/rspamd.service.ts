@@ -21,7 +21,7 @@ function sortValue(row: RspamdHistoryRow, key: RspamdSortableColumn): string | n
   }
 }
 
-interface RspamdActions {
+export interface RspamdActions {
   reject: number;
   "soft reject": number;
   "rewrite subject": number;
@@ -38,6 +38,14 @@ export interface RspamdStats {
   spam_count: number;
   ham_count: number;
   connections: number;
+  actions: RspamdActions;
+}
+
+// Rspamd has no per-domain counterpart to its own server-wide /stat endpoint
+// -- this narrower shape is tallied from the same (domain-filtered) /history
+// rows the history endpoint already returns, see DomainsRspamdController.
+export interface RspamdDomainStats {
+  scanned: number;
   actions: RspamdActions;
 }
 

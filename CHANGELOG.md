@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api,ui): rename the domain-scoped "spamd" ACL resource to "rspamd" (was inconsistent with the global "rspamd" resource covering the same feature); its dashboard widget now requires access+read (previously access only) and drops its "recent scans" list now that the dedicated page covers full history; `GET /domains/:domainId/rspamd/history` gains the same search/sort/pagination as the global endpoint, `GET /domains/:domainId/rspamd/stats` now returns the full per-action breakdown instead of an unused 4-bucket shape (08-07-2026)
 - feat(ui): `ConfirmModal` supports two confirmation modes -- `wait` (existing 10s countdown, auto-confirms unless canceled) and `clicks` (click Proceed 10 times in a row, no timer), selectable per call-site via a new `confirmMode` prop; `clicks` is now the default across every existing usage (08-07-2026)
 - feat(api,ui): activate/deactivate a domain from its Administration page -- new `PATCH /domains/:domainId/active`, gated by the "admin" domain resource (`access`+`modify`) rather than the general `domain` modify used by the existing `PATCH /domains/:domainId`, since this is specifically an Administration-page action (08-07-2026)
 - feat(ui): rebuild the domain Administration page as an accordion (Statut du domaine / Clés DKIM / Propriétaire) instead of 3 stacked always-open cards; new reusable `ContentPanel` component gives each section's content the same bordered-box look, used consistently across all three (08-07-2026)

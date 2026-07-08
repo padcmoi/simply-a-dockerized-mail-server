@@ -351,6 +351,10 @@ export interface Locales {
       copied: string;
       statusGenerated: string;
       statusMissing: string;
+      statusMatch: string;
+      statusMismatch: string;
+      dnsMatch: string;
+      dnsMismatch: string;
       confirmGenerate: string;
       confirmGenerateDesc: string;
       confirmRotate: string;
@@ -370,7 +374,9 @@ export interface Locales {
       greylist: string;
       unavailable: string;
       noHistory: string;
-      recentScans: string;
+    };
+    rspamdPage: {
+      subtitle: string;
     };
     postfix: {
       title: string;
@@ -573,7 +579,6 @@ export interface Locales {
         aliases: string;
         quotas: string;
         dkim: string;
-        spamd: string;
         admin: string;
       };
       actionsLabel: {

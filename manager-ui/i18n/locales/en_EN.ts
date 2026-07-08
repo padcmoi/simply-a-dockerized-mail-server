@@ -118,7 +118,7 @@ export default {
     listLocked: "You don't have permission to view the domain list.",
     capacity: {
       title: "Mail volume capacity",
-      hint: "Every domain reserves at least 10 MB — no unlimited quota",
+      hint: "Every domain reserves at least 10 MB, no unlimited quota",
       total: "Total",
       free: "Free on disk",
       reserved: "Reserved by domains",
@@ -244,7 +244,7 @@ export default {
     },
     permissions: {
       title: "Permissions",
-      root: "Root — full access",
+      root: "Root (full access)",
       globalTitle: "Global permissions",
       domainTitle: "Domain permissions",
       empty: "No permissions granted",
@@ -280,7 +280,7 @@ export default {
     groupsPage: {
       alertTitle: "Group membership for this account.",
       alertDescription: "Assign or remove groups; permissions update immediately.",
-      title: "Manage groups — {username}",
+      title: "Manage groups ({username})",
       pickPlaceholder: "Select a group to add",
       add: "Add",
       removeTooltip: "Remove from this group",
@@ -289,7 +289,7 @@ export default {
     editPage: {
       alertTitle: "Edit this account's profile.",
       alertDescription: "Display name, email, avatar and enabled status.",
-      title: "Edit account — {username}",
+      title: "Edit account ({username})",
       nameLabel: "Display name",
       emailLabel: "Email",
       avatarUrlLabel: "Avatar URL",
@@ -354,6 +354,10 @@ export default {
       copied: "Copied to clipboard",
       statusGenerated: "DKIM key generated",
       statusMissing: "No DKIM key generated",
+      statusMatch: "DKIM OK, matches DNS",
+      statusMismatch: "DKIM key doesn't match DNS",
+      dnsMatch: "Matches the published DNS record",
+      dnsMismatch: "Doesn't match the published DNS record",
       confirmGenerate: "Generate DKIM key?",
       confirmGenerateDesc: "A new signing key will be created for this domain.",
       confirmRotate: "Rotate DKIM key?",
@@ -373,7 +377,9 @@ export default {
       greylist: "Greylisted",
       unavailable: "Rspamd unreachable",
       noHistory: "No scan history for this domain yet",
-      recentScans: "Recent scans",
+    },
+    rspamdPage: {
+      subtitle: "Spam filter stats and scan history for this domain.",
     },
     postfix: {
       title: "Postfix queue",
@@ -420,7 +426,7 @@ export default {
     uptime: "uptime {s}s",
     history: {
       title: "Scan history",
-      noData: "No scan history yet — history is persisted in Redis and accumulates over time.",
+      noData: "No scan history yet. History is persisted in Redis and accumulates over time.",
     },
     col: {
       from: "From",
@@ -592,7 +598,6 @@ export default {
         aliases: "Aliases",
         quotas: "Quotas",
         dkim: "DKIM management",
-        spamd: "Spam filtering",
         admin: "Administration",
       },
       actionsLabel: {

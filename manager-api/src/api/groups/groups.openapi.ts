@@ -39,13 +39,13 @@ const permissionsCatalogExample = {
     dependsOn: [],
   },
   domain: {
-    resources: ["domain", "recipients", "aliases", "quotas", "spamd", "admin", "dkim"],
+    resources: ["domain", "recipients", "aliases", "quotas", "rspamd", "admin", "dkim"],
     actions: ["access", "read", "create", "modify", "delete"],
     dependsOn: [
       { resource: "recipients", dependsOn: [{ resource: "domain", action: ["access"] }] },
       { resource: "aliases", dependsOn: [{ resource: "domain", action: ["access"] }] },
       { resource: "quotas", dependsOn: [{ resource: "domain", action: ["access"] }] },
-      { resource: "spamd", dependsOn: [{ resource: "domain", action: ["access"] }] },
+      { resource: "rspamd", dependsOn: [{ resource: "domain", action: ["access"] }] },
       { resource: "admin", dependsOn: [{ resource: "domain", action: ["access"] }] },
       {
         resource: "dkim",
