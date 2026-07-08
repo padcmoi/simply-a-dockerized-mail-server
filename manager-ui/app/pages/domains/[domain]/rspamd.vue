@@ -69,6 +69,8 @@ watchEffect(() => {
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
     </div>
 
+    <RspamdStatTiles :stats="stats" :loading="loading" />
+
     <RspamdStatsCard :stats="stats" :loading="loading" :unavailable="statsUnavailable" />
 
     <UCard>

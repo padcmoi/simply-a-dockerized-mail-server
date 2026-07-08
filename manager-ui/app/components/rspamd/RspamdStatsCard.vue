@@ -20,11 +20,11 @@ const donutData = computed<ChartData<"doughnut">>(() => {
   if (!props.stats) return { labels: [], datasets: [{ data: [], borderWidth: 0 }] };
   const a = props.stats.actions;
   return {
-    labels: ["no action", "reject", "add header", "soft reject", "greylist"],
+    labels: ["no action", "reject", "add header", "rewrite subject", "soft reject", "greylist"],
     datasets: [
       {
-        data: [a["no action"], a.reject, a["add header"], a["soft reject"], a.greylist],
-        backgroundColor: [successColor, errorColor, warningColor, warningColor, primaryColor],
+        data: [a["no action"], a.reject, a["add header"], a["rewrite subject"], a["soft reject"], a.greylist],
+        backgroundColor: [successColor, errorColor, warningColor, warningColor, warningColor, primaryColor],
         borderWidth: 0,
         hoverOffset: 6,
       },
@@ -57,6 +57,7 @@ const legendItems = computed(() => {
     { label: "no action", value: a["no action"], color: "bg-success" },
     { label: "reject", value: a.reject, color: "bg-error" },
     { label: "add header", value: a["add header"], color: "bg-warning" },
+    { label: "rewrite subject", value: a["rewrite subject"], color: "bg-warning" },
     { label: "soft reject", value: a["soft reject"], color: "bg-warning" },
     { label: "greylist", value: a.greylist, color: "bg-primary" },
   ].filter((i) => i.value > 0);
@@ -76,13 +77,13 @@ const legendItems = computed(() => {
     <template v-if="stats" #header>
       <h2 class="font-semibold">{{ t("domainDashboard.rspamd.title") }}</h2>
     </template>
-    <div v-if="loading && !stats" class="flex flex-col sm:flex-row items-center gap-6">
+    <div v-if="loading && !stats" class="flex flex-col sm:flex-row items-center justify-center gap-6">
       <USkeleton class="shrink-0 w-40 h-40 rounded-full" />
-      <div class="space-y-2 w-full">
+      <div class="space-y-2 w-full sm:w-64">
         <USkeleton v-for="i in 5" :key="i" class="h-4 w-full" />
       </div>
     </div>
-    <div v-else-if="stats" class="flex flex-col sm:flex-row items-center gap-6">
+    <div v-else-if="stats" class="flex flex-col sm:flex-row items-center justify-center gap-6">
       <div class="relative shrink-0 w-40 h-40">
         <DoughnutChart :data="donutData" :options="donutOptions" />
         <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -90,12 +91,12 @@ const legendItems = computed(() => {
           <span class="text-xs text-muted">{{ t("domainDashboard.rspamd.scanned") }}</span>
         </div>
       </div>
-      <ul class="space-y-2 text-sm min-w-0 flex-1">
-        <li v-for="item in legendItems" :key="item.label" class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-sm shrink-0" :class="item.color" />
+      <ul class="grid grid-cols-[auto_1fr_auto_auto] items-center gap-x-3 gap-y-2 text-sm min-w-0 w-full sm:w-64">
+        <li v-for="item in legendItems" :key="item.label" class="contents">
+          <span class="w-3 h-3 rounded-sm" :class="item.color" />
           <span class="text-muted">{{ item.label }}</span>
-          <span class="font-medium ml-auto pl-4">{{ item.value.toLocaleString() }}</span>
-          <span class="text-dimmed text-xs w-12 text-right">
+          <span class="font-medium text-right">{{ item.value.toLocaleString() }}</span>
+          <span class="text-dimmed text-xs text-right">
             {{ stats.scanned > 0 ? ((item.value / stats.scanned) * 100).toFixed(1) : "0" }}%
           </span>
         </li>

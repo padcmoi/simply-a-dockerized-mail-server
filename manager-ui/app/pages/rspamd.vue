@@ -44,6 +44,33 @@ const {
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
 const { t } = useI18n();
+const toast = useToast();
+const { isRoot, hasGlobal } = usePermissions();
+const { actions, actionsLoading, saveActions, resetActions } = useRspamdActions();
+
+const bayesStatfiles = computed(() => stats.value?.statfiles ?? []);
+
+// Stricter than the page's own access+read gate: editing a threshold can
+// silently break spam filtering server-wide, see rspamd.controller.ts.
+const canEditActions = computed(() => isRoot.value || (hasGlobal("rspamd", "modify") && hasGlobal("rspamd", "delete")));
+
+async function onSaveActions(input: Parameters<typeof saveActions>[0]) {
+  try {
+    await saveActions(input);
+    toast.add({ title: t("rspamdPage.actions.saved"), color: "success" });
+  } catch (err) {
+    toast.add({ title: t("rspamdPage.actions.saveFailed"), description: (err as Error).message, color: "error" });
+  }
+}
+
+async function onResetActions() {
+  try {
+    await resetActions();
+    toast.add({ title: t("rspamdPage.actions.resetDone"), color: "success" });
+  } catch (err) {
+    toast.add({ title: t("rspamdPage.actions.resetFailed"), description: (err as Error).message, color: "error" });
+  }
+}
 </script>
 
 <template>
@@ -59,7 +86,20 @@ const { t } = useI18n();
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
     </div>
 
+    <RspamdStatTiles :stats="stats" :loading="loading" />
+
     <RspamdStatsCard :stats="stats" :loading="loading" :unavailable="statsUnavailable" />
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <RspamdActionsCard
+        :actions="actions"
+        :loading="actionsLoading"
+        :can-edit="canEditActions"
+        @save="onSaveActions"
+        @reset="onResetActions"
+      />
+      <RspamdBayesCard :statfiles="bayesStatfiles" :loading="loading" />
+    </div>
 
     <UCard>
       <template #header>

@@ -9,9 +9,20 @@ export interface RspamdActions {
   "no action": number;
 }
 
+export interface RspamdBayesStatfile {
+  symbol: string;
+  type: string;
+  users: number;
+  revision: number;
+}
+
 export interface RspamdStats {
   scanned: number;
   actions: RspamdActions;
+  // Global-only (server-wide Bayes classifier): absent on the domain-scoped
+  // endpoint, which only ever returns { scanned, actions }.
+  learned?: number;
+  statfiles?: RspamdBayesStatfile[];
 }
 
 export interface RspamdHistoryItem {

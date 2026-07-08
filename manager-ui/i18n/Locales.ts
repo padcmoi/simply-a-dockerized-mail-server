@@ -372,6 +372,7 @@ export interface Locales {
       spam: string;
       ham: string;
       greylist: string;
+      learned: string;
       unavailable: string;
       noHistory: string;
     };
@@ -432,6 +433,34 @@ export interface Locales {
       score: string;
       size: string;
       time: string;
+    };
+    bayes: {
+      title: string;
+      noData: string;
+      symbol: string;
+      type: string;
+      learns: string;
+      users: string;
+    };
+    actions: {
+      title: string;
+      hint: string;
+      softReject: string;
+      greylist: string;
+      addHeader: string;
+      rewriteSubject: string;
+      reject: string;
+      negativeError: string;
+      orderError: string;
+      save: string;
+      saved: string;
+      saveFailed: string;
+      readOnlyHint: string;
+      reset: string;
+      confirmReset: string;
+      confirmResetDesc: string;
+      resetDone: string;
+      resetFailed: string;
     };
   };
   apiTokens: {
