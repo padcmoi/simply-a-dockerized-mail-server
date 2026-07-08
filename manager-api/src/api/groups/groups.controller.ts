@@ -9,6 +9,7 @@ import {
   AddMemberDocs,
   CreateGroupDocs,
   GetGroupDocs,
+  GetPermissionsCatalogDocs,
   GroupsApi,
   ListGroupsDocs,
   ListMembersDocs,
@@ -23,6 +24,10 @@ import { GroupsService } from "./groups.service";
 import {
   AddMemberDto,
   CreateGroupDto,
+  DOMAIN_RESOURCE_DEPENDS_ON,
+  DOMAIN_RESOURCES,
+  GLOBAL_RESOURCES,
+  PERMISSION_ACTIONS,
   SetDomainPermissionsDto,
   SetGlobalPermissionsDto,
   UpdateGroupDto,
@@ -50,6 +55,22 @@ export class GroupsController {
   @ListGroupsDocs()
   list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
     return this.svc.list(query);
+  }
+
+  // Static catalog, not tied to any specific group -- the single source of
+  // truth for GLOBAL_RESOURCES/DOMAIN_RESOURCES/PERMISSION_ACTIONS, so a
+  // client never has to hardcode its own copy to build a permission grid.
+  // `dependsOn` is included so a client can actually enforce it (e.g. a
+  // resource with a dependency requires its prerequisite to be checked too)
+  // instead of allowing a state the guard would silently treat as inert.
+  @Get("permissions/catalog")
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "read"] }])
+  @GetPermissionsCatalogDocs()
+  getPermissionsCatalog() {
+    return {
+      global: { resources: GLOBAL_RESOURCES, actions: PERMISSION_ACTIONS },
+      domain: { resources: DOMAIN_RESOURCES, actions: PERMISSION_ACTIONS, dependsOn: DOMAIN_RESOURCE_DEPENDS_ON },
+    };
   }
 
   @Post()

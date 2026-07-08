@@ -15,17 +15,52 @@ const props = defineProps<{
   savingDomain: boolean;
 }>();
 
-const GLOBAL_RESOURCES = ["sieve", "rspamd", "postfix", "accounts", "api-tokens", "groups", "domains"] as const;
-const DOMAIN_RESOURCES = ["domain", "recipients", "aliases", "quotas", "dkim", "spamd"] as const;
-const ACTIONS = ["access", "read", "create", "modify", "delete"] as const;
-
-const { t } = useI18n();
-
 const activeTab = ref<"global" | "domain">("global");
 const selectedDomainId = ref<number | undefined>(undefined);
 
 const globalSet = reactive(new Set<string>());
 const domainSets = reactive(new Map<number, Set<string>>());
+
+const { t } = useI18n();
+const { call } = useApi();
+
+// Single source of truth for the resource/action catalog is the API, not a
+// hardcoded copy here -- see GroupsController.getPermissionsCatalog. A
+// resource with no matching key in resourceLabels below just falls back to
+// showing its raw name (see the template), which is fine: adding a new
+// resource server-side must never require a matching frontend release.
+interface DependsOnEntry {
+  resource: string;
+  action: string[];
+}
+interface PermissionsCatalog {
+  global: { resources: string[]; actions: string[] };
+  domain: {
+    resources: string[];
+    actions: string[];
+    dependsOn?: { resource: string; dependsOn: DependsOnEntry[] }[];
+  };
+}
+const { data: catalog, status: catalogStatus } = useAsyncData<PermissionsCatalog | null>(
+  "groups-permissions-catalog",
+  () => call<PermissionsCatalog>("/groups/permissions/catalog"),
+  { server: false, default: () => null }
+);
+const catalogLoading = computed(() => catalogStatus.value !== "success" && catalogStatus.value !== "error");
+const GLOBAL_RESOURCES = computed(() => catalog.value?.global.resources ?? []);
+const DOMAIN_RESOURCES = computed(() => catalog.value?.domain.resources ?? []);
+const ACTIONS = computed(() => catalog.value?.global.actions ?? []);
+// Per domain resource, the (resource, action[]) pairs it requires to have any
+// effect at all -- every dependsOn entry AND every action within one entry's
+// action[] is mandatory (the guard enforces this at check time regardless of
+// what's saved -- see permission-catalog.ts's DOMAIN_RESOURCE_DEPENDS_ON).
+// Reshaped from the fetched array into a lookup map for O(1) access below;
+// not a hardcoded copy, purely a local view over the fetched data.
+const domainDependsOn = computed(() => {
+  const map: Record<string, DependsOnEntry[]> = {};
+  for (const entry of catalog.value?.domain.dependsOn ?? []) map[entry.resource] = entry.dependsOn;
+  return map;
+});
 
 const tabItems = computed(() => [
   { label: t("groups.permissions.tabs.global"), value: "global" as const, slot: "global" as const },
@@ -45,6 +80,7 @@ const resourceLabels = computed<Record<string, string>>(() => ({
   aliases: t("groups.permissions.resources.aliases"),
   quotas: t("groups.permissions.resources.quotas"),
   dkim: t("groups.permissions.resources.dkim"),
+  admin: t("groups.permissions.resources.admin"),
   spamd: t("groups.permissions.resources.spamd"),
 }));
 
@@ -99,8 +135,8 @@ function syncFromProps() {
 
 const debouncedSaveGlobal = useDebounceFn(() => {
   const permissions: { resource: string; action: string }[] = [];
-  for (const resource of GLOBAL_RESOURCES) {
-    for (const action of ACTIONS) {
+  for (const resource of GLOBAL_RESOURCES.value) {
+    for (const action of ACTIONS.value) {
       if (globalSet.has(permKey(resource, action))) permissions.push({ resource, action });
     }
   }
@@ -110,8 +146,8 @@ const debouncedSaveGlobal = useDebounceFn(() => {
 const debouncedSaveDomain = useDebounceFn(() => {
   const permissions: { domainId: number; resource: string; action: string }[] = [];
   for (const [domainId, set] of domainSets) {
-    for (const resource of DOMAIN_RESOURCES) {
-      for (const action of ACTIONS) {
+    for (const resource of DOMAIN_RESOURCES.value) {
+      for (const action of ACTIONS.value) {
         if (set.has(permKey(resource, action))) permissions.push({ domainId, resource, action });
       }
     }
@@ -124,7 +160,7 @@ const debouncedSaveDomain = useDebounceFn(() => {
 // checked-but-disabled state.
 function applyToggle(set: Set<string>, resource: string, action: string, checked: boolean) {
   if (action === "access" && !checked) {
-    for (const a of ACTIONS) set.delete(permKey(resource, a));
+    for (const a of ACTIONS.value) set.delete(permKey(resource, a));
     return;
   }
   const key = permKey(resource, action);
@@ -133,10 +169,33 @@ function applyToggle(set: Set<string>, resource: string, action: string, checked
 }
 
 function setResourceAll(set: Set<string>, resource: string, checked: boolean) {
-  for (const a of ACTIONS) {
+  for (const a of ACTIONS.value) {
     const key = permKey(resource, a);
     if (checked) set.add(key);
     else set.delete(key);
+  }
+}
+
+// Cross-resource counterpart of applyToggle's own-resource "access" rule
+// above. Checking any action on a resource that has a dependsOn also grants
+// every action of its prerequisite(s) (so it's never checked-but-inert).
+// Unchecking clears every resource whose dependsOn required one of the
+// actions just cleared on THIS resource -- general on purpose (a resource's
+// prerequisite isn't always "domain", e.g. dkim also depends on admin), not
+// hardcoded to any one resource name. Single-level: doesn't re-cascade if
+// clearing a dependent breaks a further dependent of its own -- the current
+// catalog is only 2 levels deep and dkim, the only 2nd-level resource, has
+// no dependents itself.
+function enforceDependsOn(set: Set<string>, resource: string, clearedActions: string[], checked: boolean) {
+  if (checked) {
+    for (const dep of domainDependsOn.value[resource] ?? []) {
+      for (const action of dep.action) set.add(permKey(dep.resource, action));
+    }
+    return;
+  }
+  for (const [dependent, deps] of Object.entries(domainDependsOn.value)) {
+    const broken = deps.some((d) => d.resource === resource && d.action.some((a) => clearedActions.includes(a)));
+    if (broken) setResourceAll(set, dependent, false);
   }
 }
 
@@ -147,7 +206,14 @@ function toggleGlobal(resource: string, action: string, checked: boolean) {
 
 function toggleDomain(resource: string, action: string, checked: boolean) {
   if (selectedDomainId.value === undefined) return;
-  applyToggle(getOrCreateDomainSet(selectedDomainId.value), resource, action, checked);
+  const set = getOrCreateDomainSet(selectedDomainId.value);
+  applyToggle(set, resource, action, checked);
+  // Mirrors applyToggle's own cascade: unchecking "access" clears every
+  // action on this resource, not just "access" itself, so a dependent whose
+  // requirement targets a different action (e.g. admin:read) must still see
+  // it as cleared.
+  const clearedActions = !checked && action === "access" ? [...ACTIONS.value] : [action];
+  enforceDependsOn(set, resource, clearedActions, checked);
   debouncedSaveDomain();
 }
 
@@ -158,19 +224,21 @@ function checkAllGlobalResource(resource: string, checked: boolean) {
 
 function checkAllDomainResource(resource: string, checked: boolean) {
   if (selectedDomainId.value === undefined) return;
-  setResourceAll(getOrCreateDomainSet(selectedDomainId.value), resource, checked);
+  const set = getOrCreateDomainSet(selectedDomainId.value);
+  setResourceAll(set, resource, checked);
+  enforceDependsOn(set, resource, [...ACTIONS.value], checked);
   debouncedSaveDomain();
 }
 
 function checkAllGlobalTab(checked: boolean) {
-  for (const resource of GLOBAL_RESOURCES) setResourceAll(globalSet, resource, checked);
+  for (const resource of GLOBAL_RESOURCES.value) setResourceAll(globalSet, resource, checked);
   debouncedSaveGlobal();
 }
 
 function checkAllDomainTab(checked: boolean) {
   if (selectedDomainId.value === undefined) return;
   const set = getOrCreateDomainSet(selectedDomainId.value);
-  for (const resource of DOMAIN_RESOURCES) setResourceAll(set, resource, checked);
+  for (const resource of DOMAIN_RESOURCES.value) setResourceAll(set, resource, checked);
   debouncedSaveDomain();
 }
 
@@ -205,8 +273,12 @@ function removeDomainAssignment(domainId: number) {
             </div>
           </div>
 
+          <div v-if="catalogLoading" class="space-y-4">
+            <USkeleton v-for="i in 4" :key="i" class="h-24 w-full rounded-lg" />
+          </div>
           <GroupPermissionResourceBlock
             v-for="resource in GLOBAL_RESOURCES"
+            v-else
             :key="resource"
             :resource="resource"
             :label="resourceLabels[resource] ?? resource"
@@ -247,7 +319,13 @@ function removeDomainAssignment(domainId: number) {
             </span>
           </div>
 
-          <p v-if="selectedDomainId === undefined" class="text-sm text-muted">{{ t("groups.permissions.noDomainsAssigned") }}</p>
+          <div v-if="catalogLoading" class="space-y-4">
+            <USkeleton v-for="i in 4" :key="i" class="h-24 w-full rounded-lg" />
+          </div>
+
+          <p v-else-if="selectedDomainId === undefined" class="text-sm text-muted">
+            {{ t("groups.permissions.noDomainsAssigned") }}
+          </p>
 
           <template v-else>
             <div class="flex items-center justify-between gap-2 flex-wrap">

@@ -1,18 +1,16 @@
 import { z } from "zod";
+import {
+  DOMAIN_RESOURCE_DEPENDS_ON,
+  DOMAIN_RESOURCES,
+  GLOBAL_RESOURCES,
+  PERMISSION_ACTIONS,
+} from "../../core/custom-permission-guard/permission-catalog";
 
-// Global resources (independent of any domain) -- acls.md.
-export const GLOBAL_RESOURCES = ["sieve", "rspamd", "postfix", "accounts", "api-tokens", "groups", "domains"] as const;
+// Re-exported, not redeclared: permission-catalog.ts is the single
+// canonical source for this catalog -- see its own header comment.
+export { GLOBAL_RESOURCES, DOMAIN_RESOURCES, PERMISSION_ACTIONS, DOMAIN_RESOURCE_DEPENDS_ON };
 export type GlobalResource = (typeof GLOBAL_RESOURCES)[number];
-
-// Domain-scoped resources -- backend-acl-domain.md. `domain` is the gate
-// resource: "this domain is assigned to the group", checked before any of
-// the others for a given domain_id.
-export const DOMAIN_RESOURCES = ["domain", "recipients", "aliases", "quotas", "dkim", "spamd"] as const;
 export type DomainResource = (typeof DOMAIN_RESOURCES)[number];
-
-// `access` is a mandatory prerequisite to the other 4: without it, the other
-// actions have no effect even if granted (enforced by @naskot/custom-permission-guard).
-export const PERMISSION_ACTIONS = ["access", "read", "create", "modify", "delete"] as const;
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];
 
 export const createGroupSchema = z.object({

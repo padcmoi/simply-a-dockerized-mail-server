@@ -28,6 +28,31 @@ const groupDetailExample = {
 
 const groupMembersExample = [{ id: 4, username: "jdoe", name: "John Doe", email: "jdoe@example.com" }];
 
+const permissionsCatalogExample = {
+  global: {
+    resources: ["sieve", "rspamd", "postfix", "accounts", "api-tokens", "groups", "domains"],
+    actions: ["access", "read", "create", "modify", "delete"],
+  },
+  domain: {
+    resources: ["domain", "recipients", "aliases", "quotas", "spamd", "admin", "dkim"],
+    actions: ["access", "read", "create", "modify", "delete"],
+    dependsOn: [
+      { resource: "recipients", dependsOn: [{ resource: "domain", action: ["access"] }] },
+      { resource: "aliases", dependsOn: [{ resource: "domain", action: ["access"] }] },
+      { resource: "quotas", dependsOn: [{ resource: "domain", action: ["access"] }] },
+      { resource: "spamd", dependsOn: [{ resource: "domain", action: ["access"] }] },
+      { resource: "admin", dependsOn: [{ resource: "domain", action: ["access"] }] },
+      {
+        resource: "dkim",
+        dependsOn: [
+          { resource: "domain", action: ["access"] },
+          { resource: "admin", action: ["access"] },
+        ],
+      },
+    ],
+  },
+};
+
 const idParam = () => ApiParam({ name: "id", type: Number, description: "groups.id" });
 
 export const ListGroupsDocs = () =>
@@ -36,6 +61,25 @@ export const ListGroupsDocs = () =>
     ApiOperation({ summary: "List all groups, paginated" }),
     ApiResponse({ status: 200, description: "Groups returned", schema: { example: paginatedExample(groupItemExample) } }),
     ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
+    ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:read global permission" })
+  );
+
+export const GetPermissionsCatalogDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "List every resource/action a group permission can target",
+      description:
+        "Static catalog, not tied to any specific group -- the exact same GLOBAL_RESOURCES/DOMAIN_RESOURCES/" +
+        "PERMISSION_ACTIONS enforced server-side by the Zod validation on set*Permissions. Lets a client build the " +
+        "permission grid without hardcoding its own copy of this list. `domain.dependsOn` lists, per resource, which " +
+        "other (resource, action[]) pairs must also be granted for that resource's own actions to have any effect -- " +
+        "every entry is mandatory (AND): every dependsOn array entry, and every action listed within one entry's " +
+        'action[]. Every domain resource except "domain" itself requires at least domain:access (dkim also ' +
+        "requires admin:access); the guard enforces this at check time regardless of what's saved, so a client " +
+        "should reflect it too rather than allow a state that looks granted but is actually inert.",
+    }),
+    ApiResponse({ status: 200, description: "Catalog returned", schema: { example: permissionsCatalogExample } }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
     ApiResponse({ status: 403, description: "Missing groups:access + groups:read global permission" })
   );
