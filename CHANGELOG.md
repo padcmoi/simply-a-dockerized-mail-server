@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): `ConfirmModal` supports two confirmation modes -- `wait` (existing 10s countdown, auto-confirms unless canceled) and `clicks` (click Proceed 10 times in a row, no timer), selectable per call-site via a new `confirmMode` prop; `clicks` is now the default across every existing usage (08-07-2026)
 - feat(api,ui): activate/deactivate a domain from its Administration page -- new `PATCH /domains/:domainId/active`, gated by the "admin" domain resource (`access`+`modify`) rather than the general `domain` modify used by the existing `PATCH /domains/:domainId`, since this is specifically an Administration-page action (08-07-2026)
 - feat(ui): rebuild the domain Administration page as an accordion (Statut du domaine / Clés DKIM / Propriétaire) instead of 3 stacked always-open cards; new reusable `ContentPanel` component gives each section's content the same bordered-box look, used consistently across all three (08-07-2026)
 - refactor(ui): organize `components/` into business-domain subfolders (`accounts/`, `api-tokens/`, `domains/`, `groups/`, `sieve/`, `ui/` for cross-cutting components reused across every domain, plus the existing `charts/`) instead of one flat 27-file directory; `nuxt.config.ts` sets `pathPrefix: false` so every component keeps its existing tag name regardless of subfolder -- `<ChartsBarChart>`/`<ChartsDoughnutChart>` (the one pair that relied on the old default prefixing) become `<BarChart>`/`<DoughnutChart>` (08-07-2026)
@@ -164,6 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(ui): `ConfirmModal`'s click-to-confirm mode could fire `confirm` twice when spam-clicking -- `update:open(false)` doesn't remove the button from the DOM instantly, so a click landing in that window re-triggered the threshold check; now guarded (extra clicks past the 10th are a no-op) and the button disables once reached (08-07-2026)
 - fix(ui): close the mobile sidebar overlay on every navigation instead of leaving it stuck open -- `USidebar` switches to a slideover under 1024px but doesn't close itself on nav clicks; watches the route and force-closes only below that breakpoint, so desktop's icon-rail collapse behavior is untouched (08-07-2026)
 - fix(ui): truncate long group descriptions instead of overflowing the table horizontally (08-07-2026)
 - fix(api,ui): stop `sieve_reject_senders.created_at` from auto-updating on every change; add a proper `updated_at` column instead (backfilled to each row's own `created_at`, not the migration's run time) and show it as its own column/field on the Sieve blocklist page (07-07-2026)
