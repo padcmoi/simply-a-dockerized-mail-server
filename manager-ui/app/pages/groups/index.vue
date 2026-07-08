@@ -133,7 +133,9 @@ async function onDeleteConfirmed() {
             </div>
           </template>
           <template #description-cell="{ row }">
-            <span class="text-muted text-sm">{{ row.original.description || t("groups.noDescription") }}</span>
+            <span class="text-muted text-sm truncate block max-w-80">{{
+              row.original.description || t("groups.noDescription")
+            }}</span>
           </template>
           <template #ownerUsername-cell="{ row }">
             <span class="text-muted text-sm">{{ row.original.ownerUsername ?? "-" }}</span>
