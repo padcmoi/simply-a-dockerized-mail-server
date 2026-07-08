@@ -2,7 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, NotFoundException } 
 import { InjectRepository } from "@nestjs/typeorm";
 import { CustomPermissionGuardConfigError } from "@naskot/custom-permission-guard";
 import { In, Like, Not, Repository } from "typeorm";
-import type { PaginationQuery } from "../../core/common/pagination.validation";
+import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { Account } from "../../core/entities/account.entity";
@@ -12,6 +12,11 @@ import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { CreateGroupDto, SetDomainPermissionsDto, SetGlobalPermissionsDto, UpdateGroupDto } from "./groups.validation";
 
 type ActingUser = { id: number; isRoot: boolean };
+
+// `ownerUsername`/`memberCount` (enriched post-query, see `enrichGroups`)
+// aren't real columns on `groups` -- not sortable without a join/subquery,
+// out of scope here.
+export const GROUPS_SORTABLE_COLUMNS = ["name", "description", "createdAt"] as const;
 
 @Injectable()
 export class GroupsService {
@@ -34,9 +39,10 @@ export class GroupsService {
     }
 
     const where = query.search ? [{ name: Like(`%${query.search}%`) }, { description: Like(`%${query.search}%`) }] : {};
+    const sortBy = resolveSortColumn(query.sortBy, GROUPS_SORTABLE_COLUMNS, "createdAt");
     const [rows, total] = await this.groups.findAndCount({
       where,
-      order: { createdAt: query.sortDir === "asc" ? "ASC" : "DESC" },
+      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
       skip: query.offset,
       take: query.limit,
     });

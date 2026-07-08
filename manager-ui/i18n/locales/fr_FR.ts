@@ -56,8 +56,6 @@ export default {
     manage: "Gérer",
     search: "Rechercher...",
     itemsPerPage: "Par page",
-    sortNewestFirst: "Plus récent d'abord",
-    sortOldestFirst: "Plus ancien d'abord",
     noResults: "Aucun résultat",
     totalCount: "{count} au total",
   },

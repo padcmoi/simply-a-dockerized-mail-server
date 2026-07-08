@@ -2,6 +2,12 @@ import { applyDecorators } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery } from "../../../core/common/pagination.openapi";
 
+// `id` has no dedicated UI column/header but stays an accepted value since
+// it's the existing default -- keeps `resolveSortColumn`'s fallback
+// type-safe without a cast. Lives here (not the controller) since the
+// controller already imports from this file -- the reverse would be circular.
+export const QUOTAS_SORTABLE_COLUMNS = ["email", "bytes", "messages", "lastActivity", "id"] as const;
+
 export const QuotasApi = () =>
   applyDecorators(
     ApiTags("domain-quotas"),
@@ -24,7 +30,7 @@ const recipientQuotaExample = {
 
 export const GetDomainQuotasDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(),
+    ApiPaginationQuery(QUOTAS_SORTABLE_COLUMNS),
     ApiOperation({
       summary: "Live quota snapshot for this domain: aggregate counters + paginated per-recipient counters from dovecot",
       description:

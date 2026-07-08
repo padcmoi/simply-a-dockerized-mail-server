@@ -30,6 +30,7 @@ export function useRspamdPage() {
   const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
   const search = ref("");
   const debouncedSearch = ref("");
+  const sortBy = ref("time");
   const sortDir = ref<"asc" | "desc">("desc");
 
   const { call } = useApi();
@@ -73,11 +74,16 @@ export function useRspamdPage() {
         limit: String(limit.value),
         offset: String((page.value - 1) * limit.value),
         sortDir: sortDir.value,
+        sortBy: sortBy.value,
       });
       if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
       return call<{ items: RspamdHistoryRow[]; total: number }>(`/rspamd/history?${qs.toString()}`);
     },
-    { server: false, watch: [page, limit, sortDir, debouncedSearch, tick], default: () => ({ items: [], total: 0 }) }
+    {
+      server: false,
+      watch: [page, limit, sortBy, sortDir, debouncedSearch, tick],
+      default: () => ({ items: [], total: 0 }),
+    }
   );
 
   const stats = computed(() => statsData.value);
@@ -121,6 +127,7 @@ export function useRspamdPage() {
     page,
     limit,
     search,
+    sortBy,
     sortDir,
     load,
   };

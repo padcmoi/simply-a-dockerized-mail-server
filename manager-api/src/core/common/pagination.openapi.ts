@@ -5,7 +5,7 @@ import { ApiQuery } from "@nestjs/swagger";
 // pagination.validation.ts). `limit` absent = legacy unpaginated array,
 // kept for internal-only consumers (dashboards, pickers) -- not part of
 // the documented public contract, so it isn't called out below.
-export const ApiPaginationQuery = () =>
+export const ApiPaginationQuery = (sortableColumns: readonly string[]) =>
   applyDecorators(
     ApiQuery({ name: "limit", required: false, enum: [10, 25, 50], description: "Page size" }),
     ApiQuery({ name: "offset", required: false, type: Number, description: "Rows to skip" }),
@@ -14,7 +14,13 @@ export const ApiPaginationQuery = () =>
       name: "sortDir",
       required: false,
       enum: ["asc", "desc"],
-      description: "asc = oldest first, desc = newest first (default)",
+      description: "asc = ascending, desc = descending (default)",
+    }),
+    ApiQuery({
+      name: "sortBy",
+      required: false,
+      enum: sortableColumns,
+      description: "Column to sort by; falls back to the endpoint's default when absent or unrecognized",
     })
   );
 

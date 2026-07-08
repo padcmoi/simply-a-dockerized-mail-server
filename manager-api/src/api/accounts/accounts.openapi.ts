@@ -1,6 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
+import { ACCOUNTS_SORTABLE_COLUMNS } from "./accounts.service";
 
 export const AccountsApi = () => applyDecorators(ApiTags("accounts"), ApiSecurity("apiToken"));
 
@@ -29,7 +30,7 @@ export const ListAccountNamesDocs = () =>
 
 export const ListAccountsDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(),
+    ApiPaginationQuery(ACCOUNTS_SORTABLE_COLUMNS),
     ApiOperation({
       summary: "List all manager accounts with their groups, paginated (root only)",
     }),

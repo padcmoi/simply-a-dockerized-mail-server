@@ -18,11 +18,20 @@ const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 const form = reactive({ sender: "" });
 
+// Same source feeds the desktop column headers below and ListToolbar's
+// mobile sort select.
+const SORTABLE_COLUMNS = computed(() => [
+  { key: "sender", label: t("sieve.table.sender") },
+  { key: "enabled", label: t("sieve.table.enabled") },
+  { key: "createdAt", label: t("sieve.table.created") },
+  { key: "updatedAt", label: t("sieve.table.updated") },
+]);
+
 const columns = computed(() => [
-  { accessorKey: "sender", header: t("sieve.table.sender") },
-  { accessorKey: "enabled", header: t("sieve.table.enabled") },
-  { accessorKey: "createdAt", header: t("sieve.table.created") },
-  { accessorKey: "updatedAt", header: t("sieve.table.updated") },
+  { accessorKey: "sender", header: header("sender", t("sieve.table.sender")) },
+  { accessorKey: "enabled", header: header("enabled", t("sieve.table.enabled")) },
+  { accessorKey: "createdAt", header: header("createdAt", t("sieve.table.created")) },
+  { accessorKey: "updatedAt", header: header("updatedAt", t("sieve.table.updated")) },
   { id: "actions", header: "" },
 ]);
 
@@ -33,10 +42,13 @@ const { set: setBreadcrumb } = useBreadcrumb();
 
 setBreadcrumb([{ label: t("nav.sieveLong") }]);
 
-const { items, total, loading, hasLoadedOnce, page, limit, search, sortDir, load } = usePaginatedList<Reject>(
+const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<Reject>(
   "sieve-reject-senders-list",
-  "/sieve/reject-senders"
+  "/sieve/reject-senders",
+  "createdAt"
 );
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 async function create() {
   try {
@@ -98,7 +110,14 @@ async function onDeleteConfirmed() {
       </UForm>
     </UCard>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
+    <ListToolbar
+      v-model:search="search"
+      v-model:limit="limit"
+      v-model:sort-by="sortBy"
+      v-model:sort-dir="sortDir"
+      :total="total"
+      :sortable-columns="SORTABLE_COLUMNS"
+    />
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 

@@ -28,9 +28,12 @@ const {
   page,
   limit,
   search,
+  sortBy,
   sortDir,
   load,
-} = usePaginatedList<ManagerAccount>("accounts-list", "/accounts");
+} = usePaginatedList<ManagerAccount>("accounts-list", "/accounts", "createdAt");
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 const inviteOpen = ref(false);
 const inviteSending = ref(false);
@@ -48,12 +51,23 @@ const { groups } = useGroups();
 
 const groupInviteOptions = computed(() => groups.value.map((g) => ({ label: g.name, value: g.id })));
 
+// `group` has no matching real column (computed post-query, see
+// accounts.service.ts's enrichWithGroups) -- not sortable, stays a plain
+// header. Same source feeds the desktop column headers below and
+// ListToolbar's mobile sort select.
+const SORTABLE_COLUMNS = computed(() => [
+  { key: "username", label: t("accounts.table.username") },
+  { key: "name", label: t("accounts.table.name") },
+  { key: "email", label: t("accounts.table.email") },
+  { key: "enabled", label: t("accounts.table.status") },
+]);
+
 const columns = computed(() => [
-  { accessorKey: "username", header: t("accounts.table.username") },
-  { accessorKey: "name", header: t("accounts.table.name") },
-  { accessorKey: "email", header: t("accounts.table.email") },
+  { accessorKey: "username", header: header("username", t("accounts.table.username")) },
+  { accessorKey: "name", header: header("name", t("accounts.table.name")) },
+  { accessorKey: "email", header: header("email", t("accounts.table.email")) },
   { id: "group", header: t("accounts.table.group") },
-  { id: "status", header: t("accounts.table.status") },
+  { id: "status", header: header("enabled", t("accounts.table.status")) },
   { id: "actions", header: "" },
 ]);
 
@@ -118,7 +132,14 @@ async function onDeleteConfirmed() {
       </UButton>
     </div>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
+    <ListToolbar
+      v-model:search="search"
+      v-model:limit="limit"
+      v-model:sort-by="sortBy"
+      v-model:sort-dir="sortDir"
+      :total="total"
+      :sortable-columns="SORTABLE_COLUMNS"
+    />
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
 

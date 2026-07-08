@@ -13,9 +13,18 @@ const saving = ref(false);
 const confirmOpen = ref(false);
 const pendingDelete = ref<GroupItem | null>(null);
 
+// `ownerUsername`/`memberCount` have no matching real column (computed
+// post-query, see groups.service.ts's enrichGroups) -- not sortable, stay
+// plain headers. Same source feeds the desktop column headers below and
+// ListToolbar's mobile sort select.
+const SORTABLE_COLUMNS = computed(() => [
+  { key: "name", label: t("groups.table.name") },
+  { key: "description", label: t("groups.table.description") },
+]);
+
 const columns = computed(() => [
-  { accessorKey: "name", header: t("groups.table.name") },
-  { accessorKey: "description", header: t("groups.table.description") },
+  { accessorKey: "name", header: header("name", t("groups.table.name")) },
+  { accessorKey: "description", header: header("description", t("groups.table.description")) },
   { accessorKey: "ownerUsername", header: t("groups.table.owner") },
   { accessorKey: "memberCount", header: t("groups.table.members") },
   { id: "actions", header: "" },
@@ -38,9 +47,12 @@ const {
   page,
   limit,
   search,
+  sortBy,
   sortDir,
   load,
-} = usePaginatedList<GroupItem>("groups-list", "/groups");
+} = usePaginatedList<GroupItem>("groups-list", "/groups", "createdAt");
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 function openCreate() {
   modalOpen.value = true;
@@ -96,7 +108,14 @@ async function onDeleteConfirmed() {
       </UButton>
     </div>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
+    <ListToolbar
+      v-model:search="search"
+      v-model:limit="limit"
+      v-model:sort-by="sortBy"
+      v-model:sort-dir="sortDir"
+      :total="total"
+      :sortable-columns="SORTABLE_COLUMNS"
+    />
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 

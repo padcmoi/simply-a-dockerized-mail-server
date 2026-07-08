@@ -71,13 +71,24 @@ const legendItems = computed(() => {
   ].filter((i) => i.value > 0);
 });
 
+// Same source feeds the desktop column headers below and ListToolbar's
+// mobile sort select.
+const SORTABLE_COLUMNS = computed(() => [
+  { key: "sender_smtp", label: t("rspamdPage.col.from") },
+  { key: "rcpt", label: t("rspamdPage.col.to") },
+  { key: "action", label: t("rspamdPage.col.action") },
+  { key: "score", label: t("rspamdPage.col.score") },
+  { key: "size", label: t("rspamdPage.col.size") },
+  { key: "time", label: t("rspamdPage.col.time") },
+]);
+
 const tableColumns = computed(() => [
-  { accessorKey: "sender_smtp", header: t("rspamdPage.col.from") },
-  { accessorKey: "rcpt", header: t("rspamdPage.col.to") },
-  { id: "action", header: t("rspamdPage.col.action") },
-  { id: "score", header: t("rspamdPage.col.score") },
-  { id: "size", header: t("rspamdPage.col.size") },
-  { accessorKey: "time", header: t("rspamdPage.col.time") },
+  { accessorKey: "sender_smtp", header: header("sender_smtp", t("rspamdPage.col.from")) },
+  { accessorKey: "rcpt", header: header("rcpt", t("rspamdPage.col.to")) },
+  { id: "action", header: header("action", t("rspamdPage.col.action")) },
+  { id: "score", header: header("score", t("rspamdPage.col.score")) },
+  { id: "size", header: header("size", t("rspamdPage.col.size")) },
+  { accessorKey: "time", header: header("time", t("rspamdPage.col.time")) },
 ]);
 
 const tableRows = computed<HistoryRow[]>(() =>
@@ -104,9 +115,12 @@ const {
   page,
   limit,
   search,
+  sortBy,
   sortDir,
   load,
 } = useRspamdPage();
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
 const colorMode = useColorMode();
 const { t } = useI18n();
 </script>
@@ -169,7 +183,13 @@ const { t } = useI18n();
       </template>
 
       <div class="mb-4">
-        <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" />
+        <ListToolbar
+          v-model:search="search"
+          v-model:limit="limit"
+          v-model:sort-by="sortBy"
+          v-model:sort-dir="sortDir"
+          :sortable-columns="SORTABLE_COLUMNS"
+        />
       </div>
 
       <div v-if="!historyHasLoadedOnce" class="space-y-2">

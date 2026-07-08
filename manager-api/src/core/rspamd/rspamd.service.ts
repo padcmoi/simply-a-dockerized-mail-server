@@ -1,5 +1,25 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import type { PaginatedResult, PaginationQuery } from "../common/pagination.validation";
+import { resolveSortColumn, type PaginatedResult, type PaginationQuery } from "../common/pagination.validation";
+
+export const RSPAMD_HISTORY_SORTABLE_COLUMNS = ["sender_smtp", "rcpt", "action", "score", "size", "time"] as const;
+type RspamdSortableColumn = (typeof RSPAMD_HISTORY_SORTABLE_COLUMNS)[number];
+
+function sortValue(row: RspamdHistoryRow, key: RspamdSortableColumn): string | number {
+  switch (key) {
+    case "sender_smtp":
+      return row.sender_smtp ?? "";
+    case "rcpt":
+      return row.rcpt_smtp?.[0] ?? "";
+    case "action":
+      return row.action ?? "";
+    case "score":
+      return row.score;
+    case "size":
+      return row.size;
+    case "time":
+      return row.unix_time;
+  }
+}
 
 interface RspamdActions {
   reject: number;
@@ -100,7 +120,15 @@ export class RspamdService {
           r.subject?.toLowerCase().includes(term)
       );
     }
-    if (query.sortDir === "asc") rows = [...rows].reverse();
+    const sortBy = resolveSortColumn(query.sortBy, RSPAMD_HISTORY_SORTABLE_COLUMNS, "time");
+    const dir = query.sortDir === "asc" ? 1 : -1;
+    rows = [...rows].sort((a, b) => {
+      const av = sortValue(a, sortBy);
+      const bv = sortValue(b, sortBy);
+      if (av < bv) return -dir;
+      if (av > bv) return dir;
+      return 0;
+    });
 
     const total = rows.length;
     const items = rows.slice(query.offset, query.offset + query.limit);

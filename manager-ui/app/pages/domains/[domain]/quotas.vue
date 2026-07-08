@@ -19,6 +19,7 @@ const page = ref(1);
 const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
 const search = ref("");
 const debouncedSearch = ref("");
+const sortBy = ref("id");
 const sortDir = ref<"asc" | "desc">("desc");
 // `hasLoadedOnce` (NOT `recipientRows.length === 0`) gates both skeletons
 // below: a genuinely empty result would otherwise re-show them on every
@@ -32,6 +33,19 @@ const { call } = useApi();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { tick } = useDataRefresh();
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
+
+// Single source for both the desktop clickable headers and the mobile
+// select's column x direction options (ListToolbar's `sortable-columns` prop)
+// -- the "per domain" table below has none of this: it's a single aggregate
+// row, never paginated/sorted.
+const RECIPIENT_SORTABLE_COLUMNS = computed(() => [
+  { key: "email", label: t("common.address") },
+  { key: "bytes", label: t("common.bytes") },
+  { key: "messages", label: t("common.messages") },
+  { key: "lastActivity", label: t("common.lastActivity") },
+]);
 
 const domainCols = computed(() => [
   { accessorKey: "domain", header: t("common.domain") },
@@ -39,12 +53,9 @@ const domainCols = computed(() => [
   { accessorKey: "messages", header: t("common.messages") },
   { accessorKey: "lastActivity", header: t("common.lastActivity") },
 ]);
-const recipientCols = computed(() => [
-  { accessorKey: "email", header: t("common.address") },
-  { accessorKey: "bytes", header: t("common.bytes") },
-  { accessorKey: "messages", header: t("common.messages") },
-  { accessorKey: "lastActivity", header: t("common.lastActivity") },
-]);
+const recipientCols = computed(() =>
+  RECIPIENT_SORTABLE_COLUMNS.value.map((c) => ({ accessorKey: c.key, header: header(c.key, c.label) }))
+);
 
 // The "per domain" table is a single aggregate row, never paginated -- only
 // "per recipient" is (nested `recipients: { items, total }` in the same
@@ -73,13 +84,14 @@ const { data, status, refresh } = useAsyncData<{
       limit: String(limit.value),
       offset: String((page.value - 1) * limit.value),
       sortDir: sortDir.value,
+      sortBy: sortBy.value,
     });
     if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
     return call(`/domains/${domainId.value}/quotas?${qs.toString()}`);
   },
   {
     server: false,
-    watch: [page, limit, sortDir, debouncedSearch, tick, domainId],
+    watch: [page, limit, sortBy, sortDir, debouncedSearch, tick, domainId],
     default: () => ({ domain: null, recipients: { items: [], total: 0 } }),
   }
 );
@@ -143,7 +155,14 @@ async function load() {
       </div>
     </template>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
+    <ListToolbar
+      v-model:search="search"
+      v-model:limit="limit"
+      v-model:sort-by="sortBy"
+      v-model:sort-dir="sortDir"
+      :total="total"
+      :sortable-columns="RECIPIENT_SORTABLE_COLUMNS"
+    />
 
     <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
       {{ t("quotas.perRecipient") }}

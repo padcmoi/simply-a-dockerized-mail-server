@@ -54,8 +54,6 @@ export interface Locales {
     manage: string;
     search: string;
     itemsPerPage: string;
-    sortNewestFirst: string;
-    sortOldestFirst: string;
     noResults: string;
     totalCount: string;
   };

@@ -17,9 +17,16 @@ const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 const form = reactive({ localPart: "", destination: "" });
 
+// Same source feeds the desktop column headers below and ListToolbar's
+// mobile sort select.
+const SORTABLE_COLUMNS = computed(() => [
+  { key: "source", label: t("aliases.table.from") },
+  { key: "destination", label: t("aliases.table.to") },
+]);
+
 const columns = computed(() => [
-  { accessorKey: "source", header: t("aliases.table.from") },
-  { accessorKey: "destination", header: t("aliases.table.to") },
+  { accessorKey: "source", header: header("source", t("aliases.table.from")) },
+  { accessorKey: "destination", header: header("destination", t("aliases.table.to")) },
   { id: "actions", header: "" },
 ]);
 
@@ -37,11 +44,14 @@ watchEffect(() => {
   ]);
 });
 
-const { items, total, loading, hasLoadedOnce, page, limit, search, sortDir, load } = usePaginatedList<Alias>(
+const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<Alias>(
   "aliases-list",
   () => (domainId.value ? `/domains/${domainId.value}/aliases` : null),
+  "id",
   [domainId]
 );
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 async function create() {
   if (!domainId.value) return;
@@ -110,7 +120,14 @@ async function onDeleteConfirmed() {
       </UForm>
     </UCard>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
+    <ListToolbar
+      v-model:search="search"
+      v-model:limit="limit"
+      v-model:sort-by="sortBy"
+      v-model:sort-dir="sortDir"
+      :total="total"
+      :sortable-columns="SORTABLE_COLUMNS"
+    />
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="2" />
 

@@ -1,6 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
+import { GROUPS_SORTABLE_COLUMNS } from "./groups.service";
 
 export const GroupsApi = () => applyDecorators(ApiTags("groups"), ApiSecurity("apiToken"));
 
@@ -31,7 +32,7 @@ const idParam = () => ApiParam({ name: "id", type: Number, description: "groups.
 
 export const ListGroupsDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(),
+    ApiPaginationQuery(GROUPS_SORTABLE_COLUMNS),
     ApiOperation({ summary: "List all groups, paginated" }),
     ApiResponse({ status: 200, description: "Groups returned", schema: { example: paginatedExample(groupItemExample) } }),
     ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),

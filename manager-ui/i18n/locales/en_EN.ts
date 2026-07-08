@@ -56,8 +56,6 @@ export default {
     manage: "Manage",
     search: "Search...",
     itemsPerPage: "Per page",
-    sortNewestFirst: "Newest first",
-    sortOldestFirst: "Oldest first",
     noResults: "No results",
     totalCount: "{count} total",
   },

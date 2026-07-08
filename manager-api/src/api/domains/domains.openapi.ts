@@ -1,6 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
+import { DOMAINS_SORTABLE_COLUMNS } from "./domains.service";
 
 export const DomainsApi = () => applyDecorators(ApiTags("domains"), ApiSecurity("apiToken"));
 
@@ -18,7 +19,7 @@ const domainListItemExample = {
 
 export const ListDomainsDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(),
+    ApiPaginationQuery(DOMAINS_SORTABLE_COLUMNS),
     ApiOperation({
       summary: "List managed domains, paginated",
       description: "Every domain row also carries a computed `ownerUsername`, resolved from `ownerId`.",

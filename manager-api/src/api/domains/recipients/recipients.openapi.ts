@@ -1,6 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../../core/common/pagination.openapi";
+import { RECIPIENTS_SORTABLE_COLUMNS } from "./recipients.service";
 
 export const RecipientsApi = () =>
   applyDecorators(
@@ -30,7 +31,7 @@ const recipientListItemExample = {
 
 export const ListRecipientsDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(),
+    ApiPaginationQuery(RECIPIENTS_SORTABLE_COLUMNS),
     ApiOperation({ summary: "List recipients that belong to this domain, paginated" }),
     ApiResponse({
       status: 200,

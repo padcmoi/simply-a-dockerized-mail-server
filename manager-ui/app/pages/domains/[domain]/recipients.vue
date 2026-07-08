@@ -21,10 +21,18 @@ const form = reactive({ localPart: "", password: "", quota: 524288000 });
 
 const quotaUnderLimit = computed(() => form.quota < MIN_QUOTA_BYTES);
 
+// Same source feeds the desktop column headers below and ListToolbar's
+// mobile sort select.
+const SORTABLE_COLUMNS = computed(() => [
+  { key: "email", label: t("recipients.table.address") },
+  { key: "quota", label: t("recipients.table.quota") },
+  { key: "active", label: t("recipients.table.active") },
+]);
+
 const columns = computed(() => [
-  { accessorKey: "email", header: t("recipients.table.address") },
-  { accessorKey: "quota", header: t("recipients.table.quota") },
-  { accessorKey: "active", header: t("recipients.table.active") },
+  { accessorKey: "email", header: header("email", t("recipients.table.address")) },
+  { accessorKey: "quota", header: header("quota", t("recipients.table.quota")) },
+  { accessorKey: "active", header: header("active", t("recipients.table.active")) },
   { id: "actions", header: "" },
 ]);
 
@@ -42,11 +50,14 @@ watchEffect(() => {
   ]);
 });
 
-const { items, total, loading, hasLoadedOnce, page, limit, search, sortDir, load } = usePaginatedList<Recipient>(
+const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<Recipient>(
   "recipients-list",
   () => (domainId.value ? `/domains/${domainId.value}/recipients` : null),
+  "id",
   [domainId]
 );
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 function isPostmaster(item: Recipient) {
   return item.email.toLowerCase().startsWith("postmaster@");
@@ -137,7 +148,14 @@ async function onDeleteConfirmed() {
       </UForm>
     </UCard>
 
-    <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
+    <ListToolbar
+      v-model:search="search"
+      v-model:limit="limit"
+      v-model:sort-by="sortBy"
+      v-model:sort-dir="sortDir"
+      :total="total"
+      :sortable-columns="SORTABLE_COLUMNS"
+    />
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
 

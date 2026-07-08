@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Repository } from "typeorm";
-import type { PaginationQuery } from "../../../core/common/pagination.validation";
+import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { sha512crypt } from "../../../core/common/sha512-crypt";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
@@ -16,6 +16,12 @@ import { CreateRecipientDto, UpdateRecipientDto } from "./recipients.validation"
 function isPostmaster(email: string, domain: string) {
   return email.toLowerCase() === `postmaster@${domain.toLowerCase()}`;
 }
+
+// `id` has no dedicated UI column/header (no createdAt on this table, see
+// pagination.validation.ts's original design notes) but stays an accepted
+// value since it's the existing default -- keeps `resolveSortColumn`'s
+// fallback type-safe without a cast.
+export const RECIPIENTS_SORTABLE_COLUMNS = ["email", "quota", "active", "id"] as const;
 
 // VirtualUser is the ORM mapping for the `virtual_users` postfix table; the
 // table name is dictated by postfix conventions and not under our control.
@@ -49,9 +55,10 @@ export class RecipientsService {
       return this.recipients.find({ where: { domain }, order: { email: "ASC" } });
     }
     const where = query.search ? { domain, email: Like(`%${query.search}%`) } : { domain };
+    const sortBy = resolveSortColumn(query.sortBy, RECIPIENTS_SORTABLE_COLUMNS, "id");
     const [items, total] = await this.recipients.findAndCount({
       where,
-      order: { id: query.sortDir === "asc" ? "ASC" : "DESC" },
+      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
       skip: query.offset,
       take: query.limit,
     });

@@ -1,6 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../../core/common/pagination.openapi";
+import { REJECT_SENDERS_SORTABLE_COLUMNS } from "./reject-senders.service";
 
 export const RejectSendersApi = () => applyDecorators(ApiTags("sieve"), ApiSecurity("apiToken"));
 
@@ -53,7 +54,7 @@ const NotFoundRejectSenderResponse = () =>
 
 export const ListRejectSendersDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(),
+    ApiPaginationQuery(REJECT_SENDERS_SORTABLE_COLUMNS),
     ApiOperation({
       summary: "List entries on the postfix SMTP-time sender blacklist, paginated",
     }),

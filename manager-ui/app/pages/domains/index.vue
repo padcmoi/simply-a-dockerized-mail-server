@@ -39,11 +39,20 @@ const assignableGb = computed(() => (disk.value ? (disk.value.assignableBytes / 
 const quotaOverLimit = computed(() => form.quotaMb > assignableMb.value);
 const quotaUnderLimit = computed(() => form.quotaMb < MIN_QUOTA_MB);
 const canReadList = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "read"));
+// Same source feeds the desktop column headers below and ListToolbar's
+// mobile sort select.
+const SORTABLE_COLUMNS = computed(() => [
+  { key: "id", label: t("domains.table.id") },
+  { key: "domain", label: t("domains.table.domain") },
+  { key: "active", label: t("domains.table.active") },
+  { key: "quota", label: t("domains.table.quotaMb") },
+]);
+
 const columns = computed(() => [
-  { accessorKey: "id", header: t("domains.table.id") },
-  { accessorKey: "domain", header: t("domains.table.domain") },
-  { accessorKey: "active", header: t("domains.table.active") },
-  { accessorKey: "quota", header: t("domains.table.quotaMb") },
+  { accessorKey: "id", header: header("id", t("domains.table.id")) },
+  { accessorKey: "domain", header: header("domain", t("domains.table.domain")) },
+  { accessorKey: "active", header: header("active", t("domains.table.active")) },
+  { accessorKey: "quota", header: header("quota", t("domains.table.quotaMb")) },
   { id: "actions", header: "" },
 ]);
 
@@ -65,9 +74,12 @@ const {
   page,
   limit,
   search,
+  sortBy,
   sortDir,
   load: loadDomains,
-} = usePaginatedList<Domain>("domains-list", () => (canReadList.value ? "/domains" : null));
+} = usePaginatedList<Domain>("domains-list", () => (canReadList.value ? "/domains" : null), "id");
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 watch(useDataRefresh().tick, loadDisk);
 
@@ -239,7 +251,14 @@ onMounted(loadDisk);
     <UAlert v-if="!canReadList" color="neutral" variant="subtle" icon="i-lucide-lock" :title="t('domains.listLocked')" />
 
     <template v-else>
-      <ListToolbar v-model:search="search" v-model:limit="limit" v-model:sort-dir="sortDir" :total="total" />
+      <ListToolbar
+        v-model:search="search"
+        v-model:limit="limit"
+        v-model:sort-by="sortBy"
+        v-model:sort-dir="sortDir"
+        :total="total"
+        :sortable-columns="SORTABLE_COLUMNS"
+      />
 
       <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 

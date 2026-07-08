@@ -1,10 +1,15 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Repository } from "typeorm";
-import type { PaginationQuery } from "../../../core/common/pagination.validation";
+import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { CreateAliasDto, UpdateAliasDto } from "./aliases.validation";
+
+// `id` has no dedicated UI column/header but stays an accepted value since
+// it's the existing default -- keeps `resolveSortColumn`'s fallback
+// type-safe without a cast.
+export const ALIASES_SORTABLE_COLUMNS = ["source", "destination", "id"] as const;
 
 @Injectable()
 export class AliasesService {
@@ -34,9 +39,10 @@ export class AliasesService {
           { domain, destination: Like(`%${query.search}%`) },
         ]
       : { domain };
+    const sortBy = resolveSortColumn(query.sortBy, ALIASES_SORTABLE_COLUMNS, "id");
     const [items, total] = await this.aliases.findAndCount({
       where,
-      order: { id: query.sortDir === "asc" ? "ASC" : "DESC" },
+      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
       skip: query.offset,
       take: query.limit,
     });

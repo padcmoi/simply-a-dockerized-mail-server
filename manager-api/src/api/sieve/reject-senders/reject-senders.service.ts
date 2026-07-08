@@ -1,8 +1,10 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Repository } from "typeorm";
-import type { PaginationQuery } from "../../../core/common/pagination.validation";
+import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { SieveRejectSender } from "../../../core/entities/sieve-reject-sender.entity";
+
+export const REJECT_SENDERS_SORTABLE_COLUMNS = ["sender", "enabled", "createdAt", "updatedAt"] as const;
 
 @Injectable()
 export class RejectSendersService {
@@ -18,9 +20,10 @@ export class RejectSendersService {
       return this.repo.find({ order: { sender: "ASC" } });
     }
     const where = query.search ? { sender: Like(`%${query.search}%`) } : {};
+    const sortBy = resolveSortColumn(query.sortBy, REJECT_SENDERS_SORTABLE_COLUMNS, "createdAt");
     const [items, total] = await this.repo.findAndCount({
       where,
-      order: { createdAt: query.sortDir === "asc" ? "ASC" : "DESC" },
+      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
       skip: query.offset,
       take: query.limit,
     });

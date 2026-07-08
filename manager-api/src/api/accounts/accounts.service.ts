@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { In, IsNull, Like, Not, Repository } from "typeorm";
-import type { PaginationQuery } from "../../core/common/pagination.validation";
+import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { AccountInvitation } from "../../core/entities/account-invitation.entity";
 import { Account } from "../../core/entities/account.entity";
@@ -11,6 +11,10 @@ import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { MailerService } from "../../core/mailer/mailer.service";
 import type { AcceptInvitationDto, SendInvitationDto, UpdateAccountDto } from "./accounts.validation";
+
+// `group` (enriched post-query, see `enrichWithGroups`) isn't a real column
+// on `accounts` -- not sortable without a join/subquery, out of scope here.
+export const ACCOUNTS_SORTABLE_COLUMNS = ["username", "name", "email", "enabled", "createdAt"] as const;
 
 @Injectable()
 export class AccountsService {
@@ -44,9 +48,10 @@ export class AccountsService {
     const where = query.search
       ? [{ username: Like(`%${query.search}%`) }, { name: Like(`%${query.search}%`) }, { email: Like(`%${query.search}%`) }]
       : {};
+    const sortBy = resolveSortColumn(query.sortBy, ACCOUNTS_SORTABLE_COLUMNS, "createdAt");
     const [rows, total] = await this.accounts.findAndCount({
       where,
-      order: { createdAt: query.sortDir === "asc" ? "ASC" : "DESC" },
+      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
       skip: query.offset,
       take: query.limit,
     });

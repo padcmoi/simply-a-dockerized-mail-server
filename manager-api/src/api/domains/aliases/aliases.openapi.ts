@@ -1,6 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../../core/common/pagination.openapi";
+import { ALIASES_SORTABLE_COLUMNS } from "./aliases.service";
 
 export const AliasesApi = () =>
   applyDecorators(
@@ -26,7 +27,7 @@ const aliasListItemExample = {
 
 export const ListAliasesDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(),
+    ApiPaginationQuery(ALIASES_SORTABLE_COLUMNS),
     ApiOperation({ summary: "List aliases that belong to this domain, paginated" }),
     ApiResponse({
       status: 200,

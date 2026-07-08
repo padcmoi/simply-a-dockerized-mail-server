@@ -12,7 +12,7 @@ export interface PaginatedResponse<T> {
 export const LIST_LIMIT_STORAGE_KEY = "manager-list-limit";
 
 // Shared fetch+state for every paginated table page (see pagination.validation.ts
-// on the API side): builds ?limit=&offset=&search=&sortDir=, unwraps
+// on the API side): builds ?limit=&offset=&search=&sortDir=&sortBy=, unwraps
 // { items, total }. Built on useAsyncData: `server: false` keeps the exact
 // same client-only fetch timing this app already relies on (the auth
 // header comes from a Pinia store hydrated client-side, see useApi.ts) --
@@ -25,7 +25,12 @@ export const LIST_LIMIT_STORAGE_KEY = "manager-list-limit";
 // Router reuses the page instance across a `:domain` param-only navigation
 // (no remount), so without this an edited URL/back-forward between two
 // domains would silently keep showing the previous one's data.
-export function usePaginatedList<T>(key: string, pathOrFn: string | (() => string | null), extraWatch: Ref<unknown>[] = []) {
+export function usePaginatedList<T>(
+  key: string,
+  pathOrFn: string | (() => string | null),
+  defaultSortBy: string,
+  extraWatch: Ref<unknown>[] = []
+) {
   const { call } = useApi();
   const { t } = useI18n();
   const toast = useToast();
@@ -34,6 +39,7 @@ export function usePaginatedList<T>(key: string, pathOrFn: string | (() => strin
   const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
   const search = ref("");
   const debouncedSearch = ref("");
+  const sortBy = ref(defaultSortBy);
   const sortDir = ref<"asc" | "desc">("desc");
 
   const applyDebouncedSearch = useDebounceFn(() => {
@@ -59,6 +65,7 @@ export function usePaginatedList<T>(key: string, pathOrFn: string | (() => strin
         limit: String(limit.value),
         offset: String((page.value - 1) * limit.value),
         sortDir: sortDir.value,
+        sortBy: sortBy.value,
       });
       if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
       try {
@@ -68,7 +75,7 @@ export function usePaginatedList<T>(key: string, pathOrFn: string | (() => strin
         throw err;
       }
     },
-    { server: false, watch: [page, limit, sortDir, debouncedSearch, useDataRefresh().tick, ...extraWatch] }
+    { server: false, watch: [page, limit, sortBy, sortDir, debouncedSearch, useDataRefresh().tick, ...extraWatch] }
   );
 
   const items = computed(() => data.value?.items ?? []);
@@ -95,5 +102,5 @@ export function usePaginatedList<T>(key: string, pathOrFn: string | (() => strin
   // gone and only this drives feedback during reloads.
   const loading = computed(() => status.value === "pending");
 
-  return { items, total, loading, hasLoadedOnce, page, limit, search, sortDir, load: refresh };
+  return { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load: refresh };
 }

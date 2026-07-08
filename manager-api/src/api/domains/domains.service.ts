@@ -10,7 +10,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { randomBytes } from "crypto";
 import { statfs } from "fs/promises";
 import { In, Like, Repository } from "typeorm";
-import type { PaginationQuery } from "../../core/common/pagination.validation";
+import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { sha512crypt } from "../../core/common/sha512-crypt";
 import { DkimKey, DkimService } from "../../core/dkim/dkim.service";
@@ -20,6 +20,11 @@ import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { CreateDomainDto, UpdateDomainDto } from "./domains.validation";
 
 type CallerCtx = { id: number; isRoot: boolean };
+
+// `ownerUsername` (enriched post-query, see `attachOwnerUsername`) isn't a
+// real column on `virtual_domains` -- not sortable without a join, out of
+// scope here.
+export const DOMAINS_SORTABLE_COLUMNS = ["id", "domain", "active", "quota"] as const;
 
 @Injectable()
 export class DomainsService {
@@ -50,9 +55,10 @@ export class DomainsService {
     }
 
     const where = query.search ? { domain: Like(`%${query.search}%`) } : {};
+    const sortBy = resolveSortColumn(query.sortBy, DOMAINS_SORTABLE_COLUMNS, "id");
     const [rows, total] = await this.repo.findAndCount({
       where,
-      order: { id: query.sortDir === "asc" ? "ASC" : "DESC" },
+      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
       skip: query.offset,
       take: query.limit,
     });
