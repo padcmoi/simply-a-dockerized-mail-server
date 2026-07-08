@@ -512,13 +512,39 @@ export default {
     },
     confirmDelete: "Supprimer ce groupe ?",
     detail: {
-      alertTitle: "Paramètres du groupe, propriétaire, membres et permissions.",
-      alertDescription: "Les changements de permissions et de membres s'appliquent immédiatement.",
       nameLabel: "Nom",
       descriptionLabel: "Description",
       save: "Enregistrer",
       saved: "Groupe mis à jour",
       saveFailed: "Échec de la mise à jour",
+      tabs: {
+        owner: "Propriétaire",
+        members: "Membres",
+        administration: "Administration",
+        domain: "Domaine",
+      },
+      alerts: {
+        info: {
+          title: "Paramètres du groupe",
+          description: "Nom, description et statut de groupe par défaut.",
+        },
+        owner: {
+          title: "Propriétaire du groupe",
+          description: "Seul le propriétaire ou un compte root peut transférer la propriété du groupe.",
+        },
+        members: {
+          title: "Membres du groupe",
+          description: "Les comptes assignés à ce groupe héritent de ses permissions. Un compte n'appartient qu'à un seul groupe à la fois.",
+        },
+        administration: {
+          title: "Permissions globales (Administration)",
+          description: "Ces permissions s'appliquent à toute l'application, indépendamment d'un domaine précis.",
+        },
+        domain: {
+          title: "Permissions par domaine",
+          description: "Ces permissions ne s'appliquent qu'au domaine actuellement sélectionné.",
+        },
+      },
       owner: {
         title: "Propriétaire",
         unassigned: "Aucun propriétaire assigné",
@@ -578,7 +604,6 @@ export default {
       selectDomain: "Domaine",
       selectDomainPlaceholder: "Choisir un domaine",
       noDomainsAssigned: "Choisissez un domaine ci-dessus pour définir ses permissions",
-      clearDomainPermissions: "Effacer toutes les permissions de ce domaine",
     },
   },
 } satisfies Locales;

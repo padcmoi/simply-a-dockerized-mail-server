@@ -510,13 +510,39 @@ export default {
     },
     confirmDelete: "Delete this group?",
     detail: {
-      alertTitle: "Group settings, owner, members and permissions.",
-      alertDescription: "Changes to permissions and members apply immediately.",
       nameLabel: "Name",
       descriptionLabel: "Description",
       save: "Save changes",
       saved: "Group updated",
       saveFailed: "Update failed",
+      tabs: {
+        owner: "Owner",
+        members: "Members",
+        administration: "Administration",
+        domain: "Domain",
+      },
+      alerts: {
+        info: {
+          title: "Group settings",
+          description: "Name, description and default-group status.",
+        },
+        owner: {
+          title: "Group owner",
+          description: "Only the owner or a root account can transfer group ownership.",
+        },
+        members: {
+          title: "Group members",
+          description: "Accounts assigned to this group inherit its permissions. An account belongs to only one group at a time.",
+        },
+        administration: {
+          title: "Global permissions (Administration)",
+          description: "These permissions apply across the whole application, independent of any specific domain.",
+        },
+        domain: {
+          title: "Domain permissions",
+          description: "These permissions only apply to the currently selected domain.",
+        },
+      },
       owner: {
         title: "Owner",
         unassigned: "No owner assigned",
@@ -576,7 +602,6 @@ export default {
       selectDomain: "Domain",
       selectDomainPlaceholder: "Pick a domain",
       noDomainsAssigned: "Pick a domain above to set its permissions",
-      clearDomainPermissions: "Clear all permissions for this domain",
     },
   },
 } satisfies Locales;

@@ -506,13 +506,24 @@ export interface Locales {
     };
     confirmDelete: string;
     detail: {
-      alertTitle: string;
-      alertDescription: string;
       nameLabel: string;
       descriptionLabel: string;
       save: string;
       saved: string;
       saveFailed: string;
+      tabs: {
+        owner: string;
+        members: string;
+        administration: string;
+        domain: string;
+      };
+      alerts: {
+        info: { title: string; description: string };
+        owner: { title: string; description: string };
+        members: { title: string; description: string };
+        administration: { title: string; description: string };
+        domain: { title: string; description: string };
+      };
       owner: {
         title: string;
         unassigned: string;
@@ -572,7 +583,6 @@ export interface Locales {
       selectDomain: string;
       selectDomainPlaceholder: string;
       noDomainsAssigned: string;
-      clearDomainPermissions: string;
     };
   };
 }
