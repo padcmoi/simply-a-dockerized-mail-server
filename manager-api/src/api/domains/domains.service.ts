@@ -16,6 +16,7 @@ import { sha512crypt } from "../../core/common/sha512-crypt";
 import { DkimKey, DkimService } from "../../core/dkim/dkim.service";
 import { Account } from "../../core/entities/account.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
+import { VirtualQuotaDomain } from "../../core/entities/virtual-quota-domain.entity";
 import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { CreateDomainDto, UpdateDomainDto } from "./domains.validation";
 
@@ -37,24 +38,31 @@ export class DomainsService {
     private readonly users: Repository<VirtualUser>,
     @InjectRepository(Account)
     private readonly accounts: Repository<Account>,
+    @InjectRepository(VirtualQuotaDomain)
+    private readonly quotaDomains: Repository<VirtualQuotaDomain>,
     private readonly dkim: DkimService,
     private readonly auditLog: AuditLogService
   ) {}
 
   // Access is already gated by GlobalPermissionGuard/DomainPermissionGuard at
-  // the controller level (group-based ACL, see CustomPermissionGuardService) --
-  // no extra filtering is needed here.
+  // the controller level (group-based ACL, see CustomPermissionGuardService).
+  //
+  // `scope`: with global domains:read (or root), see every domain -- the
+  // caller with only domains:access (no read) is scoped to domains they own,
+  // same as being "root" over just their own rows (see DomainsController.list).
   //
   // `query.limit` absent = legacy unpaginated behavior, still relied on by
   // dashboard.vue, useDomainDashboard.ts, groups/[id]/index.vue and
   // profile.vue (they need the full domain list, not a page of 10).
-  async list(query: PaginationQuery) {
+  async list(query: PaginationQuery, scope: { callerId: number; canSeeAll: boolean }) {
+    const ownerFilter = scope.canSeeAll ? {} : { ownerId: scope.callerId };
+
     if (query.limit === undefined) {
-      const domains = await this.repo.find({ order: { domain: "ASC" } });
-      return this.attachOwnerUsername(domains);
+      const domains = await this.repo.find({ where: ownerFilter, order: { domain: "ASC" } });
+      return this.attachUsage(await this.attachOwnerUsername(domains));
     }
 
-    const where = query.search ? { domain: Like(`%${query.search}%`) } : {};
+    const where = query.search ? { ...ownerFilter, domain: Like(`%${query.search}%`) } : ownerFilter;
     const sortBy = resolveSortColumn(query.sortBy, DOMAINS_SORTABLE_COLUMNS, "id");
     const [rows, total] = await this.repo.findAndCount({
       where,
@@ -62,7 +70,7 @@ export class DomainsService {
       skip: query.offset,
       take: query.limit,
     });
-    return { items: await this.attachOwnerUsername(rows), total };
+    return { items: await this.attachUsage(await this.attachOwnerUsername(rows)), total };
   }
 
   async get(id: number) {
@@ -84,6 +92,21 @@ export class DomainsService {
       owners.forEach((o) => byId.set(o.id, o.username));
     }
     return domains.map((d) => ({ ...d, ownerUsername: d.ownerId !== null ? (byId.get(d.ownerId) ?? null) : null }));
+  }
+
+  // `virtual_quota_domains` is keyed by the FQDN string, not domainId (see
+  // its own entity) -- no ORM relation to piggyback on, same enrich-after
+  // pattern as attachOwnerUsername above. Drives the occupancy bar on the
+  // domains list; a domain with no quota row yet (freshly created) reads as
+  // 0 bytes used, not an error.
+  private async attachUsage<T extends VirtualDomain>(domains: T[]) {
+    const names = domains.map((d) => d.domain);
+    const byDomain = new Map<string, string>();
+    if (names.length) {
+      const rows = await this.quotaDomains.find({ where: { domain: In(names) } });
+      rows.forEach((r) => byDomain.set(r.domain, r.bytes));
+    }
+    return domains.map((d) => ({ ...d, usedBytes: byDomain.get(d.domain) ?? "0" }));
   }
 
   async disk() {

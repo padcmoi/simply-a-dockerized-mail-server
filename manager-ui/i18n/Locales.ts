@@ -121,6 +121,7 @@ export interface Locales {
       free: string;
       reserved: string;
       assignable: string;
+      occupancy: string;
     };
     form: {
       title: string;
@@ -145,6 +146,19 @@ export interface Locales {
       quotaTooHigh: string;
       quotaTooLow: string;
     };
+    adminModal: {
+      button: string;
+      title: string;
+      fqdnInvalid: string;
+      dangerZone: string;
+      delete: string;
+      confirmDelete: string;
+      confirmDeleteDesc: string;
+      saved: string;
+      saveFailed: string;
+      deleted: string;
+      deleteFailed: string;
+    };
   };
   recipients: {
     alertTitle: string;
@@ -155,7 +169,7 @@ export interface Locales {
       domainPlaceholder: string;
       localPart: string;
       password: string;
-      quotaBytes: string;
+      quotaMb: string;
       quotaMin: string;
       submit: string;
     };
@@ -163,6 +177,7 @@ export interface Locales {
       address: string;
       domain: string;
       quota: string;
+      used: string;
       active: string;
     };
     toast: {
@@ -174,6 +189,12 @@ export interface Locales {
     postmaster: {
       badge: string;
       locked: string;
+    };
+    editModal: {
+      button: string;
+      title: string;
+      saved: string;
+      saveFailed: string;
     };
   };
   aliases: {

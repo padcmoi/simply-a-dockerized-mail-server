@@ -11,6 +11,7 @@ const domainListItemExample = {
   ownerUsername: "jdoe",
   domain: "example.com",
   quota: "104857600",
+  usedBytes: "8192",
   active: 1,
   userStartDate: "2026-01-01",
   userEndDate: null,
@@ -22,7 +23,9 @@ export const ListDomainsDocs = () =>
     ApiPaginationQuery(DOMAINS_SORTABLE_COLUMNS),
     ApiOperation({
       summary: "List managed domains, paginated",
-      description: "Every domain row also carries a computed `ownerUsername`, resolved from `ownerId`.",
+      description:
+        "Every domain row also carries a computed `ownerUsername` (resolved from `ownerId`) and `usedBytes` " +
+        '(from virtual_quota_domains, `"0"` if the domain has no quota row yet).',
     }),
     ApiResponse({
       status: 200,
@@ -158,93 +161,8 @@ export const CreateDomainDocs = () =>
     })
   );
 
-export const UpdateDomainDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: "Update quota / active flag / owner / end-date of a domain",
-      description: "`ownerId` is intentionally not settable here -- see PATCH /:domainId/owner for ownership transfer.",
-    }),
-    ApiParam({
-      name: "domainId",
-      type: Number,
-      example: 1,
-      description: "virtual_domains.id",
-    }),
-    ApiBody({
-      schema: {
-        example: {
-          quota: 209715200,
-          active: true,
-          userEndDate: null,
-        },
-      },
-    }),
-    ApiResponse({
-      status: 200,
-      description: "Domain updated",
-      schema: {
-        example: {
-          id: 1,
-          ownerId: 7,
-          domain: "example.com",
-          quota: "209715200",
-          active: 1,
-          userStartDate: "2026-01-01",
-          userEndDate: null,
-          lastActivity: "2026-07-04T12:00:00.000Z",
-        },
-      },
-    }),
-    ApiResponse({
-      status: 400,
-      description:
-        "Body validation failed, domainId is not a valid integer, or quota exceeds the bytes still assignable on the mail volume",
-      schema: { example: { message: "Validation failed", issues: [] } },
-    }),
-    ApiResponse({
-      status: 403,
-      description: "Missing permission domain:access or domain:modify for this domain",
-    }),
-    ApiResponse({
-      status: 404,
-      description: "Domain not found",
-      schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
-    })
-  );
-
-export const RemoveDomainDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: "Delete a domain (cascades users, aliases, quota rows, DKIM keys)",
-    }),
-    ApiParam({
-      name: "domainId",
-      type: Number,
-      example: 1,
-      description: "virtual_domains.id",
-    }),
-    ApiResponse({
-      status: 200,
-      description: "Domain deleted",
-      schema: { example: { ok: true } },
-    }),
-    ApiResponse({
-      status: 400,
-      description: "domainId is not a valid integer",
-      schema: {
-        example: { statusCode: 400, message: "Validation failed (numeric string is expected)", error: "Bad Request" },
-      },
-    }),
-    ApiResponse({
-      status: 403,
-      description: "Missing permission domain:access or domain:delete for this domain",
-    }),
-    ApiResponse({
-      status: 404,
-      description: "Domain not found",
-      schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
-    })
-  );
+// Rename/resize-quota/delete docs live in admin-domains.openapi.ts now --
+// see AdminDomainsController (PATCH/DELETE /admin/domains/:domainId).
 
 export const TransferDomainOwnerDocs = () =>
   applyDecorators(
@@ -303,8 +221,9 @@ export const SetDomainActiveDocs = () =>
     ApiOperation({
       summary: "Activate or deactivate a domain (Administration page)",
       description:
-        'An inactive domain stops accepting inbound mail for its mailboxes. Gated by the "admin" domain resource, ' +
-        'not the general "domain" modify used by PATCH /:domainId -- see DomainsController.setActive.',
+        "An inactive domain stops accepting inbound mail for its mailboxes. Deliberately owner-accessible " +
+        '(unlike rename/quota/delete, see admin-domains.openapi.ts) -- gated by the domain-tier "admin"+"domain" ' +
+        "resources together, see DomainsController.setActive.",
     }),
     ApiParam({
       name: "domainId",

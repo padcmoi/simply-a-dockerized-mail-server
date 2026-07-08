@@ -1,15 +1,21 @@
 <script setup lang="ts">
-const emit = defineEmits<{ delete: []; open: [] }>();
+const emit = defineEmits<{ administer: []; open: [] }>();
 
 const props = defineProps<{
-  item: { id: number; domain: string; quota: string; active: number };
+  item: { id: number; domain: string; quota: string; usedBytes: string; active: number };
+  canAdminister: boolean;
 }>();
 
-const MB = 1024 * 1024;
-const quotaMb = computed(() => {
-  const bytes = Number(props.item.quota);
-  if (!Number.isFinite(bytes) || bytes <= 0) return "0";
-  return String(Math.round(bytes / MB));
+const quotaLabel = computed(() => `${formatBytes(Number(props.item.usedBytes))} / ${formatBytes(Number(props.item.quota))}`);
+const occupancyPercent = computed(() => {
+  const quota = Number(props.item.quota);
+  if (!Number.isFinite(quota) || quota <= 0) return 0;
+  return Math.min(100, (Number(props.item.usedBytes) / quota) * 100);
+});
+const occupancyColor = computed(() => {
+  if (occupancyPercent.value > 90) return "error";
+  if (occupancyPercent.value > 70) return "warning";
+  return "success";
 });
 
 const { t } = useI18n();
@@ -30,15 +36,23 @@ const { t } = useI18n();
       </div>
       <div class="flex gap-2">
         <span class="text-muted w-24 shrink-0">{{ t("domains.table.quotaMb") }}</span>
-        <span>{{ quotaMb }} Mo</span>
+        <span>{{ quotaLabel }}</span>
       </div>
+      <UProgress :model-value="occupancyPercent" :color="occupancyColor" size="xs" />
     </div>
     <div class="mt-3 pt-3 border-t border-default flex justify-between gap-2">
       <UButton icon="i-lucide-arrow-right" size="sm" color="primary" variant="outline" @click="emit('open')">
         {{ t("common.manage") }}
       </UButton>
-      <UButton icon="i-lucide-trash-2" size="sm" color="error" variant="outline" @click="emit('delete')">
-        {{ t("common.delete") }}
+      <UButton
+        v-if="canAdminister"
+        icon="i-lucide-shield-alert"
+        size="sm"
+        color="warning"
+        variant="outline"
+        @click="emit('administer')"
+      >
+        {{ t("domains.adminModal.button") }}
       </UButton>
     </div>
   </UCard>

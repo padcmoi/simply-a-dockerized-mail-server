@@ -54,7 +54,7 @@ export default {
     cancel: "Cancel",
     invite: "Invite",
     revoke: "Revoke",
-    manage: "Manage",
+    manage: "Access",
     search: "Search...",
     itemsPerPage: "Per page",
     noResults: "No results",
@@ -123,6 +123,7 @@ export default {
       free: "Free on disk",
       reserved: "Reserved by domains",
       assignable: "Still assignable",
+      occupancy: "Occupancy (reserved / total)",
     },
     form: {
       title: "Add a domain",
@@ -147,6 +148,19 @@ export default {
       quotaTooHigh: "Quota exceeds available capacity",
       quotaTooLow: "Quota must be at least {value} MB",
     },
+    adminModal: {
+      button: "Administer",
+      title: "Domain administration",
+      fqdnInvalid: "Must be a valid FQDN",
+      dangerZone: "Danger zone",
+      delete: "Delete this domain",
+      confirmDelete: "Delete this domain?",
+      confirmDeleteDesc: "This permanently deletes {domain} and cascades to its recipients, aliases, quota rows and DKIM keys.",
+      saved: "Domain updated",
+      saveFailed: "Failed to update domain",
+      deleted: "Domain deleted",
+      deleteFailed: "Failed to delete domain",
+    },
   },
   recipients: {
     alertTitle: "Mailbox addresses (local-part plus domain destinations postfix delivers to).",
@@ -157,7 +171,7 @@ export default {
       domainPlaceholder: "Pick a domain",
       localPart: "Local part",
       password: "Password",
-      quotaBytes: "Quota (bytes)",
+      quotaMb: "Quota (MB)",
       quotaMin: "Minimum {value} MB",
       submit: "Create",
     },
@@ -165,6 +179,7 @@ export default {
       address: "Address",
       domain: "Domain",
       quota: "Quota",
+      used: "Used",
       active: "Active",
     },
     toast: {
@@ -176,6 +191,12 @@ export default {
     postmaster: {
       badge: "System",
       locked: "The postmaster mailbox is managed automatically and cannot be edited, activated or deleted",
+    },
+    editModal: {
+      button: "Edit",
+      title: "Edit {email}",
+      saved: "Recipient updated",
+      saveFailed: "Update failed",
     },
   },
   aliases: {

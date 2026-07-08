@@ -40,7 +40,19 @@ export const setDomainActiveSchema = z.object({
   active: z.boolean(),
 });
 
+// Dedicated routes + schemas, one field each, mirroring setDomainActiveSchema
+// above -- see AdminDomainsController (rename/resizeQuota).
+export const renameDomainSchema = z.object({
+  domain: fqdn,
+});
+
+export const resizeDomainQuotaSchema = z.object({
+  quota: z.number().int().min(MIN_DOMAIN_QUOTA_BYTES, `Domain quota must be at least ${MIN_DOMAIN_QUOTA_BYTES} bytes (10 MB)`),
+});
+
 export type CreateDomainDto = z.infer<typeof createDomainSchema>;
 export type UpdateDomainDto = z.infer<typeof updateDomainSchema>;
 export type TransferDomainOwnerDto = z.infer<typeof transferDomainOwnerSchema>;
 export type SetDomainActiveDto = z.infer<typeof setDomainActiveSchema>;
+export type RenameDomainDto = z.infer<typeof renameDomainSchema>;
+export type ResizeDomainQuotaDto = z.infer<typeof resizeDomainQuotaSchema>;

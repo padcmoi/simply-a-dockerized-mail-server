@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { paginationQuerySchema, type PaginationQuery } from "../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
+import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { DomainPermissionGuard } from "../../core/custom-permission-guard/domain-permission.guard";
 import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global-permission.guard";
 import {
@@ -14,21 +15,17 @@ import {
   DomainsApi,
   GetDomainDocs,
   ListDomainsDocs,
-  RemoveDomainDocs,
   SetDomainActiveDocs,
   TransferDomainOwnerDocs,
-  UpdateDomainDocs,
 } from "./domains.openapi";
 import { DomainsService } from "./domains.service";
 import {
   CreateDomainDto,
   SetDomainActiveDto,
   TransferDomainOwnerDto,
-  UpdateDomainDto,
   createDomainSchema,
   setDomainActiveSchema,
   transferDomainOwnerSchema,
-  updateDomainSchema,
 } from "./domains.validation";
 
 type AuthedRequest = Request & {
@@ -39,20 +36,31 @@ type AuthedRequest = Request & {
 @Controller({ path: "domains", version: "1" })
 @UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class DomainsController {
-  constructor(private readonly svc: DomainsService) {}
+  constructor(
+    private readonly svc: DomainsService,
+    private readonly cpg: CustomPermissionGuardService
+  ) {}
 
+  // `access` alone is the gate to reach this route at all -- who sees WHICH
+  // rows is then scoped inside DomainsService.list: root or a real global
+  // domains:read grant sees every domain, anyone else (access only) sees
+  // just the domains they own (same "root over your own rows" precedent as
+  // the rest of this ACL model).
   @Get()
-  @RequireGlobalPermissions([{ resource: "domains", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "domains", actions: ["access"] }])
   @ListDomainsDocs()
-  list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
-    return this.svc.list(query);
+  async list(@Req() req: AuthedRequest, @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
+    const canSeeAll = req.user.isRoot || (await this.hasGlobalDomainsRead(req.user.id));
+    return this.svc.list(query, { callerId: req.user.id, canSeeAll });
   }
 
-  // Disk capacity overview is visible with `domains.access` alone -- it's
-  // aggregate stats, not the domain list itself. `domains.read` is what
-  // gates the actual per-domain list (see `list()` above).
+  private async hasGlobalDomainsRead(accountId: number): Promise<boolean> {
+    const effective = await this.cpg.guard.getEffectivePermissions(accountId);
+    return effective.global.some((p) => p.resource === "domains" && p.action === "read");
+  }
+
   @Get("disk")
-  @RequireGlobalPermissions([{ resource: "domains", actions: ["access"] }])
+  @RequireGlobalPermissions([{ resource: "domains", actions: ["access", "read"] }])
   @DiskUsageDocs()
   disk() {
     return this.svc.disk();
@@ -74,28 +82,21 @@ export class DomainsController {
     return this.svc.create(body, req.user.id);
   }
 
-  @Patch(":domainId")
-  @RequireDomainPermissions([{ resource: "domain", actions: ["access", "modify"] }])
-  @UpdateDomainDocs()
-  update(
-    @Param("domainId", ParseIntPipe) domainId: number,
-    @Body(new ZodValidationPipe(updateDomainSchema)) body: UpdateDomainDto
-  ) {
-    return this.svc.update(domainId, body);
-  }
+  // Rename / resize quota / delete moved OFF this controller entirely --
+  // see AdminDomainsController (PATCH/DELETE /admin/domains/:domainId).
+  // Kept fully separate on purpose: no plain /domains/:domainId PATCH/DELETE
+  // exists anymore, so there's no ambiguous "which route did I just call"
+  // surface for the 3 highest-risk domain actions.
 
-  @Delete(":domainId")
-  @RequireDomainPermissions([{ resource: "domain", actions: ["access", "delete"] }])
-  @RemoveDomainDocs()
-  remove(@Param("domainId", ParseIntPipe) domainId: number) {
-    return this.svc.remove(domainId);
-  }
-
-  // Dedicated route, gated by the "admin" domain resource rather than the
-  // general "domain" modify used by update() above -- activating/deactivating
-  // a domain's mail acceptance is an Administration-page action.
+  // Activating/deactivating is legitimate owner
+  // self-service (not an identity/allocation change) -- deliberately kept on
+  // the domain tier, 2 resources required together ("admin" + "domain"), so
+  // ownership bypass still applies here on purpose.
   @Patch(":domainId/active")
-  @RequireDomainPermissions([{ resource: "admin", actions: ["access", "modify"] }])
+  @RequireDomainPermissions([
+    { resource: "admin", actions: ["access", "modify"] },
+    { resource: "domain", actions: ["access", "modify"] },
+  ])
   @SetDomainActiveDocs()
   setActive(
     @Param("domainId", ParseIntPipe) domainId: number,

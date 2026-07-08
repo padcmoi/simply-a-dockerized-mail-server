@@ -54,7 +54,7 @@ export default {
     cancel: "Annuler",
     invite: "Inviter",
     revoke: "Révoquer",
-    manage: "Gérer",
+    manage: "Accéder",
     search: "Rechercher...",
     itemsPerPage: "Par page",
     noResults: "Aucun résultat",
@@ -123,6 +123,7 @@ export default {
       free: "Libre sur disque",
       reserved: "Réservé par les domaines",
       assignable: "Encore assignable",
+      occupancy: "Occupation (réservé / total)",
     },
     form: {
       title: "Ajouter un domaine",
@@ -147,6 +148,19 @@ export default {
       quotaTooHigh: "Le quota dépasse la capacité disponible",
       quotaTooLow: "Le quota doit être d'au moins {value} Mo",
     },
+    adminModal: {
+      button: "Administrer",
+      title: "Administration du domaine",
+      fqdnInvalid: "Doit être un FQDN valide",
+      dangerZone: "Zone dangereuse",
+      delete: "Supprimer ce domaine",
+      confirmDelete: "Supprimer ce domaine ?",
+      confirmDeleteDesc: "Ceci supprime définitivement {domain} ainsi que ses destinataires, alias, quotas et clés DKIM.",
+      saved: "Domaine mis à jour",
+      saveFailed: "Échec de la mise à jour du domaine",
+      deleted: "Domaine supprimé",
+      deleteFailed: "Échec de la suppression du domaine",
+    },
   },
   recipients: {
     alertTitle: "Adresses de boîtes (local-part plus domaine, destinations livrées par postfix).",
@@ -157,7 +171,7 @@ export default {
       domainPlaceholder: "Choisir un domaine",
       localPart: "Local part",
       password: "Mot de passe",
-      quotaBytes: "Quota (octets)",
+      quotaMb: "Quota (Mo)",
       quotaMin: "Minimum {value} Mo",
       submit: "Créer",
     },
@@ -165,6 +179,7 @@ export default {
       address: "Adresse",
       domain: "Domaine",
       quota: "Quota",
+      used: "Consommé",
       active: "Actif",
     },
     toast: {
@@ -176,6 +191,12 @@ export default {
     postmaster: {
       badge: "Système",
       locked: "La boîte postmaster est gérée automatiquement et ne peut être ni modifiée, ni activée, ni supprimée",
+    },
+    editModal: {
+      button: "Modifier",
+      title: "Modifier {email}",
+      saved: "Destinataire mis à jour",
+      saveFailed: "Échec de la mise à jour",
     },
   },
   aliases: {

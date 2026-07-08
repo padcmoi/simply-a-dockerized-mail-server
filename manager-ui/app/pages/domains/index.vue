@@ -2,9 +2,10 @@
 import { useAuthStore } from "~/stores/auth";
 import { usePermissionsStore } from "~/stores/permissions";
 
-// `access` alone is enough to reach this page (it shows the disk capacity
-// overview) -- the domain list itself is separately gated on `read` inside
-// the page (see `canReadList`), not at the page-meta level.
+// `access` alone is enough to reach this page and see the table -- the
+// backend scopes rows to owned-only without `read` (see domains.service.ts).
+// `read` (capacity card) and `create` (add-domain form) each gate their own
+// section inside the page, see canSeeAllDomains/canCreateDomain below.
 definePageMeta({
   requiredGlobal: [{ resource: "domains", action: "access" }],
 });
@@ -13,6 +14,7 @@ interface Domain {
   id: number;
   domain: string;
   quota: string;
+  usedBytes: string;
   active: number;
 }
 interface Disk {
@@ -27,18 +29,37 @@ const MIN_QUOTA_MB = 10;
 
 const disk = ref<Disk | null>(null);
 const diskLoading = ref(false);
-const confirmOpen = ref(false);
-const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 const form = reactive({ domain: "", active: true, quotaMb: MIN_QUOTA_MB });
 
 const assignableMb = computed(() => (disk.value ? Math.floor(disk.value.assignableBytes / MB) : 0));
-const totalGb = computed(() => (disk.value ? (disk.value.totalBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
-const freeGb = computed(() => (disk.value ? (disk.value.freeBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
-const reservedGb = computed(() => (disk.value ? (disk.value.reservedBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
-const assignableGb = computed(() => (disk.value ? (disk.value.assignableBytes / (1024 * 1024 * 1024)).toFixed(1) : "0.0"));
 const quotaOverLimit = computed(() => form.quotaMb > assignableMb.value);
 const quotaUnderLimit = computed(() => form.quotaMb < MIN_QUOTA_MB);
-const canReadList = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "read"));
+// `GET /domains` now only needs `access` -- the table always renders (the
+// backend scopes rows to just what the caller owns without `read`, see
+// domains.controller.ts/domains.service.ts). `GET /domains/disk` still
+// needs `read` specifically (aggregate stats across every domain), so the
+// capacity card keeps its own, stricter gate.
+const canSeeAllDomains = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "read"));
+const canCreateDomain = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "create"));
+const {
+  adminModalOpen,
+  adminModalItem,
+  adminSaving,
+  canAdminister,
+  canDeleteDomain,
+  openAdminModal,
+  saveAdmin,
+  deleteFromAdminModal,
+} = useDomainAdmin(load);
+// Freeing up the domain's own current allocation first, then reassigning,
+// is valid -- the real ceiling for editing IT is the free pool plus
+// whatever it already holds, not just the free pool alone.
+const adminMaxQuotaMb = computed(() => {
+  if (!adminModalItem.value) return assignableMb.value;
+  const bytes = Number(adminModalItem.value.quota);
+  const currentMb = Number.isFinite(bytes) && bytes > 0 ? Math.round(bytes / MB) : 0;
+  return assignableMb.value + currentMb;
+});
 // Same source feeds the desktop column headers below and ListToolbar's
 // mobile sort select.
 const SORTABLE_COLUMNS = computed(() => [
@@ -77,13 +98,14 @@ const {
   sortBy,
   sortDir,
   load: loadDomains,
-} = usePaginatedList<Domain>("domains-list", () => (canReadList.value ? "/domains" : null), "id");
+} = usePaginatedList<Domain>("domains-list", () => "/domains", "id");
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 watch(useDataRefresh().tick, loadDisk);
 
 async function loadDisk() {
+  if (!canSeeAllDomains.value) return;
   diskLoading.value = true;
   try {
     disk.value = await call<Disk>("/domains/disk");
@@ -133,31 +155,26 @@ async function create() {
   }
 }
 
-async function remove(id: number) {
-  await call(`/domains/${id}`, { method: "DELETE" });
-  if (domainStore.selected?.id === id) domainStore.clear();
-  await load();
-}
-
-function requestDelete(fn: () => Promise<void>) {
-  pendingDeleteFn.value = fn;
-  confirmOpen.value = true;
-}
-
-async function onDeleteConfirmed() {
-  await pendingDeleteFn.value?.();
-  pendingDeleteFn.value = null;
-}
-
-function quotaToMb(raw: string) {
-  const bytes = Number(raw);
-  if (!Number.isFinite(bytes) || bytes <= 0) return "0";
-  return String(Math.round(bytes / MB));
-}
-
 function openDomain(d: Domain) {
   domainStore.select(d);
   navigateTo(`/domains/${d.domain}`);
+}
+
+function occupancyPercent(d: Domain) {
+  const quota = Number(d.quota);
+  if (!Number.isFinite(quota) || quota <= 0) return 0;
+  return Math.min(100, (Number(d.usedBytes) / quota) * 100);
+}
+
+function occupancyLabel(d: Domain) {
+  return `${formatBytes(Number(d.usedBytes))} / ${formatBytes(Number(d.quota))}`;
+}
+
+function occupancyColor(d: Domain) {
+  const pct = occupancyPercent(d);
+  if (pct > 90) return "error";
+  if (pct > 70) return "warning";
+  return "success";
 }
 
 onMounted(loadDisk);
@@ -184,34 +201,9 @@ onMounted(loadDisk);
       />
     </div>
 
-    <UCard>
-      <template #header>
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="font-semibold">{{ t("domains.capacity.title") }}</h2>
-          <span class="text-sm text-dimmed">{{ t("domains.capacity.hint") }}</span>
-        </div>
-      </template>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-        <div>
-          <p class="text-dimmed">{{ t("domains.capacity.total") }}</p>
-          <p class="font-semibold">{{ totalGb }} GB</p>
-        </div>
-        <div>
-          <p class="text-dimmed">{{ t("domains.capacity.free") }}</p>
-          <p class="font-semibold">{{ freeGb }} GB</p>
-        </div>
-        <div>
-          <p class="text-dimmed">{{ t("domains.capacity.reserved") }}</p>
-          <p class="font-semibold">{{ reservedGb }} GB</p>
-        </div>
-        <div>
-          <p class="text-dimmed">{{ t("domains.capacity.assignable") }}</p>
-          <p class="font-semibold text-primary">{{ assignableGb }} GB</p>
-        </div>
-      </div>
-    </UCard>
+    <DomainsCapacityCard v-if="canSeeAllDomains" :disk="disk" />
 
-    <UCard>
+    <UCard v-if="canCreateDomain">
       <template #header>
         <h2 class="font-semibold">{{ t("domains.form.title") }}</h2>
       </template>
@@ -248,65 +240,86 @@ onMounted(loadDisk);
       </UForm>
     </UCard>
 
-    <UAlert v-if="!canReadList" color="neutral" variant="subtle" icon="i-lucide-lock" :title="t('domains.listLocked')" />
+    <ListToolbar
+      v-model:search="search"
+      v-model:limit="limit"
+      v-model:sort-by="sortBy"
+      v-model:sort-dir="sortDir"
+      :total="total"
+      :sortable-columns="SORTABLE_COLUMNS"
+    />
+
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
     <template v-else>
-      <ListToolbar
-        v-model:search="search"
-        v-model:limit="limit"
-        v-model:sort-by="sortBy"
-        v-model:sort-dir="sortDir"
-        :total="total"
-        :sortable-columns="SORTABLE_COLUMNS"
-      />
-
-      <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
-
-      <template v-else>
-        <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-          <UTable :columns="columns" :data="items" :loading="loading" sticky>
-            <template #domain-cell="{ row }">
-              <button class="font-medium text-primary hover:underline text-left" @click="openDomain(row.original)">
-                {{ row.original.domain }}
-              </button>
-            </template>
-            <template #active-cell="{ row }">
-              <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
-                {{ row.original.active ? t("common.yes") : t("common.no") }}
-              </UBadge>
-            </template>
-            <template #quota-cell="{ row }">
-              {{ quotaToMb(row.original.quota) }}
-            </template>
-            <template #actions-cell="{ row }">
-              <UButton
-                icon="i-lucide-trash-2"
-                color="error"
-                variant="ghost"
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+        <UTable :columns="columns" :data="items" :loading="loading" sticky>
+          <template #domain-cell="{ row }">
+            <button class="font-medium text-primary hover:underline text-left" @click="openDomain(row.original)">
+              {{ row.original.domain }}
+            </button>
+          </template>
+          <template #active-cell="{ row }">
+            <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
+              {{ row.original.active ? t("common.yes") : t("common.no") }}
+            </UBadge>
+          </template>
+          <template #quota-cell="{ row }">
+            <div class="min-w-[110px]">
+              <p>{{ occupancyLabel(row.original) }}</p>
+              <UProgress
+                :model-value="occupancyPercent(row.original)"
+                :color="occupancyColor(row.original)"
                 size="xs"
-                square
-                @click="requestDelete(() => remove(row.original.id))"
+                class="mt-1"
               />
-            </template>
-          </UTable>
-        </UCard>
+            </div>
+          </template>
+          <template #actions-cell="{ row }">
+            <div class="flex justify-end gap-2">
+              <UButton
+                v-if="canAdminister(row.original.id)"
+                icon="i-lucide-shield-alert"
+                color="warning"
+                variant="outline"
+                size="xs"
+                @click="openAdminModal(row.original)"
+              />
 
-        <div class="lg:hidden space-y-3">
-          <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-          <DomainCard
-            v-for="item in items"
-            v-else
-            :key="item.id"
-            :item="item"
-            @open="openDomain(item)"
-            @delete="requestDelete(() => remove(item.id))"
-          />
-        </div>
+              <UButton icon="i-lucide-arrow-right" color="primary" variant="outline" size="xs" @click="openDomain(row.original)">
+                {{ t("common.manage") }}
+              </UButton>
+            </div>
+          </template>
+        </UTable>
+      </UCard>
 
-        <ListPagination v-model:page="page" :total="total" :limit="limit" />
-      </template>
+      <div class="lg:hidden space-y-3">
+        <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
+        <DomainCard
+          v-for="item in items"
+          v-else
+          :key="item.id"
+          :item="item"
+          :can-administer="canAdminister(item.id)"
+          @open="openDomain(item)"
+          @administer="openAdminModal(item)"
+        />
+      </div>
+
+      <ListPagination v-model:page="page" :total="total" :limit="limit" />
     </template>
 
-    <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
+    <DomainAdminModal
+      v-if="adminModalItem"
+      v-model:open="adminModalOpen"
+      :item="adminModalItem"
+      :saving="adminSaving"
+      :min-quota-mb="MIN_QUOTA_MB"
+      :max-quota-mb="adminMaxQuotaMb"
+      :can-delete="canDeleteDomain(adminModalItem.id)"
+      @save="saveAdmin"
+      @delete="deleteFromAdminModal"
+    />
   </div>
 </template>
