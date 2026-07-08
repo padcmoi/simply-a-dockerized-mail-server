@@ -1,13 +1,25 @@
 <script setup lang="ts">
-const emit = defineEmits<{ delete: [] }>();
+const emit = defineEmits<{ delete: []; edit: [] }>();
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
-    item: { id: number; email: string; quota: string; active: number };
+    item: { id: number; email: string; quota: string; usedBytes: string; active: number };
     isPostmaster?: boolean;
+    canEdit?: boolean;
   }>(),
-  { isPostmaster: false }
+  { isPostmaster: false, canEdit: false }
 );
+
+const occupancyPercent = computed(() => {
+  const quota = Number(props.item.quota);
+  if (!Number.isFinite(quota) || quota <= 0) return 0;
+  return Math.min(100, (Number(props.item.usedBytes) / quota) * 100);
+});
+const occupancyColor = computed(() => {
+  if (occupancyPercent.value > 90) return "error";
+  if (occupancyPercent.value > 70) return "warning";
+  return "success";
+});
 
 const { t } = useI18n();
 </script>
@@ -28,13 +40,23 @@ const { t } = useI18n();
     <div class="mt-2 space-y-1 text-sm">
       <div class="flex gap-2">
         <span class="text-muted w-24 shrink-0">{{ t("recipients.table.quota") }}</span>
-        <span>{{ item.quota }}</span>
+        <span>{{ formatBytes(Number(item.quota)) }}</span>
       </div>
+      <div class="flex gap-2">
+        <span class="text-muted w-24 shrink-0">{{ t("recipients.table.used") }}</span>
+        <span>{{ formatBytes(Number(item.usedBytes)) }}</span>
+      </div>
+      <UProgress :model-value="occupancyPercent" :color="occupancyColor" size="xs" />
     </div>
-    <div class="mt-3 pt-3 border-t border-default flex justify-end">
-      <UButton v-if="!isPostmaster" icon="i-lucide-trash-2" size="sm" color="error" variant="outline" @click="emit('delete')">
-        {{ t("common.delete") }}
-      </UButton>
+    <div class="mt-3 pt-3 border-t border-default flex justify-end gap-2">
+      <template v-if="!isPostmaster">
+        <UButton v-if="canEdit" icon="i-lucide-pencil" size="sm" color="primary" variant="outline" @click="emit('edit')">
+          {{ t("recipients.editModal.button") }}
+        </UButton>
+        <UButton icon="i-lucide-trash-2" size="sm" color="error" variant="outline" @click="emit('delete')">
+          {{ t("common.delete") }}
+        </UButton>
+      </template>
       <span v-else class="text-xs text-dimmed italic">{{ t("recipients.postmaster.locked") }}</span>
     </div>
   </UCard>

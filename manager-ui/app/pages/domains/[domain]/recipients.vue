@@ -10,28 +10,32 @@ interface Recipient {
   id: number;
   email: string;
   quota: string;
+  usedBytes: string;
   active: number;
 }
 
-const MIN_QUOTA_BYTES = 1024 * 1024;
+const MB = 1024 * 1024;
+const MIN_QUOTA_MB = 1;
 
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
-const form = reactive({ localPart: "", password: "", quota: 524288000 });
+const form = reactive({ localPart: "", password: "", quotaMb: 500 });
 
-const quotaUnderLimit = computed(() => form.quota < MIN_QUOTA_BYTES);
+const quotaUnderLimit = computed(() => form.quotaMb < MIN_QUOTA_MB);
 
 // Same source feeds the desktop column headers below and ListToolbar's
 // mobile sort select.
 const SORTABLE_COLUMNS = computed(() => [
   { key: "email", label: t("recipients.table.address") },
   { key: "quota", label: t("recipients.table.quota") },
+  { key: "usedBytes", label: t("recipients.table.used") },
   { key: "active", label: t("recipients.table.active") },
 ]);
 
 const columns = computed(() => [
   { accessorKey: "email", header: header("email", t("recipients.table.address")) },
   { accessorKey: "quota", header: header("quota", t("recipients.table.quota")) },
+  { accessorKey: "usedBytes", header: header("usedBytes", t("recipients.table.used")) },
   { accessorKey: "active", header: header("active", t("recipients.table.active")) },
   { id: "actions", header: "" },
 ]);
@@ -58,15 +62,29 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
 );
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
+const { editModalOpen, editModalItem, editSaving, canEditRecipients, openEditModal, saveEdit } = useRecipientEdit(domainId, load);
 
 function isPostmaster(item: Recipient) {
   return item.email.toLowerCase().startsWith("postmaster@");
 }
 
+function occupancyPercent(r: Recipient) {
+  const quota = Number(r.quota);
+  if (!Number.isFinite(quota) || quota <= 0) return 0;
+  return Math.min(100, (Number(r.usedBytes) / quota) * 100);
+}
+
+function occupancyColor(r: Recipient) {
+  const pct = occupancyPercent(r);
+  if (pct > 90) return "error";
+  if (pct > 70) return "warning";
+  return "success";
+}
+
 async function create() {
   if (!domainId.value) return;
   if (quotaUnderLimit.value) {
-    toast.add({ title: t("recipients.toast.quotaTooLow", { value: MIN_QUOTA_BYTES / (1024 * 1024) }), color: "error" });
+    toast.add({ title: t("recipients.toast.quotaTooLow", { value: MIN_QUOTA_MB }), color: "error" });
     return;
   }
   try {
@@ -75,7 +93,7 @@ async function create() {
       body: {
         localPart: form.localPart,
         password: form.password,
-        quota: form.quota,
+        quota: form.quotaMb * MB,
       },
     });
     form.localPart = "";
@@ -136,11 +154,11 @@ async function onDeleteConfirmed() {
           <UInput v-model="form.password" type="password" :placeholder="t('recipients.form.password')" class="w-full" />
         </UFormField>
         <UFormField
-          :label="t('recipients.form.quotaBytes')"
-          name="quota"
-          :error="quotaUnderLimit ? t('recipients.form.quotaMin', { value: MIN_QUOTA_BYTES / (1024 * 1024) }) : undefined"
+          :label="t('recipients.form.quotaMb')"
+          name="quotaMb"
+          :error="quotaUnderLimit ? t('recipients.form.quotaMin', { value: MIN_QUOTA_MB }) : undefined"
         >
-          <UInput v-model.number="form.quota" type="number" :min="MIN_QUOTA_BYTES" class="w-full" />
+          <UInput v-model.number="form.quotaMb" type="number" :min="MIN_QUOTA_MB" class="w-full" />
         </UFormField>
         <UButton type="submit" icon="i-lucide-plus" :disabled="quotaUnderLimit" block class="lg:w-auto">{{
           t("recipients.form.submit")
@@ -157,7 +175,7 @@ async function onDeleteConfirmed() {
       :sortable-columns="SORTABLE_COLUMNS"
     />
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
     <template v-else>
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
@@ -170,21 +188,45 @@ async function onDeleteConfirmed() {
               </UBadge>
             </div>
           </template>
+          <template #quota-cell="{ row }">
+            <span>{{ formatBytes(Number(row.original.quota)) }}</span>
+          </template>
+          <template #usedBytes-cell="{ row }">
+            <div class="min-w-[110px]">
+              <p>{{ formatBytes(Number(row.original.usedBytes)) }}</p>
+              <UProgress
+                :model-value="occupancyPercent(row.original)"
+                :color="occupancyColor(row.original)"
+                size="xs"
+                class="mt-1"
+              />
+            </div>
+          </template>
           <template #active-cell="{ row }">
             <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
               {{ row.original.active ? t("common.yes") : t("common.no") }}
             </UBadge>
           </template>
           <template #actions-cell="{ row }">
-            <UButton
-              v-if="!isPostmaster(row.original)"
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="ghost"
-              size="xs"
-              square
-              @click="requestDelete(() => remove(row.original))"
-            />
+            <div v-if="!isPostmaster(row.original)" class="flex justify-end gap-2">
+              <UButton
+                v-if="canEditRecipients"
+                icon="i-lucide-pencil"
+                color="primary"
+                variant="ghost"
+                size="xs"
+                square
+                @click="openEditModal(row.original)"
+              />
+              <UButton
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="ghost"
+                size="xs"
+                square
+                @click="requestDelete(() => remove(row.original))"
+              />
+            </div>
             <UTooltip v-else :text="t('recipients.postmaster.locked')">
               <UIcon name="i-lucide-lock" class="text-dimmed" />
             </UTooltip>
@@ -200,7 +242,9 @@ async function onDeleteConfirmed() {
           :key="item.id"
           :item="item"
           :is-postmaster="isPostmaster(item)"
+          :can-edit="canEditRecipients"
           @delete="requestDelete(() => remove(item))"
+          @edit="openEditModal(item)"
         />
       </div>
 
@@ -208,5 +252,14 @@ async function onDeleteConfirmed() {
     </template>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
+
+    <RecipientEditModal
+      v-if="editModalItem"
+      v-model:open="editModalOpen"
+      :item="editModalItem"
+      :saving="editSaving"
+      :min-quota-mb="MIN_QUOTA_MB"
+      @save="saveEdit"
+    />
   </div>
 </template>

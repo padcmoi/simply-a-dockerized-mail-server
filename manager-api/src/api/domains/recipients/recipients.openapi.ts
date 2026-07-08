@@ -21,6 +21,7 @@ const recipientListItemExample = {
   email: "jdoe@example.com",
   maildir: "example.com/jdoe/",
   quota: "104857600",
+  usedBytes: "8192",
   active: 1,
   uid: "vmail",
   gid: "vmail",
@@ -32,7 +33,13 @@ const recipientListItemExample = {
 export const ListRecipientsDocs = () =>
   applyDecorators(
     ApiPaginationQuery(RECIPIENTS_SORTABLE_COLUMNS),
-    ApiOperation({ summary: "List recipients that belong to this domain, paginated" }),
+    ApiOperation({
+      summary: "List recipients that belong to this domain, paginated",
+      description:
+        'Every recipient row also carries a computed `usedBytes` (from virtual_quota_users, `"0"` if dovecot ' +
+        "hasn't written a counter for it yet). `sortBy=usedBytes` is accepted despite not being a real column -- " +
+        "it sorts on a joined value.",
+    }),
     ApiResponse({
       status: 200,
       description: "Recipients returned",
