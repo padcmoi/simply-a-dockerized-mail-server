@@ -14,6 +14,7 @@ export default {
     recipients: "Recipients",
     aliases: "Aliases",
     quotas: "Quotas",
+    administration: "Administration",
     sieve: "Sieve",
     sieveLong: "Sieve - Rejected senders",
     accounts: "Accounts",
@@ -63,7 +64,9 @@ export default {
     title: "Confirm deletion",
     description: "This action cannot be undone.",
     proceed: "Delete",
+    proceedAction: "Confirm",
     countdownHint: "Cancel before the countdown ends to stop the deletion.",
+    countdownHintAction: "Cancel before the countdown ends to stop this action.",
   },
   login: {
     title: "Simply Mail Server",
@@ -347,6 +350,8 @@ export default {
       generate: "Generate key",
       rotate: "Rotate key",
       copied: "Copied to clipboard",
+      statusGenerated: "DKIM key generated",
+      statusMissing: "No DKIM key generated",
       confirmGenerate: "Generate DKIM key?",
       confirmGenerateDesc: "A new signing key will be created for this domain.",
       confirmRotate: "Rotate DKIM key?",
@@ -387,11 +392,15 @@ export default {
     },
     owner: {
       title: "Owner",
+      current: "Current owner",
       unassigned: "No owner assigned",
       pickPlaceholder: "Select an account",
       change: "Transfer ownership",
       saved: "Ownership transferred",
       saveFailed: "Ownership transfer failed",
+    },
+    admin: {
+      subtitle: "Sensitive administration: DKIM signing keys and domain ownership.",
     },
   },
   postfixPage: {
@@ -547,8 +556,9 @@ export default {
         recipients: "Recipients",
         aliases: "Aliases",
         quotas: "Quotas",
-        dkim: "DKIM",
+        dkim: "DKIM management",
         spamd: "Spam filtering",
+        admin: "Administration",
       },
       actionsLabel: {
         access: "Access",

@@ -112,6 +112,16 @@ export function useNav(onSignOut: () => Promise<void>) {
             },
           ]
         : []),
+      ...(canViewDomain(domainId, "admin")
+        ? [
+            {
+              label: t("nav.administration"),
+              icon: "i-lucide-shield-alert",
+              to: `${domainHome}/admin`,
+              active: isActive(`${domainHome}/admin`),
+            },
+          ]
+        : []),
     ];
   });
 

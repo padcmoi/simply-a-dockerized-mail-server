@@ -25,7 +25,10 @@ export class DkimController {
   }
 
   @Get()
-  @RequireDomainPermissions([{ resource: "dkim", actions: ["access", "read"] }])
+  @RequireDomainPermissions([
+    { resource: "dkim", actions: ["access", "read"] },
+    { resource: "admin", actions: ["access", "read"] },
+  ])
   @ListDkimDocs()
   async list(@Param("domainId", ParseIntPipe) domainId: number) {
     const domain = await this.resolveDomain(domainId);
@@ -33,7 +36,10 @@ export class DkimController {
   }
 
   @Post("rotate")
-  @RequireDomainPermissions([{ resource: "dkim", actions: ["access", "create"] }])
+  @RequireDomainPermissions([
+    { resource: "dkim", actions: ["access", "create", "modify", "delete"] },
+    { resource: "admin", actions: ["access", "create", "modify", "delete"] },
+  ])
   @RotateDkimDocs()
   async rotate(@Param("domainId", ParseIntPipe) domainId: number) {
     const domain = await this.resolveDomain(domainId);
@@ -42,7 +48,10 @@ export class DkimController {
   }
 
   @Delete(":selector")
-  @RequireDomainPermissions([{ resource: "dkim", actions: ["access", "delete"] }])
+  @RequireDomainPermissions([
+    { resource: "dkim", actions: ["access", "delete"] },
+    { resource: "admin", actions: ["access", "delete"] },
+  ])
   @RemoveDkimDocs()
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("selector") selector: string) {
     const domain = await this.resolveDomain(domainId);

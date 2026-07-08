@@ -36,7 +36,8 @@ export const ListDkimDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: 'Missing the "dkim" resource\'s access+read domain permissions for this domain (and not its owner/root)',
+      description:
+        'Missing the "dkim" and/or "admin" resources\' access+read domain permissions for this domain (both are required)',
       schema: { example: { statusCode: 403, message: "Missing permission dkim:read for domain #12" } },
     }),
     ApiResponse({
@@ -70,7 +71,9 @@ export const RotateDkimDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: 'Missing the "dkim" resource\'s access+create domain permissions for this domain (and not its owner/root)',
+      description:
+        'Missing the "dkim" and/or "admin" resources\' access+create+modify+delete domain permissions for this domain ' +
+        "(both resources required -- rotation removes the old key and creates a new one)",
       schema: { example: { statusCode: 403, message: "Missing permission dkim:create for domain #12" } },
     }),
     ApiResponse({
@@ -108,7 +111,8 @@ export const RemoveDkimDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: 'Missing the "dkim" resource\'s access+delete domain permissions for this domain (and not its owner/root)',
+      description:
+        'Missing the "dkim" and/or "admin" resources\' access+delete domain permissions for this domain (both are required)',
       schema: { example: { statusCode: 403, message: "Missing permission dkim:delete for domain #12" } },
     }),
     ApiResponse({

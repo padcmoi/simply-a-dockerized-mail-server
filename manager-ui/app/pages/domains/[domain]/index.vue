@@ -31,73 +31,21 @@ const {
   barChartOptions,
   barChartHeight,
   load,
-  rotateDkim,
-  deleteDkim,
-  copyToClipboard,
 } = useDomainDashboard();
 
 const { isRoot, hasDomain } = usePermissions();
 
-// Domain ownership transfer: restricted to root or the domain's current owner
-// (mirrors the group owner-transfer control on the group detail page).
-const auth = useAuthStore();
-const { call } = useApi();
-const toast = useToast();
-const { t } = useI18n();
-
-const ownerPick = ref<number | undefined>(undefined);
-const savingOwner = ref(false);
-const accountOptions = ref<{ label: string; value: number }[]>([]);
-// Starts true: still don't know `domain.id` at first paint (SSR + pre-mount),
-// so the select must show a skeleton immediately rather than an empty
-// dropdown before we've even determined whether a fetch is needed.
-const ownerOptionsLoading = ref(true);
-
-// `rspamd`/`dkim` history sections below are scoped to the `spamd`/`dkim` domain
-// resources specifically (not the generic `domain` gate this page's own route
-// already requires) — only render them if the current user actually has access.
+// `rspamd` section below is scoped to the `spamd` domain resource specifically
+// (not the generic `domain` gate this page's own route already requires) —
+// only render it if the current user actually has access.
+// DKIM key material and domain ownership are sensitive administration, kept
+// off this dashboard entirely (see the dedicated `/admin` page, gated by the
+// "admin" domain resource) -- `canViewAdmin` here only gates whether the
+// status indicator + link to that page show up.
 const canViewSpamd = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "spamd", "access")));
-const canViewDkim = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "dkim", "access")));
-
-const canTransferOwner = computed(
-  () => isRoot.value || (domain.value?.ownerUsername != null && domain.value.ownerUsername === auth.session?.username)
-);
+const canViewAdmin = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "admin", "access")));
 
 const domainPath = computed(() => (domain.value ? `/domains/${domain.value.domain}` : null));
-
-watch(
-  () => domain.value?.id,
-  async (id) => {
-    if (id == null) return; // still don't know yet -- keep the skeleton up
-    if (!canTransferOwner.value || accountOptions.value.length) {
-      ownerOptionsLoading.value = false;
-      return;
-    }
-    ownerOptionsLoading.value = true;
-    try {
-      const accounts = await call<{ id: number; username: string; name: string | null }[]>("/accounts/names").catch(() => []);
-      accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
-    } finally {
-      ownerOptionsLoading.value = false;
-    }
-  },
-  { immediate: true }
-);
-
-async function changeDomainOwner() {
-  if (!domain.value || ownerPick.value === undefined) return;
-  savingOwner.value = true;
-  try {
-    await call(`/domains/${domain.value.id}/owner`, { method: "PATCH", body: { newOwnerId: ownerPick.value } });
-    await load();
-    ownerPick.value = undefined;
-    toast.add({ title: t("domainDashboard.owner.saved"), color: "success" });
-  } catch (e) {
-    toast.add({ title: t("domainDashboard.owner.saveFailed"), description: (e as Error).message, color: "error" });
-  } finally {
-    savingOwner.value = false;
-  }
-}
 </script>
 
 <template>
@@ -230,7 +178,7 @@ async function changeDomainOwner() {
       </UCard>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <UCard
         :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
         @click="domainPath && navigateTo(`${domainPath}/recipients`)"
@@ -261,49 +209,32 @@ async function changeDomainOwner() {
           <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
         </div>
       </UCard>
+      <UCard
+        v-if="canViewAdmin"
+        :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+        @click="domainPath && navigateTo(`${domainPath}/admin`)"
+      >
+        <div class="flex items-center gap-3">
+          <UIcon name="i-lucide-shield-alert" class="text-warning text-xl" />
+          <span class="font-medium">{{ $t("nav.administration") }}</span>
+          <UIcon v-if="dkimLoading" name="i-lucide-loader-2" class="ml-auto text-muted animate-spin" />
+          <UTooltip
+            v-else
+            :text="dkimKeys.length > 0 ? $t('domainDashboard.dkim.statusGenerated') : $t('domainDashboard.dkim.statusMissing')"
+            class="ml-auto"
+          >
+            <UIcon
+              :name="dkimKeys.length > 0 ? 'i-lucide-check-circle-2' : 'i-lucide-x-circle'"
+              :class="dkimKeys.length > 0 ? 'text-success' : 'text-error'"
+            />
+          </UTooltip>
+        </div>
+      </UCard>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <DomainRspamdCard v-if="canViewSpamd" :history="rspamdHistory" :loading="loading" />
       <DomainPostfixCard :queue="postfixQueue" :loading="postfixLoading" />
     </div>
-
-    <DomainDkimSection
-      v-if="canViewDkim"
-      :keys="dkimKeys"
-      :loading="dkimLoading"
-      @rotate="rotateDkim"
-      @delete="deleteDkim"
-      @copy="copyToClipboard"
-    />
-
-    <UCard v-if="canTransferOwner">
-      <template #header>
-        <h3 class="font-semibold">{{ $t("domainDashboard.owner.title") }}</h3>
-      </template>
-      <p class="text-sm mb-3">
-        {{ domain?.ownerUsername ?? $t("domainDashboard.owner.unassigned") }}
-      </p>
-      <div class="flex flex-wrap gap-2">
-        <USkeleton v-if="ownerOptionsLoading" class="h-8 w-48 rounded-md" />
-        <USelectMenu
-          v-else
-          v-model="ownerPick"
-          value-key="value"
-          :items="accountOptions"
-          :placeholder="$t('domainDashboard.owner.pickPlaceholder')"
-          class="min-w-[12rem]"
-        />
-        <UButton
-          color="neutral"
-          variant="outline"
-          :loading="savingOwner"
-          :disabled="ownerPick === undefined"
-          @click="changeDomainOwner"
-        >
-          {{ $t("domainDashboard.owner.change") }}
-        </UButton>
-      </div>
-    </UCard>
   </div>
 </template>

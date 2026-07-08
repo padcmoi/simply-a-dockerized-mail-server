@@ -12,6 +12,7 @@ export interface Locales {
     recipients: string;
     aliases: string;
     quotas: string;
+    administration: string;
     sieve: string;
     sieveLong: string;
     accounts: string;
@@ -61,7 +62,9 @@ export interface Locales {
     title: string;
     description: string;
     proceed: string;
+    proceedAction: string;
     countdownHint: string;
+    countdownHintAction: string;
   };
   login: {
     title: string;
@@ -344,6 +347,8 @@ export interface Locales {
       generate: string;
       rotate: string;
       copied: string;
+      statusGenerated: string;
+      statusMissing: string;
       confirmGenerate: string;
       confirmGenerateDesc: string;
       confirmRotate: string;
@@ -384,11 +389,15 @@ export interface Locales {
     };
     owner: {
       title: string;
+      current: string;
       unassigned: string;
       pickPlaceholder: string;
       change: string;
       saved: string;
       saveFailed: string;
+    };
+    admin: {
+      subtitle: string;
     };
   };
   postfixPage: {
@@ -545,6 +554,7 @@ export interface Locales {
         quotas: string;
         dkim: string;
         spamd: string;
+        admin: string;
       };
       actionsLabel: {
         access: string;

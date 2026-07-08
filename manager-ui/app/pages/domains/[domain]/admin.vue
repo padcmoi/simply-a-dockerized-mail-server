@@ -1,0 +1,198 @@
+<script setup lang="ts">
+import type { Domain, DkimKey } from "~/composables/useDomainDashboard";
+
+// Gated by the "admin" domain ACL (not the generic "domain" resource the main
+// dashboard requires) -- DKIM key material and ownership transfer are
+// sensitive administration, kept off the day-to-day dashboard on purpose.
+definePageMeta({
+  requiredDomain: [
+    { resource: "admin", action: "access" },
+    { resource: "admin", action: "read" },
+  ],
+});
+
+const { t } = useI18n();
+const { call } = useApi();
+const toast = useToast();
+const auth = useAuthStore();
+const { isRoot } = usePermissions();
+const { set: setBreadcrumb } = useBreadcrumb();
+const route = useRoute();
+
+// Ownership transfer authorization is decided entirely server-side (root or
+// current owner, see domains.controller.ts's transferOwner) -- the section
+// always renders and the PATCH call is what actually enforces it (403 caught
+// below). `isOwnerOrRoot` only disables the button as a UX hint so an
+// obviously-doomed request isn't submitted; it grants nothing by itself.
+const ownerPick = ref<number | undefined>(undefined);
+const savingOwner = ref(false);
+const accountOptions = ref<{ label: string; value: number }[]>([]);
+// Starts true: still don't know `domain.id` at first paint (SSR + pre-mount),
+// so the select must show a skeleton immediately rather than an empty
+// dropdown before we've even determined whether a fetch is needed.
+const ownerOptionsLoading = ref(true);
+
+const domainFqdn = computed(() => String(route.params.domain));
+
+const { data: domainData, refresh: refreshDomain } = useAsyncData<Domain | null>(
+  "domain-admin-info",
+  async () => {
+    const domains = await call<Domain[]>("/domains");
+    return domains.find((d) => d.domain === domainFqdn.value) ?? null;
+  },
+  { server: false, watch: [domainFqdn], default: () => null }
+);
+const domain = computed(() => domainData.value);
+const domainId = computed(() => domain.value?.id ?? null);
+
+// `immediate: false`: only makes sense once `domainId` is known -- see the
+// same pattern (and its rationale) in useDomainDashboard.ts.
+const {
+  data: dkimData,
+  status: dkimStatus,
+  refresh: refreshDkim,
+} = useAsyncData<DkimKey[]>(
+  "domain-admin-dkim",
+  async () => {
+    if (!domainId.value) return [];
+    try {
+      return await call<DkimKey[]>(`/domains/${domainId.value}/dkim`);
+    } catch {
+      return [];
+    }
+  },
+  { server: false, immediate: false, watch: [domainId], default: () => [] }
+);
+const dkimKeys = computed(() => dkimData.value ?? []);
+const dkimLoading = computed(() => dkimStatus.value !== "success" && dkimStatus.value !== "error");
+
+const isOwnerOrRoot = computed(
+  () => isRoot.value || (domain.value?.ownerUsername != null && domain.value.ownerUsername === auth.session?.username)
+);
+
+watch(
+  () => domain.value?.id,
+  async (id) => {
+    if (id == null) return; // still don't know yet -- keep the skeleton up
+    if (accountOptions.value.length) {
+      ownerOptionsLoading.value = false;
+      return;
+    }
+    ownerOptionsLoading.value = true;
+    try {
+      const accounts = await call<{ id: number; username: string; name: string | null }[]>("/accounts/names").catch(() => []);
+      accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
+    } finally {
+      ownerOptionsLoading.value = false;
+    }
+  },
+  { immediate: true }
+);
+
+watchEffect(() => {
+  setBreadcrumb([
+    { label: t("nav.domains"), to: "/domains" },
+    { label: domainFqdn.value, to: `/domains/${domainFqdn.value}` },
+    { label: t("nav.administration") },
+  ]);
+});
+
+async function rotateDkim() {
+  if (!domainId.value) return;
+  try {
+    await call(`/domains/${domainId.value}/dkim/rotate`, { method: "POST" });
+    await refreshDkim();
+    toast.add({ title: t("domainDashboard.dkim.toast.rotated"), color: "success" });
+  } catch (err) {
+    toast.add({
+      title: t("domainDashboard.dkim.toast.rotateFailed"),
+      description: (err as Error).message,
+      color: "error",
+    });
+  }
+}
+
+async function deleteDkim(selector: string) {
+  if (!domainId.value) return;
+  try {
+    await call(`/domains/${domainId.value}/dkim/${selector}`, { method: "DELETE" });
+    await refreshDkim();
+    toast.add({ title: t("domainDashboard.dkim.toast.deleted"), color: "success" });
+  } catch (err) {
+    toast.add({
+      title: t("domainDashboard.dkim.toast.deleteFailed"),
+      description: (err as Error).message,
+      color: "error",
+    });
+  }
+}
+
+async function copyToClipboard(text: string) {
+  await navigator.clipboard.writeText(text);
+  toast.add({
+    title: t("domainDashboard.dkim.copied"),
+    icon: "i-lucide-copy",
+    color: "success",
+    duration: 1500,
+  });
+}
+
+async function changeDomainOwner() {
+  if (!domain.value || ownerPick.value === undefined) return;
+  savingOwner.value = true;
+  try {
+    await call(`/domains/${domain.value.id}/owner`, { method: "PATCH", body: { newOwnerId: ownerPick.value } });
+    await refreshDomain();
+    ownerPick.value = undefined;
+    toast.add({ title: t("domainDashboard.owner.saved"), color: "success" });
+  } catch (e) {
+    toast.add({ title: t("domainDashboard.owner.saveFailed"), description: (e as Error).message, color: "error" });
+  } finally {
+    savingOwner.value = false;
+  }
+}
+</script>
+
+<template>
+  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+    <UAlert color="warning" variant="subtle" icon="i-lucide-shield-alert" :title="t('domainDashboard.admin.subtitle')" />
+
+    <DomainDkimSection
+      :keys="dkimKeys"
+      :loading="dkimLoading"
+      @rotate="rotateDkim"
+      @delete="deleteDkim"
+      @copy="copyToClipboard"
+    />
+
+    <UCard>
+      <template #header>
+        <h3 class="font-semibold">{{ t("domainDashboard.owner.title") }}</h3>
+      </template>
+      <p class="text-sm mb-3">
+        {{ t("domainDashboard.owner.current") }}:
+        <span class="font-medium">{{ domain?.ownerUsername ?? t("domainDashboard.owner.unassigned") }}</span>
+      </p>
+      <div class="flex flex-wrap gap-2">
+        <USkeleton v-if="ownerOptionsLoading" class="h-8 w-48 rounded-md" />
+        <USelectMenu
+          v-else
+          v-model="ownerPick"
+          value-key="value"
+          :items="accountOptions"
+          :placeholder="t('domainDashboard.owner.pickPlaceholder')"
+          class="min-w-[12rem]"
+        />
+        <UButton
+          color="neutral"
+          variant="outline"
+          :loading="savingOwner"
+          :disabled="ownerPick === undefined || !isOwnerOrRoot"
+          @click="changeDomainOwner"
+        >
+          {{ t("domainDashboard.owner.change") }}
+        </UButton>
+      </div>
+    </UCard>
+  </div>
+</template>

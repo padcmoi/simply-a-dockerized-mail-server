@@ -14,6 +14,7 @@ export default {
     recipients: "Destinataires",
     aliases: "Alias",
     quotas: "Quotas",
+    administration: "Administration",
     sieve: "Sieve",
     sieveLong: "Sieve - Expéditeurs rejetés",
     accounts: "Comptes",
@@ -63,7 +64,9 @@ export default {
     title: "Confirmer la suppression",
     description: "Cette action est irréversible.",
     proceed: "Supprimer",
+    proceedAction: "Confirmer",
     countdownHint: "Annulez avant la fin du décompte pour stopper la suppression.",
+    countdownHintAction: "Annulez avant la fin du décompte pour stopper cette action.",
   },
   login: {
     title: "Simply Mail Server",
@@ -249,7 +252,8 @@ export default {
   },
   accounts: {
     alertTitle: "Gestion des accès au panneau d'administration.",
-    alertDescription: "Les comptes root ont accès total. Les autres comptes sont limités aux permissions accordées par leur groupe assigné.",
+    alertDescription:
+      "Les comptes root ont accès total. Les autres comptes sont limités aux permissions accordées par leur groupe assigné.",
     inviteButton: "Inviter un utilisateur",
     backToList: "Retour aux comptes",
     table: {
@@ -347,6 +351,8 @@ export default {
       generate: "Générer une clé",
       rotate: "Régénérer la clé",
       copied: "Copié dans le presse-papiers",
+      statusGenerated: "Clé DKIM générée",
+      statusMissing: "Aucune clé DKIM générée",
       confirmGenerate: "Générer la clé DKIM ?",
       confirmGenerateDesc: "Une nouvelle clé de signature sera créée pour ce domaine.",
       confirmRotate: "Régénérer la clé DKIM ?",
@@ -387,11 +393,15 @@ export default {
     },
     owner: {
       title: "Propriétaire",
+      current: "Propriétaire actuel",
       unassigned: "Aucun propriétaire assigné",
       pickPlaceholder: "Sélectionner un compte",
       change: "Transférer la propriété",
       saved: "Propriété transférée",
       saveFailed: "Échec du transfert de propriété",
+    },
+    admin: {
+      subtitle: "Administration sensible : clés de signature DKIM et propriété du domaine.",
     },
   },
   postfixPage: {
@@ -548,8 +558,9 @@ export default {
         recipients: "Boîtes aux lettres",
         aliases: "Alias",
         quotas: "Quotas",
-        dkim: "DKIM",
+        dkim: "Gestion DKIM",
         spamd: "Filtrage antispam",
+        admin: "Administration",
       },
       actionsLabel: {
         access: "Accès",
