@@ -15,15 +15,18 @@ import {
   GetDomainDocs,
   ListDomainsDocs,
   RemoveDomainDocs,
+  SetDomainActiveDocs,
   TransferDomainOwnerDocs,
   UpdateDomainDocs,
 } from "./domains.openapi";
 import { DomainsService } from "./domains.service";
 import {
   CreateDomainDto,
+  SetDomainActiveDto,
   TransferDomainOwnerDto,
   UpdateDomainDto,
   createDomainSchema,
+  setDomainActiveSchema,
   transferDomainOwnerSchema,
   updateDomainSchema,
 } from "./domains.validation";
@@ -86,6 +89,19 @@ export class DomainsController {
   @RemoveDomainDocs()
   remove(@Param("domainId", ParseIntPipe) domainId: number) {
     return this.svc.remove(domainId);
+  }
+
+  // Dedicated route, gated by the "admin" domain resource rather than the
+  // general "domain" modify used by update() above -- activating/deactivating
+  // a domain's mail acceptance is an Administration-page action.
+  @Patch(":domainId/active")
+  @RequireDomainPermissions([{ resource: "admin", actions: ["access", "modify"] }])
+  @SetDomainActiveDocs()
+  setActive(
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Body(new ZodValidationPipe(setDomainActiveSchema)) body: SetDomainActiveDto
+  ) {
+    return this.svc.update(domainId, { active: body.active });
   }
 
   // Ownership transfer keeps its own service-level owner-or-root check, no

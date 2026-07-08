@@ -67,6 +67,8 @@ export default {
     proceedAction: "Confirmer",
     countdownHint: "Annulez avant la fin du décompte pour stopper la suppression.",
     countdownHintAction: "Annulez avant la fin du décompte pour stopper cette action.",
+    clicksHint: "Continuez à cliquer sur le bouton pour confirmer la suppression.",
+    clicksHintAction: "Continuez à cliquer sur le bouton pour confirmer cette action.",
   },
   login: {
     title: "Simply Mail Server",
@@ -401,7 +403,14 @@ export default {
       saveFailed: "Échec du transfert de propriété",
     },
     admin: {
-      subtitle: "Administration sensible : clés de signature DKIM et propriété du domaine.",
+      subtitle: "Administration sensible : statut du domaine, clés de signature DKIM et propriété du domaine.",
+    },
+    status: {
+      title: "Statut du domaine",
+      hint: "Un domaine désactivé n'accepte plus le courrier entrant pour ses boîtes aux lettres.",
+      activated: "Domaine activé",
+      deactivated: "Domaine désactivé",
+      toggleFailed: "Échec du changement de statut",
     },
   },
   postfixPage: {

@@ -65,6 +65,8 @@ export interface Locales {
     proceedAction: string;
     countdownHint: string;
     countdownHintAction: string;
+    clicksHint: string;
+    clicksHintAction: string;
   };
   login: {
     title: string;
@@ -398,6 +400,13 @@ export interface Locales {
     };
     admin: {
       subtitle: string;
+    };
+    status: {
+      title: string;
+      hint: string;
+      activated: string;
+      deactivated: string;
+      toggleFailed: string;
     };
   };
   postfixPage: {

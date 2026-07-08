@@ -67,6 +67,8 @@ export default {
     proceedAction: "Confirm",
     countdownHint: "Cancel before the countdown ends to stop the deletion.",
     countdownHintAction: "Cancel before the countdown ends to stop this action.",
+    clicksHint: "Keep clicking the button to confirm the deletion.",
+    clicksHintAction: "Keep clicking the button to confirm this action.",
   },
   login: {
     title: "Simply Mail Server",
@@ -400,7 +402,14 @@ export default {
       saveFailed: "Ownership transfer failed",
     },
     admin: {
-      subtitle: "Sensitive administration: DKIM signing keys and domain ownership.",
+      subtitle: "Sensitive administration: domain status, DKIM signing keys and domain ownership.",
+    },
+    status: {
+      title: "Domain status",
+      hint: "A deactivated domain stops accepting inbound mail for its mailboxes.",
+      activated: "Domain activated",
+      deactivated: "Domain deactivated",
+      toggleFailed: "Failed to change status",
     },
   },
   postfixPage: {

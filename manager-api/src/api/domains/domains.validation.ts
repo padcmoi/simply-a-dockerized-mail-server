@@ -32,6 +32,15 @@ export const transferDomainOwnerSchema = z.object({
   newOwnerId: z.number().int().positive(),
 });
 
+// Dedicated route + schema for just this one field, gated by the "admin"
+// domain resource (see DomainsController.setActive) rather than the general
+// "domain" modify used by PATCH /:domainId -- activating/deactivating mail
+// acceptance for a domain is an Administration-page action, not a routine edit.
+export const setDomainActiveSchema = z.object({
+  active: z.boolean(),
+});
+
 export type CreateDomainDto = z.infer<typeof createDomainSchema>;
 export type UpdateDomainDto = z.infer<typeof updateDomainSchema>;
 export type TransferDomainOwnerDto = z.infer<typeof transferDomainOwnerSchema>;
+export type SetDomainActiveDto = z.infer<typeof setDomainActiveSchema>;

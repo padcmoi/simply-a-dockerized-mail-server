@@ -297,3 +297,52 @@ export const TransferDomainOwnerDocs = () =>
       schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
     })
   );
+
+export const SetDomainActiveDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Activate or deactivate a domain (Administration page)",
+      description:
+        'An inactive domain stops accepting inbound mail for its mailboxes. Gated by the "admin" domain resource, ' +
+        'not the general "domain" modify used by PATCH /:domainId -- see DomainsController.setActive.',
+    }),
+    ApiParam({
+      name: "domainId",
+      type: Number,
+      example: 1,
+      description: "virtual_domains.id",
+    }),
+    ApiBody({
+      schema: { example: { active: false } },
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Domain updated",
+      schema: {
+        example: {
+          id: 1,
+          ownerId: 7,
+          domain: "example.com",
+          quota: "104857600",
+          active: 0,
+          userStartDate: "2026-01-01",
+          userEndDate: null,
+          lastActivity: "2026-07-04T12:00:00.000Z",
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description: "Body validation failed (active missing or not a boolean), or domainId is not a valid integer",
+      schema: { example: { message: "Validation failed", issues: [] } },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission admin:access or admin:modify for this domain",
+    }),
+    ApiResponse({
+      status: 404,
+      description: "Domain not found",
+      schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
+    })
+  );

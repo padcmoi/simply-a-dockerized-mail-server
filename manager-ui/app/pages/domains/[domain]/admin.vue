@@ -26,6 +26,7 @@ const route = useRoute();
 // obviously-doomed request isn't submitted; it grants nothing by itself.
 const ownerPick = ref<number | undefined>(undefined);
 const savingOwner = ref(false);
+const savingActive = ref(false);
 const accountOptions = ref<{ label: string; value: number }[]>([]);
 // Starts true: still don't know `domain.id` at first paint (SSR + pre-mount),
 // so the select must show a skeleton immediately rather than an empty
@@ -69,6 +70,14 @@ const dkimLoading = computed(() => dkimStatus.value !== "success" && dkimStatus.
 const isOwnerOrRoot = computed(
   () => isRoot.value || (domain.value?.ownerUsername != null && domain.value.ownerUsername === auth.session?.username)
 );
+
+// Each item's `slot` names the matching #<slot> template below -- same
+// pattern as GroupDetailTabs/GroupPermissionsPanel's own UTabs items.
+const accordionItems = computed(() => [
+  { label: t("domainDashboard.status.title"), icon: "i-lucide-power", slot: "status" as const },
+  { label: t("domainDashboard.dkim.title"), icon: "i-lucide-key", slot: "dkim" as const },
+  { label: t("domainDashboard.owner.title"), icon: "i-lucide-crown", slot: "owner" as const },
+]);
 
 watch(
   () => domain.value?.id,
@@ -127,6 +136,23 @@ async function deleteDkim(selector: string) {
   }
 }
 
+async function toggleActive(value: boolean) {
+  if (!domainId.value) return;
+  savingActive.value = true;
+  try {
+    await call(`/domains/${domainId.value}/active`, { method: "PATCH", body: { active: value } });
+    await refreshDomain();
+    toast.add({
+      title: value ? t("domainDashboard.status.activated") : t("domainDashboard.status.deactivated"),
+      color: "success",
+    });
+  } catch (e) {
+    toast.add({ title: t("domainDashboard.status.toggleFailed"), description: (e as Error).message, color: "error" });
+  } finally {
+    savingActive.value = false;
+  }
+}
+
 async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
   toast.add({
@@ -157,42 +183,60 @@ async function changeDomainOwner() {
   <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
     <UAlert color="warning" variant="subtle" icon="i-lucide-shield-alert" :title="t('domainDashboard.admin.subtitle')" />
 
-    <DomainDkimSection
-      :keys="dkimKeys"
-      :loading="dkimLoading"
-      @rotate="rotateDkim"
-      @delete="deleteDkim"
-      @copy="copyToClipboard"
-    />
-
-    <UCard>
-      <template #header>
-        <h3 class="font-semibold">{{ t("domainDashboard.owner.title") }}</h3>
+    <UAccordion :items="accordionItems" :ui="{ trigger: 'py-4', body: 'pb-6' }">
+      <template #status>
+        <ContentPanel class="flex items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-medium">{{ domain?.active === 1 ? t("common.active") : t("common.inactive") }}</p>
+            <p class="text-xs text-muted">{{ t("domainDashboard.status.hint") }}</p>
+          </div>
+          <USwitch
+            :model-value="domain?.active === 1"
+            :loading="savingActive"
+            :disabled="savingActive"
+            @update:model-value="toggleActive"
+          />
+        </ContentPanel>
       </template>
-      <p class="text-sm mb-3">
-        {{ t("domainDashboard.owner.current") }}:
-        <span class="font-medium">{{ domain?.ownerUsername ?? t("domainDashboard.owner.unassigned") }}</span>
-      </p>
-      <div class="flex flex-wrap gap-2">
-        <USkeleton v-if="ownerOptionsLoading" class="h-8 w-48 rounded-md" />
-        <USelectMenu
-          v-else
-          v-model="ownerPick"
-          value-key="value"
-          :items="accountOptions"
-          :placeholder="t('domainDashboard.owner.pickPlaceholder')"
-          class="min-w-[12rem]"
+
+      <template #dkim>
+        <DomainDkimSection
+          :keys="dkimKeys"
+          :loading="dkimLoading"
+          @rotate="rotateDkim"
+          @delete="deleteDkim"
+          @copy="copyToClipboard"
         />
-        <UButton
-          color="neutral"
-          variant="outline"
-          :loading="savingOwner"
-          :disabled="ownerPick === undefined || !isOwnerOrRoot"
-          @click="changeDomainOwner"
-        >
-          {{ t("domainDashboard.owner.change") }}
-        </UButton>
-      </div>
-    </UCard>
+      </template>
+
+      <template #owner>
+        <ContentPanel>
+          <p class="text-sm mb-3">
+            {{ t("domainDashboard.owner.current") }}:
+            <span class="font-medium">{{ domain?.ownerUsername ?? t("domainDashboard.owner.unassigned") }}</span>
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <USkeleton v-if="ownerOptionsLoading" class="h-8 w-48 rounded-md" />
+            <USelectMenu
+              v-else
+              v-model="ownerPick"
+              value-key="value"
+              :items="accountOptions"
+              :placeholder="t('domainDashboard.owner.pickPlaceholder')"
+              class="min-w-[12rem]"
+            />
+            <UButton
+              color="neutral"
+              variant="outline"
+              :loading="savingOwner"
+              :disabled="ownerPick === undefined || !isOwnerOrRoot"
+              @click="changeDomainOwner"
+            >
+              {{ t("domainDashboard.owner.change") }}
+            </UButton>
+          </div>
+        </ContentPanel>
+      </template>
+    </UAccordion>
   </div>
 </template>
