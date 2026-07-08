@@ -4,11 +4,19 @@ const emit = defineEmits<{
   confirm: [];
 }>();
 
-const props = defineProps<{
-  open: boolean;
-  title?: string;
-  description?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    open: boolean;
+    title?: string;
+    description?: string;
+    // "danger" is an irreversible/destructive action (delete); "warning" is a
+    // disruptive-but-not-destructive one (e.g. rotating a key) -- drives the
+    // button/progress-bar color and the default proceed label/countdown hint,
+    // so a non-delete action doesn't read as a deletion (see DomainDkimSection.vue).
+    type?: "danger" | "warning";
+  }>(),
+  { title: undefined, description: undefined, type: "danger" }
+);
 
 const DELAY = 10;
 
@@ -17,6 +25,10 @@ const countdown = ref(DELAY);
 let timer: ReturnType<typeof setInterval> | null = null;
 
 const { t } = useI18n();
+
+const color = computed(() => (props.type === "danger" ? "error" : "warning"));
+const proceedLabel = computed(() => (props.type === "danger" ? t("confirm.proceed") : t("confirm.proceedAction")));
+const countdownHint = computed(() => (props.type === "danger" ? t("confirm.countdownHint") : t("confirm.countdownHintAction")));
 
 watch(
   () => props.open,
@@ -73,22 +85,25 @@ onUnmounted(clearTimer);
 
         <div v-else class="space-y-3">
           <p class="text-sm text-muted text-center">
-            {{ t("confirm.countdownHint") }}
+            {{ countdownHint }}
           </p>
           <div class="h-2 rounded-full overflow-hidden bg-accented">
             <div
-              class="h-full bg-error rounded-full transition-[width] duration-1000 ease-linear"
+              class="h-full rounded-full transition-[width] duration-1000 ease-linear"
+              :class="type === 'danger' ? 'bg-error' : 'bg-warning'"
               :style="{ width: `${(countdown / DELAY) * 100}%` }"
             />
           </div>
-          <p class="text-center font-bold text-error text-2xl">{{ countdown }}s</p>
+          <p class="text-center font-bold text-2xl" :class="type === 'danger' ? 'text-error' : 'text-warning'">
+            {{ countdown }}s
+          </p>
         </div>
 
         <template #footer>
           <div class="flex justify-end gap-2">
             <UButton color="neutral" variant="ghost" @click="cancel">{{ t("common.cancel") }}</UButton>
-            <UButton v-if="phase === 'confirm'" color="error" @click="startCountdown">
-              {{ t("confirm.proceed") }}
+            <UButton v-if="phase === 'confirm'" :color="color" @click="startCountdown">
+              {{ proceedLabel }}
             </UButton>
           </div>
         </template>

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): `ConfirmModal` supports a non-destructive "warning" variant (button/progress-bar color, proceed label, countdown hint) so a disruptive-but-reversible action like DKIM key rotation no longer reads as a deletion; DKIM keys section is collapsed by default since it reveals private key material (08-07-2026)
 - feat(api,ui): expose the group permission catalog (resources, actions and their `dependsOn` requirements) via `GET /groups/permissions/catalog` instead of hardcoding a copy of it in the frontend; the permission grid now enforces dependencies interactively -- checking a dependent resource's action grants its prerequisite(s), clearing a prerequisite action clears every resource whose requirement included it (08-07-2026)
 - feat(api,ui): dedicated Administration page per domain (DKIM key management + ownership transfer), gated by a new "admin" domain ACL resource separate from the day-to-day dashboard; the dashboard now shows only a generated/missing indicator for DKIM instead of exposing key material inline (08-07-2026)
 - refactor(api): extract the resource/action/dependsOn permission catalog into a single canonical file (`permission-catalog.ts`), removing duplicate declarations from the guard service (08-07-2026)

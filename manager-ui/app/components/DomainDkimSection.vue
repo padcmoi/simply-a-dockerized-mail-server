@@ -12,7 +12,9 @@ const props = defineProps<{
   loading: boolean;
 }>();
 
-const open = ref(true);
+// Closed by default: the panel below reveals private key material -- never
+// expose it on open just from landing on the page.
+const open = ref(false);
 const confirmDeleteOpen = ref(false);
 const confirmActionOpen = ref(false);
 const pendingSelector = ref<string | null>(null);
@@ -143,6 +145,7 @@ function onActionConfirmed() {
   <ConfirmModal v-model:open="confirmDeleteOpen" @confirm="onDeleteConfirmed" />
   <ConfirmModal
     v-model:open="confirmActionOpen"
+    type="warning"
     :title="confirmActionTitle"
     :description="confirmActionDesc"
     @confirm="onActionConfirmed"
