@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- refactor(api): extract the resource/action/dependsOn permission catalog into a single canonical file (`permission-catalog.ts`), removing duplicate declarations from the guard service (08-07-2026)
 - feat(api,ui): sort by any listed column (not just the one chronological dimension), on every table; desktop clicks a column header (direction arrow), mobile/tablet picks a column x direction combo from a select since there's no table header to click there. Each endpoint validates `sortBy` against its own whitelist of real columns, falling back to its previous default when absent or unrecognized -- never a raw passthrough to `ORDER BY`. Computed/joined fields with no real backing column (accounts' group list, groups' owner/member count) stay unsortable (07-07-2026)
 - feat(ui): show each table's total row count next to its pagination control, via a single reusable component shared across every list (accounts, domains, groups, sieve, recipients, aliases, quotas, Rspamd history) (07-07-2026)
 - feat(ui): skeleton loaders for every page's initial data fetch (accounts, domains, groups, sieve, recipients, aliases, quotas, Rspamd, both dashboards, profile), replacing blank/zeroed flashes while data loads (07-07-2026)
