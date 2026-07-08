@@ -1,21 +1,28 @@
 import type { RspamdHistoryRow } from "./useDomainDashboard";
 
+export interface RspamdActions {
+  reject: number;
+  "soft reject": number;
+  "rewrite subject": number;
+  "add header": number;
+  greylist: number;
+  "no action": number;
+}
+
 export interface RspamdStats {
-  version: string;
-  uptime: number;
   scanned: number;
-  learned: number;
-  spam_count: number;
-  ham_count: number;
-  connections: number;
-  actions: {
-    reject: number;
-    "soft reject": number;
-    "rewrite subject": number;
-    "add header": number;
-    greylist: number;
-    "no action": number;
-  };
+  actions: RspamdActions;
+}
+
+export interface RspamdHistoryItem {
+  id: string;
+  sender_smtp: string;
+  rcpt: string;
+  action: string;
+  score: number;
+  required_score: number;
+  size: number;
+  time: string;
 }
 
 export function rspamdActionColor(action: string) {
@@ -25,7 +32,11 @@ export function rspamdActionColor(action: string) {
   return "warning";
 }
 
-export function useRspamdPage() {
+// `domainId` absent -> server-wide /rspamd/*; present -> the identical
+// /domains/:id/rspamd/* endpoints, filtered to that domain's recipients.
+// Both pages (rspamd.vue, domains/[domain]/rspamd.vue) share this one
+// composable so they stay exact twins by construction, not by convention.
+export function useRspamdPage(domainId?: Ref<number | null>) {
   const page = ref(1);
   const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
   const search = ref("");
@@ -38,7 +49,17 @@ export function useRspamdPage() {
   const { t } = useI18n();
   const { tick } = useDataRefresh();
 
-  setBreadcrumb([{ label: t("nav.rspamd") }]);
+  // Domain-scoped pages set their own (domain-aware) breadcrumb themselves,
+  // matching every other page under domains/[domain]/ -- see quotas.vue.
+  if (!domainId) setBreadcrumb([{ label: t("nav.rspamd") }]);
+
+  const basePath = computed(() => (domainId ? `/domains/${domainId.value}/rspamd` : "/rspamd"));
+  // Static per call-site (not reactive on domainId's value): keeps the two
+  // pages' useAsyncData entries from colliding in Nuxt's payload cache --
+  // switching between them client-side must never flash the other scope's
+  // stale data -- while still sharing one key across a domain slug change,
+  // same tradeoff useCurrentDomain.ts's own "current-domain-resolve" makes.
+  const keyPrefix = domainId ? "domain-rspamd" : "rspamd";
 
   const applyDebouncedSearch = useDebounceFn(() => {
     page.value = 1;
@@ -54,10 +75,14 @@ export function useRspamdPage() {
     data: statsData,
     status: statsStatus,
     refresh: refreshStats,
-  } = useAsyncData<RspamdStats | null>("rspamd-stats", () => call<RspamdStats>("/rspamd/stats").catch(() => null), {
-    server: false,
-    watch: [tick],
-  });
+  } = useAsyncData<RspamdStats | null>(
+    `${keyPrefix}-stats`,
+    async () => {
+      if (domainId) await until(domainId).toBeTruthy();
+      return call<RspamdStats>(`${basePath.value}/stats`).catch(() => null);
+    },
+    { server: false, watch: domainId ? [domainId, tick] : [tick], default: () => null }
+  );
 
   // `size=200` bounds how many rows Rspamd's own ring buffer gives us before
   // our search/pagination/sortDir apply in-memory server-side (see
@@ -67,8 +92,9 @@ export function useRspamdPage() {
     status: historyStatus,
     refresh: refreshHistory,
   } = useAsyncData<{ items: RspamdHistoryRow[]; total: number }>(
-    "rspamd-history",
-    () => {
+    `${keyPrefix}-history`,
+    async () => {
+      if (domainId) await until(domainId).toBeTruthy();
       const qs = new URLSearchParams({
         size: "200",
         limit: String(limit.value),
@@ -77,11 +103,13 @@ export function useRspamdPage() {
         sortBy: sortBy.value,
       });
       if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
-      return call<{ items: RspamdHistoryRow[]; total: number }>(`/rspamd/history?${qs.toString()}`);
+      return call<{ items: RspamdHistoryRow[]; total: number }>(`${basePath.value}/history?${qs.toString()}`);
     },
     {
       server: false,
-      watch: [page, limit, sortBy, sortDir, debouncedSearch, tick],
+      watch: domainId
+        ? [domainId, page, limit, sortBy, sortDir, debouncedSearch, tick]
+        : [page, limit, sortBy, sortDir, debouncedSearch, tick],
       default: () => ({ items: [], total: 0 }),
     }
   );
@@ -90,6 +118,21 @@ export function useRspamdPage() {
   const statsUnavailable = computed(() => statsStatus.value === "success" && !statsData.value);
   const history = computed(() => historyData.value?.items ?? []);
   const total = computed(() => historyData.value?.total ?? 0);
+
+  // Shared row shape feeding both the desktop table and the mobile/tablet
+  // card list (RspamdHistoryCard.vue) on both pages.
+  const historyItems = computed<RspamdHistoryItem[]>(() =>
+    history.value.map((r) => ({
+      id: r["message-id"],
+      sender_smtp: r.sender_smtp,
+      rcpt: r.rcpt_smtp?.join(", ") ?? "",
+      action: r.action,
+      score: r.score,
+      required_score: r.required_score,
+      size: r.size,
+      time: new Date(r.unix_time * 1000).toLocaleString(),
+    }))
+  );
 
   // `historyHasLoadedOnce` (NOT `history.length === 0`) gates the history
   // skeleton: a genuinely empty history would otherwise re-show the
@@ -119,6 +162,7 @@ export function useRspamdPage() {
   return {
     stats,
     history,
+    historyItems,
     total,
     loading,
     historyLoading,

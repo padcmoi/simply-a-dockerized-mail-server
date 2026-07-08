@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePageMeta({
-  requiredGlobal: [
+  requiredDomain: [
     { resource: "rspamd", action: "access" },
     { resource: "rspamd", action: "read" },
   ],
@@ -26,6 +26,7 @@ const tableColumns = computed(() => [
   { accessorKey: "time", header: header("time", t("rspamdPage.col.time")) },
 ]);
 
+const { domainId, domainFqdn } = useCurrentDomain();
 const {
   stats,
   historyItems,
@@ -40,10 +41,19 @@ const {
   sortBy,
   sortDir,
   load,
-} = useRspamdPage();
+} = useRspamdPage(domainId);
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
 const { t } = useI18n();
+const { set: setBreadcrumb } = useBreadcrumb();
+
+watchEffect(() => {
+  setBreadcrumb([
+    { label: t("nav.domains"), to: "/domains" },
+    { label: domainFqdn.value, to: `/domains/${domainFqdn.value}` },
+    { label: t("nav.rspamd") },
+  ]);
+});
 </script>
 
 <template>
@@ -53,7 +63,7 @@ const { t } = useI18n();
         color="neutral"
         variant="subtle"
         icon="i-lucide-shield"
-        :title="t('rspamdPage.subtitle')"
+        :title="t('domainDashboard.rspamdPage.subtitle')"
         class="flex-1 min-w-[16rem]"
       />
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />

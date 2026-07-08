@@ -21,17 +21,17 @@ export function useNav(onSignOut: () => Promise<void>) {
   }
 
   // A nav entry is only worth showing if the account can both see it exists (`access`)
-  // and actually read its content (`read`) — matching each page's `requiredGlobal`/
+  // and actually read its content (`read`), matching each page's `requiredGlobal`/
   // `requiredDomain` meta, which requires both. `root` ignores groups entirely and
   // has full access to everything (acls.md), so it must bypass every one of these
-  // checks, not just a couple — a root account has no group and thus no permission
+  // checks, not just a couple: a root account has no group and thus no permission
   // rows, so without this bypass the whole nav would collapse to just Dashboard.
   function canViewGlobal(resource: string) {
     return auth.session?.isRoot === true || (perms.hasGlobal(resource, "access") && perms.hasGlobal(resource, "read"));
   }
   // Domains is the one nav entry with a lower bar: `access` alone is enough
   // to reach the page (it shows the disk capacity overview even without
-  // `read`) — the domain list itself still requires `read`, gated inside the
+  // `read`); the domain list itself still requires `read`, gated inside the
   // page, not at the nav/page-meta level.
   function canAccessGlobal(resource: string) {
     return auth.session?.isRoot === true || perms.hasGlobal(resource, "access");
@@ -119,6 +119,16 @@ export function useNav(onSignOut: () => Promise<void>) {
               icon: "i-lucide-shield-alert",
               to: `${domainHome}/admin`,
               active: isActive(`${domainHome}/admin`),
+            },
+          ]
+        : []),
+      ...(canViewDomain(domainId, "rspamd")
+        ? [
+            {
+              label: t("nav.rspamd"),
+              icon: "i-lucide-shield",
+              to: `${domainHome}/rspamd`,
+              active: isActive(`${domainHome}/rspamd`),
             },
           ]
         : []),
