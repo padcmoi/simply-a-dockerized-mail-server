@@ -168,6 +168,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(ui): domain creation form's fields no longer misalign when the quota field's error line appears -- `items-end` bottom-aligned the row, so an error message only shown under quota pushed every other field's content down relative to it; switched to `items-start` so all fields stay flush at the top of the row regardless (08-07-2026)
 - fix(ui): `ConfirmModal`'s click-to-confirm mode could fire `confirm` twice when spam-clicking -- `update:open(false)` doesn't remove the button from the DOM instantly, so a click landing in that window re-triggered the threshold check; now guarded (extra clicks past the 10th are a no-op) and the button disables once reached (08-07-2026)
 - fix(ui): close the mobile sidebar overlay on every navigation instead of leaving it stuck open -- `USidebar` switches to a slideover under 1024px but doesn't close itself on nav clicks; watches the route and force-closes only below that breakpoint, so desktop's icon-rail collapse behavior is untouched (08-07-2026)
 - fix(ui): truncate long group descriptions instead of overflowing the table horizontally (08-07-2026)

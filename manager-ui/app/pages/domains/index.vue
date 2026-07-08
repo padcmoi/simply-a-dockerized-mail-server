@@ -215,7 +215,7 @@ onMounted(loadDisk);
       <template #header>
         <h2 class="font-semibold">{{ t("domains.form.title") }}</h2>
       </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-3 items-end" @submit="create">
+      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-3 items-start" @submit="create">
         <UFormField :label="t('domains.form.fqdn')" name="domain">
           <UInput v-model="form.domain" placeholder="example.com" icon="i-lucide-globe" class="w-full" />
         </UFormField>
