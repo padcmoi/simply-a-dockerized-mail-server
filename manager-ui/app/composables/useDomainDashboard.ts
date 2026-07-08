@@ -38,6 +38,16 @@ export interface DkimKey {
   dnsName: string;
   txtRecord: string;
 }
+export interface DkimCheckResult {
+  domain: string;
+  hasKeyInDatabase: boolean;
+  match: boolean;
+  checkedAt: string;
+  error: string | null;
+  staleSelectorFound: { selector: string; queriedName: string; txtRecord: string } | null;
+  expected: { selector: string; queriedName: string; value: string } | null;
+  found: { value: string } | null;
+}
 export interface RspamdHistoryRow {
   "message-id": string;
   ip: string;
@@ -164,12 +174,29 @@ export function useDomainDashboard() {
   const dkimKeys = computed(() => dkimData.value ?? []);
   const dkimLoading = computed(() => dkimStatus.value !== "success" && dkimStatus.value !== "error");
 
+  // Whether the published DNS TXT record actually matches the DB key, not
+  // just whether a key row exists (that's `dkimKeys.length > 0` above) --
+  // drives the Administration card's status icon on this dashboard.
+  const { data: dkimCheckData, refresh: refreshDkimCheck } = useAsyncData<DkimCheckResult | null>(
+    "domain-dashboard-dkim-check",
+    async () => {
+      if (!domainId.value) return null;
+      try {
+        return await call<DkimCheckResult>(`/domains/${domainId.value}/dkim-check`);
+      } catch {
+        return null;
+      }
+    },
+    { server: false, immediate: false, watch: [domainId, tick], default: () => null }
+  );
+  const dkimCheck = computed(() => dkimCheckData.value);
+
   const { data: rspamdData, refresh: refreshRspamd } = useAsyncData<RspamdHistoryRow[]>(
     "domain-dashboard-rspamd",
     async () => {
       if (!domainId.value) return [];
       try {
-        return await call<RspamdHistoryRow[]>(`/domains/${domainId.value}/spamd/history?size=200`);
+        return await call<RspamdHistoryRow[]>(`/domains/${domainId.value}/rspamd/history?size=200`);
       } catch {
         return [];
       }
@@ -281,7 +308,7 @@ export function useDomainDashboard() {
             const m = topMailboxes.value[ctx.dataIndex];
             const bytes = formatBytes(Number(m?.bytes ?? 0));
             if (Number(m?.quota ?? 0) === 0) return ` ${bytes}`;
-            return ` ${(ctx.parsed.x ?? 0).toFixed(1)}% — ${bytes}`;
+            return ` ${(ctx.parsed.x ?? 0).toFixed(1)}% (${bytes})`;
           },
         },
       },
@@ -329,14 +356,14 @@ export function useDomainDashboard() {
 
   async function load() {
     await refreshMain();
-    await Promise.all([refreshDkim(), refreshRspamd(), refreshPostfix()]);
+    await Promise.all([refreshDkim(), refreshDkimCheck(), refreshRspamd(), refreshPostfix()]);
   }
 
   async function rotateDkim() {
     if (!domain.value) return;
     try {
       await call(`/domains/${domain.value.id}/dkim/rotate`, { method: "POST" });
-      await refreshDkim();
+      await Promise.all([refreshDkim(), refreshDkimCheck()]);
       toast.add({
         title: t("domainDashboard.dkim.toast.rotated"),
         color: "success",
@@ -356,7 +383,7 @@ export function useDomainDashboard() {
       await call(`/domains/${domain.value.id}/dkim/${selector}`, {
         method: "DELETE",
       });
-      await refreshDkim();
+      await Promise.all([refreshDkim(), refreshDkimCheck()]);
       toast.add({
         title: t("domainDashboard.dkim.toast.deleted"),
         color: "success",
@@ -402,6 +429,7 @@ export function useDomainDashboard() {
     aliases,
     topMailboxes,
     dkimKeys,
+    dkimCheck,
     rspamdHistory,
     postfixQueue,
     loading,

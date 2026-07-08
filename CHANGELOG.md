@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api,ui): DKIM DNS-match status badge (green/red, driven by `GET /domains/:domainId/dkim-check`) next to each key on the Administration page and on the domain dashboard header/Administration card; refreshed automatically after every key rotation or deletion (08-07-2026)
 - feat(ui): dedicated per-domain Rspamd page (`/domains/:domain/rspamd`), a structural twin of the global admin one -- stats donut + paginated/searchable/sortable scan history, desktop table + mobile/tablet cards; new sidebar nav entry after Administration. The global `/rspamd` page gains the same mobile/tablet card list it was missing, and its stats card is now a shared `RspamdStatsCard` component reused by both (08-07-2026)
 - feat(ui): `ConfirmModal` supports two confirmation modes -- `wait` (existing 10s countdown, auto-confirms unless canceled) and `clicks` (click Proceed 10 times in a row, no timer), selectable per call-site via a new `confirmMode` prop; `clicks` is now the default across every existing usage (08-07-2026)
 - feat(api,ui): activate/deactivate a domain from its Administration page -- new `PATCH /domains/:domainId/active`, gated by the "admin" domain resource (`access`+`modify`) rather than the general `domain` modify used by the existing `PATCH /domains/:domainId`, since this is specifically an Administration-page action (08-07-2026)

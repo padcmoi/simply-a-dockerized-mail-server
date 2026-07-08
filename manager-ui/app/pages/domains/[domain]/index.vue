@@ -12,7 +12,7 @@ const {
   recipients,
   aliases,
   topMailboxes,
-  dkimKeys,
+  dkimCheck,
   rspamdHistory,
   postfixQueue,
   loading,
@@ -35,17 +35,35 @@ const {
 
 const { isRoot, hasDomain } = usePermissions();
 
-// `rspamd` section below is scoped to the `spamd` domain resource specifically
-// (not the generic `domain` gate this page's own route already requires) —
-// only render it if the current user actually has access.
+// `rspamd` section below is scoped to the `rspamd` domain resource specifically
+// (not the generic `domain` gate this page's own route already requires);
+// only render it if the current user actually has both access+read, matching
+// the dedicated /rspamd page's own requiredDomain gate and the API guard.
 // DKIM key material and domain ownership are sensitive administration, kept
 // off this dashboard entirely (see the dedicated `/admin` page, gated by the
 // "admin" domain resource) -- `canViewAdmin` here only gates whether the
 // status indicator + link to that page show up.
-const canViewSpamd = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "spamd", "access")));
+const canViewRspamd = computed(
+  () =>
+    isRoot.value ||
+    (domain.value && hasDomain(domain.value.id, "rspamd", "access") && hasDomain(domain.value.id, "rspamd", "read"))
+);
 const canViewAdmin = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "admin", "access")));
 
 const domainPath = computed(() => (domain.value ? `/domains/${domain.value.domain}` : null));
+
+const { t } = useI18n();
+
+// Reflects the actual DNS TXT match (dkimCheck), not just whether a key row
+// exists in the DB -- a stale/never-updated DNS record must show as "not ok"
+// here, not as "generated".
+const dkimStatusOk = computed(() => dkimCheck.value?.hasKeyInDatabase === true && dkimCheck.value.match === true);
+const dkimStatusIcon = computed(() => (dkimStatusOk.value ? "i-lucide-shield-check" : "i-lucide-shield-x"));
+const dkimStatusColor = computed(() => (dkimStatusOk.value ? "text-success" : "text-error"));
+const dkimStatusText = computed(() => {
+  if (!dkimCheck.value || !dkimCheck.value.hasKeyInDatabase) return t("domainDashboard.dkim.statusMissing");
+  return dkimCheck.value.match ? t("domainDashboard.dkim.statusMatch") : t("domainDashboard.dkim.statusMismatch");
+});
 </script>
 
 <template>
@@ -60,9 +78,14 @@ const domainPath = computed(() => (domain.value ? `/domains/${domain.value.domai
             </h2>
             <p class="text-xs text-muted">{{ $t("domains.alertTitle") }}</p>
           </div>
-          <UBadge :color="domain.active ? 'success' : 'neutral'" variant="subtle">
+
+          <UBadge :color="domain.active ? 'success' : 'warning'" variant="subtle">
             {{ domain.active ? $t("common.active") : $t("common.inactive") }}
           </UBadge>
+
+          <UTooltip v-if="canViewAdmin && dkimCheck" :text="dkimStatusText">
+            <UBadge :color="dkimStatusOk ? 'success' : 'error'" variant="subtle" :icon="dkimStatusIcon"> DKIM </UBadge>
+          </UTooltip>
         </template>
         <div v-else class="min-w-0 space-y-1.5">
           <USkeleton class="h-5 w-40" />
@@ -218,22 +241,15 @@ const domainPath = computed(() => (domain.value ? `/domains/${domain.value.domai
           <UIcon name="i-lucide-shield-alert" class="text-warning text-xl" />
           <span class="font-medium">{{ $t("nav.administration") }}</span>
           <UIcon v-if="dkimLoading" name="i-lucide-loader-2" class="ml-auto text-muted animate-spin" />
-          <UTooltip
-            v-else
-            :text="dkimKeys.length > 0 ? $t('domainDashboard.dkim.statusGenerated') : $t('domainDashboard.dkim.statusMissing')"
-            class="ml-auto"
-          >
-            <UIcon
-              :name="dkimKeys.length > 0 ? 'i-lucide-check-circle-2' : 'i-lucide-x-circle'"
-              :class="dkimKeys.length > 0 ? 'text-success' : 'text-error'"
-            />
+          <UTooltip v-else :text="dkimStatusText" class="ml-auto">
+            <UIcon :name="dkimStatusIcon" :class="dkimStatusColor" />
           </UTooltip>
         </div>
       </UCard>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <DomainRspamdCard v-if="canViewSpamd" :history="rspamdHistory" :loading="loading" />
+      <DomainRspamdCard v-if="canViewRspamd" :history="rspamdHistory" :loading="loading" />
       <DomainPostfixCard :queue="postfixQueue" :loading="postfixLoading" />
     </div>
   </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DkimKey } from "~/composables/useDomainDashboard";
+import type { DkimCheckResult, DkimKey } from "~/composables/useDomainDashboard";
 
 const emit = defineEmits<{
   rotate: [];
@@ -10,7 +10,16 @@ const emit = defineEmits<{
 const props = defineProps<{
   keys: DkimKey[];
   loading: boolean;
+  checkResult: DkimCheckResult | null;
 }>();
+
+// The check endpoint only ever evaluates the current (latest) selector, so
+// the badge only applies to the row it actually checked, not every row --
+// matters if a stale/previous-month key is still lingering in `keys`.
+function matchFor(selector: string) {
+  if (!props.checkResult || props.checkResult.expected?.selector !== selector) return null;
+  return props.checkResult.match;
+}
 
 const confirmDeleteOpen = ref(false);
 const confirmActionOpen = ref(false);
@@ -69,9 +78,23 @@ function onActionConfirmed() {
             <UIcon name="i-lucide-key" class="text-warning shrink-0" />
             <span class="font-mono text-sm font-semibold">{{ key.selector }}</span>
             <div class="flex items-center gap-1">
+              <UTooltip
+                v-if="matchFor(key.selector) !== null"
+                :text="matchFor(key.selector) ? t('domainDashboard.dkim.dnsMatch') : t('domainDashboard.dkim.dnsMismatch')"
+              >
+                <UBadge
+                  :color="matchFor(key.selector) ? 'success' : 'error'"
+                  variant="subtle"
+                  :icon="matchFor(key.selector) ? 'i-lucide-shield-check' : 'i-lucide-shield-x'"
+                >
+                  DKIM
+                </UBadge>
+              </UTooltip>
+
               <UBadge color="neutral" variant="subtle" class="font-mono text-xs truncate max-w-[200px]">
                 {{ key.dnsName }}
               </UBadge>
+
               <UButton
                 icon="i-lucide-copy"
                 color="neutral"

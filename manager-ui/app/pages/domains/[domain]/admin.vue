@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Domain, DkimKey } from "~/composables/useDomainDashboard";
+import type { Domain, DkimCheckResult, DkimKey } from "~/composables/useDomainDashboard";
 
 // Gated by the "admin" domain ACL (not the generic "domain" resource the main
 // dashboard requires) -- DKIM key material and ownership transfer are
@@ -67,6 +67,20 @@ const {
 const dkimKeys = computed(() => dkimData.value ?? []);
 const dkimLoading = computed(() => dkimStatus.value !== "success" && dkimStatus.value !== "error");
 
+const { data: dkimCheckData, refresh: refreshDkimCheck } = useAsyncData<DkimCheckResult | null>(
+  "domain-admin-dkim-check",
+  async () => {
+    if (!domainId.value) return null;
+    try {
+      return await call<DkimCheckResult>(`/domains/${domainId.value}/dkim-check`);
+    } catch {
+      return null;
+    }
+  },
+  { server: false, immediate: false, watch: [domainId], default: () => null }
+);
+const dkimCheck = computed(() => dkimCheckData.value);
+
 const isOwnerOrRoot = computed(
   () => isRoot.value || (domain.value?.ownerUsername != null && domain.value.ownerUsername === auth.session?.username)
 );
@@ -110,7 +124,7 @@ async function rotateDkim() {
   if (!domainId.value) return;
   try {
     await call(`/domains/${domainId.value}/dkim/rotate`, { method: "POST" });
-    await refreshDkim();
+    await Promise.all([refreshDkim(), refreshDkimCheck()]);
     toast.add({ title: t("domainDashboard.dkim.toast.rotated"), color: "success" });
   } catch (err) {
     toast.add({
@@ -125,7 +139,7 @@ async function deleteDkim(selector: string) {
   if (!domainId.value) return;
   try {
     await call(`/domains/${domainId.value}/dkim/${selector}`, { method: "DELETE" });
-    await refreshDkim();
+    await Promise.all([refreshDkim(), refreshDkimCheck()]);
     toast.add({ title: t("domainDashboard.dkim.toast.deleted"), color: "success" });
   } catch (err) {
     toast.add({
@@ -203,6 +217,7 @@ async function changeDomainOwner() {
         <DomainDkimSection
           :keys="dkimKeys"
           :loading="dkimLoading"
+          :check-result="dkimCheck"
           @rotate="rotateDkim"
           @delete="deleteDkim"
           @copy="copyToClipboard"
