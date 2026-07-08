@@ -27,6 +27,7 @@ import {
   DOMAIN_RESOURCE_DEPENDS_ON,
   DOMAIN_RESOURCES,
   GLOBAL_RESOURCES,
+  GLOBAL_RESOURCES_DEPENDS_ON,
   PERMISSION_ACTIONS,
   SetDomainPermissionsDto,
   SetGlobalPermissionsDto,
@@ -68,7 +69,7 @@ export class GroupsController {
   @GetPermissionsCatalogDocs()
   getPermissionsCatalog() {
     return {
-      global: { resources: GLOBAL_RESOURCES, actions: PERMISSION_ACTIONS },
+      global: { resources: GLOBAL_RESOURCES, actions: PERMISSION_ACTIONS, dependsOn: GLOBAL_RESOURCES_DEPENDS_ON },
       domain: { resources: DOMAIN_RESOURCES, actions: PERMISSION_ACTIONS, dependsOn: DOMAIN_RESOURCE_DEPENDS_ON },
     };
   }

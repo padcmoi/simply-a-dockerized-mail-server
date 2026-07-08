@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useDebounceFn } from "@vueuse/core";
-import type { GroupDomainPermission, GroupPermission } from "~/composables/useGroups";
+import type { DependsOnEntry, GroupDomainPermission, GroupPermission, PermissionsCatalog } from "~/composables/useGroups";
 
 const emit = defineEmits<{
   saveGlobal: [{ resource: string; action: string }[]];
@@ -29,18 +29,6 @@ const { call } = useApi();
 // resource with no matching key in resourceLabels below just falls back to
 // showing its raw name (see the template), which is fine: adding a new
 // resource server-side must never require a matching frontend release.
-interface DependsOnEntry {
-  resource: string;
-  action: string[];
-}
-interface PermissionsCatalog {
-  global: { resources: string[]; actions: string[] };
-  domain: {
-    resources: string[];
-    actions: string[];
-    dependsOn?: { resource: string; dependsOn: DependsOnEntry[] }[];
-  };
-}
 const { data: catalog, status: catalogStatus } = useAsyncData<PermissionsCatalog | null>(
   "groups-permissions-catalog",
   () => call<PermissionsCatalog>("/groups/permissions/catalog"),
@@ -50,12 +38,16 @@ const catalogLoading = computed(() => catalogStatus.value !== "success" && catal
 const GLOBAL_RESOURCES = computed(() => catalog.value?.global.resources ?? []);
 const DOMAIN_RESOURCES = computed(() => catalog.value?.domain.resources ?? []);
 const ACTIONS = computed(() => catalog.value?.global.actions ?? []);
-// Per domain resource, the (resource, action[]) pairs it requires to have any
-// effect at all -- every dependsOn entry AND every action within one entry's
-// action[] is mandatory (the guard enforces this at check time regardless of
-// what's saved -- see permission-catalog.ts's DOMAIN_RESOURCE_DEPENDS_ON).
-// Reshaped from the fetched array into a lookup map for O(1) access below;
-// not a hardcoded copy, purely a local view over the fetched data.
+// Per resource, the (resource, action[]) pairs it requires to have any
+// effect at all -- every entry, and every action within it, is mandatory
+// (the guard enforces this at check time regardless of what's saved -- see
+// permission-catalog.ts). Reshaped into a lookup map for O(1) access; same
+// shape at both tiers, so enforceDependsOn below takes whichever applies.
+const globalDependsOn = computed(() => {
+  const map: Record<string, DependsOnEntry[]> = {};
+  for (const entry of catalog.value?.global.dependsOn ?? []) map[entry.resource] = entry.dependsOn;
+  return map;
+});
 const domainDependsOn = computed(() => {
   const map: Record<string, DependsOnEntry[]> = {};
   for (const entry of catalog.value?.domain.dependsOn ?? []) map[entry.resource] = entry.dependsOn;
@@ -177,23 +169,26 @@ function setResourceAll(set: Set<string>, resource: string, checked: boolean) {
 }
 
 // Cross-resource counterpart of applyToggle's own-resource "access" rule
-// above. Checking any action on a resource that has a dependsOn also grants
-// every action of its prerequisite(s) (so it's never checked-but-inert).
-// Unchecking clears every resource whose dependsOn required one of the
-// actions just cleared on THIS resource -- general on purpose (a resource's
-// prerequisite isn't always "domain", e.g. dkim also depends on admin), not
-// hardcoded to any one resource name. Single-level: doesn't re-cascade if
-// clearing a dependent breaks a further dependent of its own -- the current
-// catalog is only 2 levels deep and dkim, the only 2nd-level resource, has
-// no dependents itself.
-function enforceDependsOn(set: Set<string>, resource: string, clearedActions: string[], checked: boolean) {
+// above. Checking a resource's action also grants every action of its
+// prerequisite(s); unchecking clears every resource whose dependsOn required
+// one of the actions just cleared -- general on purpose, not hardcoded to
+// any one resource name. Tier-agnostic via the dependsOnMap param (global or
+// domain enforce identically). Single-level: doesn't re-cascade transitively
+// -- the current catalog is only 2 levels deep and has no such case yet.
+function enforceDependsOn(
+  set: Set<string>,
+  dependsOnMap: Record<string, DependsOnEntry[]>,
+  resource: string,
+  clearedActions: string[],
+  checked: boolean
+) {
   if (checked) {
-    for (const dep of domainDependsOn.value[resource] ?? []) {
+    for (const dep of dependsOnMap[resource] ?? []) {
       for (const action of dep.action) set.add(permKey(dep.resource, action));
     }
     return;
   }
-  for (const [dependent, deps] of Object.entries(domainDependsOn.value)) {
+  for (const [dependent, deps] of Object.entries(dependsOnMap)) {
     const broken = deps.some((d) => d.resource === resource && d.action.some((a) => clearedActions.includes(a)));
     if (broken) setResourceAll(set, dependent, false);
   }
@@ -201,6 +196,8 @@ function enforceDependsOn(set: Set<string>, resource: string, clearedActions: st
 
 function toggleGlobal(resource: string, action: string, checked: boolean) {
   applyToggle(globalSet, resource, action, checked);
+  const clearedActions = !checked && action === "access" ? [...ACTIONS.value] : [action];
+  enforceDependsOn(globalSet, globalDependsOn.value, resource, clearedActions, checked);
   debouncedSaveGlobal();
 }
 
@@ -213,12 +210,13 @@ function toggleDomain(resource: string, action: string, checked: boolean) {
   // requirement targets a different action (e.g. admin:read) must still see
   // it as cleared.
   const clearedActions = !checked && action === "access" ? [...ACTIONS.value] : [action];
-  enforceDependsOn(set, resource, clearedActions, checked);
+  enforceDependsOn(set, domainDependsOn.value, resource, clearedActions, checked);
   debouncedSaveDomain();
 }
 
 function checkAllGlobalResource(resource: string, checked: boolean) {
   setResourceAll(globalSet, resource, checked);
+  enforceDependsOn(globalSet, globalDependsOn.value, resource, [...ACTIONS.value], checked);
   debouncedSaveGlobal();
 }
 
@@ -226,7 +224,7 @@ function checkAllDomainResource(resource: string, checked: boolean) {
   if (selectedDomainId.value === undefined) return;
   const set = getOrCreateDomainSet(selectedDomainId.value);
   setResourceAll(set, resource, checked);
-  enforceDependsOn(set, resource, [...ACTIONS.value], checked);
+  enforceDependsOn(set, domainDependsOn.value, resource, [...ACTIONS.value], checked);
   debouncedSaveDomain();
 }
 

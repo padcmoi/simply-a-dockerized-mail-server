@@ -9,7 +9,7 @@ import { GroupGlobalPermission } from "../entities/group-global-permission.entit
 import { GroupMember } from "../entities/group-member.entity";
 import { Group } from "../entities/group.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
-import { DOMAIN_RESOURCES, GLOBAL_RESOURCES, PERMISSION_ACTIONS, dependsOnFor } from "./permission-catalog";
+import { DOMAIN_RESOURCES, GLOBAL_RESOURCES, PERMISSION_ACTIONS, dependsOnFor, dependsOnForGlobal } from "./permission-catalog";
 
 // Only place in manager-api that calls createCustomPermissionGuard --
 // mirrors @naskot/custom-permission-guard's own docs/nestjs.md pattern.
@@ -41,7 +41,12 @@ export class CustomPermissionGuardService {
       // the old GroupsService.wouldLockOutGroupsManagement.
       lockoutProtected: [{ resource: "groups", actions: ["access", "modify"] }],
       schemas: {
-        global: Object.fromEntries(GLOBAL_RESOURCES.map((resource) => [resource, { rules: [...PERMISSION_ACTIONS] }])),
+        global: Object.fromEntries(
+          GLOBAL_RESOURCES.map((resource) => [
+            resource,
+            { rules: [...PERMISSION_ACTIONS], dependsOn: dependsOnForGlobal(resource) },
+          ])
+        ),
         domain: {
           // bridgeFromGlobal: holding domains.<action> globally also grants
           // "domain" on ANY domainId, without a dedicated row (Administration

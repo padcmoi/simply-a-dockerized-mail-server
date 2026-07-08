@@ -3,12 +3,13 @@ import {
   DOMAIN_RESOURCE_DEPENDS_ON,
   DOMAIN_RESOURCES,
   GLOBAL_RESOURCES,
+  GLOBAL_RESOURCES_DEPENDS_ON,
   PERMISSION_ACTIONS,
 } from "../../core/custom-permission-guard/permission-catalog";
 
 // Re-exported, not redeclared: permission-catalog.ts is the single
 // canonical source for this catalog -- see its own header comment.
-export { GLOBAL_RESOURCES, DOMAIN_RESOURCES, PERMISSION_ACTIONS, DOMAIN_RESOURCE_DEPENDS_ON };
+export { GLOBAL_RESOURCES, DOMAIN_RESOURCES, PERMISSION_ACTIONS, DOMAIN_RESOURCE_DEPENDS_ON, GLOBAL_RESOURCES_DEPENDS_ON };
 export type GlobalResource = (typeof GLOBAL_RESOURCES)[number];
 export type DomainResource = (typeof DOMAIN_RESOURCES)[number];
 export type PermissionAction = (typeof PERMISSION_ACTIONS)[number];

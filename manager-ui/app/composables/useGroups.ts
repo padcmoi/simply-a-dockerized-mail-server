@@ -36,6 +36,19 @@ export interface GroupMember {
   email: string | null;
 }
 
+export interface DependsOnEntry {
+  resource: string;
+  action: string[];
+}
+
+export type ResourceDependsOn = { resource: string; dependsOn: DependsOnEntry[] }[];
+
+// Shape of GET /groups/permissions/catalog -- see GroupsController.getPermissionsCatalog.
+export interface PermissionsCatalog {
+  global: { resources: string[]; actions: string[]; dependsOn?: ResourceDependsOn };
+  domain: { resources: string[]; actions: string[]; dependsOn?: ResourceDependsOn };
+}
+
 export function useGroups() {
   const { call } = useApi();
   const { t } = useI18n();

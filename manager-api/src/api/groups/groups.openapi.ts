@@ -32,6 +32,11 @@ const permissionsCatalogExample = {
   global: {
     resources: ["sieve", "rspamd", "postfix", "accounts", "api-tokens", "groups", "domains"],
     actions: ["access", "read", "create", "modify", "delete"],
+    // Empty today -- no global resource currently requires another one, but
+    // the shape is identical to domain.dependsOn below and just as binding
+    // once populated (same guard, same AND semantics, both tiers as of
+    // @naskot/custom-permission-guard 1.1.0).
+    dependsOn: [],
   },
   domain: {
     resources: ["domain", "recipients", "aliases", "quotas", "spamd", "admin", "dkim"],
@@ -72,12 +77,14 @@ export const GetPermissionsCatalogDocs = () =>
       description:
         "Static catalog, not tied to any specific group -- the exact same GLOBAL_RESOURCES/DOMAIN_RESOURCES/" +
         "PERMISSION_ACTIONS enforced server-side by the Zod validation on set*Permissions. Lets a client build the " +
-        "permission grid without hardcoding its own copy of this list. `domain.dependsOn` lists, per resource, which " +
-        "other (resource, action[]) pairs must also be granted for that resource's own actions to have any effect -- " +
-        "every entry is mandatory (AND): every dependsOn array entry, and every action listed within one entry's " +
-        'action[]. Every domain resource except "domain" itself requires at least domain:access (dkim also ' +
-        "requires admin:access); the guard enforces this at check time regardless of what's saved, so a client " +
-        "should reflect it too rather than allow a state that looks granted but is actually inert.",
+        "permission grid without hardcoding its own copy of this list. `global.dependsOn` and `domain.dependsOn` " +
+        "each list, per resource, which other (resource, action[]) pairs must also be granted for that resource's " +
+        "own actions to have any effect -- every entry is mandatory (AND): every dependsOn array entry, and every " +
+        'action listed within one entry\'s action[]. Every domain resource except "domain" itself requires at ' +
+        "least domain:access (dkim also requires admin:access); `global.dependsOn` is empty today (no global " +
+        "resource currently requires another one) but enforced identically once populated. The guard enforces both " +
+        "at check time regardless of what's saved, so a client should reflect it too rather than allow a state " +
+        "that looks granted but is actually inert.",
     }),
     ApiResponse({ status: 200, description: "Catalog returned", schema: { example: permissionsCatalogExample } }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
