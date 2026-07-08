@@ -1,7 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
-import { RSPAMD_HISTORY_SORTABLE_COLUMNS } from "../../core/rspamd/rspamd.service";
+import { RSPAMD_FACTORY_ACTIONS, RSPAMD_HISTORY_SORTABLE_COLUMNS } from "../../core/rspamd/rspamd.service";
 
 export const RspamdApi = () => applyDecorators(ApiTags("rspamd"), ApiSecurity("apiToken"));
 
@@ -30,6 +30,17 @@ const RspamdForbiddenResponse = () =>
       "Missing the `rspamd:access` and/or `rspamd:read` global permission (the message names whichever is missing first)",
     schema: {
       example: { statusCode: 403, message: "Missing permission rspamd:access", error: "Forbidden" },
+    },
+  });
+
+const RspamdActionsForbiddenResponse = () =>
+  ApiResponse({
+    status: 403,
+    description:
+      "Missing `rspamd:access`, `rspamd:modify` and/or `rspamd:delete` -- editing the action thresholds is " +
+      "gated more strictly than reading them since a bad value can silently break spam filtering server-wide",
+    schema: {
+      example: { statusCode: 403, message: "Missing permission rspamd:modify", error: "Forbidden" },
     },
   });
 
@@ -116,6 +127,73 @@ export const GetHistoryDocs = () =>
     }),
     ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     RspamdForbiddenResponse(),
+    RspamdUnreachableResponse(),
+    RspamdBadGatewayResponse()
+  );
+
+const actionThresholdsExample = {
+  reject: 15,
+  softReject: null,
+  rewriteSubject: null,
+  addHeader: 5,
+  greylist: null,
+};
+
+export const GetActionsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Current Rspamd action score thresholds",
+      description:
+        "Proxies Rspamd's own `/actions` controller endpoint. `null` means that action has no threshold " +
+        "configured (disabled). `softReject` is read-only here -- Rspamd's own `/saveactions` endpoint does not " +
+        "accept a value for it.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Current thresholds",
+      schema: { example: actionThresholdsExample },
+    }),
+    RspamdForbiddenResponse(),
+    RspamdUnreachableResponse(),
+    RspamdBadGatewayResponse()
+  );
+
+export const SaveActionsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Update Rspamd's action score thresholds",
+      description:
+        "Proxies Rspamd's own `/saveactions` controller endpoint. `reject`/`rewriteSubject`/`addHeader`/`greylist` " +
+        "are each optional (`null` disables that action); whichever are provided must be strictly descending in " +
+        "that order (reject > rewrite subject > add header > greylist) and non-negative -- Rspamd's own endpoint " +
+        "enforces neither, so this API validates before forwarding.",
+    }),
+    ApiResponse({ status: 200, description: "Thresholds saved", schema: { example: { success: true } } }),
+    ApiResponse({
+      status: 400,
+      description: "Validation failed (negative value, or not strictly descending)",
+      schema: {
+        example: {
+          message: "Validation failed",
+          issues: [{ message: "Thresholds must be strictly descending: reject > rewrite subject > add header > greylist" }],
+        },
+      },
+    }),
+    RspamdActionsForbiddenResponse(),
+    RspamdUnreachableResponse(),
+    RspamdBadGatewayResponse()
+  );
+
+export const ResetActionsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Reset Rspamd's action thresholds to this project's shipped defaults",
+      description:
+        "Re-saves this project's baked-in baseline (images/rspamd/conf/override.d/actions.conf), discarding " +
+        `whatever was set via PATCH. Equivalent to PATCH with ${JSON.stringify(RSPAMD_FACTORY_ACTIONS)}.`,
+    }),
+    ApiResponse({ status: 200, description: "Thresholds reset", schema: { example: { success: true } } }),
+    RspamdActionsForbiddenResponse(),
     RspamdUnreachableResponse(),
     RspamdBadGatewayResponse()
   );

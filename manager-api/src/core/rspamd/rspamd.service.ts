@@ -30,6 +30,13 @@ export interface RspamdActions {
   "no action": number;
 }
 
+export interface RspamdBayesStatfile {
+  symbol: string;
+  type: string;
+  users: number;
+  revision: number;
+}
+
 export interface RspamdStats {
   version: string;
   uptime: number;
@@ -39,6 +46,7 @@ export interface RspamdStats {
   ham_count: number;
   connections: number;
   actions: RspamdActions;
+  statfiles: RspamdBayesStatfile[];
 }
 
 // Rspamd has no per-domain counterpart to its own server-wide /stat endpoint
@@ -48,6 +56,36 @@ export interface RspamdDomainStats {
   scanned: number;
   actions: RspamdActions;
 }
+
+// "soft reject" has no configurable threshold in rspamd's own /saveactions
+// endpoint (always null there) -- exposed here read-only, never part of
+// SaveRspamdActionsInput.
+export interface RspamdActionThresholds {
+  reject: number | null;
+  softReject: number | null;
+  rewriteSubject: number | null;
+  addHeader: number | null;
+  greylist: number | null;
+}
+
+export interface SaveRspamdActionsInput {
+  reject: number | null;
+  rewriteSubject: number | null;
+  addHeader: number | null;
+  greylist: number | null;
+}
+
+// This project's shipped baseline (images/rspamd/conf/override.d/actions.conf)
+// -- the only place these numbers should be defined. `/saveactions` writes to
+// rspamd's own dynamic config (/var/lib/rspamd/rspamd_dynamic), layered on
+// top of that static file, so resetting means re-saving these same values,
+// not touching the file itself.
+export const RSPAMD_FACTORY_ACTIONS: SaveRspamdActionsInput = {
+  reject: 15,
+  rewriteSubject: null,
+  addHeader: 5,
+  greylist: null,
+};
 
 export interface RspamdHistoryRow {
   "message-id": string;
@@ -81,6 +119,57 @@ export class RspamdService {
       throw new HttpException(`Rspamd returned ${res.status}`, HttpStatus.BAD_GATEWAY);
     }
     return res.json() as Promise<RspamdStats>;
+  }
+
+  async getActions(): Promise<RspamdActionThresholds> {
+    let res: Response;
+    try {
+      res = await fetch(`${RSPAMD_BASE_URL}/actions`);
+    } catch {
+      throw new HttpException("Rspamd unreachable", HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    if (!res.ok) {
+      throw new HttpException(`Rspamd returned ${res.status}`, HttpStatus.BAD_GATEWAY);
+    }
+    const rows = (await res.json()) as { action: string; value: number | null }[];
+    const byName = new Map(rows.map((r) => [r.action, r.value]));
+    return {
+      reject: byName.get("reject") ?? null,
+      softReject: byName.get("soft reject") ?? null,
+      rewriteSubject: byName.get("rewrite subject") ?? null,
+      addHeader: byName.get("add header") ?? null,
+      greylist: byName.get("greylist") ?? null,
+    };
+  }
+
+  // Rspamd's own array order for /saveactions, reverse-engineered from its
+  // webui source (js/app/config.js, ui.saveActions) -- not documented
+  // anywhere else. Ordering/non-negativity is validated by the caller
+  // (rspamd.validation.ts) before this ever runs: rspamd's own endpoint
+  // does not itself reject a malformed array, it just silently applies it.
+  async saveActions(input: SaveRspamdActionsInput): Promise<void> {
+    const payload = [input.reject, input.rewriteSubject, input.addHeader, input.greylist];
+    let res: Response;
+    try {
+      res = await fetch(`${RSPAMD_BASE_URL}/saveactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      throw new HttpException("Rspamd unreachable", HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    if (!res.ok) {
+      throw new HttpException(`Rspamd returned ${res.status}`, HttpStatus.BAD_GATEWAY);
+    }
+    const body = (await res.json()) as { success?: boolean; error?: string };
+    if (!body.success) {
+      throw new HttpException(body.error ?? "Rspamd rejected the new thresholds", HttpStatus.BAD_GATEWAY);
+    }
+  }
+
+  resetActions(): Promise<void> {
+    return this.saveActions(RSPAMD_FACTORY_ACTIONS);
   }
 
   // Overloads: called with 2 args (spamd.controller.ts, useDomainDashboard.ts's
