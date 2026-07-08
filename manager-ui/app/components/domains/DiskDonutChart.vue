@@ -21,7 +21,7 @@ const { t } = useI18n();
 <template>
   <div class="flex flex-col sm:flex-row items-center gap-6">
     <div class="relative shrink-0 w-36 h-36">
-      <ChartsDoughnutChart :data="chartData" :options="chartOptions" />
+      <DoughnutChart :data="chartData" :options="chartOptions" />
       <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <span class="text-xs text-muted font-medium">{{ formatBytes(usedBytes) }}</span>
         <span class="text-[10px] text-dimmed">/ {{ formatBytes(totalBytes) }}</span>

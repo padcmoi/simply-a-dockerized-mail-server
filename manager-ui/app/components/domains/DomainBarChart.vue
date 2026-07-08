@@ -16,5 +16,5 @@ const { t } = useI18n();
   <div v-if="items.length === 0" class="text-sm text-muted text-center py-4">
     {{ t("dashboard.recent.noDomains") }}
   </div>
-  <ChartsBarChart v-else :data="chartData" :options="chartOptions" :height="chartHeight" />
+  <BarChart v-else :data="chartData" :options="chartOptions" :height="chartHeight" />
 </template>

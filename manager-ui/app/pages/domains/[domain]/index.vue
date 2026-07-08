@@ -130,7 +130,7 @@ const domainPath = computed(() => (domain.value ? `/domains/${domain.value.domai
         </div>
         <div v-else class="flex flex-col sm:flex-row items-center gap-6">
           <div class="relative shrink-0 w-36 h-36">
-            <ChartsDoughnutChart :data="diskChartData" :options="diskChartOptions" />
+            <DoughnutChart :data="diskChartData" :options="diskChartOptions" />
             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span class="text-xs text-muted font-medium">{{ formatBytes(usedBytes) }}</span>
               <span v-if="!isUnlimited" class="text-[10px] text-dimmed">/ {{ formatBytes(allocatedBytes) }}</span>
@@ -174,7 +174,7 @@ const domainPath = computed(() => (domain.value ? `/domains/${domain.value.domai
         <p v-else-if="topMailboxes.length === 0" class="text-sm text-muted text-center py-4">
           {{ $t("domainDashboard.topMailboxes.noData") }}
         </p>
-        <ChartsBarChart v-else :data="barChartData" :options="barChartOptions" :height="barChartHeight" />
+        <BarChart v-else :data="barChartData" :options="barChartOptions" :height="barChartHeight" />
       </UCard>
     </div>
 

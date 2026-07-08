@@ -158,7 +158,7 @@ const { t } = useI18n();
       </div>
       <div v-else-if="stats" class="flex flex-col sm:flex-row items-center gap-6">
         <div class="relative shrink-0 w-40 h-40">
-          <ChartsDoughnutChart :data="donutData" :options="donutOptions" />
+          <DoughnutChart :data="donutData" :options="donutOptions" />
           <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span class="text-2xl font-bold">{{ stats.scanned.toLocaleString() }}</span>
             <span class="text-xs text-muted">{{ t("domainDashboard.rspamd.scanned") }}</span>

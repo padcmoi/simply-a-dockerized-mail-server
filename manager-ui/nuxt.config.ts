@@ -1,6 +1,11 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-01",
   devtools: { enabled: process.env.NODE_ENV === "development" },
+  // Components live in business-domain subfolders (accounts/, domains/,
+  // groups/, etc.) for organization, not for Nuxt's default folder-name
+  // prefixing -- pathPrefix: false keeps every component's registered tag
+  // the same regardless of which subfolder it's filed under.
+  components: [{ path: "~/components", pathPrefix: false }],
   modules: [
     "@nuxt/ui",
     "@nuxt/eslint",
