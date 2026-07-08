@@ -4,11 +4,6 @@ import { useDomainStore } from "~/stores/domain";
 
 const open = ref(true);
 
-async function onSignOut() {
-  await auth.logout();
-  await navigateTo("/login");
-}
-
 const { globalNavItems, domainNavItems, userItems } = useNav(onSignOut);
 
 const headerTitle = computed(() => {
@@ -44,6 +39,24 @@ const domainStore = useDomainStore();
 const { t } = useI18n();
 const route = useRoute();
 const auth = useAuthStore();
+const isMobile = useMediaQuery("(max-width: 1023px)");
+
+// USidebar switches to a mobile slideover under 1024px (same breakpoint it
+// uses internally); clicking a nav link navigates but doesn't close it, so
+// close it ourselves on every route change while on mobile. On desktop this
+// would instead collapse the sidebar to icon-rail mode, which we don't want,
+// hence the isMobile guard.
+watch(
+  () => route.fullPath,
+  () => {
+    if (isMobile.value) open.value = false;
+  }
+);
+
+async function onSignOut() {
+  await auth.logout();
+  await navigateTo("/login");
+}
 
 function toggleSidebar() {
   open.value = !open.value;

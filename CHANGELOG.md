@@ -164,6 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(ui): close the mobile sidebar overlay on every navigation instead of leaving it stuck open -- `USidebar` switches to a slideover under 1024px but doesn't close itself on nav clicks; watches the route and force-closes only below that breakpoint, so desktop's icon-rail collapse behavior is untouched (08-07-2026)
 - fix(ui): truncate long group descriptions instead of overflowing the table horizontally (08-07-2026)
 - fix(api,ui): stop `sieve_reject_senders.created_at` from auto-updating on every change; add a proper `updated_at` column instead (backfilled to each row's own `created_at`, not the migration's run time) and show it as its own column/field on the Sieve blocklist page (07-07-2026)
 - fix(ui): avoid a Vue patch crash when swapping Rspamd's stats card between skeleton and loaded state, and show the table loading bar during history reloads instead of only on first load (07-07-2026)
