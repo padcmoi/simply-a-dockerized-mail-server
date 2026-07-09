@@ -146,12 +146,16 @@ export const CreateAliasDocs = () =>
 export const UpdateAliasDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: "Update destination / end-date of an alias in this domain",
+      summary: "Update local-part / destination / end-date of an alias in this domain",
+      description:
+        "`localPart` renames the alias within its own domain: the source is recomposed as `${localPart}@${domain}` " +
+        "from the route's domain, never from the body, and the local-part may not contain an `@`.",
     }),
     ApiParam({ name: "id", type: Number, example: 1, description: "virtual_aliases.id" }),
     ApiBody({
       schema: {
         example: {
+          localPart: "sales",
           destination: "jdoe@example.com",
           userEndDate: null,
         },
@@ -186,6 +190,18 @@ export const UpdateAliasDocs = () =>
       status: 404,
       description: "Parent domain not found, or alias not found in this domain",
       schema: { example: { statusCode: 404, message: "Alias #1 not found in example.com" } },
+    }),
+    ApiResponse({
+      status: 409,
+      description: "Another alias of this domain already uses that local-part",
+      schema: {
+        example: {
+          statusCode: 409,
+          code: "aliases.alreadyExists",
+          params: { source: "sales@example.com" },
+          message: "Alias sales@example.com already exists",
+        },
+      },
     })
   );
 
