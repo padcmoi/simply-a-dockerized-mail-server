@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type Section = "info" | "owner" | "members" | "administration" | "domain";
+type Section = "info" | "owner" | "members" | "application" | "domain";
 
 const props = defineProps<{
   groupId: number;
@@ -23,7 +23,7 @@ const items = computed(() => [
   { value: "info" as const, label: props.groupName, icon: "i-lucide-info" },
   { value: "owner" as const, label: t("groups.detail.tabs.owner"), icon: "i-lucide-crown" },
   { value: "members" as const, label: t("groups.detail.tabs.members"), icon: "i-lucide-users" },
-  { value: "administration" as const, label: t("groups.detail.tabs.administration"), icon: "i-lucide-shield-alert" },
+  { value: "application" as const, label: t("groups.detail.tabs.application"), icon: "i-lucide-shield-alert" },
   { value: "domain" as const, label: t("groups.detail.tabs.domain"), icon: "i-lucide-globe" },
 ]);
 
@@ -34,7 +34,7 @@ const items = computed(() => [
 function targetFor(section: Section) {
   const base = `/groups/${props.groupId}`;
   if (section === "info") return base;
-  if (section === "administration") return `${base}/acl/admin`;
+  if (section === "application") return `${base}/acl/app`;
   if (section === "domain") return `${base}/acl/domain`;
   return `${base}/${section}`;
 }

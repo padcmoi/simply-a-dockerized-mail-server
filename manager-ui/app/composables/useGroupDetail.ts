@@ -1,7 +1,7 @@
 import type { GroupDetail } from "./useGroups";
 
 // Shared loader for every /groups/:id/* sub-page (info, owner, members,
-// administration, domain) -- each page pulls whichever GroupDetail fields it
+// application, domain) -- each page pulls whichever GroupDetail fields it
 // needs and sets its own last breadcrumb crumb; this composable only owns
 // the fetch + auto-refresh, mirroring useDomainDashboard's role for domains.
 export function useGroupDetail(groupId: Ref<number>) {

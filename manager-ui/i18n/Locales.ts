@@ -12,7 +12,7 @@ export interface Locales {
     recipients: string;
     aliases: string;
     quotas: string;
-    administration: string;
+    application: string;
     sieve: string;
     sieveLong: string;
     accounts: string;
@@ -579,14 +579,14 @@ export interface Locales {
       tabs: {
         owner: string;
         members: string;
-        administration: string;
+        application: string;
         domain: string;
       };
       alerts: {
         info: { title: string; description: string };
         owner: { title: string; description: string };
         members: { title: string; description: string };
-        administration: { title: string; description: string };
+        application: { title: string; description: string };
         domain: { title: string; description: string };
       };
       owner: {

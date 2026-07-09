@@ -39,10 +39,10 @@ const { isRoot, hasDomain } = usePermissions();
 // (not the generic `domain` gate this page's own route already requires);
 // only render it if the current user actually has both access+read, matching
 // the dedicated /rspamd page's own requiredDomain gate and the API guard.
-// DKIM key material and domain ownership are sensitive administration, kept
-// off this dashboard entirely (see the dedicated `/admin` page, gated by the
-// "admin" domain resource) -- `canViewAdmin` here only gates whether the
-// status indicator + link to that page show up.
+// DKIM key material and domain ownership are sensitive, kept off this
+// dashboard entirely (see the dedicated `/app` page, gated by the "admin"
+// domain resource) -- `canViewAdmin` here only gates whether the status
+// indicator + link to that page show up.
 const canViewRspamd = computed(
   () =>
     isRoot.value ||
@@ -235,11 +235,11 @@ const dkimStatusText = computed(() => {
       <UCard
         v-if="canViewAdmin"
         :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
-        @click="domainPath && navigateTo(`${domainPath}/admin`)"
+        @click="domainPath && navigateTo(`${domainPath}/app`)"
       >
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-shield-alert" class="text-warning text-xl" />
-          <span class="font-medium">{{ $t("nav.administration") }}</span>
+          <span class="font-medium">{{ $t("nav.application") }}</span>
           <UIcon v-if="dkimLoading" name="i-lucide-loader-2" class="ml-auto text-muted animate-spin" />
           <UTooltip v-else :text="dkimStatusText" class="ml-auto">
             <UIcon :name="dkimStatusIcon" :class="dkimStatusColor" />

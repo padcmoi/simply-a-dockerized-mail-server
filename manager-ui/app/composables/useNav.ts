@@ -115,10 +115,10 @@ export function useNav(onSignOut: () => Promise<void>) {
       ...(canViewDomain(domainId, "admin")
         ? [
             {
-              label: t("nav.administration"),
+              label: t("nav.application"),
               icon: "i-lucide-shield-alert",
-              to: `${domainHome}/admin`,
-              active: isActive(`${domainHome}/admin`),
+              to: `${domainHome}/app`,
+              active: isActive(`${domainHome}/app`),
             },
           ]
         : []),

@@ -14,7 +14,7 @@ export default {
     recipients: "Destinataires",
     aliases: "Alias",
     quotas: "Quotas",
-    administration: "Administration",
+    application: "Application",
     sieve: "Sieve",
     sieveLong: "Sieve - Expéditeurs rejetés",
     accounts: "Comptes",
@@ -431,7 +431,7 @@ export default {
       saveFailed: "Échec du transfert de propriété",
     },
     admin: {
-      subtitle: "Administration sensible : statut du domaine, clés de signature DKIM et propriété du domaine.",
+      subtitle: "Zone sensible : statut du domaine, clés de signature DKIM et propriété du domaine.",
     },
     status: {
       title: "Statut du domaine",
@@ -585,7 +585,7 @@ export default {
       tabs: {
         owner: "Propriétaire",
         members: "Membres",
-        administration: "Administration",
+        application: "Application",
         domain: "Domaine",
       },
       alerts: {
@@ -601,8 +601,8 @@ export default {
           title: "Membres du groupe",
           description: "Les comptes assignés à ce groupe héritent de ses permissions. Un compte n'appartient qu'à un seul groupe à la fois.",
         },
-        administration: {
-          title: "Permissions globales (Administration)",
+        application: {
+          title: "Permissions globales (Application)",
           description: "Ces permissions s'appliquent à toute l'application, indépendamment d'un domaine précis.",
         },
         domain: {
@@ -634,7 +634,7 @@ export default {
     },
     permissions: {
       tabs: {
-        global: "Administration",
+        global: "Application",
         domain: "Domaine",
       },
       resources: {
@@ -650,7 +650,7 @@ export default {
         aliases: "Alias",
         quotas: "Quotas",
         dkim: "Gestion DKIM",
-        admin: "Administration",
+        admin: "Application",
       },
       actionsLabel: {
         access: "Accès",

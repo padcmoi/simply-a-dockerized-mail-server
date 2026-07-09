@@ -21,7 +21,7 @@ watchEffect(() => {
   setBreadcrumb([
     { label: t("nav.groups"), to: "/groups" },
     { label: group.value?.name ?? "...", to: `/groups/${groupId.value}` },
-    { label: t("groups.detail.tabs.administration") },
+    { label: t("groups.detail.tabs.application") },
   ]);
 });
 
@@ -43,8 +43,8 @@ async function onSaveGlobal(permissions: { resource: string; action: string }[])
   <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
     <UAlert
       icon="i-lucide-shield-alert"
-      :title="t('groups.detail.alerts.administration.title')"
-      :description="t('groups.detail.alerts.administration.description')"
+      :title="t('groups.detail.alerts.application.title')"
+      :description="t('groups.detail.alerts.application.description')"
       color="neutral"
       variant="subtle"
     />
@@ -58,7 +58,7 @@ async function onSaveGlobal(permissions: { resource: string; action: string }[])
     </div>
 
     <template v-else-if="group">
-      <GroupDetailTabs :group-id="groupId" active="administration" :group-name="group.name" />
+      <GroupDetailTabs :group-id="groupId" active="application" :group-name="group.name" />
       <GroupGlobalPermissions :global-permissions="group.globalPermissions" :saving="savingGlobalPerms" @save="onSaveGlobal" />
     </template>
   </div>

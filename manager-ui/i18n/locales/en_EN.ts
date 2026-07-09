@@ -14,7 +14,7 @@ export default {
     recipients: "Recipients",
     aliases: "Aliases",
     quotas: "Quotas",
-    administration: "Administration",
+    application: "Application",
     sieve: "Sieve",
     sieveLong: "Sieve - Rejected senders",
     accounts: "Accounts",
@@ -430,7 +430,7 @@ export default {
       saveFailed: "Ownership transfer failed",
     },
     admin: {
-      subtitle: "Sensitive administration: domain status, DKIM signing keys and domain ownership.",
+      subtitle: "Sensitive area: domain status, DKIM signing keys and domain ownership.",
     },
     status: {
       title: "Domain status",
@@ -583,7 +583,7 @@ export default {
       tabs: {
         owner: "Owner",
         members: "Members",
-        administration: "Administration",
+        application: "Application",
         domain: "Domain",
       },
       alerts: {
@@ -599,8 +599,8 @@ export default {
           title: "Group members",
           description: "Accounts assigned to this group inherit its permissions. An account belongs to only one group at a time.",
         },
-        administration: {
-          title: "Global permissions (Administration)",
+        application: {
+          title: "Global permissions (Application)",
           description: "These permissions apply across the whole application, independent of any specific domain.",
         },
         domain: {
@@ -632,7 +632,7 @@ export default {
     },
     permissions: {
       tabs: {
-        global: "Administration",
+        global: "Application",
         domain: "Domain",
       },
       resources: {
@@ -648,7 +648,7 @@ export default {
         aliases: "Aliases",
         quotas: "Quotas",
         dkim: "DKIM management",
-        admin: "Administration",
+        admin: "Application",
       },
       actionsLabel: {
         access: "Access",

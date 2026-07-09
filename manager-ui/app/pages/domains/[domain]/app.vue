@@ -3,7 +3,7 @@ import type { Domain, DkimCheckResult, DkimKey } from "~/composables/useDomainDa
 
 // Gated by the "admin" domain ACL (not the generic "domain" resource the main
 // dashboard requires) -- DKIM key material and ownership transfer are
-// sensitive administration, kept off the day-to-day dashboard on purpose.
+// sensitive, kept off the day-to-day dashboard on purpose.
 definePageMeta({
   requiredDomain: [
     { resource: "admin", action: "access" },
@@ -116,7 +116,7 @@ watchEffect(() => {
   setBreadcrumb([
     { label: t("nav.domains"), to: "/domains" },
     { label: domainFqdn.value, to: `/domains/${domainFqdn.value}` },
-    { label: t("nav.administration") },
+    { label: t("nav.application") },
   ]);
 });
 
