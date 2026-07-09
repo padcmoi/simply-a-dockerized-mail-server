@@ -25,6 +25,11 @@ const quotaUnderLimit = computed(() => quotaMbField.value < floorMb.value);
 // value it currently holds always passes.
 const quotaOverLimit = computed(() => quotaMbField.value > props.maxQuotaMb);
 
+// A mailbox whose usage has grown past the domain's remaining headroom would
+// hand the slider a max below its min, which reka clamps into an unusable
+// track. The number field keeps reporting the real bounds either way.
+const sliderMax = computed(() => Math.max(floorMb.value, props.maxQuotaMb));
+
 const { t } = useI18n();
 
 watch(
@@ -40,6 +45,18 @@ watch(
   },
   { immediate: true }
 );
+
+// `max` on a number input only bounds the spinner arrows: typing or pasting
+// walks straight past it, so the value is pulled back to the ceiling as it
+// changes. The floor is left alone -- clamping it would rewrite a leading "0"
+// into the minimum mid-keystroke.
+//
+// `maxQuotaMb` is watched too: it tracks the domain's headroom, which shrinks
+// whenever another recipient is resized, and the field must follow it down
+// rather than hold a value the API would now refuse.
+watch([quotaMbField, () => props.maxQuotaMb], ([value, max]) => {
+  if (Number.isFinite(value) && value > max) quotaMbField.value = max;
+});
 
 function onSave() {
   if (quotaUnderLimit.value || quotaOverLimit.value) return;
@@ -71,7 +88,12 @@ function onSave() {
             "
             :hint="t('recipients.form.quotaRange', { min: floorMb, max: maxQuotaMb })"
           >
-            <UInput v-model.number="quotaMbField" type="number" :min="floorMb" :max="maxQuotaMb" class="w-32" />
+            <!-- Slider and number field are two views of `quotaMbField`, so
+                 moving either moves the other. -->
+            <div class="space-y-4">
+              <UInput v-model.number="quotaMbField" type="number" :min="floorMb" :max="maxQuotaMb" class="w-32" />
+              <USlider v-model="quotaMbField" :min="floorMb" :max="sliderMax" :step="1" class="px-1" />
+            </div>
           </UFormField>
         </div>
 

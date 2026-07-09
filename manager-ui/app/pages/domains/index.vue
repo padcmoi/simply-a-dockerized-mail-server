@@ -17,23 +17,10 @@ interface Domain {
   usedBytes: string;
   active: number;
 }
-interface Disk {
-  totalBytes: number;
-  freeBytes: number;
-  reservedBytes: number;
-  assignableBytes: number;
-}
 
 const MB = 1024 * 1024;
 const MIN_QUOTA_MB = 10;
 
-const disk = ref<Disk | null>(null);
-const diskLoading = ref(false);
-const form = reactive({ domain: "", active: true, quotaMb: MIN_QUOTA_MB });
-
-const assignableMb = computed(() => (disk.value ? Math.floor(disk.value.assignableBytes / MB) : 0));
-const quotaOverLimit = computed(() => form.quotaMb > assignableMb.value);
-const quotaUnderLimit = computed(() => form.quotaMb < MIN_QUOTA_MB);
 // `GET /domains` now only needs `access` -- the table always renders (the
 // backend scopes rows to just what the caller owns without `read`, see
 // domains.controller.ts/domains.service.ts). `GET /domains/disk` still
@@ -55,10 +42,11 @@ const {
 // is valid -- the real ceiling for editing IT is the free pool plus
 // whatever it already holds, not just the free pool alone.
 const adminMaxQuotaMb = computed(() => {
-  if (!adminModalItem.value) return assignableMb.value;
+  const assignable = assignableMb.value ?? 0;
+  if (!adminModalItem.value) return assignable;
   const bytes = Number(adminModalItem.value.quota);
   const currentMb = Number.isFinite(bytes) && bytes > 0 ? Math.round(bytes / MB) : 0;
-  return assignableMb.value + currentMb;
+  return assignable + currentMb;
 });
 // Same source feeds the desktop column headers below and ListToolbar's
 // mobile sort select.
@@ -78,12 +66,11 @@ const columns = computed(() => [
 ]);
 
 const { t } = useI18n();
-const { call } = useApi();
-const toast = useToast();
 const domainStore = useDomainStore();
 const auth = useAuthStore();
 const perms = usePermissionsStore();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { disk, diskLoading, assignableMb, loadDisk } = useDomainDisk();
 
 setBreadcrumb([{ label: t("nav.domains") }]);
 
@@ -102,57 +89,18 @@ const {
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
-watch(useDataRefresh().tick, loadDisk);
+watch(useDataRefresh().tick, refreshDisk);
 
-async function loadDisk() {
+// `/domains/disk` aggregates every domain and demands `domains:read`; asking
+// for it without that grant would only raise a 403 toast about a card the
+// account cannot see anyway.
+async function refreshDisk() {
   if (!canSeeAllDomains.value) return;
-  diskLoading.value = true;
-  try {
-    disk.value = await call<Disk>("/domains/disk");
-  } catch (err) {
-    toast.add({
-      title: t("domains.toast.loadFailed"),
-      description: (err as Error).message,
-      color: "error",
-    });
-  } finally {
-    diskLoading.value = false;
-  }
+  await loadDisk();
 }
 
 async function load() {
-  await Promise.all([loadDisk(), loadDomains()]);
-}
-
-async function create() {
-  if (quotaUnderLimit.value) {
-    toast.add({ title: t("domains.toast.quotaTooLow", { value: MIN_QUOTA_MB }), color: "error" });
-    return;
-  }
-  if (quotaOverLimit.value) {
-    toast.add({ title: t("domains.toast.quotaTooHigh"), color: "error" });
-    return;
-  }
-  try {
-    await call("/domains", {
-      method: "POST",
-      body: {
-        domain: form.domain,
-        active: form.active,
-        quota: form.quotaMb * MB,
-      },
-    });
-    form.domain = "";
-    form.quotaMb = MIN_QUOTA_MB;
-    await load();
-    toast.add({ title: t("domains.toast.added"), color: "success" });
-  } catch (err) {
-    toast.add({
-      title: t("domains.toast.addFailed"),
-      description: (err as Error).message,
-      color: "error",
-    });
-  }
+  await Promise.all([refreshDisk(), loadDomains()]);
 }
 
 function openDomain(d: Domain) {
@@ -160,24 +108,15 @@ function openDomain(d: Domain) {
   navigateTo(`/domains/${d.domain}`);
 }
 
-function occupancyPercent(d: Domain) {
-  const quota = Number(d.quota);
-  if (!Number.isFinite(quota) || quota <= 0) return 0;
-  return Math.min(100, (Number(d.usedBytes) / quota) * 100);
+function occupancy(d: Domain) {
+  return occupancyPercent(Number(d.quota), Number(d.usedBytes));
 }
 
 function occupancyLabel(d: Domain) {
   return `${formatBytes(Number(d.usedBytes))} / ${formatBytes(Number(d.quota))}`;
 }
 
-function occupancyColor(d: Domain) {
-  const pct = occupancyPercent(d);
-  if (pct > 90) return "error";
-  if (pct > 70) return "warning";
-  return "success";
-}
-
-onMounted(loadDisk);
+onMounted(refreshDisk);
 </script>
 
 <template>
@@ -203,47 +142,17 @@ onMounted(loadDisk);
 
     <DomainsCapacityCard v-if="canSeeAllDomains" :disk="disk" />
 
-    <UCard v-if="canCreateDomain">
-      <template #header>
-        <h2 class="font-semibold">{{ t("domains.form.title") }}</h2>
-      </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-3 items-start" @submit="create">
-        <UFormField :label="t('domains.form.fqdn')" name="domain">
-          <UInput v-model="form.domain" placeholder="example.com" icon="i-lucide-globe" class="w-full" />
-        </UFormField>
-        <UFormField
-          :label="t('domains.form.quotaMb')"
-          name="quotaMb"
-          :error="
-            quotaUnderLimit
-              ? t('domains.form.quotaMin', { value: MIN_QUOTA_MB })
-              : quotaOverLimit
-                ? t('domains.form.quotaMax', { value: assignableMb })
-                : undefined
-          "
-          :hint="t('domains.form.quotaRange', { min: MIN_QUOTA_MB, max: assignableMb })"
-        >
-          <UInput v-model.number="form.quotaMb" type="number" :min="MIN_QUOTA_MB" :max="assignableMb" class="w-32" />
-        </UFormField>
-        <UFormField :label="t('domains.form.active')" name="active">
-          <USwitch v-model="form.active" />
-        </UFormField>
-        <!-- Empty label row so the button lines up with the inputs rather than
-             with their labels, the grid being top-aligned. UFormField only
-             renders its label element when the prop is truthy. -->
-        <UFormField label="&#160;">
-          <UButton
-            type="submit"
-            icon="i-lucide-plus"
-            :disabled="!form.domain || quotaOverLimit || quotaUnderLimit"
-            block
-            class="sm:w-auto"
-          >
-            {{ t("domains.form.submit") }}
-          </UButton>
-        </UFormField>
-      </UForm>
-    </UCard>
+    <!-- Same clickable card as the domain dashboard's section links, in the
+         slot the create form used to occupy. -->
+    <div v-if="canCreateDomain" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <UCard :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }" @click="navigateTo('/domains/create')">
+        <div class="flex items-center gap-3">
+          <UIcon name="i-lucide-globe" class="text-info text-xl" />
+          <span class="font-medium">{{ t("domains.form.title") }}</span>
+          <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+        </div>
+      </UCard>
+    </div>
 
     <ListToolbar
       v-model:search="search"
@@ -273,8 +182,8 @@ onMounted(loadDisk);
             <div class="min-w-[110px]">
               <p>{{ occupancyLabel(row.original) }}</p>
               <UProgress
-                :model-value="occupancyPercent(row.original)"
-                :color="occupancyColor(row.original)"
+                :model-value="occupancy(row.original)"
+                :color="occupancyColor(occupancy(row.original))"
                 size="xs"
                 class="mt-1"
               />

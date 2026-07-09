@@ -11,28 +11,45 @@ interface Alias {
   source: string;
   destination: string;
   domain: string;
+  // `virtual_aliases.last_activity` carries `ON UPDATE current_timestamp()`:
+  // it stamps the row's last edit, not mail traffic. Postfix-legacy name.
+  lastActivity: string | null;
 }
 
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
-const form = reactive({ localPart: "", destination: "" });
 
 // Same source feeds the desktop column headers below and ListToolbar's
 // mobile sort select.
 const SORTABLE_COLUMNS = computed(() => [
   { key: "source", label: t("aliases.table.from") },
   { key: "destination", label: t("aliases.table.to") },
+  { key: "lastActivity", label: t("common.lastModification") },
 ]);
 
 const columns = computed(() => [
   { accessorKey: "source", header: header("source", t("aliases.table.from")) },
   { accessorKey: "destination", header: header("destination", t("aliases.table.to")) },
+  { accessorKey: "lastActivity", header: header("lastActivity", t("common.lastModification")) },
   { id: "actions", header: "" },
 ]);
 
+// The create and edit pages demand aliases:create / aliases:modify. Hiding
+// their entry points from an account that lacks the grant beats letting the
+// click land on a 403.
+const canCreateAliases = computed(() => {
+  if (!domainId.value) return false;
+  return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "create"));
+});
+const canEditAliases = computed(() => {
+  if (!domainId.value) return false;
+  return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "modify"));
+});
+
 const { t } = useI18n();
 const { call } = useApi();
-const toast = useToast();
+const { formatDateTime } = useDateTime();
+const { isRoot, hasDomain } = usePermissions();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 
@@ -52,26 +69,6 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
 );
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
-
-async function create() {
-  if (!domainId.value) return;
-  try {
-    await call(`/domains/${domainId.value}/aliases`, {
-      method: "POST",
-      body: { localPart: form.localPart, destination: form.destination },
-    });
-    form.localPart = "";
-    form.destination = "";
-    await load();
-    toast.add({ title: t("aliases.toast.created"), color: "success" });
-  } catch (err) {
-    toast.add({
-      title: t("aliases.toast.createFailed"),
-      description: (err as Error).message,
-      color: "error",
-    });
-  }
-}
 
 async function remove(row: Alias) {
   if (!domainId.value) return;
@@ -105,25 +102,20 @@ async function onDeleteConfirmed() {
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="() => load()" />
     </div>
 
-    <UCard>
-      <template #header>
-        <h2 class="font-semibold">{{ t("aliases.form.title") }}</h2>
-      </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start" @submit="create">
-        <UFormField :label="t('aliases.form.localPart')" name="localPart">
-          <UInput v-model="form.localPart" placeholder="local-part" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('aliases.form.destination')" name="destination">
-          <UInput v-model="form.destination" :placeholder="t('aliases.form.destinationPlaceholder')" class="w-full" />
-        </UFormField>
-        <!-- Empty label row so the button lines up with the inputs rather than
-             with their labels, the grid being top-aligned. UFormField only
-             renders its label element when the prop is truthy. -->
-        <UFormField label="&#160;">
-          <UButton type="submit" icon="i-lucide-plus" block class="sm:w-auto">{{ t("aliases.form.submit") }}</UButton>
-        </UFormField>
-      </UForm>
-    </UCard>
+    <!-- Same clickable card as the domain dashboard's section links, in the
+         slot the create form used to occupy. -->
+    <div v-if="canCreateAliases" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <UCard
+        :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+        @click="navigateTo(`/domains/${domainFqdn}/aliases/create`)"
+      >
+        <div class="flex items-center gap-3">
+          <UIcon name="i-lucide-at-sign" class="text-success text-xl" />
+          <span class="font-medium">{{ t("aliases.form.title") }}</span>
+          <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+        </div>
+      </UCard>
+    </div>
 
     <ListToolbar
       v-model:search="search"
@@ -139,22 +131,44 @@ async function onDeleteConfirmed() {
     <template v-else>
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
+          <template #lastActivity-cell="{ row }">
+            <span class="text-muted">{{ formatDateTime(row.original.lastActivity) }}</span>
+          </template>
           <template #actions-cell="{ row }">
-            <UButton
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="ghost"
-              size="xs"
-              square
-              @click="requestDelete(() => remove(row.original))"
-            />
+            <div class="flex justify-end gap-2">
+              <UButton
+                v-if="canEditAliases"
+                icon="i-lucide-pencil"
+                color="primary"
+                variant="ghost"
+                size="xs"
+                square
+                @click="navigateTo(`/domains/${domainFqdn}/aliases/edit/${row.original.id}`)"
+              />
+              <UButton
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="ghost"
+                size="xs"
+                square
+                @click="requestDelete(() => remove(row.original))"
+              />
+            </div>
           </template>
         </UTable>
       </UCard>
 
       <div class="lg:hidden space-y-3">
         <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <AliasCard v-for="item in items" v-else :key="item.id" :item="item" @delete="requestDelete(() => remove(item))" />
+        <AliasCard
+          v-for="item in items"
+          v-else
+          :key="item.id"
+          :item="item"
+          :can-edit="canEditAliases"
+          @delete="requestDelete(() => remove(item))"
+          @edit="navigateTo(`/domains/${domainFqdn}/aliases/edit/${item.id}`)"
+        />
       </div>
 
       <ListPagination v-model:page="page" :total="total" :limit="limit" />

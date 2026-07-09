@@ -12,6 +12,9 @@ interface Recipient {
   quota: string;
   usedBytes: string;
   active: number;
+  // `virtual_users.last_activity` carries `ON UPDATE current_timestamp()`: it
+  // stamps the row's last edit, not mail traffic. Postfix-legacy name, kept.
+  lastActivity: string | null;
 }
 
 const MB = 1024 * 1024;
@@ -19,27 +22,6 @@ const MIN_QUOTA_MB = 1;
 
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
-// What the domain has left for its recipients, straight from the API rather
-// than summed client-side: the list is paginated, so the browser never holds
-// every recipient of the domain. Negative for a domain overcommitted before
-// the rule existed, hence the clamp at 0.
-const headroom = ref<{ domainQuota: number; allocated: number; available: number } | null>(null);
-
-const form = reactive({ localPart: "", password: "", quotaMb: 500 });
-
-const availableMb = computed(() => (headroom.value ? Math.max(0, Math.floor(headroom.value.available / MB)) : 0));
-
-// Lazily evaluated, so reading `editModalItem` (declared further down, with
-// the rest of useRecipientEdit) is safe. Resizing frees the recipient's own reservation first, so its ceiling is the
-// domain's remaining space plus what it already holds.
-const editMaxQuotaMb = computed(() => {
-  if (!editModalItem.value || !headroom.value) return availableMb.value;
-  const currentMb = Math.floor(Number(editModalItem.value.quota) / MB);
-  return Math.max(MIN_QUOTA_MB, availableMb.value + currentMb);
-});
-
-const quotaUnderLimit = computed(() => form.quotaMb < MIN_QUOTA_MB);
-const quotaOverLimit = computed(() => form.quotaMb > availableMb.value);
 
 // Same source feeds the desktop column headers below and ListToolbar's
 // mobile sort select.
@@ -48,6 +30,7 @@ const SORTABLE_COLUMNS = computed(() => [
   { key: "quota", label: t("recipients.table.quota") },
   { key: "usedBytes", label: t("recipients.table.used") },
   { key: "active", label: t("recipients.table.active") },
+  { key: "lastActivity", label: t("common.lastModification") },
 ]);
 
 const columns = computed(() => [
@@ -55,19 +38,38 @@ const columns = computed(() => [
   { accessorKey: "quota", header: header("quota", t("recipients.table.quota")) },
   { accessorKey: "usedBytes", header: header("usedBytes", t("recipients.table.used")) },
   { accessorKey: "active", header: header("active", t("recipients.table.active")) },
+  { accessorKey: "lastActivity", header: header("lastActivity", t("common.lastModification")) },
   { id: "actions", header: "" },
 ]);
 
+// The create form now lives on its own page, which demands recipients:create.
+// Hiding the entry point from an account that lacks it beats letting the click
+// land on a 403.
+const canCreateRecipients = computed(() => {
+  if (!domainId.value) return false;
+  return isRoot.value || (hasDomain(domainId.value, "recipients", "access") && hasDomain(domainId.value, "recipients", "create"));
+});
+
+// Lazily evaluated, so reading `editModalItem` (declared further down, with
+// the rest of useRecipientEdit) is safe. Resizing frees the recipient's own
+// reservation first, so its ceiling is the domain's remaining space plus what
+// it already holds.
+const editMaxQuotaMb = computed(() => {
+  if (!editModalItem.value) return availableMb.value;
+  const currentMb = Math.floor(Number(editModalItem.value.quota) / MB);
+  return Math.max(MIN_QUOTA_MB, availableMb.value + currentMb);
+});
+
 const { t } = useI18n();
 const { call } = useApi();
-const toast = useToast();
+const { formatDateTime } = useDateTime();
+const { isRoot, hasDomain } = usePermissions();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { availableMb, loadHeadroom } = useRecipientHeadroom(domainId);
 
-// `loadHeadroom` is a hoisted function declaration; the watcher sits up here
-// because the lint rule wants every watcher above the top-level functions.
-watch(domainId, loadHeadroom, { immediate: true });
-
+// Below the composables it reads, unlike the computed above it: watchEffect
+// runs its callback straight away, so `setBreadcrumb` must already be bound.
 watchEffect(() => {
   setBreadcrumb([
     { label: t("nav.domains"), to: "/domains" },
@@ -89,14 +91,8 @@ const { editModalOpen, editModalItem, editSaving, canEditRecipients, openEditMod
   refreshAll
 );
 
-async function loadHeadroom() {
-  if (!domainId.value) return;
-  headroom.value = await call<{ domainQuota: number; allocated: number; available: number }>(
-    `/domains/${domainId.value}/recipients/headroom`
-  ).catch(() => null);
-}
-
-// Every mutation shifts what's left, so the two always reload together.
+// Every mutation shifts what the domain has left, so the two always reload
+// together.
 async function refreshAll() {
   await Promise.all([load(), loadHeadroom()]);
 }
@@ -105,49 +101,8 @@ function isPostmaster(item: Recipient) {
   return item.email.toLowerCase().startsWith("postmaster@");
 }
 
-function occupancyPercent(r: Recipient) {
-  const quota = Number(r.quota);
-  if (!Number.isFinite(quota) || quota <= 0) return 0;
-  return Math.min(100, (Number(r.usedBytes) / quota) * 100);
-}
-
-function occupancyColor(r: Recipient) {
-  const pct = occupancyPercent(r);
-  if (pct > 90) return "error";
-  if (pct > 70) return "warning";
-  return "success";
-}
-
-async function create() {
-  if (!domainId.value) return;
-  if (quotaUnderLimit.value) {
-    toast.add({ title: t("recipients.toast.quotaTooLow", { value: MIN_QUOTA_MB }), color: "error" });
-    return;
-  }
-  if (quotaOverLimit.value) {
-    toast.add({ title: t("recipients.form.quotaMax", { value: availableMb.value }), color: "error" });
-    return;
-  }
-  try {
-    await call(`/domains/${domainId.value}/recipients`, {
-      method: "POST",
-      body: {
-        localPart: form.localPart,
-        password: form.password,
-        quota: form.quotaMb * MB,
-      },
-    });
-    form.localPart = "";
-    form.password = "";
-    await refreshAll();
-    toast.add({ title: t("recipients.toast.created"), color: "success" });
-  } catch (err) {
-    toast.add({
-      title: t("recipients.toast.createFailed"),
-      description: (err as Error).message,
-      color: "error",
-    });
-  }
+function occupancy(r: Recipient) {
+  return occupancyPercent(Number(r.quota), Number(r.usedBytes));
 }
 
 async function remove(row: Recipient) {
@@ -183,43 +138,20 @@ async function onDeleteConfirmed() {
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="refreshAll" />
     </div>
 
-    <UCard>
-      <template #header>
-        <h2 class="font-semibold">{{ t("recipients.form.title") }}</h2>
-      </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start" @submit="create">
-        <UFormField :label="t('recipients.form.localPart')" name="localPart">
-          <UInput v-model="form.localPart" placeholder="local-part" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('recipients.form.password')" name="password">
-          <UInput v-model="form.password" type="password" :placeholder="t('recipients.form.password')" class="w-full" />
-        </UFormField>
-        <UFormField
-          :label="t('recipients.form.quotaMb')"
-          name="quotaMb"
-          :error="
-            quotaUnderLimit
-              ? t('recipients.form.quotaMin', { value: MIN_QUOTA_MB })
-              : quotaOverLimit
-                ? t('recipients.form.quotaMax', { value: availableMb })
-                : undefined
-          "
-          :hint="t('recipients.form.quotaRange', { min: MIN_QUOTA_MB, max: availableMb })"
-        >
-          <UInput v-model.number="form.quotaMb" type="number" :min="MIN_QUOTA_MB" :max="availableMb" class="w-full" />
-        </UFormField>
-        <!-- A no-break space, not an empty string: UFormField only renders its
-             label element when the prop is truthy, and only that element has the
-             exact height the sibling fields' labels do. The grid being
-             top-aligned, without it the button lines up with the labels rather
-             than with the inputs. -->
-        <UFormField label="&#160;">
-          <UButton type="submit" icon="i-lucide-plus" :disabled="quotaUnderLimit || quotaOverLimit" block class="lg:w-auto">{{
-            t("recipients.form.submit")
-          }}</UButton>
-        </UFormField>
-      </UForm>
-    </UCard>
+    <!-- Same clickable card as the domain dashboard's section links, in the
+         slot the create form used to occupy. -->
+    <div v-if="canCreateRecipients" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <UCard
+        :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+        @click="navigateTo(`/domains/${domainFqdn}/recipients/create`)"
+      >
+        <div class="flex items-center gap-3">
+          <UIcon name="i-lucide-user-plus" class="text-info text-xl" />
+          <span class="font-medium">{{ t("recipients.form.title") }}</span>
+          <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+        </div>
+      </UCard>
+    </div>
 
     <ListToolbar
       v-model:search="search"
@@ -250,8 +182,8 @@ async function onDeleteConfirmed() {
             <div class="min-w-[110px]">
               <p>{{ formatBytes(Number(row.original.usedBytes)) }}</p>
               <UProgress
-                :model-value="occupancyPercent(row.original)"
-                :color="occupancyColor(row.original)"
+                :model-value="occupancy(row.original)"
+                :color="occupancyColor(occupancy(row.original))"
                 size="xs"
                 class="mt-1"
               />
@@ -261,6 +193,9 @@ async function onDeleteConfirmed() {
             <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
               {{ row.original.active ? t("common.yes") : t("common.no") }}
             </UBadge>
+          </template>
+          <template #lastActivity-cell="{ row }">
+            <span class="text-muted">{{ formatDateTime(row.original.lastActivity) }}</span>
           </template>
           <template #actions-cell="{ row }">
             <div v-if="!isPostmaster(row.original)" class="flex justify-end gap-2">

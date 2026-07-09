@@ -3,25 +3,18 @@ const emit = defineEmits<{ delete: []; edit: [] }>();
 
 const props = withDefaults(
   defineProps<{
-    item: { id: number; email: string; quota: string; usedBytes: string; active: number };
+    item: { id: number; email: string; quota: string; usedBytes: string; active: number; lastActivity: string | null };
     isPostmaster?: boolean;
     canEdit?: boolean;
   }>(),
   { isPostmaster: false, canEdit: false }
 );
 
-const occupancyPercent = computed(() => {
-  const quota = Number(props.item.quota);
-  if (!Number.isFinite(quota) || quota <= 0) return 0;
-  return Math.min(100, (Number(props.item.usedBytes) / quota) * 100);
-});
-const occupancyColor = computed(() => {
-  if (occupancyPercent.value > 90) return "error";
-  if (occupancyPercent.value > 70) return "warning";
-  return "success";
-});
+const percent = computed(() => occupancyPercent(Number(props.item.quota), Number(props.item.usedBytes)));
+const color = computed(() => occupancyColor(percent.value));
 
 const { t } = useI18n();
+const { formatDateTime } = useDateTime();
 </script>
 
 <template>
@@ -46,7 +39,11 @@ const { t } = useI18n();
         <span class="text-muted w-24 shrink-0">{{ t("recipients.table.used") }}</span>
         <span>{{ formatBytes(Number(item.usedBytes)) }}</span>
       </div>
-      <UProgress :model-value="occupancyPercent" :color="occupancyColor" size="xs" />
+      <UProgress :model-value="percent" :color="color" size="xs" />
+      <div class="flex gap-2">
+        <span class="text-muted w-24 shrink-0">{{ t("common.lastModification") }}</span>
+        <span>{{ formatDateTime(item.lastActivity) }}</span>
+      </div>
     </div>
     <div class="mt-3 pt-3 border-t border-default flex justify-end gap-2">
       <template v-if="!isPostmaster">
