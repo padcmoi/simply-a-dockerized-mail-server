@@ -12,7 +12,7 @@ export class CreateVirtualMail1782760166966 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`virtual_domains\` (
         \`id\` int(11) NOT NULL AUTO_INCREMENT,
-        \`owner_id\` int(11) DEFAULT NULL,
+        \`owner_id\` char(36) DEFAULT NULL,
         \`domain\` varchar(255) NOT NULL,
         \`quota\` bigint(20) NOT NULL DEFAULT 0,
         \`active\` tinyint(1) NOT NULL DEFAULT 0,
@@ -29,7 +29,7 @@ export class CreateVirtualMail1782760166966 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`virtual_users\` (
         \`id\` int(11) NOT NULL AUTO_INCREMENT,
-        \`owner_id\` int(11) DEFAULT NULL,
+        \`owner_id\` char(36) DEFAULT NULL,
         \`domain\` varchar(255) NOT NULL,
         \`email\` varchar(255) NOT NULL,
         \`password\` varchar(128) NOT NULL,
@@ -54,7 +54,7 @@ export class CreateVirtualMail1782760166966 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`virtual_aliases\` (
         \`id\` int(11) NOT NULL AUTO_INCREMENT,
-        \`owner_id\` int(11) DEFAULT NULL,
+        \`owner_id\` char(36) DEFAULT NULL,
         \`domain\` varchar(255) NOT NULL,
         \`source\` varchar(255) NOT NULL,
         \`destination\` varchar(255) NOT NULL,

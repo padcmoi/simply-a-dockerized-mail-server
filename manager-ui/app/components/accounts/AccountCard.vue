@@ -1,12 +1,12 @@
 <script setup lang="ts">
 interface ManagerAccount {
-  id: number;
+  id: string;
   username: string;
   name: string | null;
   email: string | null;
   isRoot: boolean;
   enabled: boolean;
-  groups: { id: number; name: string }[];
+  groups: { id: string; name: string }[];
 }
 
 const emit = defineEmits<{ revoke: [] }>();

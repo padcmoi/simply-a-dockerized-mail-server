@@ -308,10 +308,13 @@ if ! stage_done admin; then
 	# postmaster reservation and DKIM key is created from the manager-ui (or
 	# the manager-api directly) by this root user. Re-running install keeps the
 	# row but rehashes its password (NOT a no-op: lets the operator reset it by
-	# picking a new MANAGER_ADMIN_PASSWORD and a fresh install on top).
+	# picking a new MANAGER_ADMIN_PASSWORD and a fresh install on top). `id` is
+	# a uuid with no DB-side default (TypeORM generates it for every account
+	# created through the API), so this raw INSERT has to supply its own, and it
+	# stays out of the UPDATE list so a re-run never rotates it.
 	docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
-INSERT INTO accounts (username, password, is_root, enabled, created_at, updated_at)
-VALUES ('${ADMIN_USER}', '${ADMIN_HASH}', 1, 1, NOW(), NOW())
+INSERT INTO accounts (id, username, password, is_root, enabled, created_at, updated_at)
+VALUES (UUID(), '${ADMIN_USER}', '${ADMIN_HASH}', 1, 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE password=VALUES(password), is_root=1, updated_at=NOW();
 SQL
 	ok "root account ready"

@@ -9,7 +9,7 @@ definePageMeta({
 });
 
 interface ManagerAccount {
-  id: number;
+  id: string;
   username: string;
   name: string | null;
   email: string | null;
@@ -17,7 +17,7 @@ interface ManagerAccount {
   enabled: boolean;
   lastLogin: string | null;
   createdAt: string;
-  groups: { id: number; name: string }[];
+  groups: { id: string; name: string }[];
 }
 
 const {
@@ -71,7 +71,7 @@ const columns = computed(() => [
   { id: "actions", header: "" },
 ]);
 
-async function sendInvite(data: { email: string; groupId: number | null }) {
+async function sendInvite(data: { email: string; groupId: string | null }) {
   inviteSending.value = true;
   try {
     await call("/accounts/invite", { method: "POST", body: data });

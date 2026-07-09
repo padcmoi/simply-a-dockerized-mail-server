@@ -16,7 +16,7 @@ export type ProfileResponse = {
   email: string | null;
   avatarUrl: string | null;
   isRoot: boolean;
-  groups: { id: number; name: string }[];
+  groups: { id: string; name: string }[];
 };
 
 const ACCESS_TTL = Number(process.env.MANAGER_JWT_ACCESS_TTL ?? 900);
@@ -69,13 +69,13 @@ export class JwtAuthService {
     }
   }
 
-  async me(accountId: number): Promise<ProfileResponse> {
+  async me(accountId: string): Promise<ProfileResponse> {
     const account = await this.accounts.findOne({ where: { id: accountId } });
     if (!account) throw new NotFoundException("Account not found");
     return this.toProfile(account);
   }
 
-  async updateProfile(accountId: number, input: UpdateProfileDto): Promise<ProfileResponse> {
+  async updateProfile(accountId: string, input: UpdateProfileDto): Promise<ProfileResponse> {
     const account = await this.accounts.findOne({ where: { id: accountId } });
     if (!account) throw new NotFoundException("Account not found");
     if (input.email !== undefined && input.email !== null && input.email !== account.email) {

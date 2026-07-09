@@ -9,7 +9,7 @@ interface Session {
   email?: string | null;
   avatarUrl?: string | null;
   isRoot?: boolean;
-  groups?: { id: number; name: string }[];
+  groups?: { id: string; name: string }[];
 }
 
 interface Profile {
@@ -18,7 +18,7 @@ interface Profile {
   email: string | null;
   avatarUrl: string | null;
   isRoot: boolean;
-  groups: { id: number; name: string }[];
+  groups: { id: string; name: string }[];
 }
 
 export const useAuthStore = defineStore("auth", {

@@ -11,6 +11,10 @@ import { Group } from "../entities/group.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
 import { DOMAIN_RESOURCES, GLOBAL_RESOURCES, PERMISSION_ACTIONS, dependsOnFor, dependsOnForGlobal } from "./permission-catalog";
 
+// The lib keeps its ids open (`AccountId`/`GroupId` are both
+// `number | string`) so each consumer picks. mail-server picks uuids, hence
+// the narrowing casts on the way into the repositories below.
+//
 // Only place in manager-api that calls createCustomPermissionGuard --
 // mirrors @naskot/custom-permission-guard's own docs/nestjs.md pattern.
 // `is_root` never appears here: the lib covers 100% of the group-based ACL
@@ -62,19 +66,19 @@ export class CustomPermissionGuardService {
       },
       data: {
         findAccountGroupIds: async (accountId) => {
-          const rows = await this.groupMembers.find({ where: { accountId: accountId as number } });
+          const rows = await this.groupMembers.find({ where: { accountId: accountId as string } });
           return rows.map((gm) => gm.groupId);
         },
         findGlobalPermissions: async (groupId) => {
-          const rows = await this.globalPerms.find({ where: { groupId } });
+          const rows = await this.globalPerms.find({ where: { groupId: groupId as string } });
           return rows.map((p) => ({ resource: p.resource, action: p.action }));
         },
         findDomainPermissions: async (groupId) => {
-          const rows = await this.domainPerms.find({ where: { groupId } });
+          const rows = await this.domainPerms.find({ where: { groupId: groupId as string } });
           return rows.map((p) => ({ domainId: p.domainId, resource: p.resource, action: p.action }));
         },
         findOwnedDomainIds: async (accountId) => {
-          const rows = await this.domains.find({ where: { ownerId: accountId as number } });
+          const rows = await this.domains.find({ where: { ownerId: accountId as string } });
           return rows.map((d) => d.id);
         },
 
@@ -86,7 +90,7 @@ export class CustomPermissionGuardService {
           const allGroups = await this.groups.find();
           if (!allGroups.length) return [];
           const memberRows = await this.groupMembers.find({ select: { groupId: true } });
-          const countMap = new Map<number, number>();
+          const countMap = new Map<string, number>();
           memberRows.forEach((m) => countMap.set(m.groupId, (countMap.get(m.groupId) ?? 0) + 1));
           return allGroups.map((g) => ({
             id: g.id,
@@ -99,7 +103,7 @@ export class CustomPermissionGuardService {
           }));
         },
         findGroup: async (groupId) => {
-          const g = await this.groups.findOne({ where: { id: groupId } });
+          const g = await this.groups.findOne({ where: { id: groupId as string } });
           if (!g) return null;
           return {
             id: g.id,
@@ -114,25 +118,30 @@ export class CustomPermissionGuardService {
           const patch: { name?: string; description?: string | null } = {};
           if (changes.name !== undefined) patch.name = changes.name;
           if (changes.description !== undefined) patch.description = changes.description;
-          if (Object.keys(patch).length) await this.groups.update(groupId, patch);
+          if (Object.keys(patch).length) await this.groups.update(groupId as string, patch);
         },
         setGroupOwner: async (groupId, accountId) => {
-          await this.groups.update(groupId, { ownerId: accountId as number | null });
+          await this.groups.update(groupId as string, { ownerId: accountId as string | null });
         },
         deleteGroup: async (groupId) => {
-          await this.groups.delete(groupId);
+          await this.groups.delete(groupId as string);
         },
 
         setGroupGlobalPermissions: async (groupId, permissions) => {
-          await this.writeGlobalPermissions(groupId, permissions);
+          await this.writeGlobalPermissions(groupId as string, permissions);
         },
         setGroupDomainPermissions: async (groupId, permissions) => {
           await this.domainPerms.manager.transaction(async (manager) => {
-            await manager.getRepository(GroupDomainPermission).delete({ groupId });
+            await manager.getRepository(GroupDomainPermission).delete({ groupId: groupId as string });
             if (permissions.length) {
-              await manager
-                .getRepository(GroupDomainPermission)
-                .insert(permissions.map((p) => ({ groupId, domainId: p.domainId, resource: p.resource, action: p.action })));
+              await manager.getRepository(GroupDomainPermission).insert(
+                permissions.map((p) => ({
+                  groupId: groupId as string,
+                  domainId: p.domainId,
+                  resource: p.resource,
+                  action: p.action,
+                }))
+              );
             }
           });
         },
@@ -149,17 +158,19 @@ export class CustomPermissionGuardService {
         },
 
         assignAccountToGroup: async (accountId, groupId) => {
-          const exists = await this.groupMembers.findOne({ where: { accountId: accountId as number, groupId } });
+          const exists = await this.groupMembers.findOne({
+            where: { accountId: accountId as string, groupId: groupId as string },
+          });
           if (!exists) {
-            await this.groupMembers.insert({ accountId: accountId as number, groupId });
+            await this.groupMembers.insert({ accountId: accountId as string, groupId: groupId as string });
           }
         },
         findGroupMemberIds: async (groupId) => {
-          const rows = await this.groupMembers.find({ where: { groupId } });
+          const rows = await this.groupMembers.find({ where: { groupId: groupId as string } });
           return rows.map((gm) => gm.accountId);
         },
         removeAccountFromGroup: async (accountId, groupId) => {
-          await this.groupMembers.delete({ accountId: accountId as number, groupId });
+          await this.groupMembers.delete({ accountId: accountId as string, groupId: groupId as string });
         },
 
         setDefaultGroup: async (groupId) => {
@@ -171,18 +182,18 @@ export class CustomPermissionGuardService {
               .set({ isDefault: 0 })
               .where("is_default = 1")
               .execute();
-            if (groupId !== null) await manager.getRepository(Group).update(groupId, { isDefault: 1 });
+            if (groupId !== null) await manager.getRepository(Group).update(groupId as string, { isDefault: 1 });
           });
         },
         findDefaultGroupId: async () => {
           const found = await this.groups.findOne({ where: { isDefault: 1 } });
-          return found?.id ?? null;
+          return found ? found.id : null;
         },
       },
     });
   }
 
-  private async writeGlobalPermissions(groupId: number, permissions: { resource: string; action: string }[]) {
+  private async writeGlobalPermissions(groupId: string, permissions: { resource: string; action: string }[]) {
     await this.globalPerms.manager.transaction(async (manager) => {
       await manager.getRepository(GroupGlobalPermission).delete({ groupId });
       if (permissions.length) {
@@ -201,11 +212,11 @@ export class CustomPermissionGuardService {
   // root a path that never consults lockoutProtected -- every other caller
   // still goes through guard.setGroupGlobalPermissions/deleteGroup above and
   // gets the protection.
-  async rawSetGroupGlobalPermissions(groupId: number, permissions: { resource: string; action: string }[]) {
+  async rawSetGroupGlobalPermissions(groupId: string, permissions: { resource: string; action: string }[]) {
     await this.writeGlobalPermissions(groupId, permissions);
   }
 
-  async rawDeleteGroup(groupId: number) {
+  async rawDeleteGroup(groupId: string) {
     await this.groups.delete(groupId);
   }
 }

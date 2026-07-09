@@ -2,17 +2,17 @@
 import type { GroupMember } from "~/composables/useGroups";
 
 const emit = defineEmits<{
-  add: [number];
-  remove: [number];
+  add: [string];
+  remove: [string];
 }>();
 
 const props = defineProps<{
   members: GroupMember[];
-  accountOptions: { label: string; value: number }[];
+  accountOptions: { label: string; value: string }[];
   adding: boolean;
 }>();
 
-const pickedId = ref<number | undefined>(undefined);
+const pickedId = ref<string | undefined>(undefined);
 
 const { t } = useI18n();
 

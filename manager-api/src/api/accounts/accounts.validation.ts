@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const sendInvitationSchema = z.object({
   email: z.string().email(),
-  groupId: z.number().int().positive().nullable().default(null),
+  groupId: z.string().uuid().nullable().default(null),
 });
 
 export const acceptInvitationSchema = z.object({

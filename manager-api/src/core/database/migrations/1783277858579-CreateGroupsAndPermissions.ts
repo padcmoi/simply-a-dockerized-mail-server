@@ -6,10 +6,10 @@ export class CreateGroupsAndPermissions1783277858579 implements MigrationInterfa
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE \`groups\` (
-        \`id\`          int          NOT NULL AUTO_INCREMENT,
+        \`id\`          char(36)     NOT NULL,
         \`name\`        varchar(255) NOT NULL,
         \`description\` varchar(1024) NULL,
-        \`owner_id\`    int          NULL,
+        \`owner_id\`    char(36)     NULL,
         \`created_at\`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         UNIQUE KEY \`uq_groups_name\` (\`name\`),
@@ -21,8 +21,8 @@ export class CreateGroupsAndPermissions1783277858579 implements MigrationInterfa
     await queryRunner.query(`
       CREATE TABLE \`group_members\` (
         \`id\`         int      NOT NULL AUTO_INCREMENT,
-        \`group_id\`   int      NOT NULL,
-        \`account_id\` int      NOT NULL,
+        \`group_id\`   char(36) NOT NULL,
+        \`account_id\` char(36) NOT NULL,
         \`created_at\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         UNIQUE KEY \`uq_group_members_group_account\` (\`group_id\`, \`account_id\`),
@@ -36,7 +36,7 @@ export class CreateGroupsAndPermissions1783277858579 implements MigrationInterfa
     await queryRunner.query(`
       CREATE TABLE \`group_global_permissions\` (
         \`id\`       int         NOT NULL AUTO_INCREMENT,
-        \`group_id\` int         NOT NULL,
+        \`group_id\` char(36)    NOT NULL,
         \`resource\` varchar(64) NOT NULL,
         \`action\`   varchar(64) NOT NULL,
         PRIMARY KEY (\`id\`),
@@ -49,7 +49,7 @@ export class CreateGroupsAndPermissions1783277858579 implements MigrationInterfa
     await queryRunner.query(`
       CREATE TABLE \`group_domain_permissions\` (
         \`id\`        int         NOT NULL AUTO_INCREMENT,
-        \`group_id\`  int         NOT NULL,
+        \`group_id\`  char(36)    NOT NULL,
         \`domain_id\` int         NOT NULL,
         \`resource\`  varchar(64) NOT NULL,
         \`action\`    varchar(64) NOT NULL,

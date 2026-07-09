@@ -19,7 +19,7 @@ export class RemoveLegacyAccountAcl1783277858942 implements MigrationInterface {
     await queryRunner.query("ALTER TABLE `account_invitations` DROP COLUMN `domain_ids`");
     await queryRunner.query(`
       ALTER TABLE \`account_invitations\`
-        ADD COLUMN \`group_id\` int NULL AFTER \`invited_by\`
+        ADD COLUMN \`group_id\` char(36) NULL AFTER \`invited_by\`
     `);
     await queryRunner.query(`
       ALTER TABLE \`account_invitations\`
@@ -39,7 +39,7 @@ export class RemoveLegacyAccountAcl1783277858942 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`account_domain_acl\` (
         \`id\`          int      NOT NULL AUTO_INCREMENT,
-        \`account_id\`  int      NOT NULL,
+        \`account_id\`  char(36) NOT NULL,
         \`domain_id\`   int      NOT NULL,
         \`created_at\`  datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),

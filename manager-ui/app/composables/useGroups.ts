@@ -1,22 +1,22 @@
 export interface GroupItem {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   createdAt: string;
-  ownerId: number | null;
+  ownerId: string | null;
   ownerUsername: string | null;
   memberCount: number;
   isDefault?: boolean;
 }
 
 export interface GroupPermission {
-  id: number;
+  id: string;
   resource: string;
   action: string;
 }
 
 export interface GroupDomainPermission {
-  id: number;
+  id: string;
   domainId: number;
   domainName: string;
   resource: string;
@@ -24,13 +24,13 @@ export interface GroupDomainPermission {
 }
 
 export interface GroupDetail extends GroupItem {
-  owner: { id: number; username: string } | null;
+  owner: { id: string; username: string } | null;
   globalPermissions: GroupPermission[];
   domainPermissions: GroupDomainPermission[];
 }
 
 export interface GroupMember {
-  id: number;
+  id: string;
   username: string;
   name: string | null;
   email: string | null;
@@ -75,7 +75,7 @@ export function useGroups() {
     return created;
   }
 
-  async function update(id: number, input: { name?: string; description?: string | null; isDefault?: boolean }) {
+  async function update(id: string, input: { name?: string; description?: string | null; isDefault?: boolean }) {
     const updated = await call<GroupItem>(`/groups/${id}`, { method: "PATCH", body: input });
     const idx = groups.value.findIndex((g) => g.id === id);
     if (idx !== -1) {
@@ -85,36 +85,36 @@ export function useGroups() {
     return updated;
   }
 
-  async function remove(id: number) {
+  async function remove(id: string) {
     await call(`/groups/${id}`, { method: "DELETE" });
     groups.value = groups.value.filter((g) => g.id !== id);
   }
 
-  async function getDetail(id: number) {
+  async function getDetail(id: string) {
     return call<GroupDetail>(`/groups/${id}`);
   }
 
-  async function setGlobalPermissions(id: number, permissions: { resource: string; action: string }[]) {
+  async function setGlobalPermissions(id: string, permissions: { resource: string; action: string }[]) {
     return call<GroupDetail>(`/groups/${id}/global-permissions`, { method: "PUT", body: { permissions } });
   }
 
-  async function setDomainPermissions(id: number, permissions: { domainId: number; resource: string; action: string }[]) {
+  async function setDomainPermissions(id: string, permissions: { domainId: number; resource: string; action: string }[]) {
     return call<GroupDetail>(`/groups/${id}/domain-permissions`, { method: "PUT", body: { permissions } });
   }
 
-  async function updateOwner(id: number, newOwnerId: number) {
+  async function updateOwner(id: string, newOwnerId: string) {
     return call<GroupDetail>(`/groups/${id}/owner`, { method: "PATCH", body: { newOwnerId } });
   }
 
-  async function listMembers(id: number) {
+  async function listMembers(id: string) {
     return call<GroupMember[]>(`/groups/${id}/members`);
   }
 
-  async function addMember(id: number, accountId: number) {
+  async function addMember(id: string, accountId: string) {
     return call<GroupMember[]>(`/groups/${id}/members`, { method: "POST", body: { accountId } });
   }
 
-  async function removeMember(id: number, accountId: number) {
+  async function removeMember(id: string, accountId: string) {
     return call<GroupMember[]>(`/groups/${id}/members/${accountId}`, { method: "DELETE" });
   }
 

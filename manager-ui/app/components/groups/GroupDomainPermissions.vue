@@ -5,7 +5,7 @@ import type { DependsOnEntry, GroupDomainPermission, PermissionsCatalog } from "
 const emit = defineEmits<{ save: [{ domainId: number; resource: string; action: string }[]] }>();
 
 const props = defineProps<{
-  groupId: number;
+  groupId: string;
   domainPermissions: GroupDomainPermission[];
   domainOptions: { label: string; value: number }[];
   // Resolved from the route (/groups/:id/domain/:domain) by the parent page --

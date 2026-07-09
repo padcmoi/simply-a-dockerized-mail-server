@@ -5,7 +5,7 @@ import { CustomPermissionGuardService } from "./custom-permission-guard.service"
 import { GlobalPermissionRequirement, REQUIRE_GLOBAL_PERMISSIONS_KEY } from "./require-permissions.decorator";
 
 type PermissionRequest = Request & {
-  user?: { id: number; username: string; isRoot: boolean };
+  user?: { id: string; username: string; isRoot: boolean };
 };
 
 // Built on top of assertOne/assertAll -- root bypass is NOT the lib's job

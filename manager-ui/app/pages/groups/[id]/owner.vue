@@ -6,8 +6,8 @@ definePageMeta({
   ],
 });
 
-const accountOptions = ref<{ label: string; value: number }[]>([]);
-const ownerPick = ref<number | undefined>(undefined);
+const accountOptions = ref<{ label: string; value: string }[]>([]);
+const ownerPick = ref<string | undefined>(undefined);
 const savingOwner = ref(false);
 
 const route = useRoute();
@@ -17,7 +17,7 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { updateOwner } = useGroups();
 
-const groupId = computed(() => Number(route.params.id));
+const groupId = computed(() => String(route.params.id));
 const { group, loading } = useGroupDetail(groupId);
 
 watch(
@@ -51,7 +51,7 @@ async function changeOwner() {
 }
 
 onMounted(async () => {
-  const accounts = await call<{ id: number; username: string; name: string | null }[]>("/accounts/names").catch(() => []);
+  const accounts = await call<{ id: string; username: string; name: string | null }[]>("/accounts/names").catch(() => []);
   accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
 });
 </script>

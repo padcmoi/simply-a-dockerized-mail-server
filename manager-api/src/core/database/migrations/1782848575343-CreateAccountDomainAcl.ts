@@ -7,7 +7,7 @@ export class CreateAccountDomainAcl1782848575343 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`account_domain_acl\` (
         \`id\`          int      NOT NULL AUTO_INCREMENT,
-        \`account_id\`  int      NOT NULL,
+        \`account_id\`  char(36) NOT NULL,
         \`domain_id\`   int      NOT NULL,
         \`created_at\`  datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),

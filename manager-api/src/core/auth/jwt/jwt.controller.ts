@@ -16,7 +16,7 @@ import { JwtAuthService } from "./jwt.service";
 import { LoginDto, RefreshDto, UpdateProfileDto, loginSchema, refreshSchema, updateProfileSchema } from "./jwt.validation";
 
 type AuthedRequest = Request & {
-  user: { id: number; username: string; isRoot: boolean };
+  user: { id: string; username: string; isRoot: boolean };
 };
 
 @JwtAuthApi()

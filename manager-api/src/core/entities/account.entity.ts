@@ -1,9 +1,21 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, Column, Entity, PrimaryColumn } from "typeorm";
+import { randomUUID } from "crypto";
 
 @Entity({ name: "accounts" })
 export class Account {
-  @PrimaryGeneratedColumn({ name: "id", type: "int" })
-  id!: number;
+  // Opaque on purpose: this id is the JWT `sub` and the /accounts/:id path
+  // segment, so a sequential int would let anyone enumerate the account table.
+  // Generated here rather than with @Generated("uuid"): that decorator forces
+  // the column type to TypeORM's "uuid", which on MariaDB 11.4 maps to the
+  // native UUID type and rejects the `length` every FK column referencing it
+  // declares. char(36) keeps entity and migration describing the same column.
+  @PrimaryColumn({ name: "id", type: "char", length: 36 })
+  id!: string;
+
+  @BeforeInsert()
+  generateId() {
+    if (!this.id) this.id = randomUUID();
+  }
 
   @Column({ name: "username", type: "varchar", length: 255, unique: true })
   username!: string;

@@ -1,9 +1,16 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BeforeInsert, Column, Entity, PrimaryColumn } from "typeorm";
+import { randomUUID } from "crypto";
 
 @Entity({ name: "groups" })
 export class Group {
-  @PrimaryGeneratedColumn({ name: "id", type: "int" })
-  id!: number;
+  // Opaque, same reasoning as Account.id: it travels in /groups/:id.
+  @PrimaryColumn({ name: "id", type: "char", length: 36 })
+  id!: string;
+
+  @BeforeInsert()
+  generateId() {
+    if (!this.id) this.id = randomUUID();
+  }
 
   @Column({ name: "name", type: "varchar", length: 255, unique: true })
   name!: string;
@@ -11,8 +18,8 @@ export class Group {
   @Column({ name: "description", type: "varchar", length: 1024, nullable: true })
   description!: string | null;
 
-  @Column({ name: "owner_id", type: "int", nullable: true })
-  ownerId!: number | null;
+  @Column({ name: "owner_id", type: "char", length: 36, nullable: true })
+  ownerId!: string | null;
 
   // Only one group in the whole table may have this set at a time; enforced
   // at the service level (see GroupsService), not via a DB constraint --

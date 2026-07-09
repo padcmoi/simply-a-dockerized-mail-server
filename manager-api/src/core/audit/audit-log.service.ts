@@ -4,10 +4,11 @@ import { Repository } from "typeorm";
 import { AuditLog } from "../entities/audit-log.entity";
 
 export interface RecordAuditLogInput {
-  actorId: number | null;
+  actorId: string | null;
   action: string;
   entityType: string;
-  entityId?: number | null;
+  // Polymorphic: a uuid for a group, a stringified int for a domain.
+  entityId?: string | number | null;
   before?: unknown;
   after?: unknown;
 }
@@ -24,7 +25,7 @@ export class AuditLogService {
       actorId: input.actorId,
       action: input.action,
       entityType: input.entityType,
-      entityId: input.entityId ?? null,
+      entityId: input.entityId === undefined || input.entityId === null ? null : String(input.entityId),
       beforeJson: input.before !== undefined ? JSON.stringify(input.before) : null,
       afterJson: input.after !== undefined ? JSON.stringify(input.after) : null,
     });

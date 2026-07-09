@@ -7,7 +7,7 @@ export class CreateApiTokens1782985738424 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`api_tokens\` (
         \`id\`              int          NOT NULL AUTO_INCREMENT,
-        \`account_id\`      int          NOT NULL,
+        \`account_id\`      char(36)     NOT NULL,
         \`name\`            varchar(255) NOT NULL,
         \`client_id\`       varchar(64)  NOT NULL,
         \`secret_hash\`     varchar(255) NOT NULL,

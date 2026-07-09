@@ -9,7 +9,7 @@ export class CreateAccountInvitations1782848575175 implements MigrationInterface
         \`id\`          int           NOT NULL AUTO_INCREMENT,
         \`token\`       varchar(128)  NOT NULL,
         \`email\`       varchar(255)  NOT NULL,
-        \`invited_by\`  int           DEFAULT NULL,
+        \`invited_by\`  char(36)      DEFAULT NULL,
         \`domain_ids\`  json          DEFAULT NULL,
         \`accepted_at\` datetime      DEFAULT NULL,
         \`expires_at\`  datetime      NOT NULL,

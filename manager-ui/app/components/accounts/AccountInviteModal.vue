@@ -1,17 +1,17 @@
 <script setup lang="ts">
 const emit = defineEmits<{
   "update:open": [boolean];
-  submit: [{ email: string; groupId: number | null }];
+  submit: [{ email: string; groupId: string | null }];
 }>();
 
 const props = defineProps<{
   open: boolean;
-  groupOptions: { label: string; value: number }[];
+  groupOptions: { label: string; value: string }[];
   sending: boolean;
 }>();
 
 const email = ref("");
-const selectedGroup = ref<number | undefined>(undefined);
+const selectedGroup = ref<string | undefined>(undefined);
 
 const { t } = useI18n();
 

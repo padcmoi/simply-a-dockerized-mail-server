@@ -9,7 +9,7 @@ definePageMeta({
 });
 
 const members = ref<GroupMember[]>([]);
-const accountOptions = ref<{ label: string; value: number }[]>([]);
+const accountOptions = ref<{ label: string; value: string }[]>([]);
 const membersLoading = ref(false);
 const addingMember = ref(false);
 
@@ -20,7 +20,7 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { listMembers, addMember, removeMember } = useGroups();
 
-const groupId = computed(() => Number(route.params.id));
+const groupId = computed(() => String(route.params.id));
 const { group, loading } = useGroupDetail(groupId);
 
 watchEffect(() => {
@@ -36,7 +36,7 @@ async function loadMembers() {
   try {
     const [memberList, accounts] = await Promise.all([
       listMembers(groupId.value),
-      call<{ id: number; username: string; name: string | null }[]>("/accounts/names"),
+      call<{ id: string; username: string; name: string | null }[]>("/accounts/names"),
     ]);
     members.value = memberList;
     accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
@@ -47,7 +47,7 @@ async function loadMembers() {
   }
 }
 
-async function onAddMember(accountId: number) {
+async function onAddMember(accountId: string) {
   addingMember.value = true;
   try {
     members.value = await addMember(groupId.value, accountId);
@@ -59,7 +59,7 @@ async function onAddMember(accountId: number) {
   }
 }
 
-async function onRemoveMember(accountId: number) {
+async function onRemoveMember(accountId: string) {
   try {
     members.value = await removeMember(groupId.value, accountId);
     if (group.value) group.value.memberCount = members.value.length;

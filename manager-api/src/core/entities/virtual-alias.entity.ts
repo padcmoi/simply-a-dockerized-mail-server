@@ -7,8 +7,8 @@ export class VirtualAlias {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;
 
-  @Column({ name: "owner_id", type: "int", nullable: true })
-  ownerId!: number | null;
+  @Column({ name: "owner_id", type: "char", length: 36, nullable: true })
+  ownerId!: string | null;
 
   @Column({ name: "domain", type: "varchar", length: 255 })
   domain!: string;

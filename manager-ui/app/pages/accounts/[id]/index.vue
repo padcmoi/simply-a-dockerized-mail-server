@@ -1,13 +1,13 @@
 <script setup lang="ts">
 interface AccountDetail {
-  id: number;
+  id: string;
   username: string;
   name: string | null;
   email: string | null;
   avatarUrl: string | null;
   isRoot: boolean;
   enabled: boolean;
-  groups: { id: number; name: string }[];
+  groups: { id: string; name: string }[];
 }
 
 definePageMeta({
@@ -28,7 +28,7 @@ const loading = ref(false);
 const saving = ref(false);
 const form = reactive({ name: "", email: "", avatarUrl: "", enabled: true });
 
-const accountId = computed(() => Number(route.params.id));
+const accountId = computed(() => String(route.params.id));
 
 watchEffect(() => {
   setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: account.value?.username ?? "..." }]);

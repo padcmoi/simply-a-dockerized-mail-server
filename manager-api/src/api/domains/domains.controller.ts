@@ -29,7 +29,7 @@ import {
 } from "./domains.validation";
 
 type AuthedRequest = Request & {
-  user: { id: number; username: string; isRoot: boolean };
+  user: { id: string; username: string; isRoot: boolean };
 };
 
 @DomainsApi()
@@ -54,7 +54,7 @@ export class DomainsController {
     return this.svc.list(query, { callerId: req.user.id, canSeeAll });
   }
 
-  private async hasGlobalDomainsRead(accountId: number): Promise<boolean> {
+  private async hasGlobalDomainsRead(accountId: string): Promise<boolean> {
     const effective = await this.cpg.guard.getEffectivePermissions(accountId);
     return effective.global.some((p) => p.resource === "domains" && p.action === "read");
   }

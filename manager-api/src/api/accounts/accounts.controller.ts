@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { paginationQuerySchema, type PaginationQuery } from "../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
@@ -26,7 +26,7 @@ import {
 } from "./accounts.validation";
 
 type AuthedRequest = Request & {
-  user: { id: number; username: string; isRoot: boolean };
+  user: { id: string; username: string; isRoot: boolean };
 };
 
 @AccountsApi()
@@ -50,21 +50,21 @@ export class AccountsController {
   @Get(":id")
   @GetAccountDocs()
   @UseGuards(IsRootGuard)
-  getById(@Param("id", ParseIntPipe) id: number) {
+  getById(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.getById(id);
   }
 
   @Patch(":id")
   @UpdateAccountDocs()
   @UseGuards(IsRootGuard)
-  update(@Param("id", ParseIntPipe) id: number, @Body(new ZodValidationPipe(updateAccountSchema)) body: UpdateAccountDto) {
+  update(@Param("id", ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(updateAccountSchema)) body: UpdateAccountDto) {
     return this.svc.updateAccount(id, body);
   }
 
   @Delete(":id")
   @RevokeAccountDocs()
   @UseGuards(IsRootGuard)
-  revoke(@Param("id", ParseIntPipe) id: number) {
+  revoke(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.revokeAccount(id);
   }
 

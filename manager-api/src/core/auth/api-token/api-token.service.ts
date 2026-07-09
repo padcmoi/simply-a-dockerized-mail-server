@@ -51,7 +51,7 @@ export class ApiTokenService {
     };
   }
 
-  async create(accountId: number, input: CreateApiTokenDto) {
+  async create(accountId: string, input: CreateApiTokenDto) {
     const clientId = randomBytes(16).toString("base64url");
     const rawSecret = randomBytes(32).toString("base64url");
 
@@ -80,12 +80,12 @@ export class ApiTokenService {
     }
   }
 
-  async list(accountId: number) {
+  async list(accountId: string) {
     const tokens = await this.repo.find({ where: { accountId }, order: { createdAt: "DESC" } });
     return tokens.map((t) => this.toSafe(t));
   }
 
-  async update(accountId: number, id: number, input: UpdateApiTokenDto) {
+  async update(accountId: string, id: number, input: UpdateApiTokenDto) {
     const token = await this.repo.findOne({ where: { id, accountId } });
     if (!token) throw new NotFoundException("Token not found");
     if (input.name !== undefined) token.name = input.name;
@@ -102,7 +102,7 @@ export class ApiTokenService {
     return this.toSafe(token);
   }
 
-  async revoke(accountId: number, id: number) {
+  async revoke(accountId: string, id: number) {
     const token = await this.repo.findOne({ where: { id, accountId } });
     if (!token) throw new NotFoundException("Token not found");
     if (token.revokedAt) throw new BadRequestException("Token is already revoked");
@@ -111,14 +111,14 @@ export class ApiTokenService {
     return this.toSafe(token);
   }
 
-  async delete(accountId: number, id: number) {
+  async delete(accountId: string, id: number) {
     const token = await this.repo.findOne({ where: { id, accountId } });
     if (!token) throw new NotFoundException("Token not found");
     if (!token.revokedAt) throw new BadRequestException("Token must be revoked before deletion");
     await this.repo.delete(id);
   }
 
-  async regenerate(accountId: number, id: number) {
+  async regenerate(accountId: string, id: number) {
     const token = await this.repo.findOne({ where: { id, accountId } });
     if (!token) throw new NotFoundException("Token not found");
     if (token.revokedAt) throw new BadRequestException("Cannot regenerate a revoked token");
@@ -138,7 +138,7 @@ export class ApiTokenService {
     };
   }
 
-  async validate(rawKey: string, requestIp: string): Promise<{ id: number; username: string; isRoot: boolean } | null> {
+  async validate(rawKey: string, requestIp: string): Promise<{ id: string; username: string; isRoot: boolean } | null> {
     if (!rawKey.startsWith(KEY_PREFIX)) return null;
 
     const body = rawKey.slice(KEY_PREFIX.length);

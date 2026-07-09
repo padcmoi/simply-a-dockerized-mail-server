@@ -1,12 +1,12 @@
 <script setup lang="ts">
 interface AccountDetail {
-  id: number;
+  id: string;
   username: string;
   name: string | null;
   email: string | null;
   isRoot: boolean;
   enabled: boolean;
-  groups: { id: number; name: string }[];
+  groups: { id: string; name: string }[];
 }
 
 definePageMeta({
@@ -26,10 +26,10 @@ const { groups: allGroups, addMember, removeMember } = useGroups();
 const account = ref<AccountDetail | null>(null);
 const loading = ref(false);
 const adding = ref(false);
-const removingId = ref<number | null>(null);
-const pickedId = ref<number | undefined>(undefined);
+const removingId = ref<string | null>(null);
+const pickedId = ref<string | undefined>(undefined);
 
-const accountId = computed(() => Number(route.params.id));
+const accountId = computed(() => String(route.params.id));
 const availableOptions = computed(() => {
   const assignedIds = new Set(account.value?.groups.map((g) => g.id) ?? []);
   return allGroups.value
@@ -67,7 +67,7 @@ async function onAdd() {
   }
 }
 
-async function onRemove(groupId: number) {
+async function onRemove(groupId: string) {
   removingId.value = groupId;
   try {
     await removeMember(groupId, accountId.value);

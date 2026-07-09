@@ -29,7 +29,7 @@ export const createDomainSchema = z.object({
 export const updateDomainSchema = createDomainSchema.partial();
 
 export const transferDomainOwnerSchema = z.object({
-  newOwnerId: z.number().int().positive(),
+  newOwnerId: z.string().uuid(),
 });
 
 // Dedicated route + schema for just this one field, gated by the "admin"

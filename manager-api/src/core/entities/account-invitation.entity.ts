@@ -11,11 +11,11 @@ export class AccountInvitation {
   @Column({ name: "email", type: "varchar", length: 255 })
   email!: string;
 
-  @Column({ name: "invited_by", type: "int", nullable: true })
-  invitedBy!: number | null;
+  @Column({ name: "invited_by", type: "char", length: 36, nullable: true })
+  invitedBy!: string | null;
 
-  @Column({ name: "group_id", type: "int", nullable: true })
-  groupId!: number | null;
+  @Column({ name: "group_id", type: "char", length: 36, nullable: true })
+  groupId!: string | null;
 
   @Column({ name: "accepted_at", type: "datetime", nullable: true })
   acceptedAt!: Date | null;

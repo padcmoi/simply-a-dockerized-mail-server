@@ -14,7 +14,7 @@ import {
 import { ApiTokenService } from "./api-token.service";
 import { CreateApiTokenDto, UpdateApiTokenDto, createApiTokenSchema, updateApiTokenSchema } from "./api-token.validation";
 
-type AuthedRequest = Request & { user: { id: number; username: string; isRoot: boolean } };
+type AuthedRequest = Request & { user: { id: string; username: string; isRoot: boolean } };
 
 @Auth("JWT", "ApiToken")
 @ApiTokensApi()

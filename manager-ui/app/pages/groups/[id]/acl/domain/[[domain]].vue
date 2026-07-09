@@ -17,7 +17,7 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { setDomainPermissions } = useGroups();
 
-const groupId = computed(() => Number(route.params.id));
+const groupId = computed(() => String(route.params.id));
 const { group, loading } = useGroupDetail(groupId);
 
 // Optional segment (pages/groups/[id]/acl/domain/[[domain]].vue): undefined

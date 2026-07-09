@@ -14,7 +14,7 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { setGlobalPermissions } = useGroups();
 
-const groupId = computed(() => Number(route.params.id));
+const groupId = computed(() => String(route.params.id));
 const { group, loading } = useGroupDetail(groupId);
 
 watchEffect(() => {

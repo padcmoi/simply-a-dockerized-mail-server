@@ -11,7 +11,7 @@ import { Group } from "../../core/entities/group.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { CreateGroupDto, SetDomainPermissionsDto, SetGlobalPermissionsDto, UpdateGroupDto } from "./groups.validation";
 
-type ActingUser = { id: number; isRoot: boolean };
+type ActingUser = { id: string; isRoot: boolean };
 
 // `ownerUsername`/`memberCount` (enriched post-query, see `enrichGroups`)
 // aren't real columns on `groups` -- not sortable without a join/subquery,
@@ -54,11 +54,11 @@ export class GroupsService {
 
     const groupIds = allGroups.map((g) => g.id);
     const memberRows = await this.groupMembers.find({ where: { groupId: In(groupIds) } });
-    const countMap = new Map<number, number>();
+    const countMap = new Map<string, number>();
     memberRows.forEach((m) => countMap.set(m.groupId, (countMap.get(m.groupId) ?? 0) + 1));
 
-    const ownerIds = [...new Set(allGroups.map((g) => g.ownerId).filter((id): id is number => id !== null))];
-    const ownerMap = new Map<number, string>();
+    const ownerIds = [...new Set(allGroups.map((g) => g.ownerId).filter((id): id is string => id !== null))];
+    const ownerMap = new Map<string, string>();
     if (ownerIds.length) {
       const owners = await this.accounts.findBy({ id: In(ownerIds) });
       owners.forEach((o) => ownerMap.set(o.id, o.username));
@@ -76,11 +76,12 @@ export class GroupsService {
     }));
   }
 
-  async create(ownerId: number, actingUserId: number, input: CreateGroupDto) {
+  async create(ownerId: string, actingUserId: string, input: CreateGroupDto) {
     const existing = await this.groups.findOne({ where: { name: input.name } });
     if (existing) throw new ConflictException(`Group "${input.name}" already exists`);
 
-    const groupId = await this.cpg.guard.createGroup(input.name);
+    // createGroup returns the lib's open `GroupId`; ours are always uuids.
+    const groupId = (await this.cpg.guard.createGroup(input.name)) as string;
     await this.cpg.guard.setGroupOwner(groupId, ownerId);
     if (input.description) await this.cpg.guard.updateGroup(groupId, { description: input.description });
     if (input.isDefault) await this.applyDefaultGroup(groupId, actingUserId);
@@ -88,7 +89,7 @@ export class GroupsService {
     return this.toItem(await this.findOrFail(groupId));
   }
 
-  async update(id: number, actingUserId: number, input: UpdateGroupDto) {
+  async update(id: string, actingUserId: string, input: UpdateGroupDto) {
     const group = await this.findOrFail(id);
     if (input.name !== undefined && input.name !== group.name) {
       const clash = await this.groups.findOne({ where: { name: input.name, id: Not(id) } });
@@ -129,7 +130,7 @@ export class GroupsService {
   // lib's setDefaultGroup (clear-then-set in a single transaction, see
   // custom-permission-guard.service.ts); this wrapper only adds the audit
   // trail, which stays out of the lib's scope.
-  private async applyDefaultGroup(groupId: number, actorId: number) {
+  private async applyDefaultGroup(groupId: string, actorId: string) {
     await this.cpg.guard.setDefaultGroup(groupId);
     await this.auditLog.record({
       actorId,
@@ -140,7 +141,7 @@ export class GroupsService {
     });
   }
 
-  async remove(id: number, actingUser: ActingUser) {
+  async remove(id: string, actingUser: ActingUser) {
     await this.findOrFail(id);
 
     // Members drop this group's permissions once detached (ON DELETE CASCADE
@@ -169,7 +170,7 @@ export class GroupsService {
     return { ok: true };
   }
 
-  async getDetail(id: number) {
+  async getDetail(id: string) {
     const group = await this.findOrFail(id);
     const item = await this.toItem(group);
 
@@ -185,7 +186,7 @@ export class GroupsService {
       found.forEach((d) => domainMap.set(d.id, d.domain));
     }
 
-    let owner: { id: number; username: string } | null = null;
+    let owner: { id: string; username: string } | null = null;
     if (group.ownerId !== null) {
       const ownerAccount = await this.accounts.findOne({ where: { id: group.ownerId } });
       if (ownerAccount) owner = { id: ownerAccount.id, username: ownerAccount.username };
@@ -204,7 +205,7 @@ export class GroupsService {
     };
   }
 
-  async setGlobalPermissions(id: number, actingUser: ActingUser, permissions: SetGlobalPermissionsDto["permissions"]) {
+  async setGlobalPermissions(id: string, actingUser: ActingUser, permissions: SetGlobalPermissionsDto["permissions"]) {
     await this.findOrFail(id);
 
     // Anti-escalade: can't grant what you don't already hold yourself. Stays
@@ -245,7 +246,7 @@ export class GroupsService {
     return this.getDetail(id);
   }
 
-  async setDomainPermissions(id: number, actingUser: ActingUser, permissions: SetDomainPermissionsDto["permissions"]) {
+  async setDomainPermissions(id: string, actingUser: ActingUser, permissions: SetDomainPermissionsDto["permissions"]) {
     await this.findOrFail(id);
 
     if (permissions.length) {
@@ -292,7 +293,7 @@ export class GroupsService {
     }
   }
 
-  async updateOwner(id: number, actingUser: ActingUser, newOwnerId: number) {
+  async updateOwner(id: string, actingUser: ActingUser, newOwnerId: string) {
     const group = await this.findOrFail(id);
     this.assertOwnerOrRoot(group, actingUser);
     const newOwner = await this.accounts.findOne({ where: { id: newOwnerId } });
@@ -312,12 +313,12 @@ export class GroupsService {
     return this.getDetail(id);
   }
 
-  async listMembers(id: number) {
+  async listMembers(id: string) {
     await this.findOrFail(id);
     return this.memberList(id);
   }
 
-  async addMember(id: number, actingUser: ActingUser, accountId: number) {
+  async addMember(id: string, actingUser: ActingUser, accountId: string) {
     const group = await this.findOrFail(id);
     this.assertOwnerOrRoot(group, actingUser);
     const account = await this.accounts.findOne({ where: { id: accountId } });
@@ -326,7 +327,7 @@ export class GroupsService {
     return this.memberList(id);
   }
 
-  async removeMember(id: number, actingUser: ActingUser, accountId: number) {
+  async removeMember(id: string, actingUser: ActingUser, accountId: string) {
     const group = await this.findOrFail(id);
     this.assertOwnerOrRoot(group, actingUser);
     const membership = await this.groupMembers.findOne({ where: { accountId, groupId: id } });
@@ -337,7 +338,7 @@ export class GroupsService {
     return this.memberList(id);
   }
 
-  private async findOrFail(id: number) {
+  private async findOrFail(id: string) {
     const group = await this.groups.findOne({ where: { id } });
     if (!group) throw new NotFoundException(`Group #${id} not found`);
     return group;
@@ -368,7 +369,7 @@ export class GroupsService {
     };
   }
 
-  private async memberList(id: number) {
+  private async memberList(id: string) {
     const rows = await this.groupMembers.find({ where: { groupId: id } });
     if (!rows.length) return [];
     const accs = await this.accounts.find({ where: { id: In(rows.map((r) => r.accountId)) }, order: { id: "ASC" } });

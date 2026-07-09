@@ -11,8 +11,8 @@ export class AccountGroupsManyToMany1783362780711 implements MigrationInterface 
     await queryRunner.query(`
       CREATE TABLE \`group_members\` (
         \`id\`         int      NOT NULL AUTO_INCREMENT,
-        \`group_id\`   int      NOT NULL,
-        \`account_id\` int      NOT NULL,
+        \`group_id\`   char(36) NOT NULL,
+        \`account_id\` char(36) NOT NULL,
         \`created_at\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         UNIQUE KEY \`uq_group_members_group_account\` (\`group_id\`, \`account_id\`),
@@ -35,7 +35,7 @@ export class AccountGroupsManyToMany1783362780711 implements MigrationInterface 
   async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       ALTER TABLE \`accounts\`
-        ADD COLUMN \`group_id\` int NULL AFTER \`is_root\`
+        ADD COLUMN \`group_id\` char(36) NULL AFTER \`is_root\`
     `);
     await queryRunner.query(`
       ALTER TABLE \`accounts\`

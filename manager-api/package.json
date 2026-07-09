@@ -20,7 +20,7 @@
     "db:show": "pnpm typeorm migration:show -d src/core/database/data-source.ts"
   },
   "dependencies": {
-    "@naskot/custom-permission-guard": "^1.1.0",
+    "@naskot/custom-permission-guard": "^1.2.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
@@ -43,9 +43,9 @@
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@types/bcrypt": "^5.0.2",
-    "@types/nodemailer": "^6.4.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.0",
+    "@types/nodemailer": "^6.4.0",
     "@types/passport-jwt": "^4.0.1",
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",

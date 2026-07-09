@@ -9,7 +9,7 @@ export class CreateAccounts1782760167170 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE \`accounts\` (
-        \`id\` int(11) NOT NULL AUTO_INCREMENT,
+        \`id\` char(36) NOT NULL,
         \`username\` varchar(255) NOT NULL,
         \`password\` varchar(255) DEFAULT NULL,
         \`role\` varchar(32) NOT NULL DEFAULT 'admin',
@@ -25,7 +25,7 @@ export class CreateAccounts1782760167170 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`refresh_tokens\` (
         \`id\` int(11) NOT NULL AUTO_INCREMENT,
-        \`account_id\` int(11) NOT NULL,
+        \`account_id\` char(36) NOT NULL,
         \`token_hash\` varchar(255) NOT NULL,
         \`user_agent\` varchar(255) DEFAULT NULL,
         \`ip\` varchar(45) DEFAULT NULL,

@@ -20,7 +20,7 @@ import { VirtualQuotaDomain } from "../../core/entities/virtual-quota-domain.ent
 import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { CreateDomainDto, UpdateDomainDto } from "./domains.validation";
 
-type CallerCtx = { id: number; isRoot: boolean };
+type CallerCtx = { id: string; isRoot: boolean };
 
 // `ownerUsername` (enriched post-query, see `attachOwnerUsername`) isn't a
 // real column on `virtual_domains` -- not sortable without a join, out of
@@ -54,7 +54,7 @@ export class DomainsService {
   // `query.limit` absent = legacy unpaginated behavior, still relied on by
   // dashboard.vue, useDomainDashboard.ts, groups/[id]/index.vue and
   // profile.vue (they need the full domain list, not a page of 10).
-  async list(query: PaginationQuery, scope: { callerId: number; canSeeAll: boolean }) {
+  async list(query: PaginationQuery, scope: { callerId: string; canSeeAll: boolean }) {
     const ownerFilter = scope.canSeeAll ? {} : { ownerId: scope.callerId };
 
     if (query.limit === undefined) {
@@ -85,8 +85,8 @@ export class DomainsService {
   // display/transfer control (domains/[domain].vue) reads `ownerUsername`,
   // not the raw `ownerId`, so this must run on every list()/get() response.
   private async attachOwnerUsername<T extends VirtualDomain>(domains: T[]) {
-    const ownerIds = [...new Set(domains.map((d) => d.ownerId).filter((id): id is number => id !== null))];
-    const byId = new Map<number, string>();
+    const ownerIds = [...new Set(domains.map((d) => d.ownerId).filter((id): id is string => id !== null))];
+    const byId = new Map<string, string>();
     if (ownerIds.length) {
       const owners = await this.accounts.findBy({ id: In(ownerIds) });
       owners.forEach((o) => byId.set(o.id, o.username));
@@ -127,7 +127,7 @@ export class DomainsService {
   // The creating account becomes the domain's owner, with full scoped rights
   // on it (backend-acl-domain.md) -- this is never taken from the request
   // body, always from the authenticated caller.
-  async create(input: CreateDomainDto, ownerId: number) {
+  async create(input: CreateDomainDto, ownerId: string) {
     if (await this.repo.findOne({ where: { domain: input.domain } })) {
       throw new ConflictException(`Domain ${input.domain} already exists`);
     }
@@ -214,7 +214,7 @@ export class DomainsService {
   // A domain must never end up without an owner (security-hardening.md
   // anti-lockout); this is the only path that may change `owner_id`, and it
   // always designates a new one.
-  async transferOwner(id: number, actingUser: CallerCtx, newOwnerId: number) {
+  async transferOwner(id: number, actingUser: CallerCtx, newOwnerId: string) {
     const domain = await this.repo.findOne({ where: { id } });
     if (!domain) throw new NotFoundException(`Domain #${id} not found`);
 

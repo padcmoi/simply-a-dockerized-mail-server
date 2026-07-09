@@ -15,7 +15,7 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { update } = useGroups();
 
-const groupId = computed(() => Number(route.params.id));
+const groupId = computed(() => String(route.params.id));
 const { group, loading } = useGroupDetail(groupId);
 
 watch(

@@ -18,7 +18,7 @@ export class ReworkAclModel1783277858895 implements MigrationInterface {
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       ALTER TABLE \`accounts\`
-        ADD COLUMN \`group_id\` int NULL AFTER \`is_root\`
+        ADD COLUMN \`group_id\` char(36) NULL AFTER \`is_root\`
     `);
     await queryRunner.query(`
       ALTER TABLE \`accounts\`
@@ -45,10 +45,10 @@ export class ReworkAclModel1783277858895 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`audit_log\` (
         \`id\`          int         NOT NULL AUTO_INCREMENT,
-        \`actor_id\`    int         NULL,
+        \`actor_id\`    char(36)    NULL,
         \`action\`      varchar(64) NOT NULL,
         \`entity_type\` varchar(32) NOT NULL,
-        \`entity_id\`   int         NULL,
+        \`entity_id\`   varchar(36) NULL,
         \`before_json\` text        NULL,
         \`after_json\`  text        NULL,
         \`created_at\`  datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -74,8 +74,8 @@ export class ReworkAclModel1783277858895 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE \`group_members\` (
         \`id\`         int      NOT NULL AUTO_INCREMENT,
-        \`group_id\`   int      NOT NULL,
-        \`account_id\` int      NOT NULL,
+        \`group_id\`   char(36) NOT NULL,
+        \`account_id\` char(36) NOT NULL,
         \`created_at\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (\`id\`),
         UNIQUE KEY \`uq_group_members_group_account\` (\`group_id\`, \`account_id\`),

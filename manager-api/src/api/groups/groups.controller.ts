@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { paginationQuerySchema, type PaginationQuery } from "../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
@@ -42,7 +42,7 @@ import {
 } from "./groups.validation";
 
 type AuthedRequest = Request & {
-  user: { id: number; username: string; isRoot: boolean };
+  user: { id: string; username: string; isRoot: boolean };
 };
 
 @GroupsApi()
@@ -86,7 +86,7 @@ export class GroupsController {
   @UpdateGroupDocs()
   update(
     @Req() req: AuthedRequest,
-    @Param("id", ParseIntPipe) id: number,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateGroupSchema)) body: UpdateGroupDto
   ) {
     return this.svc.update(id, req.user.id, body);
@@ -95,14 +95,14 @@ export class GroupsController {
   @Delete(":id")
   @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "delete"] }])
   @RemoveGroupDocs()
-  remove(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
+  remove(@Req() req: AuthedRequest, @Param("id", ParseUUIDPipe) id: string) {
     return this.svc.remove(id, req.user);
   }
 
   @Get(":id")
   @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "read"] }])
   @GetGroupDocs()
-  getDetail(@Param("id", ParseIntPipe) id: number) {
+  getDetail(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.getDetail(id);
   }
 
@@ -111,7 +111,7 @@ export class GroupsController {
   @SetGlobalPermissionsDocs()
   setGlobalPermissions(
     @Req() req: AuthedRequest,
-    @Param("id", ParseIntPipe) id: number,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(setGlobalPermissionsSchema)) body: SetGlobalPermissionsDto
   ) {
     return this.svc.setGlobalPermissions(id, req.user, body.permissions);
@@ -122,7 +122,7 @@ export class GroupsController {
   @SetDomainPermissionsDocs()
   setDomainPermissions(
     @Req() req: AuthedRequest,
-    @Param("id", ParseIntPipe) id: number,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(setDomainPermissionsSchema)) body: SetDomainPermissionsDto
   ) {
     return this.svc.setDomainPermissions(id, req.user, body.permissions);
@@ -134,7 +134,7 @@ export class GroupsController {
   @UpdateOwnerDocs()
   updateOwner(
     @Req() req: AuthedRequest,
-    @Param("id", ParseIntPipe) id: number,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateOwnerSchema)) body: UpdateOwnerDto
   ) {
     return this.svc.updateOwner(id, req.user, body.newOwnerId);
@@ -143,7 +143,7 @@ export class GroupsController {
   @Get(":id/members")
   @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "read"] }])
   @ListMembersDocs()
-  listMembers(@Param("id", ParseIntPipe) id: number) {
+  listMembers(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.listMembers(id);
   }
 
@@ -153,7 +153,7 @@ export class GroupsController {
   @AddMemberDocs()
   addMember(
     @Req() req: AuthedRequest,
-    @Param("id", ParseIntPipe) id: number,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(addMemberSchema)) body: AddMemberDto
   ) {
     return this.svc.addMember(id, req.user, body.accountId);
@@ -163,8 +163,8 @@ export class GroupsController {
   @RemoveMemberDocs()
   removeMember(
     @Req() req: AuthedRequest,
-    @Param("id", ParseIntPipe) id: number,
-    @Param("accountId", ParseIntPipe) accountId: number
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("accountId", ParseUUIDPipe) accountId: string
   ) {
     return this.svc.removeMember(id, req.user, accountId);
   }

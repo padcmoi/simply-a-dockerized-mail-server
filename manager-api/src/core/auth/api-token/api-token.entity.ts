@@ -6,8 +6,8 @@ export class ApiToken {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;
 
-  @Column({ name: "account_id", type: "int" })
-  accountId!: number;
+  @Column({ name: "account_id", type: "char", length: 36 })
+  accountId!: string;
 
   @ManyToOne(() => Account, { onDelete: "CASCADE" })
   @JoinColumn({ name: "account_id" })

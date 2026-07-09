@@ -9,7 +9,7 @@ import { CustomPermissionGuardService } from "./custom-permission-guard.service"
 import { DomainPermissionRequirement, REQUIRE_DOMAIN_PERMISSIONS_KEY } from "./require-permissions.decorator";
 
 type PermissionRequest = Request & {
-  user?: { id: number; username: string; isRoot: boolean };
+  user?: { id: string; username: string; isRoot: boolean };
 };
 
 // Turns a throw-on-forbidden assertOne call into a boolean, without ever

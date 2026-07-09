@@ -46,11 +46,11 @@ export const setDomainPermissionsSchema = z.object({
 });
 
 export const updateOwnerSchema = z.object({
-  newOwnerId: z.number().int().positive(),
+  newOwnerId: z.string().uuid(),
 });
 
 export const addMemberSchema = z.object({
-  accountId: z.number().int().positive(),
+  accountId: z.string().uuid(),
 });
 
 export type CreateGroupDto = z.infer<typeof createGroupSchema>;

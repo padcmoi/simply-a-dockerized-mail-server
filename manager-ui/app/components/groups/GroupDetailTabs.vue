@@ -2,7 +2,7 @@
 type Section = "info" | "owner" | "members" | "application" | "domain";
 
 const props = defineProps<{
-  groupId: number;
+  groupId: string;
   active: Section;
   // The "info" card shows the group's own name instead of a generic label
   // -- it's the group's identity, not just a settings section.

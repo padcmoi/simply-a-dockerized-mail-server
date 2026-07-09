@@ -62,12 +62,12 @@ export class AccountsService {
     const accountIds = allAccounts.map((acc) => acc.id);
     const memberRows = accountIds.length ? await this.groupMembers.find({ where: { accountId: In(accountIds) } }) : [];
     const groupIds = [...new Set(memberRows.map((m) => m.groupId))];
-    const groupMap = new Map<number, string>();
+    const groupMap = new Map<string, string>();
     if (groupIds.length) {
       const groupRows = await this.groups.findBy({ id: In(groupIds) });
       groupRows.forEach((g) => groupMap.set(g.id, g.name));
     }
-    const groupsByAccount = new Map<number, { id: number; name: string }[]>();
+    const groupsByAccount = new Map<string, { id: string; name: string }[]>();
     memberRows.forEach((m) => {
       const list = groupsByAccount.get(m.accountId) ?? [];
       list.push({ id: m.groupId, name: groupMap.get(m.groupId) ?? "" });
@@ -86,14 +86,14 @@ export class AccountsService {
     }));
   }
 
-  private async accountGroups(accountId: number) {
+  private async accountGroups(accountId: string) {
     const memberRows = await this.groupMembers.find({ where: { accountId } });
     if (!memberRows.length) return [];
     const groupRows = await this.groups.findBy({ id: In(memberRows.map((m) => m.groupId)) });
     return groupRows.map((g) => ({ id: g.id, name: g.name }));
   }
 
-  async getById(id: number) {
+  async getById(id: string) {
     const account = await this.accounts.findOne({ where: { id } });
     if (!account) throw new NotFoundException(`Account #${id} not found`);
     return {
@@ -110,7 +110,7 @@ export class AccountsService {
     };
   }
 
-  async updateAccount(id: number, input: UpdateAccountDto) {
+  async updateAccount(id: string, input: UpdateAccountDto) {
     const account = await this.accounts.findOne({ where: { id } });
     if (!account) throw new NotFoundException(`Account #${id} not found`);
     if (input.email !== undefined && input.email !== null && input.email !== account.email) {
@@ -128,7 +128,7 @@ export class AccountsService {
     return this.getById(id);
   }
 
-  async revokeAccount(id: number) {
+  async revokeAccount(id: string) {
     const account = await this.accounts.findOne({ where: { id } });
     if (!account) throw new NotFoundException(`Account #${id} not found`);
     if (account.isRoot === 1) throw new BadRequestException("Cannot revoke a root account");
@@ -137,7 +137,7 @@ export class AccountsService {
     return { ok: true };
   }
 
-  async sendInvitation(invitedBy: number, input: SendInvitationDto) {
+  async sendInvitation(invitedBy: string, input: SendInvitationDto) {
     const existing = await this.invitations.findOne({
       where: { email: input.email, acceptedAt: IsNull() },
     });
