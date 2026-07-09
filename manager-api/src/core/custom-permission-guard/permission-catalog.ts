@@ -2,9 +2,27 @@
  * ACL Catalog
  */
 
-export const GLOBAL_RESOURCES = ["sieve", "rspamd", "postfix", "accounts", "api-tokens", "groups", "domains"] as const;
+export const GLOBAL_RESOURCES = [
+  //
+  "sieve",
+  "rspamd",
+  "postfix",
+  "accounts",
+  "api-tokens",
+  "groups",
+  "domains",
+] as const;
 
-export const DOMAIN_RESOURCES = ["domain", "recipients", "aliases", "quotas", "rspamd", "admin", "dkim"] as const;
+export const DOMAIN_RESOURCES = [
+  //
+  "domain",
+  "recipients",
+  "aliases",
+  "quotas",
+  "rspamd",
+  "admin",
+  "dkim",
+] as const;
 
 type Actions = "access" | "read" | "create" | "modify" | "delete";
 
