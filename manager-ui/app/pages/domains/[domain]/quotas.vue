@@ -10,6 +10,9 @@ interface QuotaRow {
   id: number;
   domain: string;
   email?: string;
+  // Absent on the domain aggregate row (virtual_quota_domains holds counters
+  // only); joined from virtual_users on every recipient row.
+  quota?: string;
   bytes: string;
   messages: string;
   lastActivity: string;
@@ -30,6 +33,7 @@ const hasLoadedOnce = ref(false);
 
 const { t } = useI18n();
 const { call } = useApi();
+const { formatDateTime } = useDateTime();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { tick } = useDataRefresh();
@@ -40,16 +44,23 @@ const { header } = useSortableColumns(sortBy, sortDir, UButton);
 // select's column x direction options (ListToolbar's `sortable-columns` prop)
 // -- the "per domain" table below has none of this: it's a single aggregate
 // row, never paginated/sorted.
+// Quota and usage read exactly as they do on the recipients page (same labels,
+// same occupancy bar); what this table adds on top is the message count and
+// the last delivery date, which live nowhere else.
 const RECIPIENT_SORTABLE_COLUMNS = computed(() => [
   { key: "email", label: t("common.address") },
-  { key: "bytes", label: t("common.bytes") },
+  { key: "quota", label: t("recipients.table.quota") },
+  { key: "bytes", label: t("recipients.table.used") },
   { key: "messages", label: t("common.messages") },
   { key: "lastActivity", label: t("common.lastActivity") },
 ]);
 
+// `bytes` is what dovecot has written, summed over the domain's mailboxes:
+// consumption, not a neutral byte count. Shown against the domain's own quota,
+// which is the only figure that says whether it matters.
 const domainCols = computed(() => [
   { accessorKey: "domain", header: t("common.domain") },
-  { accessorKey: "bytes", header: t("common.bytes") },
+  { accessorKey: "bytes", header: t("quotas.totalUsed") },
   { accessorKey: "messages", header: t("common.messages") },
   { accessorKey: "lastActivity", header: t("common.lastActivity") },
 ]);
@@ -125,6 +136,10 @@ watchEffect(() => {
 async function load() {
   await refresh();
 }
+
+function occupancy(row: QuotaRow) {
+  return occupancyPercent(Number(row.quota ?? 0), Number(row.bytes));
+}
 </script>
 
 <template>
@@ -146,7 +161,31 @@ async function load() {
     <USkeleton v-if="!hasLoadedOnce" class="h-16 w-full rounded-lg" />
     <template v-else>
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-        <UTable :columns="domainCols" :data="domainRows" :loading="loading" sticky />
+        <UTable :columns="domainCols" :data="domainRows" :loading="loading" sticky>
+          <!-- `quota`, `bytes` and `messages` arrive as strings: MariaDB
+               BIGINTs, which the driver keeps as text rather than lose
+               precision. -->
+          <template #bytes-cell="{ row }">
+            <div class="min-w-[140px]">
+              <p>
+                {{ formatBytes(Number(row.original.bytes)) }}
+                <span class="text-dimmed">/ {{ formatBytes(Number(row.original.quota ?? 0)) }}</span>
+              </p>
+              <UProgress
+                :model-value="occupancy(row.original)"
+                :color="occupancyColor(occupancy(row.original))"
+                size="xs"
+                class="mt-1"
+              />
+            </div>
+          </template>
+          <template #messages-cell="{ row }">
+            <span>{{ Number(row.original.messages).toLocaleString() }}</span>
+          </template>
+          <template #lastActivity-cell="{ row }">
+            <span>{{ formatDateTime(row.original.lastActivity) }}</span>
+          </template>
+        </UTable>
       </UCard>
 
       <div class="lg:hidden space-y-3">
@@ -170,7 +209,28 @@ async function load() {
     <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
     <template v-else>
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-        <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" sticky />
+        <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" sticky>
+          <template #quota-cell="{ row }">
+            <span>{{ formatBytes(Number(row.original.quota ?? 0)) }}</span>
+          </template>
+          <template #bytes-cell="{ row }">
+            <div class="min-w-[110px]">
+              <p>{{ formatBytes(Number(row.original.bytes)) }}</p>
+              <UProgress
+                :model-value="occupancy(row.original)"
+                :color="occupancyColor(occupancy(row.original))"
+                size="xs"
+                class="mt-1"
+              />
+            </div>
+          </template>
+          <template #messages-cell="{ row }">
+            <span>{{ Number(row.original.messages).toLocaleString() }}</span>
+          </template>
+          <template #lastActivity-cell="{ row }">
+            <span>{{ formatDateTime(row.original.lastActivity) }}</span>
+          </template>
+        </UTable>
       </UCard>
 
       <div class="lg:hidden space-y-3">
