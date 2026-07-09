@@ -482,7 +482,8 @@ export default {
       readOnlyHint: "You need the rspamd modify and delete permissions to edit these thresholds.",
       reset: "Reset to defaults",
       confirmReset: "Reset action thresholds to defaults?",
-      confirmResetDesc: "This discards the current thresholds and restores this project's shipped baseline (reject 15, add header 5, greylist and rewrite subject disabled).",
+      confirmResetDesc:
+        "This discards the current thresholds and restores this project's shipped baseline (reject 15, add header 5, greylist and rewrite subject disabled).",
       resetDone: "Action thresholds reset to defaults",
       resetFailed: "Failed to reset action thresholds",
     },
@@ -649,6 +650,7 @@ export default {
         quotas: "Quotas",
         dkim: "DKIM management",
         admin: "Application",
+        superadmin: "Super admin",
       },
       actionsLabel: {
         access: "Access",

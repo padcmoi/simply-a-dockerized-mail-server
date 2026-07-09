@@ -630,6 +630,7 @@ export interface Locales {
         quotas: string;
         dkim: string;
         admin: string;
+        superadmin: string;
       };
       actionsLabel: {
         access: string;

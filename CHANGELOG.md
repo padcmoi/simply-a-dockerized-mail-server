@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): `superadmin` resource label ("Super admin" / "Super administrateur") in the group global-permissions grid (09-07-2026)
 - feat(api): new `superadmin` global resource -- checking its `access` action in the group permission grid cascades to grant full CRUD on every other global resource at once, via `GLOBAL_RESOURCES_DEPENDS_ON` generated from `GLOBAL_RESOURCES` (09-07-2026)
 - style(api): format `permission-catalog.ts`'s resource arrays one entry per line (08-07-2026)
 - refactor(ui): rename the ambiguous "Administration" label/routes to "Application" -- `/domains/:domain/admin` -> `/domains/:domain/app` and `/groups/:id/acl/admin` -> `/groups/:id/acl/app`, plus the matching i18n keys (`nav.administration` -> `nav.application`, `groups.detail.tabs/alerts.administration` -> `.application`); the domain rename/quota/delete modal keeps "Administration" since it's a distinct concept (08-07-2026)

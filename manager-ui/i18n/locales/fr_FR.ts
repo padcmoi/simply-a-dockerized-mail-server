@@ -483,7 +483,8 @@ export default {
       readOnlyHint: "Permissions rspamd modify et delete requises pour modifier ces seuils.",
       reset: "Réinitialiser aux valeurs d'usine",
       confirmReset: "Réinitialiser les seuils aux valeurs d'usine ?",
-      confirmResetDesc: "Ceci écrase les seuils actuels et restaure la config livrée avec le projet (reject 15, add header 5, greylist et rewrite subject désactivés).",
+      confirmResetDesc:
+        "Ceci écrase les seuils actuels et restaure la config livrée avec le projet (reject 15, add header 5, greylist et rewrite subject désactivés).",
       resetDone: "Seuils réinitialisés aux valeurs d'usine",
       resetFailed: "Échec de la réinitialisation des seuils",
     },
@@ -599,7 +600,8 @@ export default {
         },
         members: {
           title: "Membres du groupe",
-          description: "Les comptes assignés à ce groupe héritent de ses permissions. Un compte n'appartient qu'à un seul groupe à la fois.",
+          description:
+            "Les comptes assignés à ce groupe héritent de ses permissions. Un compte n'appartient qu'à un seul groupe à la fois.",
         },
         application: {
           title: "Permissions globales (Application)",
@@ -651,6 +653,7 @@ export default {
         quotas: "Quotas",
         dkim: "Gestion DKIM",
         admin: "Application",
+        superadmin: "Super administrateur",
       },
       actionsLabel: {
         access: "Accès",
