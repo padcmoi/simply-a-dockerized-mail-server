@@ -7,6 +7,7 @@ export interface RecipientEditItem {
   id: number;
   email: string;
   quota: string;
+  usedBytes: string;
   active: number;
 }
 

@@ -22,7 +22,8 @@ const {
   activeRecipients,
   usedBytes,
   allocatedBytes,
-  freeBytes,
+  reservedBytes,
+  assignableBytes,
   isUnlimited,
   messagesCount,
   diskChartData,
@@ -148,7 +149,7 @@ const dkimStatusText = computed(() => {
         <div v-if="loading && !domain" class="flex flex-col sm:flex-row items-center gap-6">
           <USkeleton class="shrink-0 w-36 h-36 rounded-full" />
           <div class="space-y-2 w-full">
-            <USkeleton v-for="i in 3" :key="i" class="h-4 w-full" />
+            <USkeleton v-for="i in 4" :key="i" class="h-4 w-full" />
           </div>
         </div>
         <div v-else class="flex flex-col sm:flex-row items-center gap-6">
@@ -168,12 +169,17 @@ const dkimStatusText = computed(() => {
             </li>
             <template v-if="!isUnlimited">
               <li class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-sm bg-success shrink-0" />
-                <span class="text-muted">{{ $t("domainDashboard.disk.free") }}</span>
-                <span class="font-medium ml-auto pl-4">{{ formatBytes(freeBytes) }}</span>
+                <span class="w-3 h-3 rounded-sm bg-warning shrink-0" />
+                <span class="text-muted">{{ $t("domainDashboard.disk.reserved") }}</span>
+                <span class="font-medium ml-auto pl-4">{{ formatBytes(reservedBytes) }}</span>
               </li>
               <li class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-sm bg-primary shrink-0" />
+                <span class="w-3 h-3 rounded-sm bg-success shrink-0" />
+                <span class="text-muted">{{ $t("domainDashboard.disk.assignable") }}</span>
+                <span class="font-medium ml-auto pl-4">{{ formatBytes(assignableBytes) }}</span>
+              </li>
+              <li class="flex items-center gap-2 border-t border-default pt-2">
+                <span class="w-3 h-3 shrink-0" />
                 <span class="text-muted">{{ $t("domainDashboard.disk.allocated") }}</span>
                 <span class="font-medium ml-auto pl-4">{{ formatBytes(allocatedBytes) }}</span>
               </li>

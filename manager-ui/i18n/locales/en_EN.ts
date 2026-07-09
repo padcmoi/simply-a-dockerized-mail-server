@@ -175,6 +175,8 @@ export default {
       password: "Password",
       quotaMb: "Quota (MB)",
       quotaMin: "Minimum {value} MB",
+      quotaMax: "Maximum {value} MB left on the domain",
+      quotaRange: "{min}–{max} MB",
       submit: "Create",
     },
     table: {
@@ -363,6 +365,8 @@ export default {
       used: "Used",
       free: "Free",
       allocated: "Allocated",
+      reserved: "Reserved by recipients",
+      assignable: "Still assignable",
       unlimited: "Unlimited",
     },
     topMailboxes: {

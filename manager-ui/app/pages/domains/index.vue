@@ -228,15 +228,20 @@ onMounted(loadDisk);
         <UFormField :label="t('domains.form.active')" name="active">
           <USwitch v-model="form.active" />
         </UFormField>
-        <UButton
-          type="submit"
-          icon="i-lucide-plus"
-          :disabled="!form.domain || quotaOverLimit || quotaUnderLimit"
-          block
-          class="sm:w-auto"
-        >
-          {{ t("domains.form.submit") }}
-        </UButton>
+        <!-- Empty label row so the button lines up with the inputs rather than
+             with their labels, the grid being top-aligned. UFormField only
+             renders its label element when the prop is truthy. -->
+        <UFormField label="&#160;">
+          <UButton
+            type="submit"
+            icon="i-lucide-plus"
+            :disabled="!form.domain || quotaOverLimit || quotaUnderLimit"
+            block
+            class="sm:w-auto"
+          >
+            {{ t("domains.form.submit") }}
+          </UButton>
+        </UFormField>
       </UForm>
     </UCard>
 

@@ -109,14 +109,19 @@ async function onDeleteConfirmed() {
       <template #header>
         <h2 class="font-semibold">{{ t("aliases.form.title") }}</h2>
       </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end" @submit="create">
+      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start" @submit="create">
         <UFormField :label="t('aliases.form.localPart')" name="localPart">
           <UInput v-model="form.localPart" placeholder="local-part" class="w-full" />
         </UFormField>
         <UFormField :label="t('aliases.form.destination')" name="destination">
           <UInput v-model="form.destination" :placeholder="t('aliases.form.destinationPlaceholder')" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-plus" block class="sm:w-auto">{{ t("aliases.form.submit") }}</UButton>
+        <!-- Empty label row so the button lines up with the inputs rather than
+             with their labels, the grid being top-aligned. UFormField only
+             renders its label element when the prop is truthy. -->
+        <UFormField label="&#160;">
+          <UButton type="submit" icon="i-lucide-plus" block class="sm:w-auto">{{ t("aliases.form.submit") }}</UButton>
+        </UFormField>
       </UForm>
     </UCard>
 

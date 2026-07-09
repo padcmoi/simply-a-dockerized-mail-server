@@ -100,13 +100,18 @@ async function onDeleteConfirmed() {
       <template #header>
         <h2 class="font-semibold">{{ t("sieve.form.title") }}</h2>
       </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-end" @submit="create">
+      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3 items-start" @submit="create">
         <UFormField :label="t('sieve.form.sender')" name="sender">
           <UInput v-model="form.sender" :placeholder="t('sieve.form.senderPlaceholder')" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-shield-x" :disabled="!form.sender" block class="sm:w-auto">
-          {{ t("sieve.form.submit") }}
-        </UButton>
+        <!-- Empty label row so the button lines up with the inputs rather than
+             with their labels, the grid being top-aligned. UFormField only
+             renders its label element when the prop is truthy. -->
+        <UFormField label="&#160;">
+          <UButton type="submit" icon="i-lucide-shield-x" :disabled="!form.sender" block class="sm:w-auto">
+            {{ t("sieve.form.submit") }}
+          </UButton>
+        </UFormField>
       </UForm>
     </UCard>
 

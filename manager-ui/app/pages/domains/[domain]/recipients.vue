@@ -19,9 +19,27 @@ const MIN_QUOTA_MB = 1;
 
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
+// What the domain has left for its recipients, straight from the API rather
+// than summed client-side: the list is paginated, so the browser never holds
+// every recipient of the domain. Negative for a domain overcommitted before
+// the rule existed, hence the clamp at 0.
+const headroom = ref<{ domainQuota: number; allocated: number; available: number } | null>(null);
+
 const form = reactive({ localPart: "", password: "", quotaMb: 500 });
 
+const availableMb = computed(() => (headroom.value ? Math.max(0, Math.floor(headroom.value.available / MB)) : 0));
+
+// Lazily evaluated, so reading `editModalItem` (declared further down, with
+// the rest of useRecipientEdit) is safe. Resizing frees the recipient's own reservation first, so its ceiling is the
+// domain's remaining space plus what it already holds.
+const editMaxQuotaMb = computed(() => {
+  if (!editModalItem.value || !headroom.value) return availableMb.value;
+  const currentMb = Math.floor(Number(editModalItem.value.quota) / MB);
+  return Math.max(MIN_QUOTA_MB, availableMb.value + currentMb);
+});
+
 const quotaUnderLimit = computed(() => form.quotaMb < MIN_QUOTA_MB);
+const quotaOverLimit = computed(() => form.quotaMb > availableMb.value);
 
 // Same source feeds the desktop column headers below and ListToolbar's
 // mobile sort select.
@@ -46,6 +64,10 @@ const toast = useToast();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 
+// `loadHeadroom` is a hoisted function declaration; the watcher sits up here
+// because the lint rule wants every watcher above the top-level functions.
+watch(domainId, loadHeadroom, { immediate: true });
+
 watchEffect(() => {
   setBreadcrumb([
     { label: t("nav.domains"), to: "/domains" },
@@ -62,7 +84,22 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
 );
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
-const { editModalOpen, editModalItem, editSaving, canEditRecipients, openEditModal, saveEdit } = useRecipientEdit(domainId, load);
+const { editModalOpen, editModalItem, editSaving, canEditRecipients, openEditModal, saveEdit } = useRecipientEdit(
+  domainId,
+  refreshAll
+);
+
+async function loadHeadroom() {
+  if (!domainId.value) return;
+  headroom.value = await call<{ domainQuota: number; allocated: number; available: number }>(
+    `/domains/${domainId.value}/recipients/headroom`
+  ).catch(() => null);
+}
+
+// Every mutation shifts what's left, so the two always reload together.
+async function refreshAll() {
+  await Promise.all([load(), loadHeadroom()]);
+}
 
 function isPostmaster(item: Recipient) {
   return item.email.toLowerCase().startsWith("postmaster@");
@@ -87,6 +124,10 @@ async function create() {
     toast.add({ title: t("recipients.toast.quotaTooLow", { value: MIN_QUOTA_MB }), color: "error" });
     return;
   }
+  if (quotaOverLimit.value) {
+    toast.add({ title: t("recipients.form.quotaMax", { value: availableMb.value }), color: "error" });
+    return;
+  }
   try {
     await call(`/domains/${domainId.value}/recipients`, {
       method: "POST",
@@ -98,7 +139,7 @@ async function create() {
     });
     form.localPart = "";
     form.password = "";
-    await load();
+    await refreshAll();
     toast.add({ title: t("recipients.toast.created"), color: "success" });
   } catch (err) {
     toast.add({
@@ -114,7 +155,7 @@ async function remove(row: Recipient) {
   await call(`/domains/${domainId.value}/recipients/${row.id}`, {
     method: "DELETE",
   });
-  await load();
+  await refreshAll();
 }
 
 function requestDelete(fn: () => Promise<void>) {
@@ -139,14 +180,14 @@ async function onDeleteConfirmed() {
         :description="t('recipients.alertDescription')"
         class="flex-1 min-w-[16rem]"
       />
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="() => load()" />
+      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="refreshAll" />
     </div>
 
     <UCard>
       <template #header>
         <h2 class="font-semibold">{{ t("recipients.form.title") }}</h2>
       </template>
-      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end" @submit="create">
+      <UForm :state="form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start" @submit="create">
         <UFormField :label="t('recipients.form.localPart')" name="localPart">
           <UInput v-model="form.localPart" placeholder="local-part" class="w-full" />
         </UFormField>
@@ -156,13 +197,27 @@ async function onDeleteConfirmed() {
         <UFormField
           :label="t('recipients.form.quotaMb')"
           name="quotaMb"
-          :error="quotaUnderLimit ? t('recipients.form.quotaMin', { value: MIN_QUOTA_MB }) : undefined"
+          :error="
+            quotaUnderLimit
+              ? t('recipients.form.quotaMin', { value: MIN_QUOTA_MB })
+              : quotaOverLimit
+                ? t('recipients.form.quotaMax', { value: availableMb })
+                : undefined
+          "
+          :hint="t('recipients.form.quotaRange', { min: MIN_QUOTA_MB, max: availableMb })"
         >
-          <UInput v-model.number="form.quotaMb" type="number" :min="MIN_QUOTA_MB" class="w-full" />
+          <UInput v-model.number="form.quotaMb" type="number" :min="MIN_QUOTA_MB" :max="availableMb" class="w-full" />
         </UFormField>
-        <UButton type="submit" icon="i-lucide-plus" :disabled="quotaUnderLimit" block class="lg:w-auto">{{
-          t("recipients.form.submit")
-        }}</UButton>
+        <!-- A no-break space, not an empty string: UFormField only renders its
+             label element when the prop is truthy, and only that element has the
+             exact height the sibling fields' labels do. The grid being
+             top-aligned, without it the button lines up with the labels rather
+             than with the inputs. -->
+        <UFormField label="&#160;">
+          <UButton type="submit" icon="i-lucide-plus" :disabled="quotaUnderLimit || quotaOverLimit" block class="lg:w-auto">{{
+            t("recipients.form.submit")
+          }}</UButton>
+        </UFormField>
       </UForm>
     </UCard>
 
@@ -259,6 +314,7 @@ async function onDeleteConfirmed() {
       :item="editModalItem"
       :saving="editSaving"
       :min-quota-mb="MIN_QUOTA_MB"
+      :max-quota-mb="editMaxQuotaMb"
       @save="saveEdit"
     />
   </div>

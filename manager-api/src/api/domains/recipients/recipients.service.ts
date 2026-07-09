@@ -1,4 +1,4 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
@@ -105,6 +105,60 @@ export class RecipientsService {
     return found;
   }
 
+  // The domain's own quota is the hard ceiling on what its recipients may
+  // reserve between them -- the same rule DomainsService applies one level up,
+  // where a domain can't claim more than the mail volume still has assignable.
+  // `excludeRecipientId` leaves the recipient being resized out of the sum, so
+  // its current reservation isn't counted against itself.
+  //
+  // `available` can be negative: quotas predating this rule may already
+  // overcommit their domain. That is precisely why lowering a quota always
+  // passes (see assertQuotaFitsDomain) -- otherwise such a domain could never
+  // be brought back under its ceiling.
+  async headroom(domain: string, excludeRecipientId?: number) {
+    const parent = await this.domains.findOne({ where: { domain } });
+    if (!parent) throw new NotFoundException(`Domain ${domain} not found`);
+
+    const qb = this.recipients
+      .createQueryBuilder("r")
+      .select("COALESCE(SUM(r.quota), 0)", "allocated")
+      .where("r.domain = :domain", { domain });
+    if (excludeRecipientId !== undefined) qb.andWhere("r.id != :id", { id: excludeRecipientId });
+
+    const row = await qb.getRawOne<{ allocated: string }>();
+    const domainQuota = Number(parent.quota);
+    const allocated = Number(row?.allocated ?? 0);
+    return { domainQuota, allocated, available: domainQuota - allocated };
+  }
+
+  // Shrinking a mailbox below what it already stores would leave it instantly
+  // over quota, and dovecot would start bouncing its incoming mail. Read from
+  // virtual_quota_users, dovecot's own counter; a mailbox it has never
+  // delivered to has no row and reads as 0 bytes used.
+  private async assertQuotaCoversUsage(email: string, quota: number) {
+    const row = await this.recipientQuotas.findOne({ where: { email } });
+    const used = Number(row?.bytes ?? 0);
+    if (quota >= used) return;
+
+    const mb = (bytes: number) => Math.ceil(bytes / (1024 * 1024));
+    throw new BadRequestException(`Recipient quota cannot be lowered below the ${mb(used)} MB ${email} already stores`);
+  }
+
+  // `recipient` given = this is a resize: never refuse a value at or below what
+  // it already holds, since it can only free space for the rest of the domain.
+  private async assertQuotaFitsDomain(domain: string, quota: number, recipient?: { id: number; quota: number }) {
+    if (recipient && quota <= recipient.quota) return;
+
+    const { domainQuota, allocated, available } = await this.headroom(domain, recipient?.id);
+    if (quota <= available) return;
+
+    const mb = (bytes: number) => Math.floor(bytes / (1024 * 1024));
+    throw new BadRequestException(
+      `Recipient quota exceeds what ${domain} has left: ${mb(Math.max(available, 0))} MB available ` +
+        `(domain quota ${mb(domainQuota)} MB, ${mb(allocated)} MB already allocated to other recipients)`
+    );
+  }
+
   async create(input: CreateRecipientDto, domain: string) {
     if (input.localPart.toLowerCase() === "postmaster") {
       throw new ConflictException("postmaster@ is reserved and provisioned automatically for every domain");
@@ -113,6 +167,7 @@ export class RecipientsService {
     if (await this.recipients.findOne({ where: { email } })) {
       throw new ConflictException(`Recipient ${email} already exists`);
     }
+    await this.assertQuotaFitsDomain(domain, input.quota);
     return this.recipients.save(
       this.recipients.create({
         email,
@@ -135,7 +190,11 @@ export class RecipientsService {
       throw new ForbiddenException("postmaster@ is managed automatically and cannot be modified");
     }
     if (input.password) current.password = await sha512crypt(input.password);
-    if (input.quota !== undefined) current.quota = String(input.quota);
+    if (input.quota !== undefined) {
+      await this.assertQuotaCoversUsage(current.email, input.quota);
+      await this.assertQuotaFitsDomain(domain, input.quota, { id, quota: Number(current.quota) });
+      current.quota = String(input.quota);
+    }
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
     return this.recipients.save(current);

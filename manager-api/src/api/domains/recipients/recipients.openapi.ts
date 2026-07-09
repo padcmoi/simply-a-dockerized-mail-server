@@ -63,6 +63,27 @@ export const ListRecipientsDocs = () =>
     })
   );
 
+export const GetRecipientsHeadroomDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "How much quota this domain still has left for its recipients",
+      description:
+        "`available` = the domain's own quota minus the sum of the quotas already allocated to its recipients. " +
+        "It is the ceiling a new recipient's quota must fit under, and it can be negative for a domain whose " +
+        "recipients were overcommitted before this rule existed. All sizes in bytes.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Headroom returned",
+      schema: { example: { domainQuota: 157286400, allocated: 34603008, available: 122683392 } },
+    }),
+    ApiResponse({
+      status: 404,
+      description: "Parent domain not found",
+      schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
+    })
+  );
+
 export const GetRecipientDocs = () =>
   applyDecorators(
     ApiOperation({
@@ -145,7 +166,9 @@ export const CreateRecipientDocs = () =>
     }),
     ApiResponse({
       status: 400,
-      description: "Body validation failed, or domainId is not a valid integer",
+      description:
+        "Body validation failed, domainId is not a valid integer, or the quota exceeds what the domain has left " +
+        "(its own quota minus the quotas already allocated to its other recipients)",
       schema: { example: { message: "Validation failed", issues: [] } },
     }),
     ApiResponse({
@@ -202,7 +225,9 @@ export const UpdateRecipientDocs = () =>
     }),
     ApiResponse({
       status: 400,
-      description: "Body validation failed, or domainId/id is not a valid integer",
+      description:
+        "Body validation failed, domainId/id is not a valid integer, the quota exceeds what the domain has left, " +
+        "or it would drop below the bytes the mailbox already stores",
       schema: { example: { message: "Validation failed", issues: [] } },
     }),
     ApiResponse({

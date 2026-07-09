@@ -176,6 +176,8 @@ export interface Locales {
       password: string;
       quotaMb: string;
       quotaMin: string;
+      quotaMax: string;
+      quotaRange: string;
       submit: string;
     };
     table: {
@@ -363,6 +365,8 @@ export interface Locales {
       used: string;
       free: string;
       allocated: string;
+      reserved: string;
+      assignable: string;
       unlimited: string;
     };
     topMailboxes: {

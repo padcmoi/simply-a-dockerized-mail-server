@@ -231,6 +231,14 @@ export function useDomainDashboard() {
   const isUnlimited = computed(() => allocatedBytes.value === 0);
   const messagesCount = computed(() => Number(quota.value?.messages ?? 0));
 
+  // `used` is what the mailboxes actually hold on disk; `reserved` is what
+  // their quotas claim from the domain whether or not a byte was ever written.
+  // Only the latter says whether another recipient still fits -- it is the
+  // ceiling RecipientsService enforces. `recipients` is the unpaginated list,
+  // so this sum covers the whole domain, not a page of it.
+  const reservedBytes = computed(() => recipients.value.reduce((sum, r) => sum + Number(r.quota), 0));
+  const assignableBytes = computed(() => (isUnlimited.value ? 0 : Math.max(0, allocatedBytes.value - reservedBytes.value)));
+
   const diskChartData = computed<ChartData<"doughnut">>(() => {
     if (isUnlimited.value) {
       return {
@@ -244,12 +252,17 @@ export function useDomainDashboard() {
         ],
       };
     }
+    // The three slices add up to the domain's allocated quota. The middle one
+    // is the part the recipients' quotas have claimed but never written to:
+    // showing only used-vs-free would suggest space is available for a new
+    // mailbox when it is in fact already spoken for.
+    const reservedUnused = Math.max(0, Math.min(reservedBytes.value, allocatedBytes.value) - usedBytes.value);
     return {
-      labels: [t("domainDashboard.disk.used"), t("domainDashboard.disk.free")],
+      labels: [t("domainDashboard.disk.used"), t("domainDashboard.disk.reserved"), t("domainDashboard.disk.assignable")],
       datasets: [
         {
-          data: [usedBytes.value, freeBytes.value],
-          backgroundColor: [colors.value.error, colors.value.success],
+          data: [usedBytes.value, reservedUnused, assignableBytes.value],
+          backgroundColor: [colors.value.error, colors.value.warning, colors.value.success],
           borderWidth: 0,
           hoverOffset: 6,
         },
@@ -441,6 +454,8 @@ export function useDomainDashboard() {
     usedBytes,
     allocatedBytes,
     freeBytes,
+    reservedBytes,
+    assignableBytes,
     isUnlimited,
     messagesCount,
     diskChartData,

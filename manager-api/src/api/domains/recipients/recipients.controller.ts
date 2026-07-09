@@ -7,6 +7,7 @@ import { RequireDomainPermissions } from "../../../core/custom-permission-guard/
 import {
   CreateRecipientDocs,
   GetRecipientDocs,
+  GetRecipientsHeadroomDocs,
   ListRecipientsDocs,
   RecipientsApi,
   RemoveRecipientDocs,
@@ -30,6 +31,16 @@ export class RecipientsController {
   ) {
     const domain = await this.svc.resolveDomain(domainId);
     return this.svc.list(domain, query);
+  }
+
+  // Declared before `@Get(":id")`: Nest matches in declaration order, and
+  // "headroom" would otherwise hit that route and fail its ParseIntPipe.
+  @Get("headroom")
+  @RequireDomainPermissions([{ resource: "recipients", actions: ["access", "read"] }])
+  @GetRecipientsHeadroomDocs()
+  async headroom(@Param("domainId", ParseIntPipe) domainId: number) {
+    const domain = await this.svc.resolveDomain(domainId);
+    return this.svc.headroom(domain);
   }
 
   @Get(":id")
