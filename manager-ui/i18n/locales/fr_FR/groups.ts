@@ -1,0 +1,136 @@
+import type { Locales } from "../../Locales";
+
+export default {
+  alertTitle: "Les groupes permettent de regrouper des permissions globales et par domaine et de les partager entre comptes.",
+  alertDescription: "Chaque groupe a un propriétaire qui peut gérer les membres et les permissions, comme root.",
+  newGroup: "Nouveau groupe",
+  empty: "Aucun groupe pour le moment",
+  backToList: "Retour aux groupes",
+  noDescription: "Aucune description",
+  defaultBadge: "Par défaut",
+  table: {
+    name: "Nom",
+    description: "Description",
+    owner: "Propriétaire",
+    members: "Membres",
+  },
+  form: {
+    title: "Créer un groupe",
+    name: "Nom",
+    description: "Description",
+    submit: "Créer",
+    isDefault: "Groupe par défaut",
+    isDefaultHint:
+      "Les nouveaux comptes invités sans groupe explicite héritent de ce groupe. Un seul groupe par défaut peut être actif à la fois.",
+  },
+  toast: {
+    loadFailed: "Échec du chargement des groupes",
+    created: "Groupe créé",
+    createFailed: "Échec de la création",
+    updated: "Groupe mis à jour",
+    updateFailed: "Échec de la mise à jour",
+    deleted: "Groupe supprimé",
+    deleteFailed: "Échec de la suppression",
+  },
+  confirmDelete: "Supprimer ce groupe ?",
+  detail: {
+    nameLabel: "Nom",
+    descriptionLabel: "Description",
+    save: "Enregistrer",
+    saved: "Groupe mis à jour",
+    saveFailed: "Échec de la mise à jour",
+    tabs: {
+      owner: "Propriétaire",
+      members: "Membres",
+      application: "Application",
+      domain: "Domaine",
+    },
+    alerts: {
+      info: {
+        title: "Paramètres du groupe",
+        description: "Nom, description et statut de groupe par défaut.",
+      },
+      owner: {
+        title: "Propriétaire du groupe",
+        description: "Seul le propriétaire ou un compte root peut transférer la propriété du groupe.",
+      },
+      members: {
+        title: "Membres du groupe",
+        description:
+          "Les comptes assignés à ce groupe héritent de ses permissions. Un compte n'appartient qu'à un seul groupe à la fois.",
+      },
+      application: {
+        title: "Permissions globales (Application)",
+        description: "Ces permissions s'appliquent à toute l'application, indépendamment d'un domaine précis.",
+      },
+      domain: {
+        title: "Permissions par domaine",
+        description: "Ces permissions ne s'appliquent qu'au domaine actuellement sélectionné.",
+      },
+    },
+    owner: {
+      title: "Propriétaire",
+      unassigned: "Aucun propriétaire assigné",
+      pickPlaceholder: "Sélectionner un compte",
+      change: "Changer de propriétaire",
+      saved: "Propriétaire mis à jour",
+      saveFailed: "Échec de la mise à jour du propriétaire",
+    },
+    members: {
+      title: "Membres",
+      empty: "Aucun membre pour le moment",
+      pickPlaceholder: "Sélectionner un compte à ajouter",
+      add: "Ajouter",
+      addFailed: "Échec de l'ajout du membre",
+      remove: "Retirer",
+      removeFailed: "Échec du retrait du membre",
+    },
+    permissions: {
+      saved: "Permissions mises à jour",
+      saveFailed: "Échec de la mise à jour des permissions",
+    },
+  },
+  permissions: {
+    tabs: {
+      global: "Application",
+      domain: "Domaine",
+    },
+    resources: {
+      global: {
+        sieve: "Sieve",
+        rspamd: "Rspamd",
+        postfix: "Postfix",
+        accounts: "Comptes",
+        apiTokens: "Jetons API",
+        groups: "Groupes",
+        domains: "Domaines",
+        superadmin: "Super administrateur",
+      },
+      domain: {
+        domain: "Accès au domaine",
+        recipients: "Boîtes aux lettres",
+        aliases: "Alias",
+        quotas: "Quotas",
+        rspamd: "Rspamd",
+        admin: "Administration",
+        dkim: "Gestion DKIM",
+      },
+    },
+    actionsLabel: {
+      access: "Accès",
+      read: "Lecture",
+      create: "Création",
+      modify: "Modification",
+      delete: "Suppression",
+    },
+    autosaveHint: "Les modifications sont enregistrées automatiquement une seconde après le dernier clic.",
+    saving: "Enregistrement...",
+    checkAll: "Tout",
+    uncheckAll: "Aucun",
+    checkAllVisible: "Tout cocher",
+    uncheckAllVisible: "Tout décocher",
+    selectDomain: "Domaine",
+    selectDomainPlaceholder: "Choisir un domaine",
+    noDomainsAssigned: "Choisissez un domaine ci-dessus pour définir ses permissions",
+  },
+} satisfies Locales["groups"];
