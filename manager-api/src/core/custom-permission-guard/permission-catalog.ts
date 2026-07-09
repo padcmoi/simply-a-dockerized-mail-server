@@ -11,6 +11,7 @@ export const GLOBAL_RESOURCES = [
   "api-tokens",
   "groups",
   "domains",
+  "superadmin",
 ] as const;
 
 export const DOMAIN_RESOURCES = [
@@ -54,6 +55,30 @@ export const DOMAIN_RESOURCE_DEPENDS_ON: DependsOnTable = [
 ];
 
 export const PERMISSION_ACTIONS = ["access", "read", "create", "modify", "delete"] as const;
+
+// superadmin's dependsOn lists every other global resource with full CRUD,
+// not prerequisites superadmin itself needs. enforceDependsOn
+// (GroupGlobalPermissions.vue) grants whatever the CHECKED resource's own
+// dependsOn array lists, so checking superadmin:access grants all of them
+// at once.
+function dependsOnSuperadmin() {
+  const resources: readonly string[] = GLOBAL_RESOURCES;
+  if (!resources.includes("superadmin")) return [] satisfies DependsOnTable;
+
+  const superadmin = "superadmin" as (typeof GLOBAL_RESOURCES)[number];
+
+  return [
+    {
+      resource: superadmin,
+      dependsOn: GLOBAL_RESOURCES.filter((r) => (r as string) !== superadmin).map((r) => ({
+        resource: r,
+        action: [...PERMISSION_ACTIONS],
+      })),
+    },
+  ] satisfies DependsOnTable;
+}
+
+GLOBAL_RESOURCES_DEPENDS_ON.push(...dependsOnSuperadmin());
 
 // Flattens this catalog's { resource, action: string[] }[] shape into the
 // guard lib's own { resource, action: string }[] shape (one action per

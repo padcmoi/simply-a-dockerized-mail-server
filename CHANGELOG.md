@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api): new `superadmin` global resource -- checking its `access` action in the group permission grid cascades to grant full CRUD on every other global resource at once, via `GLOBAL_RESOURCES_DEPENDS_ON` generated from `GLOBAL_RESOURCES` (09-07-2026)
 - style(api): format `permission-catalog.ts`'s resource arrays one entry per line (08-07-2026)
 - refactor(ui): rename the ambiguous "Administration" label/routes to "Application" -- `/domains/:domain/admin` -> `/domains/:domain/app` and `/groups/:id/acl/admin` -> `/groups/:id/acl/app`, plus the matching i18n keys (`nav.administration` -> `nav.application`, `groups.detail.tabs/alerts.administration` -> `.application`); the domain rename/quota/delete modal keeps "Administration" since it's a distinct concept (08-07-2026)
 - feat(api,ui): harden domain admin ACL so rename/quota-resize/delete are only reachable via dedicated `/admin/domains/:domainId` routes (rename, quota, DELETE) requiring full CRUD on the global `domains` resource, immune to domain ownership (no ownership bypass exists at the global tier, unlike every domain-scoped resource); the domains list now scopes results to the caller's own domains when they hold `access` without `read`; domain administration modal (rename/resize quota/delete with confirmation), per-domain occupancy progress bars and used/quota text in the domains list, quota shown in MB/GB (08-07-2026)
