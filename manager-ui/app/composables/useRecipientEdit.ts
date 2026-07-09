@@ -16,6 +16,7 @@ export interface RecipientEditItem {
 // domains list's admin modal which needs "admin" AND "domain" together.
 export function useRecipientEdit(domainId: Readonly<Ref<number | null>>, onSaved: () => Promise<void>) {
   const { call } = useApi();
+  const { apiErrorMessage } = useApiError();
   const toast = useToast();
   const { t } = useI18n();
   const auth = useAuthStore();
@@ -50,7 +51,7 @@ export function useRecipientEdit(domainId: Readonly<Ref<number | null>>, onSaved
       await onSaved();
       toast.add({ title: t("recipients.editModal.saved"), color: "success" });
     } catch (err) {
-      toast.add({ title: t("recipients.editModal.saveFailed"), description: (err as Error).message, color: "error" });
+      toast.add({ title: t("recipients.editModal.saveFailed"), description: apiErrorMessage(err), color: "error" });
     } finally {
       editSaving.value = false;
     }

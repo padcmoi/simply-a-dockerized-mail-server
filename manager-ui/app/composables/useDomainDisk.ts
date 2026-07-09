@@ -1,0 +1,40 @@
+const MB = 1024 * 1024;
+
+export interface DomainDisk {
+  totalBytes: number;
+  freeBytes: number;
+  reservedBytes: number;
+  assignableBytes: number;
+}
+
+// What the mail volume still has to hand out to a new domain. Shared by the
+// domains list (capacity card) and the create page (quota ceiling + donut).
+//
+// `GET /domains/disk` demands `domains:read`, a stricter grant than the
+// `domains:create` needed to add one. An account holding create without read
+// therefore gets `null` here rather than a fabricated zero: no ceiling is
+// shown, no value is refused client-side, and the API stays the authority.
+export function useDomainDisk() {
+  const { call } = useApi();
+  const { apiErrorMessage } = useApiError();
+  const toast = useToast();
+  const { t } = useI18n();
+
+  const disk = ref<DomainDisk | null>(null);
+  const diskLoading = ref(false);
+
+  const assignableMb = computed(() => (disk.value ? Math.floor(disk.value.assignableBytes / MB) : null));
+
+  async function loadDisk() {
+    diskLoading.value = true;
+    try {
+      disk.value = await call<DomainDisk>("/domains/disk");
+    } catch (err) {
+      toast.add({ title: t("domains.toast.loadFailed"), description: apiErrorMessage(err), color: "error" });
+    } finally {
+      diskLoading.value = false;
+    }
+  }
+
+  return { disk, diskLoading, assignableMb, loadDisk };
+}

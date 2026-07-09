@@ -3,6 +3,23 @@ export interface Locales {
     name: string;
     language: string;
   };
+  // Mirrors API_ERROR_CODES in manager-api/src/core/common/api-error.ts: the
+  // API sends a code and the values its sentence needs, this side owns the
+  // sentence. Resolved by useApiError().
+  apiErrors: {
+    validation: {
+      failed: string;
+    };
+    recipients: {
+      postmasterReserved: string;
+      alreadyExists: string;
+      notFound: string;
+      postmasterImmutable: string;
+      postmasterUndeletable: string;
+      quotaBelowUsage: string;
+      quotaExceedsDomain: string;
+    };
+  };
   // Sidebar nav destinations only -- one entry per actual link. Anything
   // that isn't a nav link (breadcrumb-only labels, the user dropdown,
   // theme toggle, badges, ...) lives in `layout` instead.
@@ -54,6 +71,12 @@ export interface Locales {
     bytes: string;
     messages: string;
     lastActivity: string;
+    // `virtual_users.last_activity` / `virtual_aliases.last_activity` carry
+    // `ON UPDATE current_timestamp()`: they timestamp the row's last edit, not
+    // mail traffic. The columns keep their postfix-legacy names; the UI says
+    // what they actually hold. Not to be confused with `lastActivity` above,
+    // which labels dovecot's own delivery counter on the quotas page.
+    lastModification: string;
     cancel: string;
     invite: string;
     revoke: string;
@@ -119,6 +142,11 @@ export interface Locales {
     alertTitle: string;
     alertDescription: string;
     listLocked: string;
+    backToList: string;
+    chart: {
+      title: string;
+      pending: string;
+    };
     capacity: {
       title: string;
       hint: string;
@@ -126,6 +154,7 @@ export interface Locales {
       free: string;
       reserved: string;
       assignable: string;
+      allocatable: string;
       occupancy: string;
     };
     form: {
@@ -168,12 +197,19 @@ export interface Locales {
   recipients: {
     alertTitle: string;
     alertDescription: string;
+    backToList: string;
+    chart: {
+      title: string;
+      pending: string;
+    };
     form: {
       title: string;
       domain: string;
       domainPlaceholder: string;
       localPart: string;
+      localPartInvalid: string;
       password: string;
+      passwordMin: string;
       quotaMb: string;
       quotaMin: string;
       quotaMax: string;
@@ -206,13 +242,16 @@ export interface Locales {
   };
   aliases: {
     alertTitle: string;
+    backToList: string;
     form: {
       title: string;
       domain: string;
       domainPlaceholder: string;
       localPart: string;
+      localPartInvalid: string;
       destination: string;
       destinationPlaceholder: string;
+      destinationInvalid: string;
       submit: string;
     };
     table: {
@@ -225,11 +264,19 @@ export interface Locales {
       created: string;
       createFailed: string;
     };
+    editPage: {
+      button: string;
+      title: string;
+      saved: string;
+      saveFailed: string;
+      loadFailed: string;
+    };
   };
   quotas: {
     alertTitle: string;
     perDomain: string;
     perRecipient: string;
+    totalUsed: string;
   };
   sieve: {
     alertTitle: string;

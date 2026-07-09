@@ -5,6 +5,23 @@ export default {
     name: "Simply Mail Server",
     language: "Language",
   },
+  apiErrors: {
+    validation: {
+      failed: "Some fields were rejected",
+    },
+    recipients: {
+      // A bare "@" opens a linked message (@:some.key) for vue-i18n's compiler
+      // and fails the whole file; `{'@'}` is its literal-interpolation escape.
+      postmasterReserved: "postmaster{'@'} is reserved and provisioned automatically for every domain",
+      alreadyExists: "{email} already exists",
+      notFound: "Recipient #{id} no longer exists in {domain}",
+      postmasterImmutable: "The postmaster mailbox is managed automatically and cannot be modified",
+      postmasterUndeletable: "The postmaster mailbox is managed automatically and cannot be deleted",
+      quotaBelowUsage: "The quota cannot go below the {usedMb} MB {email} already stores",
+      quotaExceedsDomain:
+        "Only {availableMb} MB left on {domain}: its quota is {domainQuotaMb} MB, of which {allocatedMb} MB are already allocated to its other recipients",
+    },
+  },
   nav: {
     dashboard: "Dashboard",
     domains: "Domains",
@@ -53,6 +70,7 @@ export default {
     bytes: "Bytes",
     messages: "Messages",
     lastActivity: "Last activity",
+    lastModification: "Last modification",
     cancel: "Cancel",
     invite: "Invite",
     revoke: "Revoke",
@@ -118,6 +136,11 @@ export default {
     alertTitle: "Mail domains served by postfix.",
     alertDescription: "Creating one provisions the inactive postmaster and the DKIM key.",
     listLocked: "You don't have permission to view the domain list.",
+    backToList: "Back to domains",
+    chart: {
+      title: "Mail volume allocation",
+      pending: "This domain",
+    },
     capacity: {
       title: "Mail volume capacity",
       hint: "Every domain reserves at least 10 MB, no unlimited quota",
@@ -125,6 +148,7 @@ export default {
       free: "Free on disk",
       reserved: "Reserved by domains",
       assignable: "Still assignable",
+      allocatable: "Total allocatable",
       occupancy: "Occupancy (reserved / total)",
     },
     form: {
@@ -167,12 +191,19 @@ export default {
   recipients: {
     alertTitle: "Mailbox addresses (local-part plus domain destinations postfix delivers to).",
     alertDescription: "Passwords are hashed with SHA512-CRYPT before storage.",
+    backToList: "Back to recipients",
+    chart: {
+      title: "Domain quota allocation",
+      pending: "This recipient",
+    },
     form: {
       title: "Add a recipient",
       domain: "Domain",
       domainPlaceholder: "Pick a domain",
       localPart: "Local part",
+      localPartInvalid: "Letters, digits and . _ + - only",
       password: "Password",
+      passwordMin: "Minimum {value} characters",
       quotaMb: "Quota (MB)",
       quotaMin: "Minimum {value} MB",
       quotaMax: "Maximum {value} MB left on the domain",
@@ -205,13 +236,16 @@ export default {
   },
   aliases: {
     alertTitle: "Forward an address (or a whole domain) to one or more real recipients.",
+    backToList: "Back to aliases",
     form: {
       title: "Add an alias",
       domain: "Domain",
       domainPlaceholder: "Pick a domain",
       localPart: "Local part",
+      localPartInvalid: "Letters, digits and . _ + - only, no domain",
       destination: "Destination",
       destinationPlaceholder: "real.example.com",
+      destinationInvalid: "Must be a valid email address",
       submit: "Add",
     },
     table: {
@@ -224,11 +258,19 @@ export default {
       created: "Alias created",
       createFailed: "Create failed",
     },
+    editPage: {
+      button: "Edit",
+      title: "Edit {source}",
+      saved: "Alias updated",
+      saveFailed: "Update failed",
+      loadFailed: "Could not load this alias",
+    },
   },
   quotas: {
     alertTitle: "Live mailbox usage maintained by the dovecot dict-sql backend.",
     perDomain: "Per domain",
     perRecipient: "Per recipient",
+    totalUsed: "Total used",
   },
   sieve: {
     alertTitle: "SQL blacklist enforced by postfix at MAIL FROM time.",
@@ -370,7 +412,7 @@ export default {
       unlimited: "Unlimited",
     },
     topMailboxes: {
-      title: "Top 10 mailboxes by size",
+      title: "Top {count} mailboxes by size",
       noData: "No mailbox data yet",
     },
     dkim: {
