@@ -22,7 +22,10 @@ export class AdminDomainsController {
   constructor(private readonly svc: DomainsService) {}
 
   @Patch(":domainId/rename")
-  @RequireGlobalPermissions([{ resource: "domains", actions: ["access", "create", "modify", "delete"] }])
+  @RequireGlobalPermissions([
+    { resource: "domains", actions: ["access"] },
+    { resource: "superadmin", actions: ["access", "read", "create", "modify", "delete"] },
+  ])
   @RenameDomainDocs()
   rename(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -32,7 +35,10 @@ export class AdminDomainsController {
   }
 
   @Patch(":domainId/quota")
-  @RequireGlobalPermissions([{ resource: "domains", actions: ["access", "create", "modify", "delete"] }])
+  @RequireGlobalPermissions([
+    { resource: "domains", actions: ["access"] },
+    { resource: "superadmin", actions: ["access", "read", "modify"] },
+  ])
   @ResizeDomainQuotaDocs()
   resizeQuota(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -42,7 +48,10 @@ export class AdminDomainsController {
   }
 
   @Delete(":domainId")
-  @RequireGlobalPermissions([{ resource: "domains", actions: ["access", "create", "modify", "delete"] }])
+  @RequireGlobalPermissions([
+    { resource: "domains", actions: ["access"] },
+    { resource: "superadmin", actions: ["access", "read", "delete"] },
+  ])
   @RemoveDomainDocs()
   remove(@Param("domainId", ParseIntPipe) domainId: number) {
     return this.svc.remove(domainId);
