@@ -6,7 +6,7 @@ import type { Request } from "express";
 import { Repository } from "typeorm";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
 import { CustomPermissionGuardService } from "./custom-permission-guard.service";
-import { PermissionRequirement, REQUIRE_DOMAIN_PERMISSIONS_KEY } from "./require-permissions.decorator";
+import { DomainPermissionRequirement, REQUIRE_DOMAIN_PERMISSIONS_KEY } from "./require-permissions.decorator";
 
 type PermissionRequest = Request & {
   user?: { id: number; username: string; isRoot: boolean };
@@ -55,7 +55,7 @@ export class DomainPermissionGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    const required = this.reflector.getAllAndOverride<PermissionRequirement[] | undefined>(REQUIRE_DOMAIN_PERMISSIONS_KEY, [
+    const required = this.reflector.getAllAndOverride<DomainPermissionRequirement[] | undefined>(REQUIRE_DOMAIN_PERMISSIONS_KEY, [
       ctx.getHandler(),
       ctx.getClass(),
     ]);
@@ -77,13 +77,13 @@ export class DomainPermissionGuard implements CanActivate {
     const domain = await this.domains.findOne({ where: { id: domainId } });
     if (domain && domain.ownerId === user.id) return true;
 
-    const remaining: PermissionRequirement[] = [];
+    const remaining: DomainPermissionRequirement[] = [];
     for (const entry of required) {
       if (entry.resource !== "domain") {
         remaining.push(entry);
         continue;
       }
-      const stillNeeded: string[] = [];
+      const stillNeeded: DomainPermissionRequirement["actions"][number][] = [];
       for (const action of entry.actions) {
         const viaGlobal = await isGranted(() => this.cpg.guard.assertOne.global(user.id, "domains", { acrud: [action] }));
         if (!viaGlobal) stillNeeded.push(action);

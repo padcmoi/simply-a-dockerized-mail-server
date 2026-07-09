@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@
 import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
 import { CustomPermissionGuardService } from "./custom-permission-guard.service";
-import { PermissionRequirement, REQUIRE_GLOBAL_PERMISSIONS_KEY } from "./require-permissions.decorator";
+import { GlobalPermissionRequirement, REQUIRE_GLOBAL_PERMISSIONS_KEY } from "./require-permissions.decorator";
 
 type PermissionRequest = Request & {
   user?: { id: number; username: string; isRoot: boolean };
@@ -19,7 +19,7 @@ export class GlobalPermissionGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
-    const required = this.reflector.getAllAndOverride<PermissionRequirement[] | undefined>(REQUIRE_GLOBAL_PERMISSIONS_KEY, [
+    const required = this.reflector.getAllAndOverride<GlobalPermissionRequirement[] | undefined>(REQUIRE_GLOBAL_PERMISSIONS_KEY, [
       ctx.getHandler(),
       ctx.getClass(),
     ]);

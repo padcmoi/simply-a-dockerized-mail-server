@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- refactor(api): type `@RequireGlobalPermissions`/`@RequireDomainPermissions` from the ACL catalog itself -- the generic `PermissionRequirement` (raw `string` resource/actions) is replaced by `GlobalPermissionRequirement`/`DomainPermissionRequirement`, built from `GLOBAL_RESOURCES`/`DOMAIN_RESOURCES` and `PERMISSION_ACTIONS`, so a wrong resource or action string is now a compile error at the call site instead of a runtime config error (09-07-2026)
 - feat(ui): `superadmin` resource label ("Super admin" / "Super administrateur") in the group global-permissions grid, wired into `usePermissionLabels`'s resource map (09-07-2026)
 - feat(api): new `superadmin` global resource -- checking its `access` action in the group permission grid cascades to grant full CRUD on every other global resource at once, via `GLOBAL_RESOURCES_DEPENDS_ON` generated from `GLOBAL_RESOURCES` (09-07-2026)
 - style(api): format `permission-catalog.ts`'s resource arrays one entry per line (08-07-2026)
