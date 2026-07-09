@@ -40,7 +40,7 @@ const { call } = useApi();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 
-setBreadcrumb([{ label: t("nav.sieveLong") }]);
+setBreadcrumb([{ label: t("layout.sieveLong") }]);
 
 const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<Reject>(
   "sieve-reject-senders-list",

@@ -239,7 +239,7 @@ const dkimStatusText = computed(() => {
       >
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-shield-alert" class="text-warning text-xl" />
-          <span class="font-medium">{{ $t("nav.application") }}</span>
+          <span class="font-medium">{{ $t("nav.admin") }}</span>
           <UIcon v-if="dkimLoading" name="i-lucide-loader-2" class="ml-auto text-muted animate-spin" />
           <UTooltip v-else :text="dkimStatusText" class="ml-auto">
             <UIcon :name="dkimStatusIcon" :class="dkimStatusColor" />

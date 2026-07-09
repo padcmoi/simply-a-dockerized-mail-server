@@ -12,7 +12,7 @@ export function provideBreadcrumb() {
   provide(BreadcrumbKey, {
     items,
     set: (v) => {
-      items.value = [{ label: t("nav.home"), icon: "i-lucide-house", to: "/" }, ...v];
+      items.value = [{ label: t("layout.home"), icon: "i-lucide-house", to: "/" }, ...v];
     },
   });
   return items;

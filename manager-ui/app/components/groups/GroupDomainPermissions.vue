@@ -22,7 +22,7 @@ const domainSets = reactive(new Map<number, Set<string>>());
 
 const { t } = useI18n();
 const { call } = useApi();
-const { resourceLabels, actionLabels } = usePermissionLabels();
+const { domainResourceLabels: resourceLabels, actionLabels } = usePermissionLabels();
 
 const { data: catalog, status: catalogStatus } = useAsyncData<PermissionsCatalog | null>(
   "groups-permissions-catalog",

@@ -13,7 +13,7 @@ const globalSet = reactive(new Set<string>());
 
 const { t } = useI18n();
 const { call } = useApi();
-const { resourceLabels, actionLabels } = usePermissionLabels();
+const { globalResourceLabels: resourceLabels, actionLabels } = usePermissionLabels();
 
 // Single source of truth for the resource/action catalog is the API, not a
 // hardcoded copy here -- see GroupsController.getPermissionsCatalog.

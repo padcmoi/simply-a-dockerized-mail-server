@@ -3,8 +3,10 @@ export interface Locales {
     name: string;
     language: string;
   };
+  // Sidebar nav destinations only -- one entry per actual link. Anything
+  // that isn't a nav link (breadcrumb-only labels, the user dropdown,
+  // theme toggle, badges, ...) lives in `layout` instead.
   nav: {
-    home: string;
     dashboard: string;
     domains: string;
     rspamd: string;
@@ -12,13 +14,16 @@ export interface Locales {
     recipients: string;
     aliases: string;
     quotas: string;
-    application: string;
+    admin: string;
     sieve: string;
-    sieveLong: string;
     accounts: string;
     groups: string;
-    profile: string;
     apiTokens: string;
+  };
+  layout: {
+    home: string;
+    sieveLong: string;
+    profile: string;
     signOut: string;
     appearance: string;
     light: string;
@@ -617,20 +622,25 @@ export interface Locales {
         domain: string;
       };
       resources: {
-        sieve: string;
-        rspamd: string;
-        postfix: string;
-        accounts: string;
-        apiTokens: string;
-        groups: string;
-        domains: string;
-        domain: string;
-        recipients: string;
-        aliases: string;
-        quotas: string;
-        dkim: string;
-        admin: string;
-        superadmin: string;
+        global: {
+          sieve: string;
+          rspamd: string;
+          postfix: string;
+          accounts: string;
+          apiTokens: string;
+          groups: string;
+          domains: string;
+          superadmin: string;
+        };
+        domain: {
+          domain: string;
+          recipients: string;
+          aliases: string;
+          quotas: string;
+          rspamd: string;
+          admin: string;
+          dkim: string;
+        };
       };
       actionsLabel: {
         access: string;

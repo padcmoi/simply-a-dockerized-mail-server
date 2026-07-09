@@ -115,7 +115,7 @@ export function useNav(onSignOut: () => Promise<void>) {
       ...(canViewDomain(domainId, "admin")
         ? [
             {
-              label: t("nav.application"),
+              label: t("nav.admin"),
               icon: "i-lucide-shield-alert",
               to: `${domainHome}/app`,
               active: isActive(`${domainHome}/app`),
@@ -136,7 +136,7 @@ export function useNav(onSignOut: () => Promise<void>) {
   });
 
   const userItems = computed<DropdownMenuItem[][]>(() => [
-    [{ label: t("nav.profile"), icon: "i-lucide-user", to: "/profile" }],
+    [{ label: t("layout.profile"), icon: "i-lucide-user", to: "/profile" }],
     [
       {
         label: t("app.language"),
@@ -153,11 +153,11 @@ export function useNav(onSignOut: () => Promise<void>) {
         })),
       },
       {
-        label: t("nav.appearance"),
+        label: t("layout.appearance"),
         icon: "i-lucide-sun-moon",
         children: [
           {
-            label: t("nav.light"),
+            label: t("layout.light"),
             icon: "i-lucide-sun",
             type: "checkbox",
             checked: colorMode.value === "light",
@@ -167,7 +167,7 @@ export function useNav(onSignOut: () => Promise<void>) {
             onSelect: (e: Event) => e.preventDefault(),
           },
           {
-            label: t("nav.dark"),
+            label: t("layout.dark"),
             icon: "i-lucide-moon",
             type: "checkbox",
             checked: colorMode.value === "dark",
@@ -177,7 +177,7 @@ export function useNav(onSignOut: () => Promise<void>) {
             onSelect: (e: Event) => e.preventDefault(),
           },
           {
-            label: t("nav.system"),
+            label: t("layout.system"),
             icon: "i-lucide-monitor",
             type: "checkbox",
             checked: colorMode.preference === "system",
@@ -191,7 +191,7 @@ export function useNav(onSignOut: () => Promise<void>) {
     ],
     [
       {
-        label: t("nav.signOut"),
+        label: t("layout.signOut"),
         icon: "i-lucide-log-out",
         onSelect: onSignOut,
       },

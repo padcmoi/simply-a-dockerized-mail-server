@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- refactor(ui): keep the `nav` i18n namespace for sidebar link destinations only and move everything else (breadcrumb-only labels, the user dropdown menu, theme toggle, sidebar collapse button, badges) to a new `layout` namespace; the domain administration page goes back to the "Administration" label under `nav.admin` (09-07-2026)
+- refactor(ui): split the permission grid's resource labels into two fully distinct groups, `globalResourceLabels` and `domainResourceLabels`, mirroring `GLOBAL_RESOURCES`/`DOMAIN_RESOURCES` in the backend catalog; the i18n keys follow with `groups.permissions.resources.global.*` and `.domain.*` instead of one flat merged map (09-07-2026)
 - feat(ui): show the domain administration button (rename/resize quota/delete) only to root or to an account holding the global `superadmin` resource's `access` action; owning a domain, at any domain-tier grant level, no longer reveals it (09-07-2026)
 - feat(api): gate the `/admin/domains/:domainId` routes (rename, quota, delete) on the global `superadmin` resource instead of full CRUD on `domains`; each route asks for the `superadmin` actions matching its own job, so a domain owner never qualifies whatever their domain-tier grants (09-07-2026)
 - refactor(api): type `@RequireGlobalPermissions`/`@RequireDomainPermissions` from the ACL catalog itself -- the generic `PermissionRequirement` (raw `string` resource/actions) is replaced by `GlobalPermissionRequirement`/`DomainPermissionRequirement`, built from `GLOBAL_RESOURCES`/`DOMAIN_RESOURCES` and `PERMISSION_ACTIONS`, so a wrong resource or action string is now a compile error at the call site instead of a runtime config error (09-07-2026)

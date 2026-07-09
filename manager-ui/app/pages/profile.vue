@@ -52,7 +52,7 @@ const perms = usePermissionsStore();
 const { call } = useApi();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
-setBreadcrumb([{ label: t("nav.profile") }]);
+setBreadcrumb([{ label: t("layout.profile") }]);
 
 const schema = z.object({
   name: z.string().max(255).optional(),
@@ -157,7 +157,7 @@ const permissionsLoading = computed(() => permissionsStatus.value !== "success" 
             <p class="font-medium truncate">{{ auth.session?.username }}</p>
             <div class="flex flex-wrap gap-1">
               <UBadge v-if="auth.session?.isRoot" color="warning" variant="subtle" icon="i-lucide-shield">
-                {{ t("nav.rootBadge") }}
+                {{ t("layout.rootBadge") }}
               </UBadge>
               <template v-else-if="auth.session?.groups?.length">
                 <UBadge
@@ -172,7 +172,7 @@ const permissionsLoading = computed(() => permissionsStatus.value !== "success" 
                 </UBadge>
               </template>
               <UBadge v-else color="neutral" variant="subtle" icon="i-lucide-user-x">
-                {{ t("nav.noGroupBadge") }}
+                {{ t("layout.noGroupBadge") }}
               </UBadge>
             </div>
           </div>

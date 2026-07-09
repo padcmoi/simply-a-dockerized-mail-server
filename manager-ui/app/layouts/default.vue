@@ -13,10 +13,10 @@ const headerTitle = computed(() => {
     "/domains": t("nav.domains"),
     "/rspamd": t("nav.rspamd"),
     "/postfix": t("nav.postfix"),
-    "/sieve": t("nav.sieveLong"),
+    "/sieve": t("layout.sieveLong"),
     "/accounts": t("nav.accounts"),
     "/groups": t("nav.groups"),
-    "/profile": t("nav.profile"),
+    "/profile": t("layout.profile"),
     "/api-tokens": t("nav.apiTokens"),
   };
   for (const k of Object.keys(map)) if (route.path.startsWith(k)) return map[k];
@@ -33,7 +33,7 @@ const userAvatar = computed(() => {
   return { alt: auth.session?.name ?? auth.session?.username ?? "?" };
 });
 
-const rootBadge = computed(() => (auth.session?.isRoot ? { label: t("nav.rootBadge"), color: "warning" as const } : null));
+const rootBadge = computed(() => (auth.session?.isRoot ? { label: t("layout.rootBadge"), color: "warning" as const } : null));
 
 const domainStore = useDomainStore();
 const { t } = useI18n();
@@ -160,7 +160,7 @@ function closeDomain() {
           icon="i-lucide-panel-left"
           color="neutral"
           variant="ghost"
-          :aria-label="t('nav.toggleSidebar')"
+          :aria-label="t('layout.toggleSidebar')"
           @click="toggleSidebar"
         />
         <USeparator orientation="vertical" class="h-5" />

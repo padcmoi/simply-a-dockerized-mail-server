@@ -116,7 +116,7 @@ watchEffect(() => {
   setBreadcrumb([
     { label: t("nav.domains"), to: "/domains" },
     { label: domainFqdn.value, to: `/domains/${domainFqdn.value}` },
-    { label: t("nav.application") },
+    { label: t("nav.admin") },
   ]);
 });
 
