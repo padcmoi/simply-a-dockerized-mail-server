@@ -6,7 +6,11 @@ import { ApiPaginationQuery } from "../../../core/common/pagination.openapi";
 // it's the existing default -- keeps `resolveSortColumn`'s fallback
 // type-safe without a cast. Lives here (not the controller) since the
 // controller already imports from this file -- the reverse would be circular.
-export const QUOTAS_SORTABLE_COLUMNS = ["email", "bytes", "messages", "lastActivity", "id"] as const;
+// `quota` is not a virtual_quota_users column: it belongs to virtual_users and
+// is joined in (see `snapshot`), the mirror image of recipients.service.ts
+// joining `usedBytes` the other way round. Sorting on it takes its own branch
+// there rather than an `order` on the entity.
+export const QUOTAS_SORTABLE_COLUMNS = ["email", "quota", "bytes", "messages", "lastActivity", "id"] as const;
 
 export const QuotasApi = () =>
   applyDecorators(
@@ -23,6 +27,7 @@ const recipientQuotaExample = {
   id: 5,
   domain: "example.com",
   email: "user@example.com",
+  quota: "104857600",
   bytes: "52428800",
   messages: "21",
   lastActivity: "2026-07-04T11:30:00.000Z",
@@ -34,9 +39,11 @@ export const GetDomainQuotasDocs = () =>
     ApiOperation({
       summary: "Live quota snapshot for this domain: aggregate counters + paginated per-recipient counters from dovecot",
       description:
-        "Reads virtual_quota_domains and virtual_quota_users as-is (no aggregation performed here). `domain` is " +
-        "null if dovecot has not yet written an aggregate row for this domain. `recipients` is `{ items, total }` " +
-        "when `limit` is passed, or a bare array (unpaginated, sorted by email) otherwise.",
+        "Reads virtual_quota_domains and virtual_quota_users as-is (no aggregation performed here), and adds the " +
+        "reserved `quota` each counter row is measured against: virtual_domains.quota for the aggregate, " +
+        "virtual_users.quota for every recipient. `domain` is null if dovecot has not yet written an aggregate row " +
+        "for this domain. `recipients` is `{ items, total }` when `limit` is passed, or a bare array (unpaginated, " +
+        "sorted by email) otherwise.",
     }),
     ApiResponse({
       status: 200,
@@ -46,6 +53,7 @@ export const GetDomainQuotasDocs = () =>
           domain: {
             id: 1,
             domain: "example.com",
+            quota: "157286400",
             bytes: "104857600",
             messages: "42",
             lastActivity: "2026-07-04T12:00:00.000Z",
