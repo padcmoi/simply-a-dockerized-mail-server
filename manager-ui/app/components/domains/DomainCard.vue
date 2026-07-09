@@ -7,16 +7,8 @@ const props = defineProps<{
 }>();
 
 const quotaLabel = computed(() => `${formatBytes(Number(props.item.usedBytes))} / ${formatBytes(Number(props.item.quota))}`);
-const occupancyPercent = computed(() => {
-  const quota = Number(props.item.quota);
-  if (!Number.isFinite(quota) || quota <= 0) return 0;
-  return Math.min(100, (Number(props.item.usedBytes) / quota) * 100);
-});
-const occupancyColor = computed(() => {
-  if (occupancyPercent.value > 90) return "error";
-  if (occupancyPercent.value > 70) return "warning";
-  return "success";
-});
+const percent = computed(() => occupancyPercent(Number(props.item.quota), Number(props.item.usedBytes)));
+const color = computed(() => occupancyColor(percent.value));
 
 const { t } = useI18n();
 </script>
@@ -38,21 +30,25 @@ const { t } = useI18n();
         <span class="text-muted w-24 shrink-0">{{ t("domains.table.quotaMb") }}</span>
         <span>{{ quotaLabel }}</span>
       </div>
-      <UProgress :model-value="occupancyPercent" :color="occupancyColor" size="xs" />
+      <UProgress :model-value="percent" :color="color" size="xs" />
     </div>
-    <div class="mt-3 pt-3 border-t border-default flex justify-between gap-2">
-      <UButton icon="i-lucide-arrow-right" size="sm" color="primary" variant="outline" @click="emit('open')">
-        {{ t("common.manage") }}
-      </UButton>
+    <!-- `justify-end` with `me-auto` rather than `justify-between`: the primary
+         action stays pinned right even when the account cannot administer and
+         the left button is not rendered at all. -->
+    <div class="mt-3 pt-3 border-t border-default flex justify-end gap-2">
       <UButton
         v-if="canAdminister"
         icon="i-lucide-shield-alert"
         size="sm"
         color="warning"
         variant="outline"
+        class="me-auto"
         @click="emit('administer')"
       >
         {{ t("domains.adminModal.button") }}
+      </UButton>
+      <UButton icon="i-lucide-arrow-right" size="sm" color="primary" variant="outline" @click="emit('open')">
+        {{ t("common.manage") }}
       </UButton>
     </div>
   </UCard>

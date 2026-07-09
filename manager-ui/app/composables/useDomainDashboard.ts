@@ -72,6 +72,11 @@ export interface PostfixQueueStats {
   available: boolean;
 }
 
+// How many mailboxes the "fullest mailboxes" chart lists. Kept in step with
+// the `{count}` the i18n title interpolates, so the heading can never promise
+// more rows than the chart draws.
+export const TOP_MAILBOXES = 5;
+
 interface MainData {
   domain: Domain | null;
   recipients: Recipient[];
@@ -127,7 +132,7 @@ export function useDomainDashboard() {
         ...q,
         quota: quotaByEmail.get(q.email) ?? "0",
       }));
-      const topMailboxes = [...enriched].sort((a, b) => occupancyRate(b) - occupancyRate(a)).slice(0, 10);
+      const topMailboxes = [...enriched].sort((a, b) => occupancyRate(b) - occupancyRate(a)).slice(0, TOP_MAILBOXES);
       return { domain: found, recipients: recs, aliases: als, quota: quotaData.domain, topMailboxes };
     },
     {
@@ -283,7 +288,10 @@ export function useDomainDashboard() {
   const barChartData = computed<ChartData<"bar">>(() => {
     const mailboxes = topMailboxes.value;
     return {
-      labels: mailboxes.map((r) => r.email),
+      // Local-part only: every mailbox on this chart belongs to the domain the
+      // page is already titled after, so the suffix is 20 identical characters
+      // eating the axis. The tooltip still gives the full address.
+      labels: mailboxes.map((r) => r.email.split("@")[0]),
       datasets: [
         {
           data: mailboxes.map((r) => {
@@ -317,6 +325,9 @@ export function useDomainDashboard() {
       legend: { display: false },
       tooltip: {
         callbacks: {
+          // The axis label was trimmed to the local-part, so the full address
+          // has to reappear somewhere: the tooltip title is that somewhere.
+          title: (items) => topMailboxes.value[items[0]?.dataIndex ?? 0]?.email ?? "",
           label: (ctx) => {
             const m = topMailboxes.value[ctx.dataIndex];
             const bytes = formatBytes(Number(m?.bytes ?? 0));

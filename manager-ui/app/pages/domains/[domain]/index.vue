@@ -194,7 +194,7 @@ const dkimStatusText = computed(() => {
       <UCard>
         <template #header>
           <h2 class="font-semibold">
-            {{ $t("domainDashboard.topMailboxes.title") }}
+            {{ $t("domainDashboard.topMailboxes.title", { count: TOP_MAILBOXES }) }}
           </h2>
         </template>
         <div v-if="loading && !domain" class="space-y-2 py-2">

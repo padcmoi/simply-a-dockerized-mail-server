@@ -14,5 +14,15 @@ export default defineAppConfig({
         description: "select-none",
       },
     },
+    // Same omission on the dropdown menu: its `item` slot only carries
+    // `data-disabled:cursor-not-allowed`, so an enabled entry keeps the text
+    // cursor. Nested entries are covered too (the account menu's language and
+    // appearance submenus): DropdownMenuContent passes this override down to
+    // the sub-content it renders.
+    dropdownMenu: {
+      slots: {
+        item: "cursor-pointer",
+      },
+    },
   },
 });
