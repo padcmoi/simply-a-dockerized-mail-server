@@ -12,11 +12,10 @@ export interface DomainAdminItem {
 }
 
 // Rename/quota/delete from the domains list -- gated more strictly than the
-// rest of the Administration surface (see domains.controller.ts): full CRUD
-// on the GLOBAL "domains" resource (deliberately NOT bypassed by owning the
-// domain, unlike every domain-tier resource) AND the domain-tier "domain"
-// resource's own matching action (modify to rename/resize, delete to
-// remove) on this specific domainId.
+// rest of the Administration surface (see admin-domains.controller.ts):
+// root or the global "superadmin" resource's own "access" action only.
+// Deliberately NOT domain-tier: a domain owner (even a "domain root") never
+// qualifies, no matter what domain-tier grants they hold.
 export function useDomainAdmin(onSaved: () => Promise<void>) {
   const { call } = useApi();
   const toast = useToast();
@@ -29,31 +28,12 @@ export function useDomainAdmin(onSaved: () => Promise<void>) {
   const adminModalItem = ref<DomainAdminItem | null>(null);
   const adminSaving = ref(false);
 
-  function hasGlobalDomainsFullCrud() {
-    return (
-      perms.hasGlobal("domains", "access") &&
-      perms.hasGlobal("domains", "create") &&
-      perms.hasGlobal("domains", "modify") &&
-      perms.hasGlobal("domains", "delete")
-    );
+  function canAdminister() {
+    return auth.session?.isRoot === true || perms.hasGlobal("superadmin", "access");
   }
 
-  function canAdminister(domainId: number) {
-    return (
-      auth.session?.isRoot === true ||
-      (hasGlobalDomainsFullCrud() &&
-        perms.hasDomain(domainId, "domain", "access") &&
-        perms.hasDomain(domainId, "domain", "modify"))
-    );
-  }
-
-  function canDeleteDomain(domainId: number) {
-    return (
-      auth.session?.isRoot === true ||
-      (hasGlobalDomainsFullCrud() &&
-        perms.hasDomain(domainId, "domain", "access") &&
-        perms.hasDomain(domainId, "domain", "delete"))
-    );
+  function canDeleteDomain() {
+    return auth.session?.isRoot === true || perms.hasGlobal("superadmin", "access");
   }
 
   function openAdminModal(item: DomainAdminItem) {

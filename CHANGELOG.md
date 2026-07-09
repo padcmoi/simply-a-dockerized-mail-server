@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): show the domain administration button (rename/resize quota/delete) only to root or to an account holding the global `superadmin` resource's `access` action; owning a domain, at any domain-tier grant level, no longer reveals it (09-07-2026)
 - feat(api): gate the `/admin/domains/:domainId` routes (rename, quota, delete) on the global `superadmin` resource instead of full CRUD on `domains`; each route asks for the `superadmin` actions matching its own job, so a domain owner never qualifies whatever their domain-tier grants (09-07-2026)
 - refactor(api): type `@RequireGlobalPermissions`/`@RequireDomainPermissions` from the ACL catalog itself -- the generic `PermissionRequirement` (raw `string` resource/actions) is replaced by `GlobalPermissionRequirement`/`DomainPermissionRequirement`, built from `GLOBAL_RESOURCES`/`DOMAIN_RESOURCES` and `PERMISSION_ACTIONS`, so a wrong resource or action string is now a compile error at the call site instead of a runtime config error (09-07-2026)
 - feat(ui): `superadmin` resource label ("Super admin" / "Super administrateur") in the group global-permissions grid, wired into `usePermissionLabels`'s resource map (09-07-2026)

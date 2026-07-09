@@ -278,7 +278,7 @@ onMounted(loadDisk);
           <template #actions-cell="{ row }">
             <div class="flex justify-end gap-2">
               <UButton
-                v-if="canAdminister(row.original.id)"
+                v-if="canAdminister()"
                 icon="i-lucide-shield-alert"
                 color="warning"
                 variant="outline"
@@ -301,7 +301,7 @@ onMounted(loadDisk);
           v-else
           :key="item.id"
           :item="item"
-          :can-administer="canAdminister(item.id)"
+          :can-administer="canAdminister()"
           @open="openDomain(item)"
           @administer="openAdminModal(item)"
         />
@@ -317,7 +317,7 @@ onMounted(loadDisk);
       :saving="adminSaving"
       :min-quota-mb="MIN_QUOTA_MB"
       :max-quota-mb="adminMaxQuotaMb"
-      :can-delete="canDeleteDomain(adminModalItem.id)"
+      :can-delete="canDeleteDomain()"
       @save="saveAdmin"
       @delete="deleteFromAdminModal"
     />
