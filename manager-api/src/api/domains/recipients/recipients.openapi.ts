@@ -168,8 +168,18 @@ export const CreateRecipientDocs = () =>
       status: 400,
       description:
         "Body validation failed, domainId is not a valid integer, or the quota exceeds what the domain has left " +
-        "(its own quota minus the quotas already allocated to its other recipients)",
-      schema: { example: { message: "Validation failed", issues: [] } },
+        "(its own quota minus the quotas already allocated to its other recipients). `code` and `params` let a " +
+        "localised client build its own sentence; `message` is the English one.",
+      schema: {
+        example: {
+          statusCode: 400,
+          code: "recipients.quotaExceedsDomain",
+          params: { domain: "example.com", availableMb: 64, domainQuotaMb: 117, allocatedMb: 53 },
+          message:
+            "Recipient quota exceeds what example.com has left: 64 MB available " +
+            "(domain quota 117 MB, 53 MB already allocated to other recipients)",
+        },
+      },
     }),
     ApiResponse({
       status: 403,
@@ -183,7 +193,14 @@ export const CreateRecipientDocs = () =>
     ApiResponse({
       status: 409,
       description: "localPart is 'postmaster' (reserved), or the recipient email already exists",
-      schema: { example: { statusCode: 409, message: "Recipient jdoe@example.com already exists" } },
+      schema: {
+        example: {
+          statusCode: 409,
+          code: "recipients.alreadyExists",
+          params: { email: "jdoe@example.com" },
+          message: "Recipient jdoe@example.com already exists",
+        },
+      },
     })
   );
 

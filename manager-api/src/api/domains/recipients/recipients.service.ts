@@ -1,6 +1,7 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { HttpStatus, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
+import { ApiError } from "../../../core/common/api-error";
 import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { sha512crypt } from "../../../core/common/sha512-crypt";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
@@ -24,7 +25,7 @@ function isPostmaster(email: string, domain: string) {
 // fallback type-safe without a cast. `usedBytes` isn't a real virtual_users
 // column (it's dovecot's own counter, joined from virtual_quota_users, see
 // `list()`) -- sorting by it takes a dedicated branch there.
-export const RECIPIENTS_SORTABLE_COLUMNS = ["email", "quota", "active", "usedBytes", "id"] as const;
+export const RECIPIENTS_SORTABLE_COLUMNS = ["email", "quota", "active", "usedBytes", "lastActivity", "id"] as const;
 
 // VirtualUser is the ORM mapping for the `virtual_users` postfix table; the
 // table name is dictated by postfix conventions and not under our control.
@@ -101,7 +102,12 @@ export class RecipientsService {
 
   async get(id: number, domain: string) {
     const found = await this.recipients.findOne({ where: { id, domain } });
-    if (!found) throw new NotFoundException(`Recipient #${id} not found in ${domain}`);
+    if (!found) {
+      throw new ApiError(HttpStatus.NOT_FOUND, "recipients.notFound", `Recipient #${id} not found in ${domain}`, {
+        id,
+        domain,
+      });
+    }
     return found;
   }
 
@@ -141,7 +147,12 @@ export class RecipientsService {
     if (quota >= used) return;
 
     const mb = (bytes: number) => Math.ceil(bytes / (1024 * 1024));
-    throw new BadRequestException(`Recipient quota cannot be lowered below the ${mb(used)} MB ${email} already stores`);
+    throw new ApiError(
+      HttpStatus.BAD_REQUEST,
+      "recipients.quotaBelowUsage",
+      `Recipient quota cannot be lowered below the ${mb(used)} MB ${email} already stores`,
+      { email, usedMb: mb(used) }
+    );
   }
 
   // `recipient` given = this is a resize: never refuse a value at or below what
@@ -153,19 +164,32 @@ export class RecipientsService {
     if (quota <= available) return;
 
     const mb = (bytes: number) => Math.floor(bytes / (1024 * 1024));
-    throw new BadRequestException(
-      `Recipient quota exceeds what ${domain} has left: ${mb(Math.max(available, 0))} MB available ` +
-        `(domain quota ${mb(domainQuota)} MB, ${mb(allocated)} MB already allocated to other recipients)`
+    const params = {
+      domain,
+      availableMb: mb(Math.max(available, 0)),
+      domainQuotaMb: mb(domainQuota),
+      allocatedMb: mb(allocated),
+    };
+    throw new ApiError(
+      HttpStatus.BAD_REQUEST,
+      "recipients.quotaExceedsDomain",
+      `Recipient quota exceeds what ${domain} has left: ${params.availableMb} MB available ` +
+        `(domain quota ${params.domainQuotaMb} MB, ${params.allocatedMb} MB already allocated to other recipients)`,
+      params
     );
   }
 
   async create(input: CreateRecipientDto, domain: string) {
     if (input.localPart.toLowerCase() === "postmaster") {
-      throw new ConflictException("postmaster@ is reserved and provisioned automatically for every domain");
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        "recipients.postmasterReserved",
+        "postmaster@ is reserved and provisioned automatically for every domain"
+      );
     }
     const email = `${input.localPart}@${domain}`;
     if (await this.recipients.findOne({ where: { email } })) {
-      throw new ConflictException(`Recipient ${email} already exists`);
+      throw new ApiError(HttpStatus.CONFLICT, "recipients.alreadyExists", `Recipient ${email} already exists`, { email });
     }
     await this.assertQuotaFitsDomain(domain, input.quota);
     return this.recipients.save(
@@ -187,7 +211,11 @@ export class RecipientsService {
   async update(id: number, input: UpdateRecipientDto, domain: string) {
     const current = await this.get(id, domain);
     if (isPostmaster(current.email, domain)) {
-      throw new ForbiddenException("postmaster@ is managed automatically and cannot be modified");
+      throw new ApiError(
+        HttpStatus.FORBIDDEN,
+        "recipients.postmasterImmutable",
+        "postmaster@ is managed automatically and cannot be modified"
+      );
     }
     if (input.password) current.password = await sha512crypt(input.password);
     if (input.quota !== undefined) {
@@ -203,7 +231,7 @@ export class RecipientsService {
   async remove(id: number, domain: string) {
     const current = await this.get(id, domain);
     if (isPostmaster(current.email, domain)) {
-      throw new ForbiddenException("postmaster@ cannot be deleted");
+      throw new ApiError(HttpStatus.FORBIDDEN, "recipients.postmasterUndeletable", "postmaster@ cannot be deleted");
     }
     await this.recipients.remove(current);
     return { ok: true };
