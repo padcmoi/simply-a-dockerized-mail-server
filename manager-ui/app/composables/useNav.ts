@@ -20,27 +20,24 @@ export function useNav(onSignOut: () => Promise<void>) {
     return route.path === to || route.path.startsWith(`${to}/`);
   }
 
-  // A nav entry is only worth showing if the account can both see it exists (`access`)
-  // and actually read its content (`read`), matching each page's `requiredGlobal`/
-  // `requiredDomain` meta, which requires both. `root` ignores groups entirely and
-  // has full access to everything (acls.md), so it must bypass every one of these
-  // checks, not just a couple: a root account has no group and thus no permission
-  // rows, so without this bypass the whole nav would collapse to just Dashboard.
-  function canViewGlobal(resource: string) {
-    return auth.session?.isRoot === true || (perms.hasGlobal(resource, "access") && perms.hasGlobal(resource, "read"));
-  }
-  // Domains is the one nav entry with a lower bar: `access` alone is enough
-  // to reach the page (it shows the disk capacity overview even without
-  // `read`); the domain list itself still requires `read`, gated inside the
-  // page, not at the nav/page-meta level.
+  // A nav entry is shown when the account holds `access` on the resource, and
+  // nothing more. There is no generic `read` action any more: every resource
+  // names its own listing action (`list-recipients`, `view-postfix-queue`, ...),
+  // and a nav helper that iterates resources cannot know which one to ask for.
+  //
+  // So `access` now means exactly what it says: this resource is visible to me.
+  // What its page then shows is gated inside the page by the resource's own
+  // listing action -- which is how `domains` already behaved, as the one
+  // documented exception. Generalising it removes the exception.
+  //
+  // `root` ignores groups entirely and has full access to everything (acls.md),
+  // so it must bypass this check: a root account has no group and thus no
+  // permission rows, and the nav would otherwise collapse to just Dashboard.
   function canAccessGlobal(resource: string) {
     return auth.session?.isRoot === true || perms.hasGlobal(resource, "access");
   }
-  function canViewDomain(domainId: number, resource: string) {
-    return (
-      auth.session?.isRoot === true ||
-      (perms.hasDomain(domainId, resource, "access") && perms.hasDomain(domainId, resource, "read"))
-    );
+  function canAccessDomain(domainId: number, resource: string) {
+    return auth.session?.isRoot === true || perms.hasDomain(domainId, resource, "access");
   }
 
   const globalNavItems = computed<NavigationMenuItem[]>(() => [
@@ -48,22 +45,22 @@ export function useNav(onSignOut: () => Promise<void>) {
     ...(canAccessGlobal("domains")
       ? [{ label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains", active: isActive("/domains") }]
       : []),
-    ...(canViewGlobal("rspamd")
+    ...(canAccessGlobal("rspamd")
       ? [{ label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/rspamd", active: isActive("/rspamd") }]
       : []),
-    ...(canViewGlobal("postfix")
+    ...(canAccessGlobal("postfix")
       ? [{ label: t("nav.postfix"), icon: "i-lucide-send", to: "/postfix", active: isActive("/postfix") }]
       : []),
-    ...(canViewGlobal("sieve")
+    ...(canAccessGlobal("sieve")
       ? [{ label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve", active: isActive("/sieve") }]
       : []),
-    ...(canViewGlobal("accounts")
+    ...(canAccessGlobal("accounts")
       ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts", active: isActive("/accounts") }]
       : []),
-    ...(canViewGlobal("groups")
+    ...(canAccessGlobal("groups")
       ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/groups", active: isActive("/groups") }]
       : []),
-    ...(auth.session?.isRoot || canViewGlobal("api-tokens")
+    ...(canAccessGlobal("api-tokens")
       ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens", active: isActive("/api-tokens") }]
       : []),
   ]);
@@ -79,10 +76,10 @@ export function useNav(onSignOut: () => Promise<void>) {
       // with their own entry -- the prefix check exists for sections with no
       // dedicated child entry (see `isActive`'s own comment), which no longer
       // applies here and would otherwise double-highlight this item too.
-      ...(canViewDomain(domainId, "domain")
+      ...(canAccessDomain(domainId, "domain")
         ? [{ label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: domainHome, active: route.path === domainHome }]
         : []),
-      ...(canViewDomain(domainId, "recipients")
+      ...(canAccessDomain(domainId, "recipients")
         ? [
             {
               label: t("nav.recipients"),
@@ -92,7 +89,7 @@ export function useNav(onSignOut: () => Promise<void>) {
             },
           ]
         : []),
-      ...(canViewDomain(domainId, "aliases")
+      ...(canAccessDomain(domainId, "aliases")
         ? [
             {
               label: t("nav.aliases"),
@@ -102,7 +99,7 @@ export function useNav(onSignOut: () => Promise<void>) {
             },
           ]
         : []),
-      ...(canViewDomain(domainId, "quotas")
+      ...(canAccessDomain(domainId, "quotas")
         ? [
             {
               label: t("nav.quotas"),
@@ -112,7 +109,7 @@ export function useNav(onSignOut: () => Promise<void>) {
             },
           ]
         : []),
-      ...(canViewDomain(domainId, "admin")
+      ...(canAccessDomain(domainId, "admin")
         ? [
             {
               label: t("nav.admin"),
@@ -122,7 +119,7 @@ export function useNav(onSignOut: () => Promise<void>) {
             },
           ]
         : []),
-      ...(canViewDomain(domainId, "rspamd")
+      ...(canAccessDomain(domainId, "rspamd")
         ? [
             {
               label: t("nav.rspamd"),

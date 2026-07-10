@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { ApiTokenItem, CreatedToken } from "~/composables/useApiTokens";
 
-definePageMeta({});
+definePageMeta({
+  requiredGlobal: [
+    { resource: "api-tokens", action: "access" },
+    { resource: "api-tokens", action: "list-api-tokens" },
+  ],
+});
 
 const modalOpen = ref(false);
 const revealOpen = ref(false);

@@ -33,6 +33,11 @@ or test it.
    TLS rotation, cold-start behaviour, fail2ban known issue.
 10. [test/](test/) -- the `./test-mailservers.sh` end-to-end suite that
     pins every feature above.
+11. [api/acl.md](api/acl.md) -- control plane, not mail: manager-api's
+    permission model. Resources, the named action each one offers (no
+    generic `read`/`create`/`modify`/`delete` anywhere), the root and
+    domain-owner bypasses, and a generated table of every API route with
+    the exact permissions it demands.
 
 ## Conventions used throughout the docs
 

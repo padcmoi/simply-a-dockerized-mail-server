@@ -25,14 +25,14 @@ export class RejectSendersController {
   constructor(private readonly svc: RejectSendersService) {}
 
   @Get()
-  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "list-reject-senders"] }])
   @ListRejectSendersDocs()
   list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
     return this.svc.list(query);
   }
 
   @Post()
-  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "create"] }])
+  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "create-reject-sender"] }])
   @CreateRejectSenderDocs()
   create(
     @Body(new ZodValidationPipe(createRejectSenderSchema))
@@ -42,7 +42,7 @@ export class RejectSendersController {
   }
 
   @Patch(":id")
-  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "modify"] }])
+  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "edit-reject-sender"] }])
   @ToggleRejectSenderDocs()
   toggle(
     @Param("id", ParseIntPipe) id: number,
@@ -53,7 +53,7 @@ export class RejectSendersController {
   }
 
   @Delete(":id")
-  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "delete"] }])
+  @RequireGlobalPermissions([{ resource: "sieve", actions: ["access", "delete-reject-sender"] }])
   @RemoveRejectSenderDocs()
   remove(@Param("id", ParseIntPipe) id: number) {
     return this.svc.remove(id);

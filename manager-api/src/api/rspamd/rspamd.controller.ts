@@ -16,14 +16,14 @@ export type { RspamdStats };
 export class RspamdController {
   constructor(private readonly rspamd: RspamdService) {}
 
-  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "view-rspamd-stats"] }])
   @GetStatsDocs()
   @Get("stats")
   stats() {
     return this.rspamd.stats();
   }
 
-  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "view-rspamd-history"] }])
   @GetHistoryDocs()
   @Get("history")
   history(
@@ -34,27 +34,28 @@ export class RspamdController {
     return this.rspamd.history(domain, size ? parseInt(size, 10) : undefined, query);
   }
 
-  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "view-rspamd-thresholds"] }])
   @GetActionsDocs()
   @Get("actions")
   getActions() {
     return this.rspamd.getActions();
   }
 
-  // Gated more strictly than every other rspamd endpoint (access+read):
-  // a bad threshold here can silently break spam filtering server-wide,
-  // so this requires modify AND delete, not just modify.
-  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "modify", "delete"] }])
+  // Writing arbitrary thresholds is unbounded: a bad value here silently breaks
+  // spam filtering server-wide. Its own action, held by nobody by default.
+  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "edit-rspamd-thresholds"] }])
   @SaveActionsDocs()
   @Patch("actions")
   saveActions(@Body(new ZodValidationPipe(saveRspamdActionsSchema)) body: SaveRspamdActionsDto) {
     return this.rspamd.saveActions(body);
   }
 
-  // Same gate as the save endpoint above -- resetting is just re-saving
-  // this project's shipped baseline (RSPAMD_FACTORY_ACTIONS), not a lesser
-  // action than an arbitrary save.
-  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "modify", "delete"] }])
+  // Deliberately NOT the same action as the save above, now that actions can be
+  // named for what they do. Resetting only ever writes this project's shipped
+  // baseline (RSPAMD_FACTORY_ACTIONS): its outcome is bounded and known, where
+  // an arbitrary save is neither. Separating them lets an operator hand out
+  // "restore the defaults" without handing out "tune the filter".
+  @RequireGlobalPermissions([{ resource: "rspamd", actions: ["access", "reset-rspamd-thresholds"] }])
   @ResetActionsDocs()
   @Delete("actions")
   resetActions() {

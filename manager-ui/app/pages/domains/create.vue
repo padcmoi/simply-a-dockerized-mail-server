@@ -5,7 +5,7 @@ import { usePermissionsStore } from "~/stores/permissions";
 definePageMeta({
   requiredGlobal: [
     { resource: "domains", action: "access" },
-    { resource: "domains", action: "create" },
+    { resource: "domains", action: "create-domain" },
   ],
 });
 
@@ -30,7 +30,7 @@ const form = reactive({ domain: "", active: true, quotaMb: null as number | null
 // so every check below reads through this rather than `form.quotaMb`.
 const quotaMb = computed(() => (typeof form.quotaMb === "number" && Number.isFinite(form.quotaMb) ? form.quotaMb : null));
 
-// `GET /domains/disk` needs `domains:read`, which an account allowed to create
+// `GET /domains/disk` needs `domains:view-disk-usage`, which an account allowed to create
 // a domain need not hold. Without it there is no ceiling to enforce and none
 // to draw: the form still works, the API decides.
 const hasCapacity = computed(() => assignableMb.value !== null);
@@ -144,7 +144,7 @@ async function create() {
 // A create-only account gets a 403 on /domains/disk; asking for it would only
 // raise an error toast about a card it is not meant to see.
 onMounted(() => {
-  if (auth.session?.isRoot === true || perms.hasGlobal("domains", "read")) loadDisk();
+  if (auth.session?.isRoot === true || perms.hasGlobal("domains", "view-disk-usage")) loadDisk();
 });
 </script>
 
@@ -215,7 +215,7 @@ onMounted(() => {
       </UCard>
 
       <!-- What the quota field's ceiling means, drawn. Absent for an account
-           without `domains:read`, which has no capacity figures to show. -->
+           without `domains:view-disk-usage`, which has no capacity figures to show. -->
       <UCard v-if="hasCapacity || diskLoading">
         <template #header>
           <h2 class="font-semibold">{{ t("domains.chart.title") }}</h2>

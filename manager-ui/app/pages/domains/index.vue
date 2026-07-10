@@ -26,8 +26,8 @@ const MIN_QUOTA_MB = 10;
 // domains.controller.ts/domains.service.ts). `GET /domains/disk` still
 // needs `read` specifically (aggregate stats across every domain), so the
 // capacity card keeps its own, stricter gate.
-const canSeeAllDomains = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "read"));
-const canCreateDomain = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "create"));
+const canSeeAllDomains = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "list-all-domains"));
+const canCreateDomain = computed(() => auth.session?.isRoot === true || perms.hasGlobal("domains", "create-domain"));
 const {
   adminModalOpen,
   adminModalItem,
@@ -91,7 +91,7 @@ const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 watch(useDataRefresh().tick, refreshDisk);
 
-// `/domains/disk` aggregates every domain and demands `domains:read`; asking
+// `/domains/disk` aggregates every domain and demands `domains:view-disk-usage`; asking
 // for it without that grant would only raise a 403 toast about a card the
 // account cannot see anyway.
 async function refreshDisk() {

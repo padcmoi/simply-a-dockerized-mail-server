@@ -2,7 +2,7 @@
 definePageMeta({
   requiredDomain: [
     { resource: "domain", action: "access" },
-    { resource: "domain", action: "read" },
+    { resource: "domain", action: "view-domain" },
   ],
 });
 
@@ -47,7 +47,7 @@ const { isRoot, hasDomain } = usePermissions();
 const canViewRspamd = computed(
   () =>
     isRoot.value ||
-    (domain.value && hasDomain(domain.value.id, "rspamd", "access") && hasDomain(domain.value.id, "rspamd", "read"))
+    (domain.value && hasDomain(domain.value.id, "rspamd", "access") && hasDomain(domain.value.id, "rspamd", "view-rspamd-stats"))
 );
 const canViewAdmin = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "admin", "access")));
 

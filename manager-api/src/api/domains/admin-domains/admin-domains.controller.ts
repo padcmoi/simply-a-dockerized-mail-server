@@ -27,7 +27,7 @@ export class AdminDomainsController {
   @Patch(":domainId/quota")
   @RequireGlobalPermissions([
     { resource: "domains", actions: ["access"] },
-    { resource: "superadmin", actions: ["access", "read", "modify"] },
+    { resource: "superadmin", actions: ["access", "resize-any-domain-quota"] },
   ])
   @ResizeDomainQuotaDocs()
   resizeQuota(
@@ -40,7 +40,7 @@ export class AdminDomainsController {
   @Delete(":domainId")
   @RequireGlobalPermissions([
     { resource: "domains", actions: ["access"] },
-    { resource: "superadmin", actions: ["access", "read", "delete"] },
+    { resource: "superadmin", actions: ["access", "delete-any-domain"] },
   ])
   @RemoveDomainDocs()
   remove(@Param("domainId", ParseIntPipe) domainId: number) {

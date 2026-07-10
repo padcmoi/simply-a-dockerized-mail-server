@@ -27,7 +27,8 @@ const RspamdForbiddenResponse = () =>
   ApiResponse({
     status: 403,
     description:
-      "Missing the `rspamd:access` and/or `rspamd:read` global permission (the message names whichever is missing first)",
+      "Missing `rspamd:access` and/or this route's own read action (`view-rspamd-stats`, `view-rspamd-history` or " +
+      "`view-rspamd-thresholds`); the message names whichever is missing first",
     schema: {
       example: { statusCode: 403, message: "Missing permission rspamd:access", error: "Forbidden" },
     },
@@ -37,10 +38,11 @@ const RspamdActionsForbiddenResponse = () =>
   ApiResponse({
     status: 403,
     description:
-      "Missing `rspamd:access`, `rspamd:modify` and/or `rspamd:delete` -- editing the action thresholds is " +
-      "gated more strictly than reading them since a bad value can silently break spam filtering server-wide",
+      "Missing `rspamd:access` and `rspamd:edit-rspamd-thresholds` (PATCH) or `rspamd:reset-rspamd-thresholds` " +
+      "(DELETE). Writing an arbitrary threshold is unbounded and can silently break spam filtering server-wide; " +
+      "resetting only ever restores the shipped baseline, so the two are distinct permissions",
     schema: {
-      example: { statusCode: 403, message: "Missing permission rspamd:modify", error: "Forbidden" },
+      example: { statusCode: 403, message: "Missing permission rspamd:edit-rspamd-thresholds", error: "Forbidden" },
     },
   });
 

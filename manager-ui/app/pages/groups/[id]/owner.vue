@@ -2,7 +2,7 @@
 definePageMeta({
   requiredGlobal: [
     { resource: "groups", action: "access" },
-    { resource: "groups", action: "read" },
+    { resource: "groups", action: "view-group" },
   ],
 });
 

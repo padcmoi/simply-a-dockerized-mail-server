@@ -10,10 +10,11 @@ export interface DomainDisk {
 // What the mail volume still has to hand out to a new domain. Shared by the
 // domains list (capacity card) and the create page (quota ceiling + donut).
 //
-// `GET /domains/disk` demands `domains:read`, a stricter grant than the
-// `domains:create` needed to add one. An account holding create without read
-// therefore gets `null` here rather than a fabricated zero: no ceiling is
-// shown, no value is refused client-side, and the API stays the authority.
+// `GET /domains/disk` demands `domains:view-disk-usage`, a separate grant from
+// the `domains:create-domain` needed to add one. An account holding the latter
+// without the former therefore gets `null` here rather than a fabricated zero:
+// no ceiling is shown, no value is refused client-side, and the API stays the
+// authority.
 export function useDomainDisk() {
   const { call } = useApi();
   const { apiErrorMessage } = useApiError();

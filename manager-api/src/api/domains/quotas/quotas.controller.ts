@@ -57,7 +57,7 @@ export class QuotasController {
   // bare array, still relied on by useDomainDashboard.ts (needs every
   // recipient's quota to compute the top-mailboxes widget).
   @Get()
-  @RequireDomainPermissions([{ resource: "quotas", actions: ["access", "read"] }])
+  @RequireDomainPermissions([{ resource: "quotas", actions: ["access", "view-quotas"] }])
   @GetDomainQuotasDocs()
   async snapshot(
     @Param("domainId", ParseIntPipe) domainId: number,

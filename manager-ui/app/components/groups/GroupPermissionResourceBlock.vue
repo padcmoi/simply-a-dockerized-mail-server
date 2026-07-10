@@ -44,7 +44,7 @@ function isDisabled(action: string) {
         :ui="{ root: 'border-0 rounded-none p-0' }"
         :model-value="isChecked(action)"
         :disabled="isDisabled(action)"
-        :label="actionLabels[action]"
+        :label="actionLabels[action] ?? action"
         @update:model-value="(val) => emit('toggle', action, val === true)"
       />
     </div>

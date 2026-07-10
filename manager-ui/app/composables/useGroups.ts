@@ -44,9 +44,18 @@ export interface DependsOnEntry {
 export type ResourceDependsOn = { resource: string; dependsOn: DependsOnEntry[] }[];
 
 // Shape of GET /groups/permissions/catalog -- see GroupsController.getPermissionsCatalog.
+// `actionsByResource` is keyed by resource, deliberately not a flat list: two
+// resources no longer share one vocabulary, so a grid asks each resource what it
+// offers rather than assuming five columns.
+export interface PermissionsCatalogTier {
+  resources: string[];
+  actionsByResource: Record<string, string[]>;
+  dependsOn?: ResourceDependsOn;
+}
+
 export interface PermissionsCatalog {
-  global: { resources: string[]; actions: string[]; dependsOn?: ResourceDependsOn };
-  domain: { resources: string[]; actions: string[]; dependsOn?: ResourceDependsOn };
+  global: PermissionsCatalogTier;
+  domain: PermissionsCatalogTier;
 }
 
 export function useGroups() {

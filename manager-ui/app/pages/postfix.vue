@@ -2,7 +2,7 @@
 definePageMeta({
   requiredGlobal: [
     { resource: "postfix", action: "access" },
-    { resource: "postfix", action: "read" },
+    { resource: "postfix", action: "view-postfix-queue" },
   ],
 });
 

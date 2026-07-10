@@ -15,7 +15,7 @@ export class AliasesController {
   constructor(private readonly svc: AliasesService) {}
 
   @Get()
-  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "read"] }])
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "list-aliases"] }])
   @ListAliasesDocs()
   async list(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -26,7 +26,7 @@ export class AliasesController {
   }
 
   @Get(":id")
-  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "read"] }])
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "view-alias"] }])
   @GetAliasDocs()
   async get(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
@@ -34,7 +34,7 @@ export class AliasesController {
   }
 
   @Post()
-  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "create"] }])
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "create-alias"] }])
   @CreateAliasDocs()
   async create(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -45,7 +45,7 @@ export class AliasesController {
   }
 
   @Patch(":id")
-  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "modify"] }])
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "edit-alias"] }])
   @UpdateAliasDocs()
   async update(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -57,7 +57,7 @@ export class AliasesController {
   }
 
   @Delete(":id")
-  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "delete"] }])
+  @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "delete-alias"] }])
   @RemoveAliasDocs()
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);

@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { useAuthStore } from "~/stores/auth";
-
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
-    { resource: "accounts", action: "read" },
+    { resource: "accounts", action: "list-accounts" },
   ],
 });
 
@@ -46,8 +44,15 @@ const { call } = useApi();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("nav.accounts") }]);
-const auth = useAuthStore();
+const { isRoot, hasGlobal } = usePermissions();
 const { groups } = useGroups();
+
+// The API now gates these routes on `accounts:*` rather than IsRootGuard, so the
+// buttons follow the actual permission instead of assuming root. Hiding an entry
+// point beats letting the click land on a 403.
+const canInvite = computed(() => isRoot.value || hasGlobal("accounts", "invite-account"));
+const canEditAccount = computed(() => isRoot.value || hasGlobal("accounts", "view-account"));
+const canRevokeAccount = computed(() => isRoot.value || hasGlobal("accounts", "revoke-account"));
 
 const groupInviteOptions = computed(() => groups.value.map((g) => ({ label: g.name, value: g.id })));
 
@@ -119,7 +124,7 @@ async function onDeleteConfirmed() {
     <div class="flex items-center justify-between gap-2">
       <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="() => load()" />
       <UButton
-        v-if="auth.session?.isRoot"
+        v-if="canInvite"
         icon="i-lucide-mail-plus"
         color="primary"
         @click="
@@ -178,7 +183,7 @@ async function onDeleteConfirmed() {
           <template #actions-cell="{ row }">
             <div class="flex items-center gap-1 justify-end">
               <UButton
-                v-if="!row.original.isRoot"
+                v-if="!row.original.isRoot && canEditAccount"
                 icon="i-lucide-users-round"
                 size="xs"
                 color="neutral"
@@ -187,7 +192,7 @@ async function onDeleteConfirmed() {
                 :to="`/accounts/${row.original.id}/groups`"
               />
               <UButton
-                v-if="!row.original.isRoot"
+                v-if="!row.original.isRoot && canEditAccount"
                 icon="i-lucide-pencil"
                 size="xs"
                 color="neutral"
@@ -196,7 +201,7 @@ async function onDeleteConfirmed() {
                 :to="`/accounts/${row.original.id}`"
               />
               <UButton
-                v-if="!row.original.isRoot && row.original.enabled"
+                v-if="!row.original.isRoot && row.original.enabled && canRevokeAccount"
                 icon="i-lucide-user-x"
                 size="xs"
                 color="error"

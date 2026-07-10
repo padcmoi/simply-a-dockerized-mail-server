@@ -36,7 +36,7 @@ export const GetQueueDocs = () =>
     ApiResponse({
       status: 403,
       description:
-        "Missing the `postfix:access` and/or `postfix:read` global permission (the message names whichever is missing first)",
+        "Missing the `postfix:access` and/or `postfix:view-postfix-queue` global permission (the message names whichever is missing first)",
       schema: {
         example: { statusCode: 403, message: "Missing permission postfix:access", error: "Forbidden" },
       },

@@ -20,8 +20,8 @@ export class DkimCheckController {
 
   @Get()
   @RequireDomainPermissions([
-    { resource: "dkim", actions: ["access", "read"] },
-    { resource: "admin", actions: ["access", "read"] },
+    { resource: "dkim", actions: ["access", "check-dkim-dns"] },
+    { resource: "admin", actions: ["access", "view-admin-page"] },
   ])
   @CheckDkimDocs()
   async check(@Param("domainId", ParseIntPipe) domainId: number) {

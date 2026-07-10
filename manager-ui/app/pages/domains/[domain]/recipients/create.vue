@@ -2,7 +2,7 @@
 definePageMeta({
   requiredDomain: [
     { resource: "recipients", action: "access" },
-    { resource: "recipients", action: "create" },
+    { resource: "recipients", action: "create-recipient" },
   ],
 });
 

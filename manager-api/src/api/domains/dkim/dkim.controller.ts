@@ -5,7 +5,10 @@ import { DkimService } from "../../../core/dkim/dkim.service";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
 import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
-import { RequireDomainPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
+import {
+  RequireDomainPermissions,
+  RequireGlobalPermissions,
+} from "../../../core/custom-permission-guard/require-permissions.decorator";
 import { DkimApi, ListDkimDocs, RemoveDkimDocs, RotateDkimDocs } from "./dkim.openapi";
 
 @DkimApi()
@@ -26,8 +29,8 @@ export class DkimController {
 
   @Get()
   @RequireDomainPermissions([
-    { resource: "dkim", actions: ["access", "read"] },
-    { resource: "admin", actions: ["access", "read"] },
+    { resource: "dkim", actions: ["access", "view-dkim"] },
+    { resource: "admin", actions: ["access", "view-admin-page"] },
   ])
   @ListDkimDocs()
   async list(@Param("domainId", ParseIntPipe) domainId: number) {
@@ -35,10 +38,13 @@ export class DkimController {
     return this.dkim.list(domain);
   }
 
+  // Rotating destroys every existing key for the domain before minting a new
+  // one, so it was gated on create+modify+delete together. That triple is now a
+  // single action that says what it is, on both resources.
   @Post("rotate")
   @RequireDomainPermissions([
-    { resource: "dkim", actions: ["access", "create", "modify", "delete"] },
-    { resource: "admin", actions: ["access", "create", "modify", "delete"] },
+    { resource: "dkim", actions: ["access", "rotate-dkim-key"] },
+    { resource: "admin", actions: ["access", "manage-dkim"] },
   ])
   @RotateDkimDocs()
   async rotate(@Param("domainId", ParseIntPipe) domainId: number) {
@@ -48,9 +54,10 @@ export class DkimController {
   }
 
   @Delete(":selector")
+  @RequireGlobalPermissions([{ resource: "domain_owner_elevated", actions: ["delete-dkim-key"] }])
   @RequireDomainPermissions([
-    { resource: "dkim", actions: ["access", "delete"] },
-    { resource: "admin", actions: ["access", "delete"] },
+    { resource: "dkim", actions: ["access", "delete-dkim-key"] },
+    { resource: "admin", actions: ["access", "manage-dkim"] },
   ])
   @RemoveDkimDocs()
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("selector") selector: string) {

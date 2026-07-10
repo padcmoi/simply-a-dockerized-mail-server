@@ -9,7 +9,7 @@ import { GroupGlobalPermission } from "../entities/group-global-permission.entit
 import { GroupMember } from "../entities/group-member.entity";
 import { Group } from "../entities/group.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
-import { DOMAIN_RESOURCES, GLOBAL_RESOURCES, PERMISSION_ACTIONS, dependsOnFor, dependsOnForGlobal } from "./permission-catalog";
+import { DOMAIN_ACTIONS, GLOBAL_ACTIONS, dependsOnFor, dependsOnForGlobal } from "./permission-catalog";
 
 // The lib keeps its ids open (`AccountId`/`GroupId` are both
 // `number | string`) so each consumer picks. mail-server picks uuids, hence
@@ -42,27 +42,30 @@ export class CustomPermissionGuardService {
         domain: { acrud: true, custom: true },
       },
       // Never lose the last group able to manage groups themselves -- replaces
-      // the old GroupsService.wouldLockOutGroupsManagement.
-      lockoutProtected: [{ resource: "groups", actions: ["access", "modify"] }],
+      // the old GroupsService.wouldLockOutGroupsManagement. Deliberately the
+      // permission-editing action and not `edit-group`: renaming a group has
+      // never been what rescues an account from lockout.
+      lockoutProtected: [{ resource: "groups", actions: ["access", "edit-group-global-permissions"] }],
       schemas: {
         global: Object.fromEntries(
-          GLOBAL_RESOURCES.map((resource) => [
+          Object.entries(GLOBAL_ACTIONS).map(([resource, actions]) => [
             resource,
-            { rules: [...PERMISSION_ACTIONS], dependsOn: dependsOnForGlobal(resource) },
+            { rules: [...actions], dependsOn: dependsOnForGlobal(resource) },
           ])
         ),
-        domain: {
-          // bridgeFromGlobal: holding domains.<action> globally also grants
-          // "domain" on ANY domainId, without a dedicated row (Administration
-          // > Domains override -- see domain-global-override.md).
-          domain: { rules: [...PERMISSION_ACTIONS], bridgeFromGlobal: "domains" },
-          ...Object.fromEntries(
-            DOMAIN_RESOURCES.filter((resource) => resource !== "domain").map((resource) => [
-              resource,
-              { rules: [...PERMISSION_ACTIONS], dependsOn: dependsOnFor(resource) },
-            ])
-          ),
-        },
+        domain: Object.fromEntries(
+          Object.entries(DOMAIN_ACTIONS).map(([resource, actions]) => [
+            resource,
+            resource === "domain"
+              ? // bridgeFromGlobal: holding domains.<action> globally also grants
+                // "domain" on ANY domainId, without a dedicated row (Administration
+                // > Domains override -- see domain-global-override.md). The action
+                // name travels verbatim, hence the superset assertion in
+                // permission-catalog.ts.
+                { rules: [...actions], bridgeFromGlobal: "domains" }
+              : { rules: [...actions], dependsOn: dependsOnFor(resource) },
+          ])
+        ),
       },
       data: {
         findAccountGroupIds: async (accountId) => {

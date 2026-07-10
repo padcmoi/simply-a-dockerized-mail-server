@@ -2,7 +2,7 @@
 definePageMeta({
   requiredDomain: [
     { resource: "rspamd", action: "access" },
-    { resource: "rspamd", action: "read" },
+    { resource: "rspamd", action: "view-rspamd-stats" },
   ],
 });
 

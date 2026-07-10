@@ -2,7 +2,7 @@
 definePageMeta({
   requiredDomain: [
     { resource: "quotas", action: "access" },
-    { resource: "quotas", action: "read" },
+    { resource: "quotas", action: "view-quotas" },
   ],
 });
 

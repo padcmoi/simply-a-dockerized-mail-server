@@ -2,7 +2,7 @@
 definePageMeta({
   requiredDomain: [
     { resource: "aliases", action: "access" },
-    { resource: "aliases", action: "read" },
+    { resource: "aliases", action: "list-aliases" },
   ],
 });
 
@@ -34,16 +34,16 @@ const columns = computed(() => [
   { id: "actions", header: "" },
 ]);
 
-// The create and edit pages demand aliases:create / aliases:modify. Hiding
+// The create and edit pages demand aliases:create-alias / aliases:edit-alias. Hiding
 // their entry points from an account that lacks the grant beats letting the
 // click land on a 403.
 const canCreateAliases = computed(() => {
   if (!domainId.value) return false;
-  return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "create"));
+  return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "create-alias"));
 });
 const canEditAliases = computed(() => {
   if (!domainId.value) return false;
-  return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "modify"));
+  return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "edit-alias"));
 });
 
 const { t } = useI18n();

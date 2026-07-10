@@ -2,7 +2,7 @@
 definePageMeta({
   requiredDomain: [
     { resource: "recipients", action: "access" },
-    { resource: "recipients", action: "read" },
+    { resource: "recipients", action: "list-recipients" },
   ],
 });
 
@@ -42,12 +42,15 @@ const columns = computed(() => [
   { id: "actions", header: "" },
 ]);
 
-// The create form now lives on its own page, which demands recipients:create.
+// The create form now lives on its own page, which demands recipients:create-recipient.
 // Hiding the entry point from an account that lacks it beats letting the click
 // land on a 403.
 const canCreateRecipients = computed(() => {
   if (!domainId.value) return false;
-  return isRoot.value || (hasDomain(domainId.value, "recipients", "access") && hasDomain(domainId.value, "recipients", "create"));
+  return (
+    isRoot.value ||
+    (hasDomain(domainId.value, "recipients", "access") && hasDomain(domainId.value, "recipients", "create-recipient"))
+  );
 });
 
 // Lazily evaluated, so reading `editModalItem` (declared further down, with

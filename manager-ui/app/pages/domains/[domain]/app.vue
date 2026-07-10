@@ -7,7 +7,7 @@ import type { Domain, DkimCheckResult, DkimKey } from "~/composables/useDomainDa
 definePageMeta({
   requiredDomain: [
     { resource: "admin", action: "access" },
-    { resource: "admin", action: "read" },
+    { resource: "admin", action: "view-admin-page" },
   ],
 });
 

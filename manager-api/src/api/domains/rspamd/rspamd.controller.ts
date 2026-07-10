@@ -28,7 +28,7 @@ export class DomainsRspamdController {
   }
 
   @Get("history")
-  @RequireDomainPermissions([{ resource: "rspamd", actions: ["access", "read"] }])
+  @RequireDomainPermissions([{ resource: "rspamd", actions: ["access", "view-rspamd-history"] }])
   @GetDomainRspamdHistoryDocs()
   async history(
     @Param("domainId", ParseIntPipe) domainId: number,
@@ -40,7 +40,7 @@ export class DomainsRspamdController {
   }
 
   @Get("stats")
-  @RequireDomainPermissions([{ resource: "rspamd", actions: ["access", "read"] }])
+  @RequireDomainPermissions([{ resource: "rspamd", actions: ["access", "view-rspamd-stats"] }])
   @GetDomainRspamdStatsDocs()
   async stats(@Param("domainId", ParseIntPipe) domainId: number): Promise<RspamdDomainStats> {
     const fqdn = await this.resolveFqdn(domainId);

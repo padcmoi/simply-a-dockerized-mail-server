@@ -22,7 +22,7 @@ const domainSets = reactive(new Map<number, Set<string>>());
 
 const { t } = useI18n();
 const { call } = useApi();
-const { domainResourceLabels: resourceLabels, actionLabels } = usePermissionLabels();
+const { domainResourceLabels: resourceLabels, actionLabelsFor } = usePermissionLabels();
 
 const { data: catalog, status: catalogStatus } = useAsyncData<PermissionsCatalog | null>(
   "groups-permissions-catalog",
@@ -31,7 +31,9 @@ const { data: catalog, status: catalogStatus } = useAsyncData<PermissionsCatalog
 );
 const catalogLoading = computed(() => catalogStatus.value !== "success" && catalogStatus.value !== "error");
 const DOMAIN_RESOURCES = computed(() => catalog.value?.domain.resources ?? []);
-const ACTIONS = computed(() => catalog.value?.domain.actions ?? []);
+// Each resource declares its own actions; nothing here may iterate "the actions"
+// without naming a resource (see permission-catalog.ts).
+const actionsByResource = computed(() => catalog.value?.domain.actionsByResource ?? {});
 const domainDependsOn = computed(() => {
   const map: Record<string, DependsOnEntry[]> = {};
   for (const entry of catalog.value?.domain.dependsOn ?? []) map[entry.resource] = entry.dependsOn;
@@ -63,6 +65,10 @@ function permKey(resource: string, action: string) {
   return `${resource}:${action}`;
 }
 
+function actionsOf(resource: string) {
+  return actionsByResource.value[resource] ?? [];
+}
+
 function getOrCreateDomainSet(domainId: number) {
   if (!domainSets.has(domainId)) domainSets.set(domainId, new Set());
   return domainSets.get(domainId) as Set<string>;
@@ -79,7 +85,7 @@ const debouncedSave = useDebounceFn(() => {
   const permissions: { domainId: number; resource: string; action: string }[] = [];
   for (const [domainId, set] of domainSets) {
     for (const resource of DOMAIN_RESOURCES.value) {
-      for (const action of ACTIONS.value) {
+      for (const action of actionsOf(resource)) {
         if (set.has(permKey(resource, action))) permissions.push({ domainId, resource, action });
       }
     }
@@ -89,7 +95,7 @@ const debouncedSave = useDebounceFn(() => {
 
 function applyToggle(set: Set<string>, resource: string, action: string, checked: boolean) {
   if (action === "access" && !checked) {
-    for (const a of ACTIONS.value) set.delete(permKey(resource, a));
+    for (const a of actionsOf(resource)) set.delete(permKey(resource, a));
     return;
   }
   const key = permKey(resource, action);
@@ -98,7 +104,7 @@ function applyToggle(set: Set<string>, resource: string, action: string, checked
 }
 
 function setResourceAll(set: Set<string>, resource: string, checked: boolean) {
-  for (const a of ACTIONS.value) {
+  for (const a of actionsOf(resource)) {
     const key = permKey(resource, a);
     if (checked) set.add(key);
     else set.delete(key);
@@ -122,7 +128,7 @@ function toggle(resource: string, action: string, checked: boolean) {
   if (props.selectedDomainId === undefined) return;
   const set = getOrCreateDomainSet(props.selectedDomainId);
   applyToggle(set, resource, action, checked);
-  const clearedActions = !checked && action === "access" ? [...ACTIONS.value] : [action];
+  const clearedActions = !checked && action === "access" ? [...actionsOf(resource)] : [action];
   enforceDependsOn(set, resource, clearedActions, checked);
   debouncedSave();
 }
@@ -131,7 +137,7 @@ function checkAllResource(resource: string, checked: boolean) {
   if (props.selectedDomainId === undefined) return;
   const set = getOrCreateDomainSet(props.selectedDomainId);
   setResourceAll(set, resource, checked);
-  enforceDependsOn(set, resource, [...ACTIONS.value], checked);
+  enforceDependsOn(set, resource, [...actionsOf(resource)], checked);
   debouncedSave();
 }
 
@@ -189,8 +195,8 @@ function checkAllVisible(checked: boolean) {
         :key="resource"
         :resource="resource"
         :label="resourceLabels[resource] ?? resource"
-        :actions="ACTIONS"
-        :action-labels="actionLabels"
+        :actions="actionsByResource[resource] ?? []"
+        :action-labels="actionLabelsFor('domain', resource, actionsByResource[resource] ?? [])"
         :permissions="currentDomainSet"
         @toggle="(action, checked) => toggle(resource, action, checked)"
         @check-all="(checked) => checkAllResource(resource, checked)"

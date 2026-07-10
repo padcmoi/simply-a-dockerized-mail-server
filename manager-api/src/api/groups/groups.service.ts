@@ -5,6 +5,7 @@ import { In, Like, Not, Repository } from "typeorm";
 import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
+import type { GlobalAction } from "../../core/custom-permission-guard/permission-catalog";
 import { Account } from "../../core/entities/account.entity";
 import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
@@ -295,7 +296,7 @@ export class GroupsService {
 
   async updateOwner(id: string, actingUser: ActingUser, newOwnerId: string) {
     const group = await this.findOrFail(id);
-    this.assertOwnerOrRoot(group, actingUser);
+    await this.assertOwnerOrRootOrPermitted(group, actingUser, "transfer-group-ownership");
     const newOwner = await this.accounts.findOne({ where: { id: newOwnerId } });
     if (!newOwner) throw new NotFoundException(`Account #${newOwnerId} not found`);
     const before = group.ownerId;
@@ -320,7 +321,7 @@ export class GroupsService {
 
   async addMember(id: string, actingUser: ActingUser, accountId: string) {
     const group = await this.findOrFail(id);
-    this.assertOwnerOrRoot(group, actingUser);
+    await this.assertOwnerOrRootOrPermitted(group, actingUser, "add-group-member");
     const account = await this.accounts.findOne({ where: { id: accountId } });
     if (!account) throw new NotFoundException(`Account #${accountId} not found`);
     await this.cpg.guard.assignAccountToGroup(accountId, id);
@@ -329,7 +330,7 @@ export class GroupsService {
 
   async removeMember(id: string, actingUser: ActingUser, accountId: string) {
     const group = await this.findOrFail(id);
-    this.assertOwnerOrRoot(group, actingUser);
+    await this.assertOwnerOrRootOrPermitted(group, actingUser, "remove-group-member");
     const membership = await this.groupMembers.findOne({ where: { accountId, groupId: id } });
     if (!membership) {
       throw new NotFoundException(`Account #${accountId} is not a member of group #${id}`);
@@ -344,10 +345,27 @@ export class GroupsService {
     return group;
   }
 
-  private assertOwnerOrRoot(group: Group, actingUser: ActingUser) {
+  // A disjunction, which is why it lives here and not on a decorator: a guard
+  // can only AND, so declaring `add-group-member` on the route would have taken
+  // the right away from the very owners it is meant to leave untouched. The
+  // action is an ALTERNATIVE to owning the group.
+  //
+  // The route still names its action, via @ServiceEnforcedGlobalPermissions, so
+  // it is typed against the catalog and appears in the generated permission
+  // table. Unlike the domain tier, the guard lib has no ownership bypass for
+  // groups (only `findOwnedDomainIds`), hence the hand-rolled check.
+  private async assertOwnerOrRootOrPermitted(
+    group: Group,
+    actingUser: ActingUser,
+    action: GlobalAction<"groups">
+  ): Promise<void> {
     if (actingUser.isRoot) return;
     if (group.ownerId === actingUser.id) return;
-    throw new ForbiddenException("Only the group owner or a root account can perform this action");
+    const permitted = await this.isGranted(() =>
+      this.cpg.guard.assertOne.global(actingUser.id, "groups", { acrud: ["access", action] })
+    );
+    if (permitted) return;
+    throw new ForbiddenException(`Only the group owner, a root account, or an account holding groups:${action} can do this`);
   }
 
   private async toItem(group: Group) {

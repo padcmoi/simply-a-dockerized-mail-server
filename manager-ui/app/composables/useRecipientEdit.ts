@@ -12,7 +12,7 @@ export interface RecipientEditItem {
 }
 
 // Quota/active from the recipients list -- gated by the classic single-resource
-// ACL (recipients:access + recipients:modify for this domain), unlike the
+// ACL (recipients:access + recipients:edit-recipient for this domain), unlike the
 // domains list's admin modal which needs "admin" AND "domain" together.
 export function useRecipientEdit(domainId: Readonly<Ref<number | null>>, onSaved: () => Promise<void>) {
   const { call } = useApi();
@@ -30,7 +30,7 @@ export function useRecipientEdit(domainId: Readonly<Ref<number | null>>, onSaved
     if (!domainId.value) return false;
     return (
       auth.session?.isRoot === true ||
-      (perms.hasDomain(domainId.value, "recipients", "access") && perms.hasDomain(domainId.value, "recipients", "modify"))
+      (perms.hasDomain(domainId.value, "recipients", "access") && perms.hasDomain(domainId.value, "recipients", "edit-recipient"))
     );
   });
 

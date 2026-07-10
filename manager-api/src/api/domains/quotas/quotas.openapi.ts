@@ -66,7 +66,7 @@ export const GetDomainQuotasDocs = () =>
     ApiResponse({
       status: 403,
       description: 'Missing the "quotas" resource\'s access+read domain permissions for this domain (and not its owner/root)',
-      schema: { example: { statusCode: 403, message: "Missing permission quotas:read for domain #12" } },
+      schema: { example: { statusCode: 403, message: "Missing permission quotas:view-quotas for domain #12" } },
     }),
     ApiResponse({
       status: 404,

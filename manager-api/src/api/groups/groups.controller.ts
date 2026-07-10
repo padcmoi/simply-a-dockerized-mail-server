@@ -4,7 +4,10 @@ import { paginationQuerySchema, type PaginationQuery } from "../../core/common/p
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import { DomainPermissionGuard } from "../../core/custom-permission-guard/domain-permission.guard";
 import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global-permission.guard";
-import { RequireGlobalPermissions } from "../../core/custom-permission-guard/require-permissions.decorator";
+import {
+  RequireGlobalPermissions,
+  ServiceEnforcedGlobalPermissions,
+} from "../../core/custom-permission-guard/require-permissions.decorator";
 import {
   AddMemberDocs,
   CreateGroupDocs,
@@ -24,11 +27,12 @@ import { GroupsService } from "./groups.service";
 import {
   AddMemberDto,
   CreateGroupDto,
+  DOMAIN_ACTIONS,
   DOMAIN_RESOURCE_DEPENDS_ON,
   DOMAIN_RESOURCES,
+  GLOBAL_ACTIONS,
   GLOBAL_RESOURCES,
   GLOBAL_RESOURCES_DEPENDS_ON,
-  PERMISSION_ACTIONS,
   SetDomainPermissionsDto,
   SetGlobalPermissionsDto,
   UpdateGroupDto,
@@ -52,37 +56,48 @@ export class GroupsController {
   constructor(private readonly svc: GroupsService) {}
 
   @Get()
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "list-groups"] }])
   @ListGroupsDocs()
   list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
     return this.svc.list(query);
   }
 
   // Static catalog, not tied to any specific group -- the single source of
-  // truth for GLOBAL_RESOURCES/DOMAIN_RESOURCES/PERMISSION_ACTIONS, so a
-  // client never has to hardcode its own copy to build a permission grid.
-  // `dependsOn` is included so a client can actually enforce it (e.g. a
-  // resource with a dependency requires its prerequisite to be checked too)
-  // instead of allowing a state the guard would silently treat as inert.
+  // truth for the resources and the actions each one offers, so a client never
+  // has to hardcode its own copy to build a permission grid. Actions are keyed
+  // by resource (`actionsByResource`) rather than a flat list: two resources no
+  // longer share one vocabulary. `dependsOn` is included so a client can
+  // actually enforce it (a resource with a dependency requires its prerequisite
+  // to be checked too) instead of allowing a state the guard would treat as inert.
   @Get("permissions/catalog")
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "view-group"] }])
   @GetPermissionsCatalogDocs()
   getPermissionsCatalog() {
     return {
-      global: { resources: GLOBAL_RESOURCES, actions: PERMISSION_ACTIONS, dependsOn: GLOBAL_RESOURCES_DEPENDS_ON },
-      domain: { resources: DOMAIN_RESOURCES, actions: PERMISSION_ACTIONS, dependsOn: DOMAIN_RESOURCE_DEPENDS_ON },
+      global: {
+        resources: GLOBAL_RESOURCES,
+        actionsByResource: GLOBAL_ACTIONS,
+        dependsOn: GLOBAL_RESOURCES_DEPENDS_ON,
+      },
+      domain: {
+        resources: DOMAIN_RESOURCES,
+        actionsByResource: DOMAIN_ACTIONS,
+        dependsOn: DOMAIN_RESOURCE_DEPENDS_ON,
+      },
     };
   }
 
   @Post()
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "create"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "create-group"] }])
   @CreateGroupDocs()
   create(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(createGroupSchema)) body: CreateGroupDto) {
     return this.svc.create(req.user.id, req.user.id, body);
   }
 
+  // Renaming a group is not editing what it can do -- see the two
+  // .../permissions routes below, which carry their own actions.
   @Patch(":id")
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "modify"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "edit-group"] }])
   @UpdateGroupDocs()
   update(
     @Req() req: AuthedRequest,
@@ -93,21 +108,24 @@ export class GroupsController {
   }
 
   @Delete(":id")
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "delete"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "delete-group"] }])
   @RemoveGroupDocs()
   remove(@Req() req: AuthedRequest, @Param("id", ParseUUIDPipe) id: string) {
     return this.svc.remove(id, req.user);
   }
 
   @Get(":id")
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "view-group"] }])
   @GetGroupDocs()
   getDetail(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.getDetail(id);
   }
 
+  // The action anti-lockout protects (see lockoutProtected in
+  // custom-permission-guard.service.ts): whoever holds this can hand out, or
+  // take away, every other permission on the server.
   @Put(":id/global-permissions")
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "modify"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "edit-group-global-permissions"] }])
   @SetGlobalPermissionsDocs()
   setGlobalPermissions(
     @Req() req: AuthedRequest,
@@ -118,7 +136,7 @@ export class GroupsController {
   }
 
   @Put(":id/domain-permissions")
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "modify"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "edit-group-domain-permissions"] }])
   @SetDomainPermissionsDocs()
   setDomainPermissions(
     @Req() req: AuthedRequest,
@@ -128,9 +146,11 @@ export class GroupsController {
     return this.svc.setDomainPermissions(id, req.user, body.permissions);
   }
 
-  // Owner transfer keeps its service-level owner-or-root check only, no
-  // generic permission decorator (see GroupsService.updateOwner).
+  // Enforced in GroupsService as "root OR the group's owner OR this action",
+  // a disjunction a guard cannot express. Declared here so the action is typed
+  // against the catalog and shows up in the permission table.
   @Patch(":id/owner")
+  @ServiceEnforcedGlobalPermissions([{ resource: "groups", actions: ["access", "transfer-group-ownership"] }])
   @UpdateOwnerDocs()
   updateOwner(
     @Req() req: AuthedRequest,
@@ -141,15 +161,15 @@ export class GroupsController {
   }
 
   @Get(":id/members")
-  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "list-group-members"] }])
   @ListMembersDocs()
   listMembers(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.listMembers(id);
   }
 
-  // Member add/remove keep their service-level owner-or-root check only, no
-  // generic permission decorator (see GroupsService.addMember/removeMember).
+  // Same disjunction as updateOwner above (see GroupsService.addMember).
   @Post(":id/members")
+  @ServiceEnforcedGlobalPermissions([{ resource: "groups", actions: ["access", "add-group-member"] }])
   @AddMemberDocs()
   addMember(
     @Req() req: AuthedRequest,
@@ -160,6 +180,7 @@ export class GroupsController {
   }
 
   @Delete(":id/members/:accountId")
+  @ServiceEnforcedGlobalPermissions([{ resource: "groups", actions: ["access", "remove-group-member"] }])
   @RemoveMemberDocs()
   removeMember(
     @Req() req: AuthedRequest,

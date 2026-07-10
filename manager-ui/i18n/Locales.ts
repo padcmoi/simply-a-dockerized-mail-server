@@ -684,6 +684,7 @@ export interface Locales {
           groups: string;
           domains: string;
           superadmin: string;
+          domainOwnerElevated: string;
         };
         domain: {
           domain: string;
@@ -696,11 +697,125 @@ export interface Locales {
         };
       };
       actionsLabel: {
-        access: string;
-        read: string;
-        create: string;
-        modify: string;
-        delete: string;
+        global: {
+          sieve: {
+            access: string;
+            "list-reject-senders": string;
+            "create-reject-sender": string;
+            "edit-reject-sender": string;
+            "delete-reject-sender": string;
+          };
+          rspamd: {
+            access: string;
+            "view-rspamd-stats": string;
+            "view-rspamd-history": string;
+            "view-rspamd-thresholds": string;
+            "edit-rspamd-thresholds": string;
+            "reset-rspamd-thresholds": string;
+          };
+          postfix: {
+            access: string;
+            "view-postfix-queue": string;
+          };
+          accounts: {
+            access: string;
+            "list-account-names": string;
+            "list-accounts": string;
+            "view-account": string;
+            "edit-account": string;
+            "revoke-account": string;
+            "invite-account": string;
+          };
+          apiTokens: {
+            access: string;
+            "list-api-tokens": string;
+            "create-api-token": string;
+            "edit-api-token": string;
+            "revoke-api-token": string;
+            "regenerate-api-token": string;
+            "delete-api-token": string;
+          };
+          groups: {
+            access: string;
+            "list-groups": string;
+            "view-group": string;
+            "list-group-members": string;
+            "create-group": string;
+            "edit-group": string;
+            "edit-group-global-permissions": string;
+            "edit-group-domain-permissions": string;
+            "delete-group": string;
+            "transfer-group-ownership": string;
+            "add-group-member": string;
+            "remove-group-member": string;
+          };
+          domains: {
+            access: string;
+            "list-all-domains": string;
+            "view-disk-usage": string;
+            "create-domain": string;
+            "view-domain": string;
+            "toggle-domain-active": string;
+            "transfer-domain-ownership": string;
+          };
+          superadmin: {
+            access: string;
+            "resize-any-domain-quota": string;
+            "delete-any-domain": string;
+          };
+          domainOwnerElevated: {
+            access: string;
+            "delete-dkim-key": string;
+            "transfer-domain-ownership": string;
+          };
+        };
+        domain: {
+          domain: {
+            access: string;
+            "view-domain": string;
+            "toggle-domain-active": string;
+            "transfer-domain-ownership": string;
+          };
+          recipients: {
+            access: string;
+            "list-recipients": string;
+            "view-recipient": string;
+            "view-recipient-headroom": string;
+            "create-recipient": string;
+            "edit-recipient": string;
+            "delete-recipient": string;
+          };
+          aliases: {
+            access: string;
+            "list-aliases": string;
+            "view-alias": string;
+            "create-alias": string;
+            "edit-alias": string;
+            "delete-alias": string;
+          };
+          quotas: {
+            access: string;
+            "view-quotas": string;
+          };
+          rspamd: {
+            access: string;
+            "view-rspamd-stats": string;
+            "view-rspamd-history": string;
+          };
+          admin: {
+            access: string;
+            "view-admin-page": string;
+            "toggle-domain-active": string;
+            "manage-dkim": string;
+          };
+          dkim: {
+            access: string;
+            "view-dkim": string;
+            "check-dkim-dns": string;
+            "rotate-dkim-key": string;
+            "delete-dkim-key": string;
+          };
+        };
       };
       autosaveHint: string;
       saving: string;

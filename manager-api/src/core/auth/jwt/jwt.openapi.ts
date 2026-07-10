@@ -182,8 +182,8 @@ export const JwtMePermissionsDocs = () =>
       schema: {
         example: {
           global: [
-            { resource: "domain", action: "access" },
-            { resource: "domain", action: "read" },
+            { resource: "domains", action: "access" },
+            { resource: "domains", action: "list-all-domains" },
           ],
           domain: [{ domainId: 5, resource: "recipients", action: "access" }],
         },

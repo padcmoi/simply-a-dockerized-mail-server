@@ -56,7 +56,7 @@ export const CheckDkimDocs = () =>
       status: 403,
       description:
         'Missing the "dkim" and/or "admin" resources\' access+read domain permissions for this domain (both are required)',
-      schema: { example: { statusCode: 403, message: "Missing permission dkim:read for domain #12" } },
+      schema: { example: { statusCode: 403, message: "Missing permission dkim:check-dkim-dns for domain #12" } },
     }),
     ApiResponse({
       status: 404,

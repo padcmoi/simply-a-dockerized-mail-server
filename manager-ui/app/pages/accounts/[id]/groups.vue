@@ -12,7 +12,7 @@ interface AccountDetail {
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
-    { resource: "accounts", action: "read" },
+    { resource: "accounts", action: "view-account" },
   ],
 });
 

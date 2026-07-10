@@ -2,7 +2,7 @@
 definePageMeta({
   requiredDomain: [
     { resource: "aliases", action: "access" },
-    { resource: "aliases", action: "modify" },
+    { resource: "aliases", action: "edit-alias" },
   ],
 });
 

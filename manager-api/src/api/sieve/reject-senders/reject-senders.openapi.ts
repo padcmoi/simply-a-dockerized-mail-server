@@ -13,7 +13,9 @@ const rejectSenderExample = {
   updatedAt: "2026-07-04T12:00:00.000Z",
 };
 
-const ForbiddenSieveResponse = (action: "read" | "create" | "modify" | "delete") =>
+const ForbiddenSieveResponse = (
+  action: "list-reject-senders" | "create-reject-sender" | "edit-reject-sender" | "delete-reject-sender"
+) =>
   ApiResponse({
     status: 403,
     description: `Missing the \`sieve:access\` and/or \`sieve:${action}\` global permission (the message names whichever is missing first)`,
@@ -64,7 +66,7 @@ export const ListRejectSendersDocs = () =>
       schema: { example: paginatedExample(rejectSenderExample) },
     }),
     ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
-    ForbiddenSieveResponse("read")
+    ForbiddenSieveResponse("list-reject-senders")
   );
 
 export const CreateRejectSenderDocs = () =>
@@ -85,7 +87,7 @@ export const CreateRejectSenderDocs = () =>
       schema: { example: rejectSenderExample },
     }),
     ValidationBadRequestResponse(),
-    ForbiddenSieveResponse("create"),
+    ForbiddenSieveResponse("create-reject-sender"),
     ApiResponse({
       status: 409,
       description: "This sender is already on the blacklist",
@@ -115,7 +117,7 @@ export const ToggleRejectSenderDocs = () =>
       schema: { example: { ...rejectSenderExample, enabled: 0 } },
     }),
     ValidationBadRequestResponse(),
-    ForbiddenSieveResponse("modify"),
+    ForbiddenSieveResponse("edit-reject-sender"),
     NotFoundRejectSenderResponse()
   );
 
@@ -128,6 +130,6 @@ export const RemoveRejectSenderDocs = () =>
       description: "Blacklist entry deleted",
       schema: { example: { ok: true } },
     }),
-    ForbiddenSieveResponse("delete"),
+    ForbiddenSieveResponse("delete-reject-sender"),
     NotFoundRejectSenderResponse()
   );

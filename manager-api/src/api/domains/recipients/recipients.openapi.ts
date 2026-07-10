@@ -54,7 +54,7 @@ export const ListRecipientsDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission recipients:access or recipients:read for this domain",
+      description: "Missing permission recipients:access or recipients:list-recipients for this domain",
     }),
     ApiResponse({
       status: 404,
@@ -119,7 +119,7 @@ export const GetRecipientDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission recipients:access or recipients:read for this domain",
+      description: "Missing permission recipients:access or recipients:view-recipient for this domain",
     }),
     ApiResponse({
       status: 404,
@@ -183,7 +183,7 @@ export const CreateRecipientDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission recipients:access or recipients:create for this domain",
+      description: "Missing permission recipients:access or recipients:create-recipient for this domain",
     }),
     ApiResponse({
       status: 404,
@@ -250,7 +250,7 @@ export const UpdateRecipientDocs = () =>
     ApiResponse({
       status: 403,
       description:
-        "Missing permission recipients:access or recipients:modify for this domain, or target is postmaster@<domain> (which cannot be modified)",
+        "Missing permission recipients:access or recipients:edit-recipient for this domain, or target is postmaster@<domain> (which cannot be modified)",
       schema: { example: { statusCode: 403, message: "postmaster@ is managed automatically and cannot be modified" } },
     }),
     ApiResponse({
@@ -282,7 +282,7 @@ export const RemoveRecipientDocs = () =>
     ApiResponse({
       status: 403,
       description:
-        "Missing permission recipients:access or recipients:delete for this domain, or target is postmaster@<domain> (which cannot be deleted)",
+        "Missing permission recipients:access or recipients:delete-recipient for this domain, or target is postmaster@<domain> (which cannot be deleted)",
       schema: { example: { statusCode: 403, message: "postmaster@ cannot be deleted" } },
     }),
     ApiResponse({

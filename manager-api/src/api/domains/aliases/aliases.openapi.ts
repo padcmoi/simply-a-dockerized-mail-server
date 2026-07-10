@@ -43,7 +43,7 @@ export const ListAliasesDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission aliases:access or aliases:read for this domain",
+      description: "Missing permission aliases:access or aliases:list-aliases for this domain",
     }),
     ApiResponse({
       status: 404,
@@ -83,7 +83,7 @@ export const GetAliasDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission aliases:access or aliases:read for this domain",
+      description: "Missing permission aliases:access or aliases:view-alias for this domain",
     }),
     ApiResponse({
       status: 404,
@@ -129,7 +129,7 @@ export const CreateAliasDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission aliases:access or aliases:create for this domain",
+      description: "Missing permission aliases:access or aliases:create-alias for this domain",
     }),
     ApiResponse({
       status: 404,
@@ -184,7 +184,7 @@ export const UpdateAliasDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission aliases:access or aliases:modify for this domain",
+      description: "Missing permission aliases:access or aliases:edit-alias for this domain",
     }),
     ApiResponse({
       status: 404,
@@ -223,7 +223,7 @@ export const RemoveAliasDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission aliases:access or aliases:delete for this domain",
+      description: "Missing permission aliases:access or aliases:delete-alias for this domain",
     }),
     ApiResponse({
       status: 404,

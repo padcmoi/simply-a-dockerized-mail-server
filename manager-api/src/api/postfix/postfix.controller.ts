@@ -10,7 +10,7 @@ import { GetQueueDocs, PostfixApi } from "./postfix.openapi";
 export class PostfixController {
   constructor(private readonly postfix: PostfixService) {}
 
-  @RequireGlobalPermissions([{ resource: "postfix", actions: ["access", "read"] }])
+  @RequireGlobalPermissions([{ resource: "postfix", actions: ["access", "view-postfix-queue"] }])
   @GetQueueDocs()
   @Get("queue")
   queue(@Query("domain") domain?: string) {

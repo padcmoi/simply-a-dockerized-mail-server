@@ -35,7 +35,7 @@ export const ListDomainsDocs = () =>
     ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     ApiResponse({
       status: 403,
-      description: "Missing permission domains:access or domains:read",
+      description: "Missing permission domains:access",
     })
   );
 
@@ -58,7 +58,7 @@ export const DiskUsageDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission domains:access",
+      description: "Missing permission domains:access or domains:view-disk-usage",
     })
   );
 
@@ -97,7 +97,7 @@ export const GetDomainDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission domain:access or domain:read for this domain",
+      description: "Missing permission domain:access or domain:view-domain for this domain",
     }),
     ApiResponse({
       status: 404,
@@ -152,7 +152,7 @@ export const CreateDomainDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission domains:access or domains:create",
+      description: "Missing permission domains:access or domains:create-domain",
     }),
     ApiResponse({
       status: 409,
@@ -258,7 +258,7 @@ export const SetDomainActiveDocs = () =>
     }),
     ApiResponse({
       status: 403,
-      description: "Missing permission admin:access or admin:modify for this domain",
+      description: "Missing permission admin:access or admin:toggle-domain-active for this domain",
     }),
     ApiResponse({
       status: 404,

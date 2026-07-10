@@ -21,26 +21,27 @@ const groupDetailExample = {
   owner: { id: 2, username: "jdoe" },
   globalPermissions: [
     { id: 10, resource: "groups", action: "access" },
-    { id: 11, resource: "groups", action: "read" },
+    { id: 11, resource: "groups", action: "list-groups" },
   ],
-  domainPermissions: [{ id: 5, domainId: 1, domainName: "example.com", resource: "recipients", action: "read" }],
+  domainPermissions: [{ id: 5, domainId: 1, domainName: "example.com", resource: "recipients", action: "list-recipients" }],
 };
 
 const groupMembersExample = [{ id: 4, username: "jdoe", name: "John Doe", email: "jdoe@example.com" }];
 
 const permissionsCatalogExample = {
   global: {
-    resources: ["sieve", "rspamd", "postfix", "accounts", "api-tokens", "groups", "domains"],
-    actions: ["access", "read", "create", "modify", "delete"],
-    // Empty today -- no global resource currently requires another one, but
-    // the shape is identical to domain.dependsOn below and just as binding
-    // once populated (same guard, same AND semantics, both tiers as of
-    // @naskot/custom-permission-guard 1.1.0).
-    dependsOn: [],
+    resources: ["sieve", "rspamd", "postfix", "accounts", "api-tokens", "groups", "domains", "superadmin"],
+    // Abridged: one resource shown, the real payload carries all of them.
+    actionsByResource: { postfix: ["access", "view-postfix-queue"] },
+    // Same shape and the same binding AND semantics as domain.dependsOn below.
+    // `superadmin` additionally depends on every other global resource with all
+    // of its actions, which is what makes ticking superadmin:access grant the
+    // whole server (see permission-catalog.ts).
+    dependsOn: [{ resource: "groups", dependsOn: [{ resource: "accounts", action: ["access", "list-accounts"] }] }],
   },
   domain: {
     resources: ["domain", "recipients", "aliases", "quotas", "rspamd", "admin", "dkim"],
-    actions: ["access", "read", "create", "modify", "delete"],
+    actionsByResource: { quotas: ["access", "view-quotas"] },
     dependsOn: [
       { resource: "recipients", dependsOn: [{ resource: "domain", action: ["access"] }] },
       { resource: "aliases", dependsOn: [{ resource: "domain", action: ["access"] }] },
@@ -51,7 +52,7 @@ const permissionsCatalogExample = {
         resource: "dkim",
         dependsOn: [
           { resource: "domain", action: ["access"] },
-          { resource: "admin", action: ["access"] },
+          { resource: "admin", action: ["access", "view-admin-page"] },
         ],
       },
     ],
@@ -67,7 +68,7 @@ export const ListGroupsDocs = () =>
     ApiResponse({ status: 200, description: "Groups returned", schema: { example: paginatedExample(groupItemExample) } }),
     ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Missing groups:access + groups:read global permission" })
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:list-groups global permission" })
   );
 
 export const GetPermissionsCatalogDocs = () =>
@@ -75,20 +76,22 @@ export const GetPermissionsCatalogDocs = () =>
     ApiOperation({
       summary: "List every resource/action a group permission can target",
       description:
-        "Static catalog, not tied to any specific group -- the exact same GLOBAL_RESOURCES/DOMAIN_RESOURCES/" +
-        "PERMISSION_ACTIONS enforced server-side by the Zod validation on set*Permissions. Lets a client build the " +
+        "Static catalog, not tied to any specific group -- the exact same resources and per-resource actions " +
+        "enforced server-side by the Zod validation on set*Permissions. `actionsByResource` is keyed by resource: " +
+        "two resources do not share one vocabulary. Lets a client build the " +
         "permission grid without hardcoding its own copy of this list. `global.dependsOn` and `domain.dependsOn` " +
         "each list, per resource, which other (resource, action[]) pairs must also be granted for that resource's " +
         "own actions to have any effect -- every entry is mandatory (AND): every dependsOn array entry, and every " +
         'action listed within one entry\'s action[]. Every domain resource except "domain" itself requires at ' +
-        "least domain:access (dkim also requires admin:access); `global.dependsOn` is empty today (no global " +
-        "resource currently requires another one) but enforced identically once populated. The guard enforces both " +
+        "least domain:access (dkim also requires admin:access + admin:view-admin-page); on the global tier, groups " +
+        "requires accounts:access + accounts:list-accounts, and superadmin depends on every other global resource " +
+        "with all of its actions. The guard enforces both " +
         "at check time regardless of what's saved, so a client should reflect it too rather than allow a state " +
         "that looks granted but is actually inert.",
     }),
     ApiResponse({ status: 200, description: "Catalog returned", schema: { example: permissionsCatalogExample } }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Missing groups:access + groups:read global permission" })
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:view-group global permission" })
   );
 
 export const CreateGroupDocs = () =>
@@ -106,7 +109,7 @@ export const CreateGroupDocs = () =>
     ApiResponse({ status: 201, description: "Group created", schema: { example: groupItemExample } }),
     ApiResponse({ status: 400, description: "Invalid body (e.g. empty/too-long name, description too long)" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Missing groups:access + groups:create global permission" }),
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:create-group global permission" }),
     ApiResponse({ status: 409, description: "A group with this name already exists" })
   );
 
@@ -125,7 +128,7 @@ export const UpdateGroupDocs = () =>
     ApiResponse({ status: 200, description: "Group updated", schema: { example: groupItemExample } }),
     ApiResponse({ status: 400, description: "Invalid body" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Missing groups:access + groups:modify global permission" }),
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:edit-group global permission" }),
     ApiResponse({ status: 404, description: "Group not found" }),
     ApiResponse({ status: 409, description: "Another group already uses this name" })
   );
@@ -139,7 +142,7 @@ export const RemoveGroupDocs = () =>
     }),
     ApiResponse({ status: 200, description: "Group deleted", schema: { example: { ok: true } } }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Missing groups:access + groups:delete global permission" }),
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:delete-group global permission" }),
     ApiResponse({ status: 404, description: "Group not found" })
   );
 
@@ -149,7 +152,7 @@ export const GetGroupDocs = () =>
     ApiOperation({ summary: "Fetch a group with its owner, members count and permissions" }),
     ApiResponse({ status: 200, description: "Group detail returned", schema: { example: groupDetailExample } }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Missing groups:access + groups:read global permission" }),
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:list-groups global permission" }),
     ApiResponse({ status: 404, description: "Group not found" })
   );
 
@@ -159,14 +162,14 @@ export const SetGlobalPermissionsDocs = () =>
     ApiOperation({
       summary: "Replace the global (non domain-scoped) permissions granted to a group",
       description:
-        "Full replace, not a merge. Anti-escalation: a non-root actor may only grant permissions they themselves already hold (checked against their own effective global permissions); granting anything else is rejected. Anti-lockout: a non-root actor is also blocked from making a change that would leave zero groups in the whole system able to manage groups (groups:access + groups:modify together). Root is exempt from both checks.",
+        "Full replace, not a merge. Anti-escalation: a non-root actor may only grant permissions they themselves already hold (checked against their own effective global permissions); granting anything else is rejected. Anti-lockout: a non-root actor is also blocked from making a change that would leave zero groups in the whole system able to manage groups (groups:access + groups:edit-group-global-permissions together). Root is exempt from both checks.",
     }),
     ApiBody({
       schema: {
         example: {
           permissions: [
             { resource: "accounts", action: "access" },
-            { resource: "accounts", action: "read" },
+            { resource: "accounts", action: "list-accounts" },
           ],
         },
       },
@@ -181,7 +184,7 @@ export const SetGlobalPermissionsDocs = () =>
     ApiResponse({
       status: 403,
       description:
-        "Missing groups:access + groups:modify global permission; or (non-root only) attempting to grant a permission not held; or the change would leave no group able to manage groups",
+        "Missing groups:access + groups:edit-group-global-permissions global permission; or (non-root only) attempting to grant a permission not held; or the change would leave no group able to manage groups",
     }),
     ApiResponse({ status: 404, description: "Group not found" })
   );
@@ -198,8 +201,8 @@ export const SetDomainPermissionsDocs = () =>
       schema: {
         example: {
           permissions: [
-            { domainId: 1, resource: "recipients", action: "read" },
-            { domainId: 1, resource: "aliases", action: "modify" },
+            { domainId: 1, resource: "recipients", action: "list-recipients" },
+            { domainId: 1, resource: "aliases", action: "edit-alias" },
           ],
         },
       },
@@ -214,7 +217,7 @@ export const SetDomainPermissionsDocs = () =>
     ApiResponse({
       status: 403,
       description:
-        "Missing groups:access + groups:modify global permission; or (non-root only) attempting to grant a domain permission not held",
+        "Missing groups:access + groups:edit-group-domain-permissions global permission; or (non-root only) attempting to grant a domain permission not held",
     }),
     ApiResponse({ status: 404, description: "Group not found, or one or more domain IDs do not exist" })
   );
@@ -225,7 +228,7 @@ export const UpdateOwnerDocs = () =>
     ApiOperation({
       summary: "Transfer group ownership (root or current owner only)",
       description:
-        "Not gated by a @RequireGlobalPermissions decorator: enforced purely at the service level (isRoot || group.ownerId === actingUser.id). Any other authenticated account is rejected, even one holding groups:modify.",
+        "Not gated by a @RequireGlobalPermissions decorator: enforced purely at the service level (isRoot || group.ownerId === actingUser.id). Any other authenticated account is rejected, even one holding groups:edit-group.",
     }),
     ApiBody({ schema: { example: { newOwnerId: 5 } } }),
     ApiResponse({
@@ -245,7 +248,7 @@ export const ListMembersDocs = () =>
     ApiOperation({ summary: "List the members of a group" }),
     ApiResponse({ status: 200, description: "Members returned", schema: { example: groupMembersExample } }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Missing groups:access + groups:read global permission" }),
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:list-groups global permission" }),
     ApiResponse({ status: 404, description: "Group not found" })
   );
 

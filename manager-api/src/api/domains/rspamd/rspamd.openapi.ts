@@ -51,7 +51,7 @@ export const GetDomainRspamdHistoryDocs = () =>
     ApiResponse({
       status: 403,
       description: 'Missing the "rspamd" resource\'s access+read domain permissions for this domain (and not its owner/root)',
-      schema: { example: { statusCode: 403, message: "Missing permission rspamd:read for domain #12" } },
+      schema: { example: { statusCode: 403, message: "Missing permission rspamd:view-rspamd-history for domain #12" } },
     }),
     ApiResponse({
       status: 404,
@@ -98,7 +98,7 @@ export const GetDomainRspamdStatsDocs = () =>
     ApiResponse({
       status: 403,
       description: 'Missing the "rspamd" resource\'s access+read domain permissions for this domain (and not its owner/root)',
-      schema: { example: { statusCode: 403, message: "Missing permission rspamd:read for domain #12" } },
+      schema: { example: { statusCode: 403, message: "Missing permission rspamd:view-rspamd-stats for domain #12" } },
     }),
     ApiResponse({
       status: 404,

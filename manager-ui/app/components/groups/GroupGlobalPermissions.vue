@@ -13,7 +13,7 @@ const globalSet = reactive(new Set<string>());
 
 const { t } = useI18n();
 const { call } = useApi();
-const { globalResourceLabels: resourceLabels, actionLabels } = usePermissionLabels();
+const { globalResourceLabels: resourceLabels, actionLabelsFor } = usePermissionLabels();
 
 // Single source of truth for the resource/action catalog is the API, not a
 // hardcoded copy here -- see GroupsController.getPermissionsCatalog.
@@ -24,7 +24,9 @@ const { data: catalog, status: catalogStatus } = useAsyncData<PermissionsCatalog
 );
 const catalogLoading = computed(() => catalogStatus.value !== "success" && catalogStatus.value !== "error");
 const GLOBAL_RESOURCES = computed(() => catalog.value?.global.resources ?? []);
-const ACTIONS = computed(() => catalog.value?.global.actions ?? []);
+// Each resource declares its own actions; there is no shared action vocabulary
+// any more, so nothing here may iterate "the actions" without naming a resource.
+const actionsByResource = computed(() => catalog.value?.global.actionsByResource ?? {});
 // Per resource, the (resource, action[]) pairs it requires to have any
 // effect at all -- see permission-catalog.ts's GLOBAL_RESOURCES_DEPENDS_ON.
 const globalDependsOn = computed(() => {
@@ -39,6 +41,10 @@ function permKey(resource: string, action: string) {
   return `${resource}:${action}`;
 }
 
+function actionsOf(resource: string) {
+  return actionsByResource.value[resource] ?? [];
+}
+
 function syncFromProps() {
   globalSet.clear();
   for (const p of props.globalPermissions) globalSet.add(permKey(p.resource, p.action));
@@ -47,19 +53,19 @@ function syncFromProps() {
 const debouncedSave = useDebounceFn(() => {
   const permissions: { resource: string; action: string }[] = [];
   for (const resource of GLOBAL_RESOURCES.value) {
-    for (const action of ACTIONS.value) {
+    for (const action of actionsOf(resource)) {
       if (globalSet.has(permKey(resource, action))) permissions.push({ resource, action });
     }
   }
   emit("save", permissions);
 }, 1000);
 
-// `access` is a prerequisite to the other 4 actions on a given resource: unchecking it
-// clears the rest so the UI (and the autosaved payload) never reflects a phantom
-// checked-but-disabled state.
+// `access` is a prerequisite to every other action of a resource (the guard lib
+// enforces it server-side too): unchecking it clears the rest so the UI, and the
+// autosaved payload, never reflects a phantom checked-but-disabled state.
 function applyToggle(resource: string, action: string, checked: boolean) {
   if (action === "access" && !checked) {
-    for (const a of ACTIONS.value) globalSet.delete(permKey(resource, a));
+    for (const a of actionsOf(resource)) globalSet.delete(permKey(resource, a));
     return;
   }
   const key = permKey(resource, action);
@@ -68,7 +74,7 @@ function applyToggle(resource: string, action: string, checked: boolean) {
 }
 
 function setResourceAll(resource: string, checked: boolean) {
-  for (const a of ACTIONS.value) {
+  for (const a of actionsOf(resource)) {
     const key = permKey(resource, a);
     if (checked) globalSet.add(key);
     else globalSet.delete(key);
@@ -95,14 +101,14 @@ function enforceDependsOn(resource: string, clearedActions: string[], checked: b
 
 function toggle(resource: string, action: string, checked: boolean) {
   applyToggle(resource, action, checked);
-  const clearedActions = !checked && action === "access" ? [...ACTIONS.value] : [action];
+  const clearedActions = !checked && action === "access" ? [...actionsOf(resource)] : [action];
   enforceDependsOn(resource, clearedActions, checked);
   debouncedSave();
 }
 
 function checkAllResource(resource: string, checked: boolean) {
   setResourceAll(resource, checked);
-  enforceDependsOn(resource, [...ACTIONS.value], checked);
+  enforceDependsOn(resource, [...actionsOf(resource)], checked);
   debouncedSave();
 }
 
@@ -140,8 +146,8 @@ function checkAllVisible(checked: boolean) {
         :key="resource"
         :resource="resource"
         :label="resourceLabels[resource] ?? resource"
-        :actions="ACTIONS"
-        :action-labels="actionLabels"
+        :actions="actionsByResource[resource] ?? []"
+        :action-labels="actionLabelsFor('global', resource, actionsByResource[resource] ?? [])"
         :permissions="globalSet"
         @toggle="(action, checked) => toggle(resource, action, checked)"
         @check-all="(checked) => checkAllResource(resource, checked)"

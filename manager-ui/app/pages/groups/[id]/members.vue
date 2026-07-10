@@ -4,7 +4,7 @@ import type { GroupMember } from "~/composables/useGroups";
 definePageMeta({
   requiredGlobal: [
     { resource: "groups", action: "access" },
-    { resource: "groups", action: "read" },
+    { resource: "groups", action: "list-group-members" },
   ],
 });
 

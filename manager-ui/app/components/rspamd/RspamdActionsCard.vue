@@ -2,10 +2,13 @@
 import type { RspamdActionThresholds, SaveRspamdActionsInput } from "~/composables/useRspamdActions";
 
 const emit = defineEmits<{ save: [SaveRspamdActionsInput]; reset: [] }>();
+// Two distinct permissions, not one: `canEdit` writes arbitrary thresholds,
+// `canReset` only restores the shipped baseline (see rspamd.controller.ts).
 const props = defineProps<{
   actions: RspamdActionThresholds | null;
   loading: boolean;
   canEdit: boolean;
+  canReset: boolean;
 }>();
 
 const { t } = useI18n();
@@ -126,8 +129,9 @@ function onReset() {
         :title="t('rspamdPage.actions.orderError')"
       />
 
-      <div v-if="canEdit" class="flex items-center justify-between gap-2">
+      <div v-if="canEdit || canReset" class="flex items-center justify-between gap-2">
         <UButton
+          v-if="canReset"
           icon="i-lucide-rotate-ccw"
           color="error"
           variant="soft"
@@ -140,9 +144,12 @@ function onReset() {
         >
           {{ t("rspamdPage.actions.reset") }}
         </UButton>
-        <UButton :loading="loading" :disabled="hasError" @click="onSave">{{ t("rspamdPage.actions.save") }}</UButton>
+        <span v-else />
+        <UButton v-if="canEdit" :loading="loading" :disabled="hasError" @click="onSave">
+          {{ t("rspamdPage.actions.save") }}
+        </UButton>
       </div>
-      <p v-else class="text-xs text-dimmed">{{ t("rspamdPage.actions.readOnlyHint") }}</p>
+      <p v-if="!canEdit" class="text-xs text-dimmed">{{ t("rspamdPage.actions.readOnlyHint") }}</p>
     </div>
   </UCard>
 

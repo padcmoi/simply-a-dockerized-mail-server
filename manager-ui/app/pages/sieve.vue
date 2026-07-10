@@ -2,7 +2,7 @@
 definePageMeta({
   requiredGlobal: [
     { resource: "sieve", action: "access" },
-    { resource: "sieve", action: "read" },
+    { resource: "sieve", action: "list-reject-senders" },
   ],
 });
 

@@ -1,11 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { randomBytes } from "crypto";
 import { statfs } from "fs/promises";
@@ -49,7 +42,7 @@ export class DomainsService {
   // Access is already gated by GlobalPermissionGuard/DomainPermissionGuard at
   // the controller level (group-based ACL, see CustomPermissionGuardService).
   //
-  // `scope`: with global domains:read (or root), see every domain -- the
+  // `scope`: with global domains:list-all-domains (or root), see every domain -- the
   // caller with only domains:access (no read) is scoped to domains they own,
   // same as being "root" over just their own rows (see DomainsController.list).
   //
@@ -223,13 +216,15 @@ export class DomainsService {
   // A domain must never end up without an owner (security-hardening.md
   // anti-lockout); this is the only path that may change `owner_id`, and it
   // always designates a new one.
+  //
+  // Authorization is the decorator's job now (`domain:transfer-domain-ownership`,
+  // see DomainsController). The old `root || owner` check here has gone: the
+  // lib's ownership bypass already lets the owner through, and duplicating the
+  // rule would have turned the new action into a condition ANDed on top of
+  // ownership rather than an alternative to it.
   async transferOwner(id: number, actingUser: CallerCtx, newOwnerId: string) {
     const domain = await this.repo.findOne({ where: { id } });
     if (!domain) throw new NotFoundException(`Domain #${id} not found`);
-
-    if (!actingUser.isRoot && domain.ownerId !== actingUser.id) {
-      throw new ForbiddenException("Only root or the current domain owner can transfer ownership");
-    }
 
     const newOwner = await this.accounts.findOne({ where: { id: newOwnerId } });
     if (!newOwner) throw new NotFoundException(`Account #${newOwnerId} not found`);

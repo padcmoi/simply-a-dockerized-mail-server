@@ -6,6 +6,7 @@ import type { Request } from "express";
 import { Repository } from "typeorm";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
 import { CustomPermissionGuardService } from "./custom-permission-guard.service";
+import type { DomainAction } from "./permission-catalog";
 import { DomainPermissionRequirement, REQUIRE_DOMAIN_PERMISSIONS_KEY } from "./require-permissions.decorator";
 
 type PermissionRequest = Request & {
@@ -83,7 +84,10 @@ export class DomainPermissionGuard implements CanActivate {
         remaining.push(entry);
         continue;
       }
-      const stillNeeded: DomainPermissionRequirement["actions"][number][] = [];
+      // Narrowed to the `domain` branch by the guard above, so only that
+      // resource's own actions can land here -- which is precisely what the
+      // bridge forwards to the global `domains` resource.
+      const stillNeeded: DomainAction<"domain">[] = [];
       for (const action of entry.actions) {
         const viaGlobal = await isGranted(() => this.cpg.guard.assertOne.global(user.id, "domains", { acrud: [action] }));
         if (!viaGlobal) stillNeeded.push(action);

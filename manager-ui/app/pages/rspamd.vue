@@ -2,7 +2,7 @@
 definePageMeta({
   requiredGlobal: [
     { resource: "rspamd", action: "access" },
-    { resource: "rspamd", action: "read" },
+    { resource: "rspamd", action: "view-rspamd-stats" },
   ],
 });
 
@@ -50,9 +50,12 @@ const { actions, actionsLoading, saveActions, resetActions } = useRspamdActions(
 
 const bayesStatfiles = computed(() => stats.value?.statfiles ?? []);
 
-// Stricter than the page's own access+read gate: editing a threshold can
-// silently break spam filtering server-wide, see rspamd.controller.ts.
-const canEditActions = computed(() => isRoot.value || (hasGlobal("rspamd", "modify") && hasGlobal("rspamd", "delete")));
+// Stricter than the page's own gate: writing an arbitrary threshold can silently
+// break spam filtering server-wide, see rspamd.controller.ts.
+const canEditActions = computed(() => isRoot.value || hasGlobal("rspamd", "edit-rspamd-thresholds"));
+// A separate permission on purpose: resetting only ever restores this project's
+// shipped baseline, a bounded outcome, unlike an arbitrary save.
+const canResetActions = computed(() => isRoot.value || hasGlobal("rspamd", "reset-rspamd-thresholds"));
 
 async function onSaveActions(input: Parameters<typeof saveActions>[0]) {
   try {
@@ -95,6 +98,7 @@ async function onResetActions() {
         :actions="actions"
         :loading="actionsLoading"
         :can-edit="canEditActions"
+        :can-reset="canResetActions"
         @save="onSaveActions"
         @reset="onResetActions"
       />
