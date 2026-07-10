@@ -11,11 +11,12 @@ export interface DomainAdminItem {
   active: number;
 }
 
-// Rename/quota/delete from the domains list -- gated more strictly than the
-// rest of the Administration surface (see admin-domains.controller.ts):
-// root or the global "superadmin" resource's own "access" action only.
-// Deliberately NOT domain-tier: a domain owner (even a "domain root") never
-// qualifies, no matter what domain-tier grants they hold.
+// Quota/delete from the domains list -- gated more strictly than the rest of
+// the Administration surface (see admin-domains.controller.ts): root or the
+// global "superadmin" resource's own "access" action only. Deliberately NOT
+// domain-tier: a domain owner (even a "domain root") never qualifies, no
+// matter what domain-tier grants they hold. Renaming is absent by design, for
+// everyone: the API exposes no such route.
 export function useDomainAdmin(onSaved: () => Promise<void>) {
   const { call } = useApi();
   const toast = useToast();
@@ -41,20 +42,17 @@ export function useDomainAdmin(onSaved: () => Promise<void>) {
     adminModalOpen.value = true;
   }
 
-  // 3 single-purpose admin routes now (rename / quota / delete, see
-  // admin-domains.controller.ts) -- only call the ones whose field actually
+  // 2 single-purpose admin routes now (quota / delete, see
+  // admin-domains.controller.ts) -- only call the one whose field actually
   // changed. `active` isn't part of this admin surface at all anymore: it's
   // legitimate owner self-service, handled entirely by the dedicated
   // PATCH /domains/:domainId/active route elsewhere.
-  async function saveAdmin(payload: { domain: string; quotaMb: number }) {
+  async function saveAdmin(payload: { quotaMb: number }) {
     if (!adminModalItem.value) return;
     const id = adminModalItem.value.id;
     const quotaBytes = payload.quotaMb * MB;
     adminSaving.value = true;
     try {
-      if (payload.domain !== adminModalItem.value.domain) {
-        await call(`/admin/domains/${id}/rename`, { method: "PATCH", body: { domain: payload.domain } });
-      }
       if (String(quotaBytes) !== adminModalItem.value.quota) {
         await call(`/admin/domains/${id}/quota`, { method: "PATCH", body: { quota: quotaBytes } });
       }

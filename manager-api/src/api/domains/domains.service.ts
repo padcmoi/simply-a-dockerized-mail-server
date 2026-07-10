@@ -14,6 +14,7 @@ import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagin
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { sha512crypt } from "../../core/common/sha512-crypt";
 import { DkimKey, DkimService } from "../../core/dkim/dkim.service";
+import { MailStorageService } from "../../core/mail-storage/mail-storage.service";
 import { Account } from "../../core/entities/account.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { VirtualQuotaDomain } from "../../core/entities/virtual-quota-domain.entity";
@@ -41,7 +42,8 @@ export class DomainsService {
     @InjectRepository(VirtualQuotaDomain)
     private readonly quotaDomains: Repository<VirtualQuotaDomain>,
     private readonly dkim: DkimService,
-    private readonly auditLog: AuditLogService
+    private readonly auditLog: AuditLogService,
+    private readonly storage: MailStorageService
   ) {}
 
   // Access is already gated by GlobalPermissionGuard/DomainPermissionGuard at
@@ -195,19 +197,26 @@ export class DomainsService {
         throw new BadRequestException(`Quota ${input.quota} exceeds the ${headroom} bytes still assignable on the mail volume`);
       }
     }
-    if (input.domain !== undefined) current.domain = input.domain;
+    // No `input.domain` branch, and UpdateDomainDto has no such field: an FQDN
+    // is the domain's identity. See domains.validation.ts.
     if (input.quota !== undefined) current.quota = String(input.quota);
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
     return this.repo.save(current);
   }
 
+  // Deleting the row cascades `virtual_users`, `virtual_aliases` and both
+  // `virtual_quota_*` tables through their FKs, but the FK chain stops at the
+  // database: the mail itself lives in /var/mail/vhosts/<domain>/ and would
+  // otherwise survive the domain forever, still occupying the volume whose free
+  // space `disk()` reports. The tree goes last, once the row is definitely gone.
   async remove(id: number) {
     const target = await this.get(id);
     await this.dkim.removeAll(target.domain).catch((e) => {
       this.log.warn(`DKIM cleanup failed for ${target.domain}: ${(e as Error).message}`);
     });
     await this.repo.remove(target);
+    await this.storage.removeDomain(target.domain);
     return { ok: true };
   }
 

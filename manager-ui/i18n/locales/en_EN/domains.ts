@@ -22,6 +22,7 @@ export default {
   form: {
     title: "Add a domain",
     fqdn: "FQDN",
+    fqdnInvalid: "Must be a valid FQDN",
     quotaMb: "Quota (MB)",
     quotaMax: "Max {value} MB",
     quotaMin: "Minimum {value} MB",
@@ -45,11 +46,13 @@ export default {
   adminModal: {
     button: "Administer",
     title: "Domain administration",
-    fqdnInvalid: "Must be a valid FQDN",
+    fqdnLocked: "A domain name cannot be changed: every mailbox address and every maildir on disk is built from it.",
     dangerZone: "Danger zone",
     delete: "Delete this domain",
     confirmDelete: "Delete this domain?",
-    confirmDeleteDesc: "This permanently deletes {domain} and cascades to its recipients, aliases, quota rows and DKIM keys.",
+    confirmDeleteDesc:
+      "This permanently deletes {domain} and cascades to its recipients, aliases, quota rows and DKIM keys. " +
+      "All the mail it stores is erased from disk.",
     saved: "Domain updated",
     saveFailed: "Failed to update domain",
     deleted: "Domain deleted",

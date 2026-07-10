@@ -4,6 +4,7 @@ export default {
   alertTitle: "Mailbox addresses (local-part plus domain destinations postfix delivers to).",
   alertDescription: "Passwords are hashed with SHA512-CRYPT before storage.",
   backToList: "Back to recipients",
+  confirmDeleteDesc: "The mailbox and all the mail it stores are erased from disk. Its quota returns to the domain.",
   chart: {
     title: "Domain quota allocation",
     pending: "This recipient",

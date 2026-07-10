@@ -4,6 +4,8 @@ export default {
   alertTitle: "Adresses de boîtes (local-part plus domaine, destinations livrées par postfix).",
   alertDescription: "Les mots de passe sont hachés en SHA512-CRYPT avant stockage.",
   backToList: "Retour aux destinataires",
+  confirmDeleteDesc:
+    "La boîte et tout le courrier qu'elle contient sont effacés du disque. Son quota est rendu au domaine.",
   chart: {
     title: "Répartition du quota du domaine",
     pending: "Ce destinataire",

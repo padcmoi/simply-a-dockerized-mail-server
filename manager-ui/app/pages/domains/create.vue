@@ -43,9 +43,7 @@ const quotaOverLimit = computed(
 );
 const fqdnInvalid = computed(() => form.domain.length > 0 && !FQDN_PATTERN.test(form.domain));
 
-const domainError = computed(
-  () => serverErrors.value.domain ?? (fqdnInvalid.value ? t("domains.adminModal.fqdnInvalid") : undefined)
-);
+const domainError = computed(() => serverErrors.value.domain ?? (fqdnInvalid.value ? t("domains.form.fqdnInvalid") : undefined));
 
 const formInvalid = computed(
   () =>
@@ -105,7 +103,7 @@ function applyServerErrors(err: unknown) {
     return;
   }
   for (const issue of apiErrorBody(err)?.issues ?? []) {
-    if (issue.path[0] === "domain") serverErrors.value.domain = t("domains.adminModal.fqdnInvalid");
+    if (issue.path[0] === "domain") serverErrors.value.domain = t("domains.form.fqdnInvalid");
   }
 }
 

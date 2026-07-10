@@ -14,19 +14,27 @@ const localPart = z
   .max(64)
   .regex(/^[a-z0-9._+-]+$/i, "must be a valid mailbox local-part");
 
-export const createAliasSchema = z.object({
-  localPart,
-  destination: z.string().email().max(255),
-  userEndDate: z.string().date().nullable().optional(),
-});
+// `.strict()` on both: `source` and `domain` are computed, never accepted. Left
+// unstrict, zod would drop them and answer 200 to a body that plainly asked to
+// move the alias somewhere the route never authorised.
+export const createAliasSchema = z
+  .object({
+    localPart,
+    destination: z.string().email().max(255),
+    userEndDate: z.string().date().nullable().optional(),
+  })
+  .strict();
 
-// `localPart` is settable here too: renaming an alias's source is what the edit
-// page exists for, and it stays a local-part for the reason above.
-export const updateAliasSchema = z.object({
-  localPart: localPart.optional(),
-  destination: z.string().email().max(255).optional(),
-  userEndDate: z.string().date().nullable().optional(),
-});
+// `localPart` is settable here, unlike on recipients: an alias is a routing rule,
+// not a mailbox. It owns no maildir and no quota row, so rewriting its source
+// strands nothing on disk. It stays a local-part for the reason above.
+export const updateAliasSchema = z
+  .object({
+    localPart: localPart.optional(),
+    destination: z.string().email().max(255).optional(),
+    userEndDate: z.string().date().nullable().optional(),
+  })
+  .strict();
 
 export type CreateAliasDto = z.infer<typeof createAliasSchema>;
 export type UpdateAliasDto = z.infer<typeof updateAliasSchema>;

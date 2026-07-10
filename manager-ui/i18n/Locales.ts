@@ -160,6 +160,7 @@ export interface Locales {
     form: {
       title: string;
       fqdn: string;
+      fqdnInvalid: string;
       quotaMb: string;
       quotaMax: string;
       quotaMin: string;
@@ -183,7 +184,7 @@ export interface Locales {
     adminModal: {
       button: string;
       title: string;
-      fqdnInvalid: string;
+      fqdnLocked: string;
       dangerZone: string;
       delete: string;
       confirmDelete: string;
@@ -198,6 +199,7 @@ export interface Locales {
     alertTitle: string;
     alertDescription: string;
     backToList: string;
+    confirmDeleteDesc: string;
     chart: {
       title: string;
       pending: string;

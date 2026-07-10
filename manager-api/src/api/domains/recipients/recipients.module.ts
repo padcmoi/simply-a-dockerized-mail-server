@@ -3,12 +3,17 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualQuotaUser } from "../../../core/entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
+import { MailStorageModule } from "../../../core/mail-storage/mail-storage.module";
 import { CustomPermissionGuardModule } from "../../../core/custom-permission-guard/custom-permission-guard.module";
 import { RecipientsController } from "./recipients.controller";
 import { RecipientsService } from "./recipients.service";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([VirtualUser, VirtualDomain, VirtualQuotaUser]), CustomPermissionGuardModule],
+  imports: [
+    TypeOrmModule.forFeature([VirtualUser, VirtualDomain, VirtualQuotaUser]),
+    CustomPermissionGuardModule,
+    MailStorageModule,
+  ],
   providers: [RecipientsService],
   controllers: [RecipientsController],
   exports: [RecipientsService],

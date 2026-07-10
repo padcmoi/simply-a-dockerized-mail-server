@@ -6,6 +6,7 @@ import { Account } from "../../core/entities/account.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { VirtualQuotaDomain } from "../../core/entities/virtual-quota-domain.entity";
 import { VirtualUser } from "../../core/entities/virtual-user.entity";
+import { MailStorageModule } from "../../core/mail-storage/mail-storage.module";
 import { CustomPermissionGuardModule } from "../../core/custom-permission-guard/custom-permission-guard.module";
 import { AdminDomainsController } from "./admin-domains/admin-domains.controller";
 import { DomainsAliasesModule } from "./aliases/aliases.module";
@@ -23,6 +24,7 @@ import { DomainsRspamdModule } from "./rspamd/rspamd.module";
     CustomPermissionGuardModule,
     AuditLogModule,
     DkimModule,
+    MailStorageModule,
     DomainsRecipientsModule,
     DomainsAliasesModule,
     DomainsDkimModule,

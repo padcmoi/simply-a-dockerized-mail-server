@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const emit = defineEmits<{
   "update:open": [boolean];
-  save: [{ domain: string; quotaMb: number }];
+  save: [{ quotaMb: number }];
   delete: [];
 }>();
 
@@ -15,16 +15,13 @@ const props = defineProps<{
 }>();
 
 const MB = 1024 * 1024;
-const FQDN_RE = /^[a-z0-9.-]+\.[a-z]{2,}$/i;
 
 const confirmDeleteOpen = ref(false);
-const domainField = ref("");
 const quotaMbField = ref(10);
 
-const domainInvalid = computed(() => !FQDN_RE.test(domainField.value.trim()));
 const quotaUnderLimit = computed(() => quotaMbField.value < props.minQuotaMb);
 const quotaOverLimit = computed(() => quotaMbField.value > props.maxQuotaMb);
-const hasError = computed(() => domainInvalid.value || quotaUnderLimit.value || quotaOverLimit.value);
+const hasError = computed(() => quotaUnderLimit.value || quotaOverLimit.value);
 
 const { t } = useI18n();
 
@@ -32,16 +29,17 @@ watch(
   () => props.open,
   (v) => {
     if (!v) return;
-    domainField.value = props.item.domain;
     const bytes = Number(props.item.quota);
     quotaMbField.value = Number.isFinite(bytes) && bytes > 0 ? Math.round(bytes / MB) : props.minQuotaMb;
   },
   { immediate: true }
 );
 
+// Quota is the only editable field: there is no rename route on the API, at any
+// permission tier (see admin-domains.controller.ts).
 function onSave() {
   if (hasError.value) return;
-  emit("save", { domain: domainField.value.trim().toLowerCase(), quotaMb: quotaMbField.value });
+  emit("save", { quotaMb: quotaMbField.value });
 }
 
 function onDeleteConfirmed() {
@@ -58,8 +56,8 @@ function onDeleteConfirmed() {
         </template>
 
         <div class="space-y-4">
-          <UFormField :label="t('domains.form.fqdn')" :error="domainInvalid ? t('domains.adminModal.fqdnInvalid') : undefined">
-            <UInput v-model="domainField" icon="i-lucide-globe" class="w-full" />
+          <UFormField :label="t('domains.form.fqdn')" :hint="t('domains.adminModal.fqdnLocked')">
+            <UInput :model-value="item.domain" icon="i-lucide-globe" disabled class="w-full" />
           </UFormField>
 
           <UFormField

@@ -22,6 +22,7 @@ export default {
   form: {
     title: "Ajouter un domaine",
     fqdn: "FQDN",
+    fqdnInvalid: "Doit être un FQDN valide",
     quotaMb: "Quota (Mo)",
     quotaMax: "Max {value} Mo",
     quotaMin: "Minimum {value} Mo",
@@ -45,11 +46,14 @@ export default {
   adminModal: {
     button: "Administrer",
     title: "Administration du domaine",
-    fqdnInvalid: "Doit être un FQDN valide",
+    fqdnLocked:
+      "Un nom de domaine ne peut pas être modifié : toutes les adresses et tous les maildirs sur disque en découlent.",
     dangerZone: "Zone dangereuse",
     delete: "Supprimer ce domaine",
     confirmDelete: "Supprimer ce domaine ?",
-    confirmDeleteDesc: "Ceci supprime définitivement {domain} ainsi que ses destinataires, alias, quotas et clés DKIM.",
+    confirmDeleteDesc:
+      "Ceci supprime définitivement {domain} ainsi que ses destinataires, alias, quotas et clés DKIM. " +
+      "Tout le courrier stocké est effacé du disque.",
     saved: "Domaine mis à jour",
     saveFailed: "Échec de la mise à jour du domaine",
     deleted: "Domaine supprimé",

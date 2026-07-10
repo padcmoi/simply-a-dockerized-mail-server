@@ -3,13 +3,16 @@ import { ZodValidationPipe } from "../../../core/common/zod.pipe";
 import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
 import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
 import { RequireGlobalPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
-import { AdminDomainsApi, RemoveDomainDocs, RenameDomainDocs, ResizeDomainQuotaDocs } from "./admin-domains.openapi";
+import { AdminDomainsApi, RemoveDomainDocs, ResizeDomainQuotaDocs } from "./admin-domains.openapi";
 import { DomainsService } from "../domains.service";
-import { RenameDomainDto, ResizeDomainQuotaDto, renameDomainSchema, resizeDomainQuotaSchema } from "../domains.validation";
+import { ResizeDomainQuotaDto, resizeDomainQuotaSchema } from "../domains.validation";
 
-// Reserved for real server administrators, never domain owners: renaming a
-// live FQDN, resizing its quota, or deleting it outright -- 3 single-purpose
-// routes, one job each. Deliberately under its own "admin" URL prefix,
+// Reserved for real server administrators, never domain owners: resizing a
+// live domain's quota, or deleting it outright -- 2 single-purpose routes,
+// one job each. There is deliberately no rename route, for anyone, at any
+// permission tier: an FQDN is the domain's identity, embedded in every
+// `virtual_users.email` / `maildir` and in the maildir tree on disk, none of
+// which a rename would follow. Deliberately under its own "admin" URL prefix,
 // separate from the domain-scoped /domains/:domainId surface (recipients/
 // aliases/active/etc, where owner self-service is legitimate -- see
 // DomainsController). Full CRUD on the GLOBAL "domains" resource (no
@@ -20,19 +23,6 @@ import { RenameDomainDto, ResizeDomainQuotaDto, renameDomainSchema, resizeDomain
 @UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class AdminDomainsController {
   constructor(private readonly svc: DomainsService) {}
-
-  @Patch(":domainId/rename")
-  @RequireGlobalPermissions([
-    { resource: "domains", actions: ["access"] },
-    { resource: "superadmin", actions: ["access", "read", "create", "modify", "delete"] },
-  ])
-  @RenameDomainDocs()
-  rename(
-    @Param("domainId", ParseIntPipe) domainId: number,
-    @Body(new ZodValidationPipe(renameDomainSchema)) body: RenameDomainDto
-  ) {
-    return this.svc.update(domainId, body);
-  }
 
   @Patch(":domainId/quota")
   @RequireGlobalPermissions([

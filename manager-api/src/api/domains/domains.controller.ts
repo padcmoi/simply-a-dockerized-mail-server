@@ -82,11 +82,11 @@ export class DomainsController {
     return this.svc.create(body, req.user.id);
   }
 
-  // Rename / resize quota / delete moved OFF this controller entirely --
-  // see AdminDomainsController (PATCH/DELETE /admin/domains/:domainId).
-  // Kept fully separate on purpose: no plain /domains/:domainId PATCH/DELETE
-  // exists anymore, so there's no ambiguous "which route did I just call"
-  // surface for the 3 highest-risk domain actions.
+  // Resize quota / delete moved OFF this controller entirely -- see
+  // AdminDomainsController (PATCH/DELETE /admin/domains/:domainId). Kept fully
+  // separate on purpose: no plain /domains/:domainId PATCH/DELETE exists
+  // anymore, so there's no ambiguous "which route did I just call" surface for
+  // the highest-risk domain actions. Renaming lives on no controller at all.
 
   // Activating/deactivating is legitimate owner
   // self-service (not an identity/allocation change) -- deliberately kept on

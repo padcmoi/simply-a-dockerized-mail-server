@@ -12,7 +12,10 @@ services:
       OPENDKIM_API_URL: http://mail-opendkim:8080
       MAIL_VOLUME_PATH: /var/mail
     volumes:
-      - ${VOLUMES_PATH}/mail:/var/mail:ro
+      # Read-write, unlike the spool below: deleting a domain or a recipient has
+      # to take its maildir with it (MailStorageService), otherwise the mail of
+      # a mailbox that no longer exists keeps occupying the volume forever.
+      - ${VOLUMES_PATH}/mail:/var/mail
       - ${VOLUMES_PATH}/postfix-spool:/var/spool/postfix:ro
     networks:
       mail:

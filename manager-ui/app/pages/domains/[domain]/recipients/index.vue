@@ -241,7 +241,7 @@ async function onDeleteConfirmed() {
       <ListPagination v-model:page="page" :total="total" :limit="limit" />
     </template>
 
-    <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
+    <ConfirmModal v-model:open="confirmOpen" :description="t('recipients.confirmDeleteDesc')" @confirm="onDeleteConfirmed" />
 
     <RecipientEditModal
       v-if="editModalItem"

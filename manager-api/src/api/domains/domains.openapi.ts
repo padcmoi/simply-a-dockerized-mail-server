@@ -161,8 +161,9 @@ export const CreateDomainDocs = () =>
     })
   );
 
-// Rename/resize-quota/delete docs live in admin-domains.openapi.ts now --
-// see AdminDomainsController (PATCH/DELETE /admin/domains/:domainId).
+// Resize-quota/delete docs live in admin-domains.openapi.ts now -- see
+// AdminDomainsController (PATCH/DELETE /admin/domains/:domainId). Renaming a
+// domain is not offered by any route.
 
 export const TransferDomainOwnerDocs = () =>
   applyDecorators(
@@ -222,7 +223,7 @@ export const SetDomainActiveDocs = () =>
       summary: "Activate or deactivate a domain (Administration page)",
       description:
         "An inactive domain stops accepting inbound mail for its mailboxes. Deliberately owner-accessible " +
-        '(unlike rename/quota/delete, see admin-domains.openapi.ts) -- gated by the domain-tier "admin"+"domain" ' +
+        '(unlike quota/delete, see admin-domains.openapi.ts) -- gated by the domain-tier "admin"+"domain" ' +
         "resources together, see DomainsController.setActive.",
     }),
     ApiParam({

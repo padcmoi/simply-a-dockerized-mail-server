@@ -7,6 +7,7 @@ import { sha512crypt } from "../../../core/common/sha512-crypt";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualQuotaUser } from "../../../core/entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
+import { MailStorageService } from "../../../core/mail-storage/mail-storage.service";
 import { CreateRecipientDto, UpdateRecipientDto } from "./recipients.validation";
 
 // postmaster@<domain> is provisioned automatically by DomainsService.reservePostmaster
@@ -41,7 +42,8 @@ export class RecipientsService {
     @InjectRepository(VirtualDomain)
     private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(VirtualQuotaUser)
-    private readonly recipientQuotas: Repository<VirtualQuotaUser>
+    private readonly recipientQuotas: Repository<VirtualQuotaUser>,
+    private readonly storage: MailStorageService
   ) {}
 
   // Resolve the parent domain from `:domainId` and return its `domain`
@@ -228,12 +230,29 @@ export class RecipientsService {
     return this.recipients.save(current);
   }
 
+  // Two things outlive the `virtual_users` row unless taken out by hand.
+  //
+  // 1. The domain's quota aggregate. `virtual_quota_users` has an ON DELETE
+  //    CASCADE onto `virtual_users.email`, so its row does disappear -- but
+  //    MariaDB does not fire triggers for rows a foreign key cascade deletes,
+  //    so `virtual_quota_users_after_delete_agg` never runs and
+  //    `virtual_quota_domains` keeps counting the bytes and messages of a
+  //    mailbox that no longer exists. Deleting the quota row explicitly, first,
+  //    fires that trigger, which re-sums the surviving rows. The subtraction
+  //    stays in the trigger on purpose: it already owns the aggregate (see
+  //    1782760166966-CreateVirtualMail.ts), and a second copy of the arithmetic
+  //    here would be one more thing to keep in step with dovecot's writes.
+  //
+  // 2. The mail on disk, which no foreign key reaches. Removed last, once the
+  //    row is definitely gone.
   async remove(id: number, domain: string) {
     const current = await this.get(id, domain);
     if (isPostmaster(current.email, domain)) {
       throw new ApiError(HttpStatus.FORBIDDEN, "recipients.postmasterUndeletable", "postmaster@ cannot be deleted");
     }
+    await this.recipientQuotas.delete({ email: current.email });
     await this.recipients.remove(current);
+    await this.storage.removeRecipient(current.maildir, current.email);
     return { ok: true };
   }
 }

@@ -19,47 +19,14 @@ const adminDomainsModifyForbidden = {
   schema: { example: { statusCode: 403, message: "missing global domains.modify" } },
 };
 
-export const RenameDomainDocs = () =>
-  applyDecorators(
-    ApiOperation({
-      summary: "Rename a domain's FQDN",
-      description: "Single-purpose route -- quota is PATCH .../quota, activation is PATCH /domains/:domainId/active.",
-    }),
-    ApiBody({ schema: { example: { domain: "new-example.com" } } }),
-    ApiResponse({
-      status: 200,
-      description: "Domain renamed",
-      schema: {
-        example: {
-          id: 1,
-          ownerId: 7,
-          domain: "new-example.com",
-          quota: "104857600",
-          active: 1,
-          userStartDate: "2026-01-01",
-          userEndDate: null,
-          lastActivity: "2026-07-04T12:00:00.000Z",
-        },
-      },
-    }),
-    ApiResponse({
-      status: 400,
-      description: "Body validation failed (domain missing or not a valid FQDN), or domainId is not a valid integer",
-      schema: { example: { message: "Validation failed", issues: [] } },
-    }),
-    ApiResponse(adminDomainsModifyForbidden),
-    ApiResponse({
-      status: 404,
-      description: "Domain not found",
-      schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
-    })
-  );
-
 export const ResizeDomainQuotaDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: "Resize a domain's quota",
-      description: "Single-purpose route -- renaming is PATCH .../rename, activation is PATCH /domains/:domainId/active.",
+      description:
+        "Single-purpose route -- activation is PATCH /domains/:domainId/active. A domain's FQDN cannot be changed " +
+        "by any route: it is the identity every mailbox address, maildir column and on-disk maildir path is built " +
+        "from. A body carrying `domain` is rejected with 400, never silently ignored.",
     }),
     ApiBody({ schema: { example: { quota: 209715200 } } }),
     ApiResponse({
@@ -95,7 +62,11 @@ export const ResizeDomainQuotaDocs = () =>
 export const RemoveDomainDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: "Delete a domain (cascades users, aliases, quota rows, DKIM keys)",
+      summary: "Delete a domain (cascades users, aliases, quota rows, DKIM keys, and its maildir tree on disk)",
+      description:
+        "Removes /var/mail/vhosts/<domain>/ in full, so no orphan mail survives the row. Disk removal happens " +
+        "after the database row is gone: a leftover directory is recoverable, a mailbox whose mail vanished " +
+        "while its row lives on is not.",
     }),
     ApiResponse({
       status: 200,
