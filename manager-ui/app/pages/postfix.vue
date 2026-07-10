@@ -43,7 +43,7 @@ onMounted(load);
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <div class="flex items-start justify-between gap-3 flex-wrap">
       <UAlert
         color="neutral"

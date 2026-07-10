@@ -29,10 +29,10 @@ const tiles = computed(() => {
 </script>
 
 <template>
-  <div v-if="loading && !stats" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+  <div v-if="loading && !stats" class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
     <USkeleton v-for="i in 7" :key="i" class="h-16 w-full rounded-lg" />
   </div>
-  <div v-else-if="stats" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+  <div v-else-if="stats" class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
     <div v-for="tile in tiles" :key="tile.key" class="bg-elevated rounded-lg p-3 text-center">
       <p class="text-2xl font-bold">{{ tile.value.toLocaleString() }}</p>
       <p class="text-xs text-muted mt-1">{{ tile.label }}</p>

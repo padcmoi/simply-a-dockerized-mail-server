@@ -143,7 +143,7 @@ function occupancy(row: QuotaRow) {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <div class="flex items-start justify-between gap-3 flex-wrap">
       <UAlert
         color="neutral"
@@ -160,7 +160,7 @@ function occupancy(row: QuotaRow) {
     </h2>
     <USkeleton v-if="!hasLoadedOnce" class="h-16 w-full rounded-lg" />
     <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
         <UTable :columns="domainCols" :data="domainRows" :loading="loading" sticky>
           <!-- `quota`, `bytes` and `messages` arrive as strings: MariaDB
                BIGINTs, which the driver keeps as text rather than lose
@@ -188,7 +188,7 @@ function occupancy(row: QuotaRow) {
         </UTable>
       </UCard>
 
-      <div class="lg:hidden space-y-3">
+      <div class="xl:hidden space-y-3">
         <p v-if="domainRows.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
         <QuotaCard v-for="item in domainRows" v-else :key="item.id" :item="item" />
       </div>
@@ -208,7 +208,7 @@ function occupancy(row: QuotaRow) {
     </h2>
     <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
     <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
         <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" sticky>
           <template #quota-cell="{ row }">
             <span>{{ formatBytes(Number(row.original.quota ?? 0)) }}</span>
@@ -233,7 +233,7 @@ function occupancy(row: QuotaRow) {
         </UTable>
       </UCard>
 
-      <div class="lg:hidden space-y-3">
+      <div class="xl:hidden space-y-3">
         <p v-if="recipientRows.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
         <QuotaCard v-for="item in recipientRows" v-else :key="item.id" :item="item" />
       </div>

@@ -112,7 +112,7 @@ async function onDeleteConfirmed() {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <UAlert
       icon="i-lucide-users"
       :title="t('accounts.alertTitle')"
@@ -149,7 +149,7 @@ async function onDeleteConfirmed() {
     <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
 
     <template v-else>
-      <UCard class="hidden lg:block">
+      <UCard class="hidden xl:block">
         <UTable :loading="loading" :data="accounts" :columns="columns" sticky>
           <template #username-cell="{ row }">
             <div class="flex items-center gap-2">
@@ -214,7 +214,7 @@ async function onDeleteConfirmed() {
         </UTable>
       </UCard>
 
-      <div class="lg:hidden space-y-3">
+      <div class="xl:hidden space-y-3">
         <p v-if="accounts.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
         <AccountCard
           v-for="acc in accounts"

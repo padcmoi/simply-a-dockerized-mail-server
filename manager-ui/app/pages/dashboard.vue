@@ -148,7 +148,7 @@ const recipientsPerDomain = computed(() =>
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <div class="flex items-start justify-between gap-3 flex-wrap">
       <UAlert
         color="neutral"
@@ -174,7 +174,7 @@ const recipientsPerDomain = computed(() =>
       />
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <UCard>
         <template #header>
           <h2 class="font-semibold">{{ t("dashboard.disk.title") }}</h2>
@@ -201,7 +201,7 @@ const recipientsPerDomain = computed(() =>
       </UCard>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">

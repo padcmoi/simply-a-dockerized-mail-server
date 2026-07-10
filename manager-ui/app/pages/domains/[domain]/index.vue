@@ -68,7 +68,7 @@ const dkimStatusText = computed(() => {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <div class="flex items-center justify-between gap-2 flex-wrap">
       <div class="flex items-center gap-3 min-w-0">
         <UIcon name="i-lucide-globe" class="text-primary shrink-0 text-xl" />
@@ -141,7 +141,7 @@ const dkimStatusText = computed(() => {
       />
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <UCard>
         <template #header>
           <h2 class="font-semibold">{{ $t("domainDashboard.disk.title") }}</h2>
@@ -207,7 +207,7 @@ const dkimStatusText = computed(() => {
       </UCard>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <UCard
         :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
         @click="domainPath && navigateTo(`${domainPath}/recipients`)"
@@ -254,7 +254,7 @@ const dkimStatusText = computed(() => {
       </UCard>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <DomainRspamdCard v-if="canViewRspamd" :history="rspamdHistory" :loading="loading" />
       <DomainPostfixCard :queue="postfixQueue" :loading="postfixLoading" />
     </div>

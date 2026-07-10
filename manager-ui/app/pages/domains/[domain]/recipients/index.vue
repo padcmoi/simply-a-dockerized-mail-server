@@ -128,7 +128,7 @@ async function onDeleteConfirmed() {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <div class="flex items-start justify-between gap-3 flex-wrap">
       <UAlert
         color="neutral"
@@ -143,7 +143,7 @@ async function onDeleteConfirmed() {
 
     <!-- Same clickable card as the domain dashboard's section links, in the
          slot the create form used to occupy. -->
-    <div v-if="canCreateRecipients" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div v-if="canCreateRecipients" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <UCard
         :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
         @click="navigateTo(`/domains/${domainFqdn}/recipients/create`)"
@@ -168,7 +168,7 @@ async function onDeleteConfirmed() {
     <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
     <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
           <template #email-cell="{ row }">
             <div class="flex items-center gap-2">
@@ -227,7 +227,7 @@ async function onDeleteConfirmed() {
         </UTable>
       </UCard>
 
-      <div class="lg:hidden space-y-3">
+      <div class="xl:hidden space-y-3">
         <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
         <RecipientCard
           v-for="item in items"

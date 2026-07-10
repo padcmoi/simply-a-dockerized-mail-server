@@ -41,7 +41,7 @@ const limitOptions = [
 // column x direction, combining `sortBy`+`sortDir` into a single value here,
 // split back into 2 emits on change. Desktop drives the exact same state via
 // each table's own column headers (see useSortableHeader.ts) instead, so
-// this select is hidden there (`lg:hidden` below).
+// this select is hidden there (`xl:hidden` below).
 const sortOptions = computed(() =>
   props.sortableColumns.flatMap((c) => [
     { label: c.label, value: `${c.key}:asc`, icon: "i-lucide-arrow-up-narrow-wide" },
@@ -76,7 +76,7 @@ onMounted(() => {
   <div class="flex items-center justify-between gap-2 flex-wrap">
     <UInput v-model="searchModel" icon="i-lucide-search" :placeholder="t('common.search')" class="w-full sm:w-64" />
     <div class="flex items-center gap-2">
-      <USelectMenu v-model="sortModel" value-key="value" :items="sortOptions" class="w-56 lg:hidden" />
+      <USelectMenu v-model="sortModel" value-key="value" :items="sortOptions" class="w-56 xl:hidden" />
       <USkeleton v-if="!ready" class="h-8 w-24 rounded-md" />
       <USelectMenu v-else v-model="limitModel" value-key="value" :items="limitOptions" class="w-24" />
     </div>

@@ -57,7 +57,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <div class="flex items-start justify-between gap-3 flex-wrap">
       <UAlert
         color="neutral"
@@ -95,7 +95,7 @@ watchEffect(() => {
         {{ t("rspamdPage.history.noData") }}
       </p>
       <template v-else>
-        <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
+        <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
           <UTable :columns="tableColumns" :data="historyItems" :loading="historyLoading">
             <template #action-cell="{ row }">
               <UBadge :color="rspamdActionColor(row.original.action)" variant="subtle" size="xs">
@@ -113,7 +113,7 @@ watchEffect(() => {
           </UTable>
         </UCard>
 
-        <div class="lg:hidden space-y-3">
+        <div class="xl:hidden space-y-3">
           <RspamdHistoryCard v-for="item in historyItems" :key="item.id" :item="item" />
         </div>
       </template>

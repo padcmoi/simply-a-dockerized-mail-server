@@ -93,7 +93,7 @@ async function onDeleteConfirmed() {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <div class="flex items-start justify-between gap-3 flex-wrap">
       <UAlert
         color="neutral"
@@ -120,7 +120,7 @@ async function onDeleteConfirmed() {
     <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
     <template v-else>
-      <UCard class="hidden lg:block">
+      <UCard class="hidden xl:block">
         <UTable :loading="loading" :data="groups" :columns="columns" sticky>
           <template #name-cell="{ row }">
             <div class="flex items-center gap-2 min-w-0 max-w-64">
@@ -155,7 +155,7 @@ async function onDeleteConfirmed() {
         </UTable>
       </UCard>
 
-      <div class="lg:hidden space-y-3">
+      <div class="xl:hidden space-y-3">
         <p v-if="groups.length === 0" class="text-sm text-muted text-center py-6">{{ t("groups.empty") }}</p>
         <GroupCard v-for="group in groups" v-else :key="group.id" :group="group" @delete="requestDelete(group)" />
       </div>

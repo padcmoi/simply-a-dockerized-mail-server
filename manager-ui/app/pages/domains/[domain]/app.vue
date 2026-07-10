@@ -194,7 +194,7 @@ async function changeDomainOwner() {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <UAlert color="warning" variant="subtle" icon="i-lucide-shield-alert" :title="t('domainDashboard.admin.subtitle')" />
 
     <UAccordion :items="accordionItems" :ui="{ trigger: 'py-4', body: 'pb-6' }">

@@ -188,7 +188,7 @@ async function create() {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 lg:p-8 space-y-6 min-w-0">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <UAlert
       color="neutral"
       variant="subtle"
@@ -203,7 +203,7 @@ async function create() {
 
     <!-- Two cards side by side above `lg`, stacked below, like the domain
          dashboard's own pairs. -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
       <UCard>
         <template #header>
           <h2 class="font-semibold">{{ t("recipients.form.title") }}</h2>
