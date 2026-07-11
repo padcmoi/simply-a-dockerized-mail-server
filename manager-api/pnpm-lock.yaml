@@ -380,7 +380,7 @@ packages:
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
 
   '@naskot/custom-permission-guard@file:libs/naskot-custom-permission-guard-1.3.0.tgz':
-    resolution: {integrity: sha512-9i4tyLSCDCOs7ADqF7LZAWWyJ1jOrk812rbFeDDbBQX4qYksBRzysylHg2wSlOMsB8j/4stQnKTuif3WqYRRHQ==, tarball: file:libs/naskot-custom-permission-guard-1.3.0.tgz}
+    resolution: {integrity: sha512-M4gKntJMZVuBH6m+L4JOV/wLi0DdWaU6dpFLaHGpCuiGy7BOhpps5MsFucJupRgXLyNgyFYS+ffODA0PRmmu3A==, tarball: file:libs/naskot-custom-permission-guard-1.3.0.tgz}
     version: 1.3.0
     engines: {node: '>=18'}
 
