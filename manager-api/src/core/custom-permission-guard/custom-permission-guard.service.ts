@@ -101,6 +101,7 @@ export class CustomPermissionGuardService {
             description: g.description,
             ownerId: g.ownerId,
             isDefault: g.isDefault === 1,
+            protected: g.isProtected === 1,
             memberCount: countMap.get(g.id) ?? 0,
             createdAt: g.createdAt,
           }));
@@ -114,6 +115,7 @@ export class CustomPermissionGuardService {
             description: g.description,
             ownerId: g.ownerId,
             isDefault: g.isDefault === 1,
+            protected: g.isProtected === 1,
             createdAt: g.createdAt,
           };
         },
@@ -125,6 +127,13 @@ export class CustomPermissionGuardService {
         },
         setGroupOwner: async (groupId, accountId) => {
           await this.groups.update(groupId as string, { ownerId: accountId as string | null });
+        },
+        findGroupProtected: async (groupId) => {
+          const g = await this.groups.findOne({ where: { id: groupId as string }, select: { isProtected: true } });
+          return g?.isProtected === 1;
+        },
+        setGroupProtected: async (groupId, isProtected) => {
+          await this.groups.update(groupId as string, { isProtected: isProtected ? 1 : 0 });
         },
         deleteGroup: async (groupId) => {
           await this.groups.delete(groupId as string);

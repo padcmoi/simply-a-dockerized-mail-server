@@ -72,6 +72,7 @@ export class GroupsService {
       ownerId: g.ownerId,
       ownerUsername: g.ownerId !== null ? (ownerMap.get(g.ownerId) ?? null) : null,
       isDefault: g.isDefault === 1,
+      protected: g.isProtected === 1,
       memberCount: countMap.get(g.id) ?? 0,
     }));
   }
@@ -89,7 +90,7 @@ export class GroupsService {
     return this.toItem(await this.findOrFail(groupId));
   }
 
-  async update(id: string, actingUserId: string, input: UpdateGroupDto) {
+  async update(id: string, actingUser: ActingUser, input: UpdateGroupDto) {
     const group = await this.findOrFail(id);
     if (input.name !== undefined && input.name !== group.name) {
       const clash = await this.groups.findOne({ where: { name: input.name, id: Not(id) } });
@@ -109,11 +110,11 @@ export class GroupsService {
 
     if (input.isDefault !== undefined) {
       if (input.isDefault) {
-        await this.applyDefaultGroup(id, actingUserId);
+        await this.applyDefaultGroup(id, actingUser.id);
       } else if (group.isDefault === 1) {
         await this.cpg.guard.setDefaultGroup(null);
         await this.auditLog.record({
-          actorId: actingUserId,
+          actorId: actingUser.id,
           action: "group.default.changed",
           entityType: "group",
           entityId: id,
@@ -121,6 +122,26 @@ export class GroupsService {
           after: { isDefault: false },
         });
       }
+    }
+
+    // Toggling protection is ROOT-ONLY, deliberately not an ACL action: the
+    // route is edit-group gated, but a non-root holding edit-group still cannot
+    // protect/unprotect a group. Root bypasses the route guard and passes here.
+    // Guarded on an actual change so a non-root editing name/description while
+    // re-submitting the unchanged protected value is not rejected.
+    if (input.protected !== undefined && input.protected !== (group.isProtected === 1)) {
+      if (!actingUser.isRoot) {
+        throw new ForbiddenException("Only a root account can change a group's protection");
+      }
+      await this.cpg.guard.setGroupProtected(id, input.protected);
+      await this.auditLog.record({
+        actorId: actingUser.id,
+        action: "group.protection.changed",
+        entityType: "group",
+        entityId: id,
+        before: { protected: group.isProtected === 1 },
+        after: { protected: input.protected },
+      });
     }
 
     return this.toItem(await this.findOrFail(id));
@@ -142,7 +163,15 @@ export class GroupsService {
   }
 
   async remove(id: string, actingUser: ActingUser) {
-    await this.findOrFail(id);
+    const group = await this.findOrFail(id);
+
+    // Protection is absolute: a protected group is never deletable, by anyone,
+    // root included. The rule lives in the lib (guard.deleteGroup refuses it),
+    // but root's rawDeleteGroup path below deliberately bypasses the lib, so it
+    // is enforced here too, before either delete path and before anti-escalation.
+    if (group.isProtected === 1) {
+      throw new ForbiddenException("This group is protected and cannot be deleted");
+    }
 
     // Anti-escalade also guards DESTRUCTION, not just granting: a non-root
     // holding delete-group must not be able to nuke a group more privileged
@@ -393,6 +422,7 @@ export class GroupsService {
       ownerId: group.ownerId,
       ownerUsername,
       isDefault: group.isDefault === 1,
+      protected: group.isProtected === 1,
       memberCount,
     };
   }

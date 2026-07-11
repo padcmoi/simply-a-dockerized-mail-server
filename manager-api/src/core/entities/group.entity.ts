@@ -27,6 +27,12 @@ export class Group {
   @Column({ name: "is_default", type: "tinyint", width: 1, default: 0 })
   isDefault!: number;
 
+  // A protected group can never be deleted, by anyone (root included). The rule
+  // lives in @naskot/custom-permission-guard (deleteGroup) and is honoured on
+  // GroupsService's raw-delete path too. Toggling it is root-only, not an ACL.
+  @Column({ name: "is_protected", type: "tinyint", width: 1, default: 0 })
+  isProtected!: number;
+
   @Column({
     name: "created_at",
     type: "datetime",

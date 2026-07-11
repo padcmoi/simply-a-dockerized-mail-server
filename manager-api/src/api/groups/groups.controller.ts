@@ -104,7 +104,7 @@ export class GroupsController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body(new ZodValidationPipe(updateGroupSchema)) body: UpdateGroupDto
   ) {
-    return this.svc.update(id, req.user.id, body);
+    return this.svc.update(id, req.user, body);
   }
 
   @Delete(":id")
