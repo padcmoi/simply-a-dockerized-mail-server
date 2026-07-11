@@ -16,7 +16,7 @@ const { set: setBreadcrumb } = useBreadcrumb();
 const { setGlobalPermissions } = useGroups();
 
 const groupId = computed(() => String(route.params.id));
-const { group, loading } = useGroupDetail(groupId);
+const { group, loading, refresh } = useGroupDetail(groupId);
 
 watchEffect(() => {
   setBreadcrumb([
@@ -34,6 +34,7 @@ async function onSaveGlobal(permissions: { resource: string; action: string }[])
     toast.add({ title: t("groups.detail.permissions.saved"), color: "success" });
   } catch (e) {
     toast.add({ title: t("groups.detail.permissions.saveFailed"), description: (e as Error).message, color: "error" });
+    await refresh();
   } finally {
     savingGlobalPerms.value = false;
   }

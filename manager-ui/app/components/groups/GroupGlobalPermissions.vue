@@ -14,6 +14,7 @@ const globalSet = reactive(new Set<string>());
 const { t } = useI18n();
 const { call } = useApi();
 const { globalResourceLabels: resourceLabels, actionLabelsFor } = usePermissionLabels();
+const { isRoot, hasGlobal } = usePermissions();
 
 // Single source of truth for the resource/action catalog is the API, not a
 // hardcoded copy here -- see GroupsController.getPermissionsCatalog.
@@ -35,6 +36,10 @@ const globalDependsOn = computed(() => {
   return map;
 });
 
+// A resource with no action visible to this actor is hidden entirely, name
+// included (see visibleActionsOf below for the root/non-root rule).
+const visibleResources = computed(() => GLOBAL_RESOURCES.value.filter((r) => visibleActionsOf(r).length > 0));
+
 watch(() => props.globalPermissions, syncFromProps, { immediate: true });
 
 function permKey(resource: string, action: string) {
@@ -43,6 +48,18 @@ function permKey(resource: string, action: string) {
 
 function actionsOf(resource: string) {
   return actionsByResource.value[resource] ?? [];
+}
+
+// A non-root actor only sees, and can toggle, the permissions it holds itself
+// (the display counterpart of the server-side anti-escalation: you cannot grant
+// what you do not have). Root sees the whole catalog. Global tier only. This
+// drives DISPLAY and the bulk buttons only -- debouncedSave still spans the
+// full catalog, so a permission the actor cannot see stays untouched on the
+// group rather than being silently stripped.
+function visibleActionsOf(resource: string) {
+  const all = actionsOf(resource);
+  if (isRoot.value) return [...all];
+  return all.filter((action) => hasGlobal(resource, action));
 }
 
 function syncFromProps() {
@@ -73,12 +90,16 @@ function applyToggle(resource: string, action: string, checked: boolean) {
   else globalSet.delete(key);
 }
 
-function setResourceAll(resource: string, checked: boolean) {
-  for (const a of actionsOf(resource)) {
+function setActions(resource: string, actions: readonly string[], checked: boolean) {
+  for (const a of actions) {
     const key = permKey(resource, a);
     if (checked) globalSet.add(key);
     else globalSet.delete(key);
   }
+}
+
+function setResourceAll(resource: string, checked: boolean) {
+  setActions(resource, actionsOf(resource), checked);
 }
 
 // Cross-resource counterpart of applyToggle's own-resource "access" rule
@@ -106,14 +127,17 @@ function toggle(resource: string, action: string, checked: boolean) {
   debouncedSave();
 }
 
+// "All/None" on a resource, and the top "Check/Uncheck all", act on the actions
+// actually shown to this actor (the visible ones), never on permissions hidden
+// because it does not hold them.
 function checkAllResource(resource: string, checked: boolean) {
-  setResourceAll(resource, checked);
-  enforceDependsOn(resource, [...actionsOf(resource)], checked);
+  setActions(resource, visibleActionsOf(resource), checked);
+  enforceDependsOn(resource, [...visibleActionsOf(resource)], checked);
   debouncedSave();
 }
 
 function checkAllVisible(checked: boolean) {
-  for (const resource of GLOBAL_RESOURCES.value) setResourceAll(resource, checked);
+  for (const resource of visibleResources.value) setActions(resource, visibleActionsOf(resource), checked);
   debouncedSave();
 }
 </script>
@@ -141,13 +165,13 @@ function checkAllVisible(checked: boolean) {
         <USkeleton v-for="i in 4" :key="i" class="h-24 w-full rounded-lg" />
       </div>
       <GroupPermissionResourceBlock
-        v-for="resource in GLOBAL_RESOURCES"
+        v-for="resource in visibleResources"
         v-else
         :key="resource"
         :resource="resource"
         :label="resourceLabels[resource] ?? resource"
-        :actions="actionsByResource[resource] ?? []"
-        :action-labels="actionLabelsFor('global', resource, actionsByResource[resource] ?? [])"
+        :actions="visibleActionsOf(resource)"
+        :action-labels="actionLabelsFor('global', resource, visibleActionsOf(resource))"
         :permissions="globalSet"
         @toggle="(action, checked) => toggle(resource, action, checked)"
         @check-all="(checked) => checkAllResource(resource, checked)"
