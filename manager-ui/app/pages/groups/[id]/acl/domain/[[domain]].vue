@@ -92,7 +92,13 @@ onMounted(loadDomains);
     </div>
 
     <template v-else-if="group">
-      <GroupDetailTabs :group-id="groupId" active="domain" :group-name="group.name" :domain-label="domainFqdn" />
+      <GroupDetailTabs
+        :group-id="groupId"
+        active="domain"
+        :group-name="group.name"
+        :is-protected="group.protected"
+        :domain-label="domainFqdn"
+      />
 
       <GroupDomainPermissions
         :group-id="groupId"

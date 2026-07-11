@@ -17,6 +17,7 @@ const { t } = useI18n();
           <UBadge v-if="group.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">{{
             t("groups.defaultBadge")
           }}</UBadge>
+          <UIcon v-if="group.protected" name="i-lucide-lock" class="shrink-0 text-warning" :title="t('groups.protectedBadge')" />
         </div>
         <p class="text-sm text-muted truncate">{{ group.description || t("groups.noDescription") }}</p>
       </div>

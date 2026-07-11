@@ -130,6 +130,12 @@ async function onDeleteConfirmed() {
               <UBadge v-if="row.original.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">{{
                 t("groups.defaultBadge")
               }}</UBadge>
+              <UIcon
+                v-if="row.original.protected"
+                name="i-lucide-lock"
+                class="shrink-0 text-warning"
+                :title="t('groups.protectedBadge')"
+              />
             </div>
           </template>
           <template #description-cell="{ row }">

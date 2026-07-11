@@ -8,6 +8,7 @@ export default {
   backToList: "Retour aux groupes",
   noDescription: "Aucune description",
   defaultBadge: "Par défaut",
+  protectedBadge: "Protégé",
   table: {
     name: "Nom",
     description: "Description",
@@ -22,6 +23,8 @@ export default {
     isDefault: "Groupe par défaut",
     isDefaultHint:
       "Les nouveaux comptes invités sans groupe explicite héritent de ce groupe. Un seul groupe par défaut peut être actif à la fois.",
+    protected: "Groupe protégé",
+    protectedHint: "Un groupe protégé ne peut jamais être supprimé, par personne, root inclus. Seul un compte root peut changer cela.",
   },
   toast: {
     loadFailed: "Échec du chargement des groupes",

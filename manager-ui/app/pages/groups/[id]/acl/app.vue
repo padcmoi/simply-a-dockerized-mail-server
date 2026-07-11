@@ -60,7 +60,7 @@ async function onSaveGlobal(permissions: { resource: string; action: string }[])
     </div>
 
     <template v-else-if="group">
-      <GroupDetailTabs :group-id="groupId" active="application" :group-name="group.name" />
+      <GroupDetailTabs :group-id="groupId" active="application" :group-name="group.name" :is-protected="group.protected" />
       <GroupGlobalPermissions :global-permissions="group.globalPermissions" :saving="savingGlobalPerms" @save="onSaveGlobal" />
     </template>
   </div>

@@ -7,6 +7,7 @@ export interface GroupItem {
   ownerUsername: string | null;
   memberCount: number;
   isDefault?: boolean;
+  protected?: boolean;
 }
 
 export interface GroupPermission {
@@ -84,7 +85,10 @@ export function useGroups() {
     return created;
   }
 
-  async function update(id: string, input: { name?: string; description?: string | null; isDefault?: boolean }) {
+  async function update(
+    id: string,
+    input: { name?: string; description?: string | null; isDefault?: boolean; protected?: boolean }
+  ) {
     const updated = await call<GroupItem>(`/groups/${id}`, { method: "PATCH", body: input });
     const idx = groups.value.findIndex((g) => g.id === id);
     if (idx !== -1) {

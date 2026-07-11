@@ -75,7 +75,7 @@ onMounted(async () => {
     </div>
 
     <template v-else-if="group">
-      <GroupDetailTabs :group-id="groupId" active="owner" :group-name="group.name" />
+      <GroupDetailTabs :group-id="groupId" active="owner" :group-name="group.name" :is-protected="group.protected" />
 
       <UCard>
         <template #header>

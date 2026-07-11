@@ -8,6 +8,7 @@ export default {
   backToList: "Back to groups",
   noDescription: "No description",
   defaultBadge: "Default",
+  protectedBadge: "Protected",
   table: {
     name: "Name",
     description: "Description",
@@ -21,6 +22,8 @@ export default {
     submit: "Create",
     isDefault: "Default group",
     isDefaultHint: "New invited accounts without an explicit group inherit this one. Only one group can be default at a time.",
+    protected: "Protected group",
+    protectedHint: "A protected group can never be deleted, by anyone, root included. Only a root account can change this.",
   },
   toast: {
     loadFailed: "Failed to load groups",

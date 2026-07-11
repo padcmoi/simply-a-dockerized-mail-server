@@ -7,13 +7,16 @@ definePageMeta({
 });
 
 const savingInfo = ref(false);
-const form = reactive({ name: "", description: "", isDefault: false });
+const form = reactive({ name: "", description: "", isDefault: false, protected: false });
 
 const route = useRoute();
 const { t } = useI18n();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { update } = useGroups();
+// Toggling protection is root-only (enforced by the API too); a non-root never
+// sees the control. Not an ACL, deliberately.
+const { isRoot } = usePermissions();
 
 const groupId = computed(() => String(route.params.id));
 const { group, loading } = useGroupDetail(groupId);
@@ -25,6 +28,7 @@ watch(
     form.name = g.name;
     form.description = g.description ?? "";
     form.isDefault = g.isDefault ?? false;
+    form.protected = g.protected ?? false;
   },
   { immediate: true }
 );
@@ -40,6 +44,8 @@ async function saveInfo() {
       name: form.name,
       description: form.description || null,
       isDefault: form.isDefault,
+      // Unchanged for a non-root (the API ignores a no-op), only ever toggled by root.
+      protected: form.protected,
     });
     if (group.value) Object.assign(group.value, updated);
     toast.add({ title: t("groups.detail.saved"), color: "success" });
@@ -70,7 +76,7 @@ async function saveInfo() {
     </div>
 
     <template v-else-if="group">
-      <GroupDetailTabs :group-id="groupId" active="info" :group-name="group.name" />
+      <GroupDetailTabs :group-id="groupId" active="info" :group-name="group.name" :is-protected="group.protected" />
 
       <UCard>
         <template #header>
@@ -89,6 +95,15 @@ async function saveInfo() {
           :ui="{ root: 'border-0 rounded-none p-0' }"
           :label="t('groups.form.isDefault')"
           :description="t('groups.form.isDefaultHint')"
+        />
+        <UCheckbox
+          v-if="isRoot"
+          v-model="form.protected"
+          class="mt-3"
+          variant="card"
+          :ui="{ root: 'border-0 rounded-none p-0' }"
+          :label="t('groups.form.protected')"
+          :description="t('groups.form.protectedHint')"
         />
         <template #footer>
           <div class="flex justify-end">

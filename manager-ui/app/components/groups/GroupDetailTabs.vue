@@ -7,6 +7,8 @@ const props = defineProps<{
   // The "info" card shows the group's own name instead of a generic label
   // -- it's the group's identity, not just a settings section.
   groupName: string;
+  // Padlock on the "info" card when the group is protected (cannot be deleted).
+  isProtected?: boolean;
   // FQDN of the currently viewed domain, shown as a subtitle on the
   // "domain" card so it's clear which domain is being edited, not just that
   // the Domaine section is active.
@@ -57,6 +59,12 @@ function targetFor(section: Section) {
         <span v-else class="font-medium truncate min-w-0" :class="item.value === active ? 'text-primary' : ''">{{
           item.label
         }}</span>
+        <UIcon
+          v-if="item.value === 'info' && isProtected"
+          name="i-lucide-lock"
+          class="shrink-0 text-warning"
+          :title="t('groups.protectedBadge')"
+        />
         <UIcon v-if="item.value !== active" name="i-lucide-arrow-right" class="ml-auto text-muted shrink-0" />
       </div>
     </UCard>

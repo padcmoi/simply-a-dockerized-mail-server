@@ -604,6 +604,7 @@ export interface Locales {
     backToList: string;
     noDescription: string;
     defaultBadge: string;
+    protectedBadge: string;
     table: {
       name: string;
       description: string;
@@ -617,6 +618,8 @@ export interface Locales {
       submit: string;
       isDefault: string;
       isDefaultHint: string;
+      protected: string;
+      protectedHint: string;
     };
     toast: {
       loadFailed: string;

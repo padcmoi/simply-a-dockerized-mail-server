@@ -90,7 +90,7 @@ onMounted(loadMembers);
     </div>
 
     <template v-else-if="group">
-      <GroupDetailTabs :group-id="groupId" active="members" :group-name="group.name" />
+      <GroupDetailTabs :group-id="groupId" active="members" :group-name="group.name" :is-protected="group.protected" />
 
       <GroupMembersCard
         :members="members"
