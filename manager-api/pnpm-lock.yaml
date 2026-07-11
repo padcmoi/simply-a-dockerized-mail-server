@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@naskot/custom-permission-guard':
-        specifier: ^1.2.0
-        version: 1.2.0
+        specifier: file:libs/naskot-custom-permission-guard-1.3.0.tgz
+        version: file:libs/naskot-custom-permission-guard-1.3.0.tgz
       '@nestjs/common':
         specifier: ^11.0.0
         version: 11.1.27(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -379,8 +379,9 @@ packages:
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
 
-  '@naskot/custom-permission-guard@1.2.0':
-    resolution: {integrity: sha512-v8QjG64ciArdtyrzdNtj7U5sg3ocfgfx4BPfkYoIUF3ZiTPtm1R5pnsWVM3dbMcK5M5nwF7M4XuevYkX9mvlhg==}
+  '@naskot/custom-permission-guard@file:libs/naskot-custom-permission-guard-1.3.0.tgz':
+    resolution: {integrity: sha512-ltUUvjYw8Fu5UejbOezQA5r6GOdjApfMbJ1IwCwMbxfgp7DKnEHD7Q5P5zjOsk3VEoUU8VPtWdkwiIFukc0fJw==, tarball: file:libs/naskot-custom-permission-guard-1.3.0.tgz}
+    version: 1.3.0
     engines: {node: '>=18'}
 
   '@nestjs/cli@11.0.23':
@@ -2695,7 +2696,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.16.0': {}
 
-  '@naskot/custom-permission-guard@1.2.0': {}
+  '@naskot/custom-permission-guard@file:libs/naskot-custom-permission-guard-1.3.0.tgz': {}
 
   '@nestjs/cli@11.0.23(@types/node@22.20.0)(prettier@3.9.3)':
     dependencies:

@@ -4,6 +4,7 @@ ENV NODE_ENV=development
 RUN apk add --no-cache tini openssl
 RUN corepack enable
 COPY package.json pnpm-lock.yaml* ./
+COPY libs ./libs
 RUN pnpm install --frozen-lockfile || pnpm install
 COPY tsconfig.json nest-cli.json ./
 # src/ is provided by volume mount at runtime

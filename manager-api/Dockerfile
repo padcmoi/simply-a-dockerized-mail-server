@@ -2,6 +2,7 @@ FROM node:22-alpine AS build
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml* ./
+COPY libs ./libs
 RUN pnpm install --frozen-lockfile || pnpm install
 COPY tsconfig.json nest-cli.json ./
 COPY src ./src
