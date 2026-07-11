@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { AclModule } from "../../core/acl/acl.module";
 import { CustomPermissionGuardModule } from "../../core/custom-permission-guard/custom-permission-guard.module";
 import { AccountInvitation } from "../../core/entities/account-invitation.entity";
 import { Account } from "../../core/entities/account.entity";
@@ -14,6 +15,7 @@ import { AccountsService } from "./accounts.service";
     TypeOrmModule.forFeature([Account, AccountInvitation, Group, GroupMember]),
     MailerModule,
     CustomPermissionGuardModule,
+    AclModule,
   ],
   providers: [AccountsService],
   controllers: [AccountsController],

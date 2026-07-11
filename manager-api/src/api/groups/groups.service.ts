@@ -1,18 +1,16 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { CustomPermissionGuardConfigError } from "@naskot/custom-permission-guard";
 import { In, Like, Not, Repository } from "typeorm";
 import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import type { GlobalAction } from "../../core/custom-permission-guard/permission-catalog";
+import { AntiEscalationService, type ActingUser } from "../../core/acl/anti-escalation.service";
 import { Account } from "../../core/entities/account.entity";
 import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { CreateGroupDto, SetDomainPermissionsDto, SetGlobalPermissionsDto, UpdateGroupDto } from "./groups.validation";
-
-type ActingUser = { id: string; isRoot: boolean };
 
 // `ownerUsername`/`memberCount` (enriched post-query, see `enrichGroups`)
 // aren't real columns on `groups` -- not sortable without a join/subquery,
@@ -27,7 +25,8 @@ export class GroupsService {
     @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     private readonly cpg: CustomPermissionGuardService,
-    private readonly auditLog: AuditLogService
+    private readonly auditLog: AuditLogService,
+    private readonly antiEscalation: AntiEscalationService
   ) {}
 
   // `query.limit` absent = legacy unpaginated behavior, still relied on by
@@ -145,6 +144,23 @@ export class GroupsService {
   async remove(id: string, actingUser: ActingUser) {
     await this.findOrFail(id);
 
+    // Anti-escalade also guards DESTRUCTION, not just granting: a non-root
+    // holding delete-group must not be able to nuke a group more privileged
+    // than itself. Deleting it isn't an escalation (it grants the actor
+    // nothing), but it strips every member of rights the actor never held --
+    // a sabotage path. Gated on GLOBAL permissions only, by design: the domain
+    // tier is per-domain and has its own ownership semantics, so a group merely
+    // carrying a domain permission you happen not to hold must NOT block you
+    // from deleting it. You may delete a group whose global permissions you
+    // hold in full. Root passes.
+    const groupGlobal = await this.cpg.guard.findGroupGlobalPermissions(id);
+    await this.antiEscalation.assertActingUserHolds(
+      actingUser,
+      groupGlobal,
+      [],
+      "Cannot delete a group carrying permissions you do not hold"
+    );
+
     // Members drop this group's permissions once detached (ON DELETE CASCADE
     // on `group_members`, keeping any other group memberships intact);
     // capture the list here purely so the audit trail isn't a silent FK
@@ -209,19 +225,15 @@ export class GroupsService {
   async setGlobalPermissions(id: string, actingUser: ActingUser, permissions: SetGlobalPermissionsDto["permissions"]) {
     await this.findOrFail(id);
 
-    // Anti-escalade: can't grant what you don't already hold yourself. Stays
-    // out of the lib by design (composed from assertOne, see architecture.md
-    // §1) -- only the cross-group anti-lockout check below lives in the lib.
-    if (!actingUser.isRoot) {
-      for (const p of permissions) {
-        const held = await this.isGranted(() =>
-          this.cpg.guard.assertOne.global(actingUser.id, p.resource, { acrud: [p.action] })
-        );
-        if (!held) throw new ForbiddenException("Cannot grant a permission you do not hold");
-      }
-    }
-
     const before = await this.cpg.guard.findGroupGlobalPermissions(id);
+
+    // Anti-escalade on the DELTA: a non-root may only add or remove permissions
+    // it holds itself. Permissions already on the group that it does not hold
+    // pass through untouched, so editing one resource is never blocked by
+    // unrelated rights the group carries above the actor. The lib's
+    // findUnheldPermissions computes "holds"; only the anti-lockout below lives
+    // in the lib itself.
+    await this.antiEscalation.assertActingUserCanReplace(actingUser, before, permissions, [], []);
 
     // setGroupGlobalPermissions applies the access-prerequisite write-time
     // cleanup and the groups.access+modify anti-lockout invariant internally
@@ -258,16 +270,13 @@ export class GroupsService {
       }
     }
 
-    if (!actingUser.isRoot) {
-      for (const p of permissions) {
-        const held = await this.isGranted(() =>
-          this.cpg.guard.assertOne.domain(actingUser.id, p.domainId, p.resource, { acrud: [p.action] })
-        );
-        if (!held) throw new ForbiddenException("Cannot grant a permission you do not hold");
-      }
-    }
-
     const before = await this.cpg.guard.findGroupDomainPermissions(id);
+
+    // Anti-escalade on the DELTA (see setGlobalPermissions): only the domain
+    // permissions actually added or removed face the holds check; untouched
+    // rows the actor does not hold pass through.
+    await this.antiEscalation.assertActingUserCanReplace(actingUser, [], [], before, permissions);
+
     await this.cpg.guard.setGroupDomainPermissions(id, permissions);
 
     await this.auditLog.record({
@@ -280,18 +289,6 @@ export class GroupsService {
     });
 
     return this.getDetail(id);
-  }
-
-  // Turns a throw-on-forbidden assertOne call into a boolean for the
-  // anti-escalade pre-checks above -- never swallows a real misconfiguration.
-  private async isGranted(fn: () => Promise<void>): Promise<boolean> {
-    try {
-      await fn();
-      return true;
-    } catch (err) {
-      if (err instanceof CustomPermissionGuardConfigError) throw err;
-      return false;
-    }
   }
 
   async updateOwner(id: string, actingUser: ActingUser, newOwnerId: string) {
@@ -324,6 +321,19 @@ export class GroupsService {
     await this.assertOwnerOrRootOrPermitted(group, actingUser, "add-group-member");
     const account = await this.accounts.findOne({ where: { id: accountId } });
     if (!account) throw new NotFoundException(`Account #${accountId} not found`);
+
+    // Anti-escalade on membership: joining a group grants ALL of its permissions
+    // by union, so a non-root actor may only add a member (self included) to a
+    // group whose permissions it already holds in full. Deliberately NOT gated by
+    // ownership -- owning a root-created all-powerful group must not let you
+    // inherit it by self-adding. Without this, `add-group-member` alone was a
+    // privilege-escalation path: join the "admin" group, gain everything.
+    const [groupGlobal, groupDomain] = await Promise.all([
+      this.cpg.guard.findGroupGlobalPermissions(id),
+      this.cpg.guard.findGroupDomainPermissions(id),
+    ]);
+    await this.antiEscalation.assertActingUserHolds(actingUser, groupGlobal, groupDomain);
+
     await this.cpg.guard.assignAccountToGroup(accountId, id);
     return this.memberList(id);
   }
@@ -361,10 +371,10 @@ export class GroupsService {
   ): Promise<void> {
     if (actingUser.isRoot) return;
     if (group.ownerId === actingUser.id) return;
-    const permitted = await this.isGranted(() =>
-      this.cpg.guard.assertOne.global(actingUser.id, "groups", { acrud: ["access", action] })
-    );
-    if (permitted) return;
+    // check.global already folds in the access prerequisite (requires access +
+    // action), so this is the "holds groups:<action>" leg of the disjunction --
+    // a plain boolean from the lib, replacing the old throw-to-bool wrapper.
+    if (await this.cpg.guard.utils.check.global(actingUser.id, "groups", action)) return;
     throw new ForbiddenException(`Only the group owner, a root account, or an account holding groups:${action} can do this`);
   }
 

@@ -84,7 +84,7 @@ export class AccountsController {
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "invite-account"] }])
   @SendInvitationDocs()
   sendInvitation(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(sendInvitationSchema)) body: SendInvitationDto) {
-    return this.svc.sendInvitation(req.user.id, body);
+    return this.svc.sendInvitation(req.user, body);
   }
 
   @Get("invite/:token")

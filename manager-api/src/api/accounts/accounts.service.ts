@@ -4,6 +4,7 @@ import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { In, IsNull, Like, Not, Repository } from "typeorm";
 import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
+import { AntiEscalationService, type ActingUser } from "../../core/acl/anti-escalation.service";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { AccountInvitation } from "../../core/entities/account-invitation.entity";
 import { Account } from "../../core/entities/account.entity";
@@ -25,7 +26,8 @@ export class AccountsService {
     @InjectRepository(Group) private readonly groups: Repository<Group>,
     @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     private readonly mailer: MailerService,
-    private readonly cpg: CustomPermissionGuardService
+    private readonly cpg: CustomPermissionGuardService,
+    private readonly antiEscalation: AntiEscalationService
   ) {}
 
   async listNames() {
@@ -137,7 +139,7 @@ export class AccountsService {
     return { ok: true };
   }
 
-  async sendInvitation(invitedBy: string, input: SendInvitationDto) {
+  async sendInvitation(actingUser: ActingUser, input: SendInvitationDto) {
     const existing = await this.invitations.findOne({
       where: { email: input.email, acceptedAt: IsNull() },
     });
@@ -150,6 +152,18 @@ export class AccountsService {
     if (input.groupId) {
       group = await this.groups.findOne({ where: { id: input.groupId } });
       if (!group) throw new NotFoundException(`Group #${input.groupId} not found`);
+      // Anti-escalade: accepting this invitation assigns the chosen group to the
+      // new account (see acceptInvitation), granting its permissions by union. A
+      // non-root inviter may therefore only invite into a group whose permissions
+      // it already holds in full, otherwise `invite-account` alone would mint an
+      // account more powerful than the inviter (e.g. straight into "admin"). Only
+      // an explicitly chosen group is checked: the default-group fallback below is
+      // the system floor every account gets via onAccountCreated anyway.
+      const [groupGlobal, groupDomain] = await Promise.all([
+        this.cpg.guard.findGroupGlobalPermissions(group.id),
+        this.cpg.guard.findGroupDomainPermissions(group.id),
+      ]);
+      await this.antiEscalation.assertActingUserHolds(actingUser, groupGlobal, groupDomain);
     } else {
       group = await this.groups.findOne({ where: { isDefault: 1 } });
     }
@@ -160,7 +174,7 @@ export class AccountsService {
       this.invitations.create({
         token,
         email: input.email,
-        invitedBy,
+        invitedBy: actingUser.id,
         groupId: group?.id ?? null,
         expiresAt,
       })
