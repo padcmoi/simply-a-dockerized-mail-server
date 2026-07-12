@@ -10,6 +10,7 @@ const state = reactive({ username: "", password: "" });
 const { t } = useI18n();
 const auth = useAuthStore();
 const toast = useToast();
+const { resolve: resolveLastRoute } = useLastRoute();
 
 const schema = z.object({
   username: z.string().min(1, t("common.required")),
@@ -20,7 +21,9 @@ async function onSubmit() {
   loading.value = true;
   try {
     await auth.login(state.username, state.password);
-    await navigateTo("/dashboard");
+    // Back to wherever the user was before the session dropped (or they logged
+    // out); dashboard only if there is no remembered route.
+    await navigateTo(resolveLastRoute());
   } catch (err) {
     toast.add({
       title: t("login.failed"),
