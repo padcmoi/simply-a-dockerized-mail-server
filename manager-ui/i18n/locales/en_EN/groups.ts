@@ -87,6 +87,12 @@ export default {
       addFailed: "Failed to add member",
       remove: "Remove",
       removeFailed: "Failed to remove member",
+      assignAll: "Assign all accounts",
+      removeAll: "Remove all",
+      assignAllDone: "Every account has been assigned to this group",
+      assignAllFailed: "Failed to assign all accounts",
+      removeAllDone: "All members have been removed",
+      removeAllFailed: "Failed to remove all members",
     },
     permissions: {
       saved: "Permissions updated",

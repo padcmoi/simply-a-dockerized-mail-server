@@ -4,12 +4,17 @@ import type { GroupMember } from "~/composables/useGroups";
 const emit = defineEmits<{
   add: [string];
   remove: [string];
+  "add-all": [];
+  "remove-all": [];
 }>();
 
 const props = defineProps<{
   members: GroupMember[];
   accountOptions: { label: string; value: string }[];
   adding: boolean;
+  // Root-only bulk controls: assign every account / clear the whole membership.
+  isRoot: boolean;
+  bulkLoading: boolean;
 }>();
 
 const pickedId = ref<string | undefined>(undefined);
@@ -31,7 +36,25 @@ function onAdd() {
 <template>
   <UCard>
     <template #header>
-      <h3 class="font-semibold">{{ t("groups.detail.members.title") }}</h3>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h3 class="font-semibold">{{ t("groups.detail.members.title") }}</h3>
+        <div v-if="isRoot" class="flex flex-wrap gap-2">
+          <UButton icon="i-lucide-users" size="xs" color="primary" variant="soft" :loading="bulkLoading" @click="emit('add-all')">
+            {{ t("groups.detail.members.assignAll") }}
+          </UButton>
+          <UButton
+            icon="i-lucide-user-x"
+            size="xs"
+            color="error"
+            variant="soft"
+            :loading="bulkLoading"
+            :disabled="members.length === 0"
+            @click="emit('remove-all')"
+          >
+            {{ t("groups.detail.members.removeAll") }}
+          </UButton>
+        </div>
+      </div>
     </template>
 
     <div class="flex flex-wrap gap-2 mb-4">

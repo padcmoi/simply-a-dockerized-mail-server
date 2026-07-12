@@ -134,6 +134,16 @@ export function useGroups() {
     return call<GroupMember[]>(`/groups/${id}/members/${accountId}`, { method: "DELETE" });
   }
 
+  // Root-only bulk ops (server enforces isRoot). addAll is idempotent: re-running
+  // also picks up accounts created since the last run.
+  async function addAllMembers(id: string) {
+    return call<GroupMember[]>(`/groups/${id}/members/all`, { method: "POST" });
+  }
+
+  async function removeAllMembers(id: string) {
+    return call<GroupMember[]>(`/groups/${id}/members/all`, { method: "DELETE" });
+  }
+
   watch(useDataRefresh().tick, load);
   onMounted(load);
 
@@ -151,5 +161,7 @@ export function useGroups() {
     listMembers,
     addMember,
     removeMember,
+    addAllMembers,
+    removeAllMembers,
   };
 }

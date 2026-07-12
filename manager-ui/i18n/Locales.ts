@@ -668,6 +668,12 @@ export interface Locales {
         addFailed: string;
         remove: string;
         removeFailed: string;
+        assignAll: string;
+        removeAll: string;
+        assignAllDone: string;
+        assignAllFailed: string;
+        removeAllDone: string;
+        removeAllFailed: string;
       };
       permissions: {
         saved: string;

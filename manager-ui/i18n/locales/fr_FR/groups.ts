@@ -89,6 +89,12 @@ export default {
       addFailed: "Échec de l'ajout du membre",
       remove: "Retirer",
       removeFailed: "Échec du retrait du membre",
+      assignAll: "Assigner tous les comptes",
+      removeAll: "Tout retirer",
+      assignAllDone: "Tous les comptes ont été assignés à ce groupe",
+      assignAllFailed: "Échec de l'assignation de tous les comptes",
+      removeAllDone: "Tous les membres ont été retirés",
+      removeAllFailed: "Échec du retrait de tous les membres",
     },
     permissions: {
       saved: "Permissions mises à jour",

@@ -12,13 +12,15 @@ const members = ref<GroupMember[]>([]);
 const accountOptions = ref<{ label: string; value: string }[]>([]);
 const membersLoading = ref(false);
 const addingMember = ref(false);
+const bulkLoading = ref(false);
 
 const route = useRoute();
 const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
+const { isRoot } = usePermissions();
 const { set: setBreadcrumb } = useBreadcrumb();
-const { listMembers, addMember, removeMember } = useGroups();
+const { listMembers, addMember, removeMember, addAllMembers, removeAllMembers } = useGroups();
 
 const groupId = computed(() => String(route.params.id));
 const { group, loading } = useGroupDetail(groupId);
@@ -68,6 +70,32 @@ async function onRemoveMember(accountId: string) {
   }
 }
 
+async function onAssignAll() {
+  bulkLoading.value = true;
+  try {
+    members.value = await addAllMembers(groupId.value);
+    if (group.value) group.value.memberCount = members.value.length;
+    toast.add({ title: t("groups.detail.members.assignAllDone"), color: "success" });
+  } catch (e) {
+    toast.add({ title: t("groups.detail.members.assignAllFailed"), description: (e as Error).message, color: "error" });
+  } finally {
+    bulkLoading.value = false;
+  }
+}
+
+async function onRemoveAll() {
+  bulkLoading.value = true;
+  try {
+    members.value = await removeAllMembers(groupId.value);
+    if (group.value) group.value.memberCount = members.value.length;
+    toast.add({ title: t("groups.detail.members.removeAllDone"), color: "success" });
+  } catch (e) {
+    toast.add({ title: t("groups.detail.members.removeAllFailed"), description: (e as Error).message, color: "error" });
+  } finally {
+    bulkLoading.value = false;
+  }
+}
+
 onMounted(loadMembers);
 </script>
 
@@ -96,8 +124,12 @@ onMounted(loadMembers);
         :members="members"
         :account-options="accountOptions"
         :adding="addingMember"
+        :is-root="isRoot"
+        :bulk-loading="bulkLoading"
         @add="onAddMember"
         @remove="onRemoveMember"
+        @add-all="onAssignAll"
+        @remove-all="onRemoveAll"
       />
     </template>
   </div>
