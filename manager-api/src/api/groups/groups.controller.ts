@@ -11,6 +11,7 @@ import {
 import {
   AddAllMembersDocs,
   AddMemberDocs,
+  AddMembersDocs,
   CreateGroupDocs,
   GetGroupDocs,
   GetPermissionsCatalogDocs,
@@ -28,6 +29,7 @@ import {
 import { GroupsService } from "./groups.service";
 import {
   AddMemberDto,
+  AddMembersDto,
   CreateGroupDto,
   DOMAIN_ACTIONS,
   DOMAIN_RESOURCE_DEPENDS_ON,
@@ -40,6 +42,7 @@ import {
   UpdateGroupDto,
   UpdateOwnerDto,
   addMemberSchema,
+  addMembersSchema,
   createGroupSchema,
   setDomainPermissionsSchema,
   setGlobalPermissionsSchema,
@@ -165,8 +168,12 @@ export class GroupsController {
   @Get(":id/members")
   @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "list-group-members"] }])
   @ListMembersDocs()
-  listMembers(@Req() req: AuthedRequest, @Param("id", ParseUUIDPipe) id: string) {
-    return this.svc.listMembers(id, req.user);
+  listMembers(
+    @Req() req: AuthedRequest,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery
+  ) {
+    return this.svc.listMembers(id, req.user, query);
   }
 
   // Root-only bulk membership ops, not an ACL. The empty @RequireGlobalPermissions
@@ -199,6 +206,20 @@ export class GroupsController {
     @Body(new ZodValidationPipe(addMemberSchema)) body: AddMemberDto
   ) {
     return this.svc.addMember(id, req.user, body.accountId);
+  }
+
+  // Bulk add (members picker multi-select). Same owner-or-root-or-permitted rule
+  // as the single add, enforced in the service. Declared before the :accountId
+  // routes so "bulk" is a static segment, never captured as an id.
+  @Post(":id/members/bulk")
+  @ServiceEnforcedGlobalPermissions([{ resource: "groups", actions: ["access", "add-group-member"] }])
+  @AddMembersDocs()
+  addMembers(
+    @Req() req: AuthedRequest,
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(addMembersSchema)) body: AddMembersDto
+  ) {
+    return this.svc.addMembers(id, req.user, body.accountIds);
   }
 
   @Delete(":id/members/:accountId")

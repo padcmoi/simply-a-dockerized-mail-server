@@ -1,7 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
-import { GROUPS_SORTABLE_COLUMNS } from "./groups.service";
+import { GROUP_MEMBERS_SORTABLE_COLUMNS, GROUPS_SORTABLE_COLUMNS } from "./groups.service";
 
 export const GroupsApi = () => applyDecorators(ApiTags("groups"), ApiSecurity("apiToken"));
 
@@ -18,6 +18,7 @@ const groupItemExample = {
 
 const groupDetailExample = {
   ...groupItemExample,
+  nonMemberCount: 8,
   owner: { id: 2, username: "jdoe" },
   globalPermissions: [
     { id: 10, resource: "groups", action: "access" },
@@ -245,10 +246,19 @@ export const UpdateOwnerDocs = () =>
 export const ListMembersDocs = () =>
   applyDecorators(
     idParam(),
-    ApiOperation({ summary: "List the members of a group" }),
-    ApiResponse({ status: 200, description: "Members returned", schema: { example: groupMembersExample } }),
+    ApiPaginationQuery(GROUP_MEMBERS_SORTABLE_COLUMNS),
+    ApiOperation({
+      summary: "List the members of a group",
+      description:
+        "Paginated and searchable when `limit` is given: search matches the member account's username, name or email. Omitting `limit` returns the full member array (legacy, internal callers).",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Members returned",
+      schema: { example: paginatedExample(groupMembersExample[0], 1) },
+    }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Missing groups:access + groups:list-groups global permission" }),
+    ApiResponse({ status: 403, description: "Missing groups:access + groups:list-group-members global permission" }),
     ApiResponse({ status: 404, description: "Group not found" })
   );
 
@@ -270,6 +280,22 @@ export const AddMemberDocs = () =>
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
     ApiResponse({ status: 403, description: "Only root or the group's current owner may add members" }),
     ApiResponse({ status: 404, description: "Group not found, or the account does not exist" })
+  );
+
+export const AddMembersDocs = () =>
+  applyDecorators(
+    idParam(),
+    ApiOperation({
+      summary: "Add several accounts to a group in one call (root or current owner only)",
+      description:
+        "Bulk counterpart of the single add: same owner-or-root-or-permitted rule, one anti-escalation check on the group's whole permission set. Idempotent (already-member ids are no-ops).",
+    }),
+    ApiBody({ schema: { example: { accountIds: ["4f1c...", "9a2b..."] } } }),
+    ApiResponse({ status: 201, description: "Accounts added", schema: { example: { added: 4 } } }),
+    ApiResponse({ status: 400, description: "Invalid body" }),
+    ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
+    ApiResponse({ status: 403, description: "Only root or the group's current owner may add members" }),
+    ApiResponse({ status: 404, description: "Group not found, or one of the accounts does not exist" })
   );
 
 export const AddAllMembersDocs = () =>

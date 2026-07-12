@@ -84,9 +84,15 @@ export const addMemberSchema = z.object({
   accountId: z.string().uuid(),
 });
 
+// Bulk add: several accounts in one call (the members picker's multi-select).
+export const addMembersSchema = z.object({
+  accountIds: z.array(z.string().uuid()).min(1).max(500),
+});
+
 export type CreateGroupDto = z.infer<typeof createGroupSchema>;
 export type UpdateGroupDto = z.infer<typeof updateGroupSchema>;
 export type SetGlobalPermissionsDto = z.infer<typeof setGlobalPermissionsSchema>;
 export type SetDomainPermissionsDto = z.infer<typeof setDomainPermissionsSchema>;
 export type UpdateOwnerDto = z.infer<typeof updateOwnerSchema>;
 export type AddMemberDto = z.infer<typeof addMemberSchema>;
+export type AddMembersDto = z.infer<typeof addMembersSchema>;

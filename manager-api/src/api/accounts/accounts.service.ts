@@ -30,12 +30,26 @@ export class AccountsService {
     private readonly antiEscalation: AntiEscalationService
   ) {}
 
-  async listNames() {
-    const allAccounts = await this.accounts.find({
-      select: ["id", "username", "name"],
-      order: { username: "ASC" },
-    });
-    return allAccounts.map((acc) => ({ id: acc.id, username: acc.username, name: acc.name }));
+  // `notInGroup` (a group id) filters out accounts that are already members of
+  // that group, so a group's "add member" picker only offers assignable
+  // accounts. A left join to group_members keeping the rows with no match is the
+  // non-member set. `search` (LIKE on username/name) + `limit` turn this into a
+  // server-side typeahead: the picker never preloads the whole account table,
+  // it fetches only the top `limit` matches per keystroke -- absent `limit`
+  // keeps the legacy full list for the other callers (invite modal, pickers).
+  async listNames(opts: { notInGroup?: string; search?: string; limit?: number } = {}) {
+    const qb = this.accounts.createQueryBuilder("a").select(["a.id", "a.username", "a.name"]).orderBy("a.username", "ASC");
+    if (opts.notInGroup) {
+      qb.leftJoin(GroupMember, "gm", "gm.account_id = a.id AND gm.group_id = :gid", { gid: opts.notInGroup }).where(
+        "gm.id IS NULL"
+      );
+    }
+    if (opts.search) {
+      qb.andWhere("(a.username LIKE :s OR a.name LIKE :s)", { s: `%${opts.search}%` });
+    }
+    if (opts.limit !== undefined) qb.take(opts.limit);
+    const rows = await qb.getMany();
+    return rows.map((acc) => ({ id: acc.id, username: acc.username, name: acc.name }));
   }
 
   // `query.limit` absent = legacy unpaginated behavior, relied on by no

@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
 import { ACCOUNTS_SORTABLE_COLUMNS } from "./accounts.service";
 
@@ -23,6 +23,24 @@ export const ListAccountNamesDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: "List every account's id, username and display name (any authenticated account)",
+    }),
+    ApiQuery({
+      name: "notInGroup",
+      required: false,
+      type: String,
+      description: "A group id: exclude accounts already members of it (returns only assignable accounts)",
+    }),
+    ApiQuery({
+      name: "search",
+      required: false,
+      type: String,
+      description: "Typeahead filter on username / display name (LIKE)",
+    }),
+    ApiQuery({
+      name: "limit",
+      required: false,
+      type: Number,
+      description: "Cap the number of matches (1-50); absent returns the full list",
     }),
     ApiResponse({ status: 200, description: "Account names returned", schema: { example: [accountNameExample] } }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" })

@@ -17,6 +17,10 @@ import { CreateGroupDto, SetDomainPermissionsDto, SetGlobalPermissionsDto, Updat
 // out of scope here.
 export const GROUPS_SORTABLE_COLUMNS = ["name", "description", "createdAt"] as const;
 
+// Real `accounts` columns a member row can be sorted/searched on -- a member is
+// just an account, so these are its own columns, no enrichment involved.
+export const GROUP_MEMBERS_SORTABLE_COLUMNS = ["username", "name", "email"] as const;
+
 @Injectable()
 export class GroupsService {
   constructor(
@@ -247,6 +251,11 @@ export class GroupsService {
   async getDetail(id: string, actingUser: ActingUser) {
     const group = await this.findOrFail(id, actingUser);
     const item = await this.toItem(group);
+    // Cheap COUNT (no rows): lets the members page show how many accounts are
+    // still assignable without ever loading the account list -- the member
+    // picker is a server-side typeahead, so this is its only source for the
+    // "assign all (N)" counter.
+    const nonMemberCount = (await this.accounts.count()) - item.memberCount;
 
     const [globalRows, domainRows] = await Promise.all([
       this.cpg.guard.findGroupGlobalPermissions(id),
@@ -268,6 +277,7 @@ export class GroupsService {
 
     return {
       ...item,
+      nonMemberCount,
       owner,
       globalPermissions: globalRows.map((p) => ({ resource: p.resource, action: p.action })),
       domainPermissions: domainRows.map((p) => ({
@@ -368,9 +378,30 @@ export class GroupsService {
     return this.getDetail(id, actingUser);
   }
 
-  async listMembers(id: string, actingUser: ActingUser) {
+  // `query.limit` absent = legacy full array (kept for any internal caller that
+  // wants the whole membership at once). With a limit, it becomes a real
+  // server-side paginated + searchable list, joining group_members to accounts
+  // so search hits the account's own columns (username / name / email).
+  async listMembers(id: string, actingUser: ActingUser, query: PaginationQuery) {
     await this.findOrFail(id, actingUser);
-    return this.memberList(id);
+    if (query.limit === undefined) return this.memberList(id);
+
+    const sortBy = resolveSortColumn(query.sortBy, GROUP_MEMBERS_SORTABLE_COLUMNS, "username");
+    const qb = this.accounts
+      .createQueryBuilder("a")
+      .innerJoin(GroupMember, "gm", "gm.account_id = a.id")
+      .where("gm.group_id = :id", { id });
+    if (query.search) {
+      qb.andWhere("(a.username LIKE :s OR a.name LIKE :s OR a.email LIKE :s)", { s: `%${query.search}%` });
+    }
+    qb.orderBy(`a.${sortBy}`, query.sortDir === "asc" ? "ASC" : "DESC")
+      .skip(query.offset)
+      .take(query.limit);
+    const [rows, total] = await qb.getManyAndCount();
+    return {
+      items: rows.map((a) => ({ id: a.id, username: a.username, name: a.name, email: a.email })),
+      total,
+    };
   }
 
   async addMember(id: string, actingUser: ActingUser, accountId: string) {
@@ -393,6 +424,30 @@ export class GroupsService {
 
     await this.cpg.guard.assignAccountToGroup(accountId, id);
     return this.memberList(id);
+  }
+
+  // Bulk counterpart of addMember (members picker multi-select). Same owner/root
+  // gate and same anti-escalation, run once on the group's whole permission set
+  // rather than per account. Idempotent: assignAccountToGroup is insert-if-absent,
+  // so re-adding an already-member account is a no-op. Returns the count added.
+  async addMembers(id: string, actingUser: ActingUser, accountIds: string[]) {
+    const group = await this.findOrFail(id, actingUser);
+    await this.assertOwnerOrRootOrPermitted(group, actingUser, "add-group-member");
+
+    const ids = [...new Set(accountIds)];
+    const accounts = await this.accounts.find({ where: { id: In(ids) } });
+    if (accounts.length !== ids.length) throw new NotFoundException("One or more accounts do not exist");
+
+    const [groupGlobal, groupDomain] = await Promise.all([
+      this.cpg.guard.findGroupGlobalPermissions(id),
+      this.cpg.guard.findGroupDomainPermissions(id),
+    ]);
+    await this.antiEscalation.assertActingUserHolds(actingUser, groupGlobal, groupDomain);
+
+    for (const account of accounts) {
+      await this.cpg.guard.assignAccountToGroup(account.id, id);
+    }
+    return { added: accounts.length };
   }
 
   async removeMember(id: string, actingUser: ActingUser, accountId: string) {

@@ -48,8 +48,11 @@ export class AccountsController {
   @Get("names")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "list-account-names"] }])
   @ListAccountNamesDocs()
-  listNames() {
-    return this.svc.listNames();
+  listNames(@Query("notInGroup") notInGroup?: string, @Query("search") search?: string, @Query("limit") limit?: string) {
+    // `limit` present => typeahead mode, capped to [1, 50] so a picker can never
+    // dump the whole account table; absent => legacy full list.
+    const parsedLimit = limit === undefined ? undefined : Math.min(50, Math.max(1, Number.parseInt(limit, 10) || 25));
+    return this.svc.listNames({ notInGroup, search: search?.trim() || undefined, limit: parsedLimit });
   }
 
   @Get()
