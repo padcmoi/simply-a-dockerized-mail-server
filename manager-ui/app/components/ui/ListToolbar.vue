@@ -76,7 +76,7 @@ onMounted(() => {
   <div class="flex items-center justify-between gap-2 flex-wrap">
     <UInput v-model="searchModel" icon="i-lucide-search" :placeholder="t('common.search')" class="w-full sm:w-64" />
     <div class="flex items-center gap-2">
-      <USelectMenu v-model="sortModel" value-key="value" :items="sortOptions" class="w-56 xl:hidden" />
+      <USelectMenu v-if="sortOptions.length" v-model="sortModel" value-key="value" :items="sortOptions" class="w-56 xl:hidden" />
       <USkeleton v-if="!ready" class="h-8 w-24 rounded-md" />
       <USelectMenu v-else v-model="limitModel" value-key="value" :items="limitOptions" class="w-24" />
     </div>

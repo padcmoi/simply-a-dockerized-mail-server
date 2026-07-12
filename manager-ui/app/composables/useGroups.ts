@@ -29,6 +29,8 @@ export interface GroupDomainPermission {
 
 export interface GroupDetail extends GroupItem {
   owner: { id: string; username: string } | null;
+  // Accounts not in this group (= assignable). Server COUNT, only on the detail.
+  nonMemberCount: number;
   globalPermissions: GroupPermission[];
   domainPermissions: GroupDomainPermission[];
 }
@@ -130,6 +132,11 @@ export function useGroups() {
     return call<GroupMember[]>(`/groups/${id}/members`, { method: "POST", body: { accountId } });
   }
 
+  // Bulk add (members picker multi-select) -- one call for several accounts.
+  async function addMembers(id: string, accountIds: string[]) {
+    return call<{ added: number }>(`/groups/${id}/members/bulk`, { method: "POST", body: { accountIds } });
+  }
+
   async function removeMember(id: string, accountId: string) {
     return call<GroupMember[]>(`/groups/${id}/members/${accountId}`, { method: "DELETE" });
   }
@@ -160,6 +167,7 @@ export function useGroups() {
     updateOwner,
     listMembers,
     addMember,
+    addMembers,
     removeMember,
     addAllMembers,
     removeAllMembers,
