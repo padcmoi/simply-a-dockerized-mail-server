@@ -7,7 +7,7 @@ definePageMeta({
 });
 
 const savingInfo = ref(false);
-const form = reactive({ name: "", description: "", isDefault: false, protected: false });
+const form = reactive({ name: "", description: "", isDefault: false, protected: false, invisible: false });
 
 const route = useRoute();
 const { t } = useI18n();
@@ -29,6 +29,7 @@ watch(
     form.description = g.description ?? "";
     form.isDefault = g.isDefault ?? false;
     form.protected = g.protected ?? false;
+    form.invisible = g.invisible ?? false;
   },
   { immediate: true }
 );
@@ -46,6 +47,7 @@ async function saveInfo() {
       isDefault: form.isDefault,
       // Unchanged for a non-root (the API ignores a no-op), only ever toggled by root.
       protected: form.protected,
+      invisible: form.invisible,
     });
     if (group.value) Object.assign(group.value, updated);
     toast.add({ title: t("groups.detail.saved"), color: "success" });
@@ -104,6 +106,15 @@ async function saveInfo() {
           :ui="{ root: 'border-0 rounded-none p-0' }"
           :label="t('groups.form.protected')"
           :description="t('groups.form.protectedHint')"
+        />
+        <UCheckbox
+          v-if="isRoot"
+          v-model="form.invisible"
+          class="mt-3"
+          variant="card"
+          :ui="{ root: 'border-0 rounded-none p-0' }"
+          :label="t('groups.form.invisible')"
+          :description="t('groups.form.invisibleHint')"
         />
         <template #footer>
           <div class="flex justify-end">

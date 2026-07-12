@@ -620,6 +620,8 @@ export interface Locales {
       isDefaultHint: string;
       protected: string;
       protectedHint: string;
+      invisible: string;
+      invisibleHint: string;
     };
     toast: {
       loadFailed: string;

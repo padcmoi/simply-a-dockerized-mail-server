@@ -25,6 +25,8 @@ export default {
       "Les nouveaux comptes invités sans groupe explicite héritent de ce groupe. Un seul groupe par défaut peut être actif à la fois.",
     protected: "Groupe protégé",
     protectedHint: "Un groupe protégé ne peut jamais être supprimé, par personne, root inclus. Seul un compte root peut changer cela.",
+    invisible: "Groupe invisible",
+    invisibleHint: "Un groupe invisible est entièrement caché à tout compte non-root : il n'apparaît nulle part, pas même dans la liste, et ni le groupe ni ses permissions ne peuvent être vus ou modifiés. Seul un compte root peut le voir ou changer cela.",
   },
   toast: {
     loadFailed: "Échec du chargement des groupes",

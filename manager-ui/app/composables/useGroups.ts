@@ -8,6 +8,9 @@ export interface GroupItem {
   memberCount: number;
   isDefault?: boolean;
   protected?: boolean;
+  // Root-only flag; a non-root never receives an invisible group from the API,
+  // so this is only ever present/true in a root session.
+  invisible?: boolean;
 }
 
 export interface GroupPermission {
@@ -87,7 +90,7 @@ export function useGroups() {
 
   async function update(
     id: string,
-    input: { name?: string; description?: string | null; isDefault?: boolean; protected?: boolean }
+    input: { name?: string; description?: string | null; isDefault?: boolean; protected?: boolean; invisible?: boolean }
   ) {
     const updated = await call<GroupItem>(`/groups/${id}`, { method: "PATCH", body: input });
     const idx = groups.value.findIndex((g) => g.id === id);
