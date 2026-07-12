@@ -11,7 +11,7 @@ const validationFailedExample = {
       minimum: 1,
       type: "string",
       inclusive: true,
-      path: ["username"],
+      path: ["email"],
       message: "String must contain at least 1 character(s)",
     },
   ],
@@ -24,10 +24,16 @@ const tokenPairExample = {
 };
 
 const profileExample = {
-  username: "jdoe",
-  name: "Example User",
   email: "jdoe@example.com",
+  displayName: "Example User",
   avatarUrl: "https://example.com/avatar.png",
+  phone: "+33123456789",
+  addressLine: "1 rue de la Paix",
+  city: "Paris",
+  postalCode: "75002",
+  country: "France",
+  latitude: "48.8698679",
+  longitude: "2.3316014",
   isRoot: false,
   groups: [{ id: 3, name: "support" }],
 };
@@ -35,7 +41,7 @@ const profileExample = {
 export const JwtLoginDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: "Exchange username + password for an access + refresh token pair",
+      summary: "Exchange email + password for an access + refresh token pair",
       description:
         "Public endpoint, no authentication required. On success, issues a short-lived JWT access token " +
         "(MANAGER_JWT_ACCESS_TTL, defaults to 900s) plus a long-lived refresh token (MANAGER_JWT_REFRESH_TTL, " +
@@ -44,7 +50,7 @@ export const JwtLoginDocs = () =>
     }),
     ApiBody({
       schema: {
-        example: { username: "jdoe", password: "correcthorsebattery" },
+        example: { email: "jdoe@example.com", password: "correcthorsebattery" },
       },
     }),
     ApiResponse({
@@ -54,12 +60,12 @@ export const JwtLoginDocs = () =>
     }),
     ApiResponse({
       status: 400,
-      description: "Validation failed (missing/empty username or password)",
+      description: "Validation failed (missing/empty email or password)",
       schema: { example: validationFailedExample },
     }),
     ApiResponse({
       status: 401,
-      description: "Invalid credentials, unknown username, or account disabled",
+      description: "Invalid credentials, unknown email, or account disabled",
       schema: {
         example: { message: "Invalid credentials", error: "Unauthorized", statusCode: 401 },
       },
@@ -242,9 +248,11 @@ export const JwtUpdateProfileDocs = () =>
     ApiBody({
       schema: {
         example: {
-          name: "Example User",
+          displayName: "Example User",
           email: "jdoe@example.com",
           avatarUrl: "https://example.com/avatar.png",
+          city: "Paris",
+          country: "France",
         },
       },
     }),

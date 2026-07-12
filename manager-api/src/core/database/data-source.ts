@@ -1,5 +1,6 @@
 import { DataSource } from "typeorm";
 import { Account } from "../entities/account.entity";
+import { AccountProfile } from "../entities/account-profile.entity";
 import { RefreshToken } from "../entities/refresh-token.entity";
 import { DkimKeyEntity } from "../entities/dkim-key.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
@@ -26,6 +27,7 @@ export default new DataSource({
   charset: "utf8mb4",
   entities: [
     Account,
+    AccountProfile,
     RefreshToken,
     DkimKeyEntity,
     VirtualDomain,

@@ -33,7 +33,7 @@ import { JwtAuthService } from "./jwt.service";
 import { LoginDto, RefreshDto, UpdateProfileDto, loginSchema, refreshSchema, updateProfileSchema } from "./jwt.validation";
 
 type AuthedRequest = Request & {
-  user: { id: string; username: string; isRoot: boolean };
+  user: { id: string; email: string; isRoot: boolean };
 };
 
 @JwtAuthApi()
@@ -65,7 +65,7 @@ export class JwtAuthController {
     @Headers("user-agent") ua: string | undefined,
     @Ip() ip: string
   ) {
-    return this.auth.login(body.username, body.password, ua, ip);
+    return this.auth.login(body.email, body.password, ua, ip);
   }
 
   @Post("refresh")

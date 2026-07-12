@@ -54,7 +54,7 @@ export class DomainsService {
 
     if (query.limit === undefined) {
       const domains = await this.repo.find({ where: ownerFilter, order: { domain: "ASC" } });
-      return this.attachUsage(await this.attachOwnerUsername(domains));
+      return this.attachUsage(await this.attachOwnerEmail(domains));
     }
 
     const where = query.search ? { ...ownerFilter, domain: Like(`%${query.search}%`) } : ownerFilter;
@@ -65,13 +65,13 @@ export class DomainsService {
       skip: query.offset,
       take: query.limit,
     });
-    return { items: await this.attachUsage(await this.attachOwnerUsername(rows)), total };
+    return { items: await this.attachUsage(await this.attachOwnerEmail(rows)), total };
   }
 
   async get(id: number) {
     const found = await this.repo.findOne({ where: { id } });
     if (!found) throw new NotFoundException(`Domain #${id} not found`);
-    const [withOwner] = await this.attachOwnerUsername([found]);
+    const [withOwner] = await this.attachOwnerEmail([found]);
     return withOwner;
   }
 
@@ -79,14 +79,14 @@ export class DomainsService {
   // owning account's username never comes back for free -- the UI's owner
   // display/transfer control (domains/[domain].vue) reads `ownerUsername`,
   // not the raw `ownerId`, so this must run on every list()/get() response.
-  private async attachOwnerUsername<T extends VirtualDomain>(domains: T[]) {
+  private async attachOwnerEmail<T extends VirtualDomain>(domains: T[]) {
     const ownerIds = [...new Set(domains.map((d) => d.ownerId).filter((id): id is string => id !== null))];
     const byId = new Map<string, string>();
     if (ownerIds.length) {
       const owners = await this.accounts.findBy({ id: In(ownerIds) });
-      owners.forEach((o) => byId.set(o.id, o.username));
+      owners.forEach((o) => byId.set(o.id, o.email));
     }
-    return domains.map((d) => ({ ...d, ownerUsername: d.ownerId !== null ? (byId.get(d.ownerId) ?? null) : null }));
+    return domains.map((d) => ({ ...d, ownerEmail: d.ownerId !== null ? (byId.get(d.ownerId) ?? null) : null }));
   }
 
   // `virtual_quota_domains` is keyed by the FQDN string, not domainId (see

@@ -5,13 +5,12 @@ import { ACCOUNTS_SORTABLE_COLUMNS } from "./accounts.service";
 
 export const AccountsApi = () => applyDecorators(ApiTags("accounts"), ApiSecurity("apiToken"));
 
-const accountNameExample = { id: 5, username: "jdoe", name: "John Doe" };
+const accountNameExample = { id: 5, email: "jdoe@example.com", displayName: "John Doe" };
 
 const accountListItemExample = {
   id: 5,
-  username: "jdoe",
-  name: "John Doe",
   email: "jdoe@example.com",
+  displayName: "John Doe",
   isRoot: false,
   enabled: true,
   lastLogin: "2026-06-30T08:12:00.000Z",
@@ -22,7 +21,7 @@ const accountListItemExample = {
 export const ListAccountNamesDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: "List every account's id, username and display name (any authenticated account)",
+      summary: "List every account's id, email and display name (any authenticated account)",
     }),
     ApiQuery({
       name: "notInGroup",
@@ -34,7 +33,7 @@ export const ListAccountNamesDocs = () =>
       name: "search",
       required: false,
       type: String,
-      description: "Typeahead filter on username / display name (LIKE)",
+      description: "Typeahead filter on email / display name (LIKE)",
     }),
     ApiQuery({
       name: "limit",
@@ -81,7 +80,7 @@ export const UpdateAccountDocs = () =>
       summary: "Update a manager account's profile fields and enabled status (root only)",
       description: "Group membership is managed separately via the groups endpoints, not through this route.",
     }),
-    ApiBody({ schema: { example: { name: "John Doe", email: "jdoe@example.com", enabled: true } } }),
+    ApiBody({ schema: { example: { displayName: "John Doe", email: "jdoe@example.com", enabled: true } } }),
     ApiResponse({ status: 200, description: "Account updated", schema: { example: accountDetailExample } }),
     ApiResponse({ status: 400, description: "Invalid body, or attempting to disable a root account" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
@@ -139,11 +138,11 @@ export const AcceptInvitationDocs = () =>
     ApiOperation({ summary: "Accept an invitation and create an account (public)" }),
     ApiBody({
       schema: {
-        example: { username: "jdoe", password: "correct-horse-battery-staple", name: "John Doe" },
+        example: { password: "correct-horse-battery-staple", displayName: "John Doe" },
       },
     }),
-    ApiResponse({ status: 201, description: "Account created", schema: { example: { ok: true, username: "jdoe" } } }),
+    ApiResponse({ status: 201, description: "Account created", schema: { example: { ok: true, email: "jdoe@example.com" } } }),
     ApiResponse({ status: 400, description: "Invalid body, or invitation already used, or invitation expired" }),
     ApiResponse({ status: 404, description: "Invitation not found" }),
-    ApiResponse({ status: 409, description: "Username already taken" })
+    ApiResponse({ status: 409, description: "An account with this email already exists" })
   );

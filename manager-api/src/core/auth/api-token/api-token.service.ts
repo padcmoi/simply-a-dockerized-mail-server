@@ -138,7 +138,7 @@ export class ApiTokenService {
     };
   }
 
-  async validate(rawKey: string, requestIp: string): Promise<{ id: string; username: string; isRoot: boolean } | null> {
+  async validate(rawKey: string, requestIp: string): Promise<{ id: string; email: string; isRoot: boolean } | null> {
     if (!rawKey.startsWith(KEY_PREFIX)) return null;
 
     const body = rawKey.slice(KEY_PREFIX.length);
@@ -181,7 +181,7 @@ export class ApiTokenService {
 
     return {
       id: token.account.id,
-      username: token.account.username,
+      email: token.account.email,
       isRoot: token.account.isRoot === 1,
     };
   }

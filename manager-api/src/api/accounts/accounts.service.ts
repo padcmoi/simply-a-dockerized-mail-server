@@ -2,12 +2,13 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
-import { In, IsNull, Like, Not, Repository } from "typeorm";
+import { In, IsNull, Not, Repository } from "typeorm";
 import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { AntiEscalationService, type ActingUser } from "../../core/acl/anti-escalation.service";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { AccountInvitation } from "../../core/entities/account-invitation.entity";
 import { Account } from "../../core/entities/account.entity";
+import { AccountProfile } from "../../core/entities/account-profile.entity";
 import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { MailerService } from "../../core/mailer/mailer.service";
@@ -15,12 +16,26 @@ import type { AcceptInvitationDto, SendInvitationDto, UpdateAccountDto } from ".
 
 // `group` (enriched post-query, see `enrichWithGroups`) isn't a real column
 // on `accounts` -- not sortable without a join/subquery, out of scope here.
-export const ACCOUNTS_SORTABLE_COLUMNS = ["username", "name", "email", "enabled", "createdAt"] as const;
+// `displayName` lives on the joined account_profiles table (see ACCOUNTS_SORT_EXPR).
+export const ACCOUNTS_SORTABLE_COLUMNS = ["email", "displayName", "enabled", "createdAt"] as const;
+
+// Maps each sortable key to its real SQL expression (account column or the
+// joined profile column), so a whitelisted key never reaches ORDER BY raw.
+// Values are entity-property paths (alias.property), NOT db column names --
+// TypeORM resolves them to columns; a snake_case db name (a.created_at) makes it
+// throw "Cannot read properties of undefined (reading 'databaseName')".
+const ACCOUNTS_SORT_EXPR: Record<(typeof ACCOUNTS_SORTABLE_COLUMNS)[number], string> = {
+  email: "a.email",
+  displayName: "p.displayName",
+  enabled: "a.enabled",
+  createdAt: "a.createdAt",
+};
 
 @Injectable()
 export class AccountsService {
   constructor(
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
+    @InjectRepository(AccountProfile) private readonly profiles: Repository<AccountProfile>,
     @InjectRepository(AccountInvitation)
     private readonly invitations: Repository<AccountInvitation>,
     @InjectRepository(Group) private readonly groups: Repository<Group>,
@@ -38,18 +53,24 @@ export class AccountsService {
   // it fetches only the top `limit` matches per keystroke -- absent `limit`
   // keeps the legacy full list for the other callers (invite modal, pickers).
   async listNames(opts: { notInGroup?: string; search?: string; limit?: number } = {}) {
-    const qb = this.accounts.createQueryBuilder("a").select(["a.id", "a.username", "a.name"]).orderBy("a.username", "ASC");
+    const qb = this.accounts
+      .createQueryBuilder("a")
+      .leftJoin(AccountProfile, "p", "p.account_id = a.id")
+      .select("a.id", "id")
+      .addSelect("a.email", "email")
+      .addSelect("p.displayName", "displayName")
+      .orderBy("a.email", "ASC");
     if (opts.notInGroup) {
-      qb.leftJoin(GroupMember, "gm", "gm.account_id = a.id AND gm.group_id = :gid", { gid: opts.notInGroup }).where(
+      qb.leftJoin(GroupMember, "gm", "gm.account_id = a.id AND gm.group_id = :gid", { gid: opts.notInGroup }).andWhere(
         "gm.id IS NULL"
       );
     }
     if (opts.search) {
-      qb.andWhere("(a.username LIKE :s OR a.name LIKE :s)", { s: `%${opts.search}%` });
+      qb.andWhere("(a.email LIKE :s OR p.display_name LIKE :s)", { s: `%${opts.search}%` });
     }
-    if (opts.limit !== undefined) qb.take(opts.limit);
-    const rows = await qb.getMany();
-    return rows.map((acc) => ({ id: acc.id, username: acc.username, name: acc.name }));
+    if (opts.limit !== undefined) qb.limit(opts.limit);
+    const rows = await qb.getRawMany<{ id: string; email: string; displayName: string | null }>();
+    return rows.map((r) => ({ id: r.id, email: r.email, displayName: r.displayName ?? null }));
   }
 
   // `query.limit` absent = legacy unpaginated behavior, relied on by no
@@ -57,26 +78,36 @@ export class AccountsService {
   // endpoint (see pagination.validation.ts).
   async list(query: PaginationQuery) {
     if (query.limit === undefined) {
-      const allAccounts = await this.accounts.find({ order: { username: "ASC" } });
+      const allAccounts = await this.accounts.find({ order: { email: "ASC" } });
       return this.enrichWithGroups(allAccounts);
     }
 
-    const where = query.search
-      ? [{ username: Like(`%${query.search}%`) }, { name: Like(`%${query.search}%`) }, { email: Like(`%${query.search}%`) }]
-      : {};
+    // Joins account_profiles so search and sort can reach the display name,
+    // which no longer lives on `accounts`. addSelect keeps p.display_name in the
+    // pagination DISTINCT subquery getManyAndCount builds, so ORDER BY on it
+    // resolves (otherwise: Unknown column 'distinctAlias.p_display_name').
+    const qb = this.accounts
+      .createQueryBuilder("a")
+      .leftJoin(AccountProfile, "p", "p.account_id = a.id")
+      .addSelect("p.displayName");
+    if (query.search) {
+      qb.andWhere("(a.email LIKE :s OR p.display_name LIKE :s)", { s: `%${query.search}%` });
+    }
     const sortBy = resolveSortColumn(query.sortBy, ACCOUNTS_SORTABLE_COLUMNS, "createdAt");
-    const [rows, total] = await this.accounts.findAndCount({
-      where,
-      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
-      skip: query.offset,
-      take: query.limit,
-    });
+    qb.orderBy(ACCOUNTS_SORT_EXPR[sortBy], query.sortDir === "asc" ? "ASC" : "DESC")
+      .skip(query.offset)
+      .take(query.limit);
+    const [rows, total] = await qb.getManyAndCount();
     return { items: await this.enrichWithGroups(rows), total };
   }
 
   private async enrichWithGroups(allAccounts: Account[]) {
     const accountIds = allAccounts.map((acc) => acc.id);
-    const memberRows = accountIds.length ? await this.groupMembers.find({ where: { accountId: In(accountIds) } }) : [];
+    const [memberRows, profileRows] = await Promise.all([
+      accountIds.length ? this.groupMembers.find({ where: { accountId: In(accountIds) } }) : [],
+      accountIds.length ? this.profiles.find({ where: { accountId: In(accountIds) } }) : [],
+    ]);
+    const displayByAccount = new Map(profileRows.map((p) => [p.accountId, p.displayName]));
     const groupIds = [...new Set(memberRows.map((m) => m.groupId))];
     const groupMap = new Map<string, string>();
     if (groupIds.length) {
@@ -91,9 +122,8 @@ export class AccountsService {
     });
     return allAccounts.map((acc) => ({
       id: acc.id,
-      username: acc.username,
-      name: acc.name,
       email: acc.email,
+      displayName: displayByAccount.get(acc.id) ?? null,
       isRoot: acc.isRoot === 1,
       enabled: acc.enabled === 1,
       lastLogin: acc.lastLogin,
@@ -112,12 +142,20 @@ export class AccountsService {
   async getById(id: string) {
     const account = await this.accounts.findOne({ where: { id } });
     if (!account) throw new NotFoundException(`Account #${id} not found`);
+    const profile = await this.profiles.findOne({ where: { accountId: id } });
     return {
       id: account.id,
-      username: account.username,
-      name: account.name,
       email: account.email,
-      avatarUrl: account.avatarUrl,
+      displayName: profile?.displayName ?? null,
+      avatarUrl: profile?.avatarUrl ?? null,
+      phone: profile?.phone ?? null,
+      addressLine: profile?.addressLine ?? null,
+      addressComplement: profile?.addressComplement ?? null,
+      city: profile?.city ?? null,
+      postalCode: profile?.postalCode ?? null,
+      country: profile?.country ?? null,
+      latitude: profile?.latitude ?? null,
+      longitude: profile?.longitude ?? null,
       isRoot: account.isRoot === 1,
       enabled: account.enabled === 1,
       lastLogin: account.lastLogin,
@@ -126,21 +164,28 @@ export class AccountsService {
     };
   }
 
+  // Admin-facing account edit: the login identity (email), the enabled flag, and
+  // the display name (the one profile field an administrator manages). The rest
+  // of the profile -- address, city, geolocation -- is the account owner's own,
+  // edited through PATCH /auth/jwt/me.
   async updateAccount(id: string, input: UpdateAccountDto) {
     const account = await this.accounts.findOne({ where: { id } });
     if (!account) throw new NotFoundException(`Account #${id} not found`);
-    if (input.email !== undefined && input.email !== null && input.email !== account.email) {
+    if (input.email !== undefined && input.email !== account.email) {
       const clash = await this.accounts.findOne({ where: { email: input.email, id: Not(id) } });
       if (clash) throw new ConflictException(`Email ${input.email} is already used by another account`);
+      account.email = input.email;
     }
-    if (input.name !== undefined) account.name = input.name;
-    if (input.email !== undefined) account.email = input.email;
-    if (input.avatarUrl !== undefined) account.avatarUrl = input.avatarUrl;
     if (input.enabled !== undefined) {
       if (account.isRoot === 1 && !input.enabled) throw new BadRequestException("Cannot disable a root account");
       account.enabled = input.enabled ? 1 : 0;
     }
     await this.accounts.save(account);
+    if (input.displayName !== undefined) {
+      const profile = (await this.profiles.findOne({ where: { accountId: id } })) ?? this.profiles.create({ accountId: id });
+      profile.displayName = input.displayName;
+      await this.profiles.save(profile);
+    }
     return this.getById(id);
   }
 
@@ -217,25 +262,24 @@ export class AccountsService {
     if (!inv) throw new NotFoundException("Invitation not found");
     if (inv.acceptedAt) throw new BadRequestException("Invitation already used");
     if (inv.expiresAt < new Date()) throw new BadRequestException("Invitation expired");
-    if (await this.accounts.findOne({ where: { username: input.username } })) {
-      throw new ConflictException(`Username "${input.username}" is already taken`);
+    if (await this.accounts.findOne({ where: { email: inv.email } })) {
+      throw new ConflictException(`An account with email "${inv.email}" already exists`);
     }
     const passwordHash = await bcrypt.hash(input.password, 12);
     const account = await this.accounts.save(
       this.accounts.create({
-        username: input.username,
-        name: input.name ?? null,
         email: inv.email,
         password: passwordHash,
         isRoot: 0,
         enabled: 1,
       })
     );
+    await this.profiles.save(this.profiles.create({ accountId: account.id, displayName: input.displayName ?? null }));
     if (inv.groupId !== null) {
       await this.cpg.guard.assignAccountToGroup(account.id, inv.groupId);
     }
     inv.acceptedAt = new Date();
     await this.invitations.save(inv);
-    return { ok: true, username: account.username };
+    return { ok: true, email: account.email };
   }
 }

@@ -17,23 +17,10 @@ export class Account {
     if (!this.id) this.id = randomUUID();
   }
 
-  @Column({ name: "username", type: "varchar", length: 255, unique: true })
-  username!: string;
-
-  @Column({ name: "name", type: "varchar", length: 255, nullable: true })
-  name!: string | null;
-
-  @Column({
-    name: "email",
-    type: "varchar",
-    length: 255,
-    nullable: true,
-    unique: true,
-  })
-  email!: string | null;
-
-  @Column({ name: "avatar_url", type: "varchar", length: 1024, nullable: true })
-  avatarUrl!: string | null;
+  // The login identity. Personal/display attributes (name, avatar, address...)
+  // live on the 1-1 account_profiles table; `accounts` is auth-only.
+  @Column({ name: "email", type: "varchar", length: 255, unique: true })
+  email!: string;
 
   @Column({ name: "password", type: "varchar", length: 255, nullable: true })
   password!: string | null;

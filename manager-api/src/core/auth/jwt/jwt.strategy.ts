@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 
 export interface JwtPayload {
   sub: string;
-  username: string;
+  email: string;
   isRoot: boolean;
 }
 
@@ -24,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!payload?.sub) throw new UnauthorizedException();
     return {
       id: payload.sub,
-      username: payload.username,
+      email: payload.email,
       isRoot: payload.isRoot === true,
     };
   }

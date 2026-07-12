@@ -49,7 +49,7 @@ export class CombinedAuthGuard implements CanActivate {
               secret: process.env.MANAGER_JWT_ACCESS_SECRET,
             });
             if (payload.sub) {
-              req.user = { id: payload.sub, username: payload.username, isRoot: payload.isRoot === true };
+              req.user = { id: payload.sub, email: payload.email, isRoot: payload.isRoot === true };
               return true;
             }
           } catch {

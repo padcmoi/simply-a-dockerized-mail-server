@@ -3,11 +3,13 @@ import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Account } from "../../entities/account.entity";
+import { AccountProfile } from "../../entities/account-profile.entity";
 import { GroupMember } from "../../entities/group-member.entity";
 import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
 import { VirtualDomain } from "../../entities/virtual-domain.entity";
 import { CustomPermissionGuardModule } from "../../custom-permission-guard/custom-permission-guard.module";
+import { GeocodingModule } from "../../geocoding/geocoding.module";
 import { JwtAuthController } from "./jwt.controller";
 import { JwtAuthService } from "./jwt.service";
 import { JwtStrategy } from "./jwt.strategy";
@@ -16,8 +18,9 @@ import { JwtStrategy } from "./jwt.strategy";
   imports: [
     PassportModule,
     JwtModule.register({}),
-    TypeOrmModule.forFeature([Account, Group, GroupMember, RefreshToken, VirtualDomain]),
+    TypeOrmModule.forFeature([Account, AccountProfile, Group, GroupMember, RefreshToken, VirtualDomain]),
     CustomPermissionGuardModule,
+    GeocodingModule,
   ],
   providers: [JwtAuthService, JwtStrategy],
   controllers: [JwtAuthController],

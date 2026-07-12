@@ -27,7 +27,7 @@ import {
 } from "./accounts.validation";
 
 type AuthedRequest = Request & {
-  user: { id: string; username: string; isRoot: boolean };
+  user: { id: string; email: string; isRoot: boolean };
 };
 
 // Was root-only on every route but `names`, which made the whole `accounts`

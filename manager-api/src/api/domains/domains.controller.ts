@@ -29,7 +29,7 @@ import {
 } from "./domains.validation";
 
 type AuthedRequest = Request & {
-  user: { id: string; username: string; isRoot: boolean };
+  user: { id: string; email: string; isRoot: boolean };
 };
 
 @DomainsApi()

@@ -11,7 +11,7 @@ const groupItemExample = {
   description: "Handles support mailboxes",
   createdAt: "2026-01-15T10:00:00.000Z",
   ownerId: 2,
-  ownerUsername: "jdoe",
+  ownerEmail: "jdoe@example.com",
   isDefault: false,
   memberCount: 4,
 };
@@ -19,7 +19,7 @@ const groupItemExample = {
 const groupDetailExample = {
   ...groupItemExample,
   nonMemberCount: 8,
-  owner: { id: 2, username: "jdoe" },
+  owner: { id: 2, email: "jdoe@example.com" },
   globalPermissions: [
     { id: 10, resource: "groups", action: "access" },
     { id: 11, resource: "groups", action: "list-groups" },
@@ -27,7 +27,7 @@ const groupDetailExample = {
   domainPermissions: [{ id: 5, domainId: 1, domainName: "example.com", resource: "recipients", action: "list-recipients" }],
 };
 
-const groupMembersExample = [{ id: 4, username: "jdoe", name: "John Doe", email: "jdoe@example.com" }];
+const groupMembersExample = [{ id: 4, email: "jdoe@example.com", displayName: "John Doe" }];
 
 const permissionsCatalogExample = {
   global: {
@@ -250,7 +250,7 @@ export const ListMembersDocs = () =>
     ApiOperation({
       summary: "List the members of a group",
       description:
-        "Paginated and searchable when `limit` is given: search matches the member account's username, name or email. Omitting `limit` returns the full member array (legacy, internal callers).",
+        "Paginated and searchable when `limit` is given: search matches the member account's email or display name. Omitting `limit` returns the full member array (legacy, internal callers).",
     }),
     ApiResponse({
       status: 200,

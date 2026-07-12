@@ -16,7 +16,7 @@ import {
 import { ApiTokenService } from "./api-token.service";
 import { CreateApiTokenDto, UpdateApiTokenDto, createApiTokenSchema, updateApiTokenSchema } from "./api-token.validation";
 
-type AuthedRequest = Request & { user: { id: string; username: string; isRoot: boolean } };
+type AuthedRequest = Request & { user: { id: string; email: string; isRoot: boolean } };
 
 // Every route is already scoped to the caller's own tokens (`req.user.id` is
 // passed to the service, never a target account), so these actions answer

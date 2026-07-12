@@ -51,7 +51,7 @@ import {
 } from "./groups.validation";
 
 type AuthedRequest = Request & {
-  user: { id: string; username: string; isRoot: boolean };
+  user: { id: string; email: string; isRoot: boolean };
 };
 
 @GroupsApi()

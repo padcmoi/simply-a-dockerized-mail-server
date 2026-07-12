@@ -5,20 +5,17 @@ export const sendInvitationSchema = z.object({
   groupId: z.string().uuid().nullable().default(null),
 });
 
+// Identity comes from the invitation's email; accepting only sets the password
+// and an optional display name (stored on the profile).
 export const acceptInvitationSchema = z.object({
-  username: z
-    .string()
-    .min(3)
-    .max(64)
-    .regex(/^[a-z0-9_.-]+$/, "Only lowercase letters, digits, underscores, dots and hyphens"),
   password: z.string().min(8),
-  name: z.string().max(255).optional(),
+  displayName: z.string().max(255).optional(),
 });
 
+// Admin-facing edit: email (login identity), enabled, and the display name.
 export const updateAccountSchema = z.object({
-  name: z.string().max(255).nullable().optional(),
-  email: z.string().email().max(255).nullable().optional(),
-  avatarUrl: z.string().url().max(1024).nullable().optional(),
+  email: z.string().email().max(255).optional(),
+  displayName: z.string().max(255).nullable().optional(),
   enabled: z.boolean().optional(),
 });
 

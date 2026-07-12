@@ -7,6 +7,7 @@ import { CustomPermissionGuardService } from "../../core/custom-permission-guard
 import type { GlobalAction } from "../../core/custom-permission-guard/permission-catalog";
 import { AntiEscalationService, type ActingUser } from "../../core/acl/anti-escalation.service";
 import { Account } from "../../core/entities/account.entity";
+import { AccountProfile } from "../../core/entities/account-profile.entity";
 import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
@@ -19,13 +20,14 @@ export const GROUPS_SORTABLE_COLUMNS = ["name", "description", "createdAt"] as c
 
 // Real `accounts` columns a member row can be sorted/searched on -- a member is
 // just an account, so these are its own columns, no enrichment involved.
-export const GROUP_MEMBERS_SORTABLE_COLUMNS = ["username", "name", "email"] as const;
+export const GROUP_MEMBERS_SORTABLE_COLUMNS = ["email", "displayName"] as const;
 
 @Injectable()
 export class GroupsService {
   constructor(
     @InjectRepository(Group) private readonly groups: Repository<Group>,
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
+    @InjectRepository(AccountProfile) private readonly profiles: Repository<AccountProfile>,
     @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     private readonly cpg: CustomPermissionGuardService,
@@ -73,7 +75,7 @@ export class GroupsService {
     const ownerMap = new Map<string, string>();
     if (ownerIds.length) {
       const owners = await this.accounts.findBy({ id: In(ownerIds) });
-      owners.forEach((o) => ownerMap.set(o.id, o.username));
+      owners.forEach((o) => ownerMap.set(o.id, o.email));
     }
 
     return allGroups.map((g) => ({
@@ -82,7 +84,7 @@ export class GroupsService {
       description: g.description,
       createdAt: g.createdAt,
       ownerId: g.ownerId,
-      ownerUsername: g.ownerId !== null ? (ownerMap.get(g.ownerId) ?? null) : null,
+      ownerEmail: g.ownerId !== null ? (ownerMap.get(g.ownerId) ?? null) : null,
       isDefault: g.isDefault === 1,
       protected: g.isProtected === 1,
       invisible: g.isInvisible === 1,
@@ -269,10 +271,10 @@ export class GroupsService {
       found.forEach((d) => domainMap.set(d.id, d.domain));
     }
 
-    let owner: { id: string; username: string } | null = null;
+    let owner: { id: string; email: string } | null = null;
     if (group.ownerId !== null) {
       const ownerAccount = await this.accounts.findOne({ where: { id: group.ownerId } });
-      if (ownerAccount) owner = { id: ownerAccount.id, username: ownerAccount.username };
+      if (ownerAccount) owner = { id: ownerAccount.id, email: ownerAccount.email };
     }
 
     return {
@@ -381,25 +383,38 @@ export class GroupsService {
   // `query.limit` absent = legacy full array (kept for any internal caller that
   // wants the whole membership at once). With a limit, it becomes a real
   // server-side paginated + searchable list, joining group_members to accounts
-  // so search hits the account's own columns (username / name / email).
+  // and account_profiles so search/sort reach the email and the display name.
   async listMembers(id: string, actingUser: ActingUser, query: PaginationQuery) {
     await this.findOrFail(id, actingUser);
     if (query.limit === undefined) return this.memberList(id);
 
-    const sortBy = resolveSortColumn(query.sortBy, GROUP_MEMBERS_SORTABLE_COLUMNS, "username");
-    const qb = this.accounts
+    const sortBy = resolveSortColumn(query.sortBy, GROUP_MEMBERS_SORTABLE_COLUMNS, "email");
+    // Entity-property paths, not db column names (see accounts.service note).
+    const orderExpr = sortBy === "displayName" ? "p.displayName" : "a.email";
+    // Base carries only the joins + filter (no custom select), so getCount works
+    // cleanly; the rows query clones it and adds the raw column selects.
+    const base = this.accounts
       .createQueryBuilder("a")
       .innerJoin(GroupMember, "gm", "gm.account_id = a.id")
+      .leftJoin(AccountProfile, "p", "p.account_id = a.id")
       .where("gm.group_id = :id", { id });
     if (query.search) {
-      qb.andWhere("(a.username LIKE :s OR a.name LIKE :s OR a.email LIKE :s)", { s: `%${query.search}%` });
+      base.andWhere("(a.email LIKE :s OR p.display_name LIKE :s)", { s: `%${query.search}%` });
     }
-    qb.orderBy(`a.${sortBy}`, query.sortDir === "asc" ? "ASC" : "DESC")
-      .skip(query.offset)
-      .take(query.limit);
-    const [rows, total] = await qb.getManyAndCount();
+    const rowsQb = base
+      .clone()
+      .select("a.id", "id")
+      .addSelect("a.email", "email")
+      .addSelect("p.displayName", "displayName")
+      .orderBy(orderExpr, query.sortDir === "asc" ? "ASC" : "DESC")
+      .limit(query.limit)
+      .offset(query.offset);
+    const [rows, total] = await Promise.all([
+      rowsQb.getRawMany<{ id: string; email: string; displayName: string | null }>(),
+      base.getCount(),
+    ]);
     return {
-      items: rows.map((a) => ({ id: a.id, username: a.username, name: a.name, email: a.email })),
+      items: rows.map((r) => ({ id: r.id, email: r.email, displayName: r.displayName ?? null })),
       total,
     };
   }
@@ -549,10 +564,10 @@ export class GroupsService {
 
   private async toItem(group: Group) {
     const memberCount = await this.groupMembers.count({ where: { groupId: group.id } });
-    let ownerUsername: string | null = null;
+    let ownerEmail: string | null = null;
     if (group.ownerId !== null) {
       const owner = await this.accounts.findOne({ where: { id: group.ownerId } });
-      ownerUsername = owner?.username ?? null;
+      ownerEmail = owner?.email ?? null;
     }
     return {
       id: group.id,
@@ -560,7 +575,7 @@ export class GroupsService {
       description: group.description,
       createdAt: group.createdAt,
       ownerId: group.ownerId,
-      ownerUsername,
+      ownerEmail,
       isDefault: group.isDefault === 1,
       protected: group.isProtected === 1,
       invisible: group.isInvisible === 1,
@@ -571,7 +586,12 @@ export class GroupsService {
   private async memberList(id: string) {
     const rows = await this.groupMembers.find({ where: { groupId: id } });
     if (!rows.length) return [];
-    const accs = await this.accounts.find({ where: { id: In(rows.map((r) => r.accountId)) }, order: { id: "ASC" } });
-    return accs.map((a) => ({ id: a.id, username: a.username, name: a.name, email: a.email }));
+    const accountIds = rows.map((r) => r.accountId);
+    const [accs, profileRows] = await Promise.all([
+      this.accounts.find({ where: { id: In(accountIds) }, order: { email: "ASC" } }),
+      this.profiles.find({ where: { accountId: In(accountIds) } }),
+    ]);
+    const displayByAccount = new Map(profileRows.map((p) => [p.accountId, p.displayName]));
+    return accs.map((a) => ({ id: a.id, email: a.email, displayName: displayByAccount.get(a.id) ?? null }));
   }
 }
