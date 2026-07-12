@@ -129,10 +129,10 @@ function onAdd() {
     <ul v-else class="divide-y divide-default">
       <li v-for="m in members" :key="m.id" class="flex items-center justify-between gap-2 py-2">
         <div class="min-w-0 flex items-center gap-2">
-          <UAvatar :alt="m.name ?? m.username" size="xs" />
+          <UAvatar :alt="m.displayName ?? m.email" size="xs" />
           <div class="min-w-0">
-            <p class="font-medium truncate">{{ m.username }}</p>
-            <p v-if="m.email" class="text-xs text-muted truncate">{{ m.email }}</p>
+            <p class="font-medium truncate">{{ m.displayName ?? m.email }}</p>
+            <p v-if="m.displayName" class="text-xs text-muted truncate">{{ m.email }}</p>
           </div>
         </div>
 

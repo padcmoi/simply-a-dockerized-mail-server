@@ -1,10 +1,8 @@
 <script setup lang="ts">
 interface AccountDetail {
   id: string;
-  username: string;
-  name: string | null;
-  email: string | null;
-  avatarUrl: string | null;
+  email: string;
+  displayName: string | null;
   isRoot: boolean;
   enabled: boolean;
   groups: { id: string; name: string }[];
@@ -26,21 +24,20 @@ const { set: setBreadcrumb } = useBreadcrumb();
 const account = ref<AccountDetail | null>(null);
 const loading = ref(false);
 const saving = ref(false);
-const form = reactive({ name: "", email: "", avatarUrl: "", enabled: true });
+const form = reactive({ displayName: "", email: "", enabled: true });
 
 const accountId = computed(() => String(route.params.id));
 
 watchEffect(() => {
-  setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: account.value?.username ?? "..." }]);
+  setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: account.value?.email ?? "..." }]);
 });
 
 async function load() {
   loading.value = true;
   try {
     account.value = await call<AccountDetail>(`/accounts/${accountId.value}`);
-    form.name = account.value.name ?? "";
+    form.displayName = account.value.displayName ?? "";
     form.email = account.value.email ?? "";
-    form.avatarUrl = account.value.avatarUrl ?? "";
     form.enabled = account.value.enabled;
   } catch (e) {
     toast.add({ title: t("accounts.editPage.toast.loadFailed"), description: (e as Error).message, color: "error" });
@@ -55,9 +52,8 @@ async function save() {
     account.value = await call<AccountDetail>(`/accounts/${accountId.value}`, {
       method: "PATCH",
       body: {
-        name: form.name || null,
-        email: form.email || null,
-        avatarUrl: form.avatarUrl || null,
+        displayName: form.displayName || null,
+        email: form.email || undefined,
         enabled: form.enabled,
       },
     });
@@ -92,18 +88,15 @@ onMounted(load);
 
     <UCard v-else-if="account">
       <template #header>
-        <h2 class="font-semibold truncate">{{ t("accounts.editPage.title", { username: account.username }) }}</h2>
+        <h2 class="font-semibold truncate">{{ t("accounts.editPage.title", { email: account.email }) }}</h2>
       </template>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormField :label="t('accounts.editPage.nameLabel')">
-          <UInput v-model="form.name" class="w-full" />
-        </UFormField>
         <UFormField :label="t('accounts.editPage.emailLabel')">
           <UInput v-model="form.email" type="email" class="w-full" />
         </UFormField>
-        <UFormField :label="t('accounts.editPage.avatarUrlLabel')" class="sm:col-span-2">
-          <UInput v-model="form.avatarUrl" type="url" class="w-full" />
+        <UFormField :label="t('accounts.editPage.nameLabel')">
+          <UInput v-model="form.displayName" class="w-full" />
         </UFormField>
       </div>
       <UFormField :label="t('accounts.editPage.enabledLabel')" :description="t('accounts.editPage.enabledHint')" class="mt-4">

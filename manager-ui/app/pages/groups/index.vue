@@ -14,7 +14,7 @@ const saving = ref(false);
 const confirmOpen = ref(false);
 const pendingDelete = ref<GroupItem | null>(null);
 
-// `ownerUsername`/`memberCount` have no matching real column (computed
+// `ownerEmail`/`memberCount` have no matching real column (computed
 // post-query, see groups.service.ts's enrichGroups) -- not sortable, stay
 // plain headers. Same source feeds the desktop column headers below and
 // ListToolbar's mobile sort select.
@@ -26,7 +26,7 @@ const SORTABLE_COLUMNS = computed(() => [
 const columns = computed(() => [
   { accessorKey: "name", header: header("name", t("groups.table.name")) },
   { accessorKey: "description", header: header("description", t("groups.table.description")) },
-  { accessorKey: "ownerUsername", header: t("groups.table.owner") },
+  { accessorKey: "ownerEmail", header: t("groups.table.owner") },
   { accessorKey: "memberCount", header: t("groups.table.members") },
   { id: "actions", header: "" },
 ]);
@@ -156,8 +156,8 @@ async function onDeleteConfirmed() {
               row.original.description || t("groups.noDescription")
             }}</span>
           </template>
-          <template #ownerUsername-cell="{ row }">
-            <span class="text-muted text-sm">{{ row.original.ownerUsername ?? "-" }}</span>
+          <template #ownerEmail-cell="{ row }">
+            <span class="text-muted text-sm">{{ row.original.ownerEmail ?? "-" }}</span>
           </template>
           <template #actions-cell="{ row }">
             <div class="flex justify-end">

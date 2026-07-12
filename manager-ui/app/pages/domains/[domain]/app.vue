@@ -24,10 +24,10 @@ const route = useRoute();
 // always renders and the PATCH call is what actually enforces it (403 caught
 // below). `isOwnerOrRoot` only disables the button as a UX hint so an
 // obviously-doomed request isn't submitted; it grants nothing by itself.
-const ownerPick = ref<number | undefined>(undefined);
+const ownerPick = ref<string | undefined>(undefined);
 const savingOwner = ref(false);
 const savingActive = ref(false);
-const accountOptions = ref<{ label: string; value: number }[]>([]);
+const accountOptions = ref<{ label: string; value: string }[]>([]);
 // Starts true: still don't know `domain.id` at first paint (SSR + pre-mount),
 // so the select must show a skeleton immediately rather than an empty
 // dropdown before we've even determined whether a fetch is needed.
@@ -82,7 +82,7 @@ const { data: dkimCheckData, refresh: refreshDkimCheck } = useAsyncData<DkimChec
 const dkimCheck = computed(() => dkimCheckData.value);
 
 const isOwnerOrRoot = computed(
-  () => isRoot.value || (domain.value?.ownerUsername != null && domain.value.ownerUsername === auth.session?.username)
+  () => isRoot.value || (domain.value?.ownerEmail != null && domain.value.ownerEmail === auth.session?.email)
 );
 
 // Each item's `slot` names the matching #<slot> template below -- same
@@ -103,8 +103,11 @@ watch(
     }
     ownerOptionsLoading.value = true;
     try {
-      const accounts = await call<{ id: number; username: string; name: string | null }[]>("/accounts/names").catch(() => []);
-      accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
+      const accounts = await call<{ id: string; email: string; displayName: string | null }[]>("/accounts/names").catch(() => []);
+      accountOptions.value = accounts.map((a) => ({
+        label: a.displayName ? `${a.displayName} (${a.email})` : a.email,
+        value: a.id,
+      }));
     } finally {
       ownerOptionsLoading.value = false;
     }
@@ -228,7 +231,7 @@ async function changeDomainOwner() {
         <ContentPanel>
           <p class="text-sm mb-3">
             {{ t("domainDashboard.owner.current") }}:
-            <span class="font-medium">{{ domain?.ownerUsername ?? t("domainDashboard.owner.unassigned") }}</span>
+            <span class="font-medium">{{ domain?.ownerEmail ?? t("domainDashboard.owner.unassigned") }}</span>
           </p>
           <div class="flex flex-wrap gap-2">
             <USkeleton v-if="ownerOptionsLoading" class="h-8 w-48 rounded-md" />

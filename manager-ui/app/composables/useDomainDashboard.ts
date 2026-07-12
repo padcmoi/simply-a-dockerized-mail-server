@@ -6,7 +6,7 @@ export interface Domain {
   quota: string;
   active: number;
   ownerId?: number | null;
-  ownerUsername?: string | null;
+  ownerEmail?: string | null;
 }
 export interface Recipient {
   id: number;

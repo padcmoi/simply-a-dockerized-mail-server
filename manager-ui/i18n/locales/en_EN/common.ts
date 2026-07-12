@@ -23,6 +23,8 @@ export default {
   lastActivity: "Last activity",
   lastModification: "Last modification",
   cancel: "Cancel",
+  clear: "Clear",
+  apply: "Apply",
   invite: "Invite",
   revoke: "Revoke",
   manage: "Access",

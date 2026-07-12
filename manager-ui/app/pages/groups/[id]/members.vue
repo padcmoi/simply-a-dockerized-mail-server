@@ -39,7 +39,7 @@ const {
   sortBy,
   sortDir,
   load,
-} = usePaginatedList<GroupMember>("group-members", () => `/groups/${groupId.value}/members`, "username", [groupId]);
+} = usePaginatedList<GroupMember>("group-members", () => `/groups/${groupId.value}/members`, "email", [groupId]);
 sortDir.value = "asc";
 
 watchEffect(() => {
@@ -59,8 +59,11 @@ async function loadAccountOptions() {
   try {
     const qs = new URLSearchParams({ notInGroup: groupId.value, limit: "25" });
     if (accountSearch.value) qs.set("search", accountSearch.value);
-    const accounts = await call<{ id: string; username: string; name: string | null }[]>(`/accounts/names?${qs.toString()}`);
-    accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
+    const accounts = await call<{ id: string; email: string; displayName: string | null }[]>(`/accounts/names?${qs.toString()}`);
+    accountOptions.value = accounts.map((a) => ({
+      label: a.displayName ? `${a.displayName} (${a.email})` : a.email,
+      value: a.id,
+    }));
   } catch (e) {
     toast.add({ title: t("groups.detail.members.addFailed"), description: (e as Error).message, color: "error" });
   } finally {

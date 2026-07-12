@@ -4,7 +4,7 @@ export interface GroupItem {
   description: string | null;
   createdAt: string;
   ownerId: string | null;
-  ownerUsername: string | null;
+  ownerEmail: string | null;
   memberCount: number;
   isDefault?: boolean;
   protected?: boolean;
@@ -28,7 +28,7 @@ export interface GroupDomainPermission {
 }
 
 export interface GroupDetail extends GroupItem {
-  owner: { id: string; username: string } | null;
+  owner: { id: string; email: string } | null;
   // Accounts not in this group (= assignable). Server COUNT, only on the detail.
   nonMemberCount: number;
   globalPermissions: GroupPermission[];
@@ -37,9 +37,8 @@ export interface GroupDetail extends GroupItem {
 
 export interface GroupMember {
   id: string;
-  username: string;
-  name: string | null;
-  email: string | null;
+  email: string;
+  displayName: string | null;
 }
 
 export interface DependsOnEntry {

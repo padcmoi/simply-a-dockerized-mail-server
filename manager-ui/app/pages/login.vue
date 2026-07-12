@@ -5,7 +5,7 @@ import { useAuthStore } from "~/stores/auth";
 definePageMeta({ layout: "auth" });
 
 const loading = ref(false);
-const state = reactive({ username: "", password: "" });
+const state = reactive({ email: "", password: "" });
 
 const { t } = useI18n();
 const auth = useAuthStore();
@@ -13,14 +13,14 @@ const toast = useToast();
 const { resolve: resolveLastRoute } = useLastRoute();
 
 const schema = z.object({
-  username: z.string().min(1, t("common.required")),
+  email: z.string().email(t("login.emailInvalid")),
   password: z.string().min(1, t("common.required")),
 });
 
 async function onSubmit() {
   loading.value = true;
   try {
-    await auth.login(state.username, state.password);
+    await auth.login(state.email, state.password);
     // Back to wherever the user was before the session dropped (or they logged
     // out); dashboard only if there is no remembered route.
     await navigateTo(resolveLastRoute());
@@ -46,8 +46,8 @@ async function onSubmit() {
       <p class="text-sm text-muted mt-1">{{ t("login.subtitle") }}</p>
     </template>
     <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
-      <UFormField :label="t('login.username')" name="username" required>
-        <UInput v-model="state.username" autocomplete="username" icon="i-lucide-user" class="w-full" />
+      <UFormField :label="t('login.email')" name="email" required>
+        <UInput v-model="state.email" type="email" autocomplete="email" icon="i-lucide-mail" class="w-full" />
       </UFormField>
       <UFormField :label="t('login.password')" name="password" required>
         <UInput v-model="state.password" type="password" autocomplete="current-password" icon="i-lucide-lock" class="w-full" />

@@ -51,8 +51,8 @@ async function changeOwner() {
 }
 
 onMounted(async () => {
-  const accounts = await call<{ id: string; username: string; name: string | null }[]>("/accounts/names").catch(() => []);
-  accountOptions.value = accounts.map((a) => ({ label: a.name ? `${a.username} (${a.name})` : a.username, value: a.id }));
+  const accounts = await call<{ id: string; email: string; displayName: string | null }[]>("/accounts/names").catch(() => []);
+  accountOptions.value = accounts.map((a) => ({ label: a.displayName ? `${a.displayName} (${a.email})` : a.email, value: a.id }));
 });
 </script>
 
@@ -82,7 +82,7 @@ onMounted(async () => {
           <h3 class="font-semibold">{{ t("groups.detail.owner.title") }}</h3>
         </template>
         <p class="text-sm mb-3">
-          {{ group.owner?.username ?? t("groups.detail.owner.unassigned") }}
+          {{ group.owner?.email ?? t("groups.detail.owner.unassigned") }}
         </p>
         <div class="flex flex-wrap gap-2">
           <USelectMenu

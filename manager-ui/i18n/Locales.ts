@@ -87,6 +87,8 @@ export interface Locales {
     // which labels dovecot's own delivery counter on the quotas page.
     lastModification: string;
     cancel: string;
+    clear: string;
+    apply: string;
     invite: string;
     revoke: string;
     manage: string;
@@ -108,7 +110,8 @@ export interface Locales {
   login: {
     title: string;
     subtitle: string;
-    username: string;
+    email: string;
+    emailInvalid: string;
     password: string;
     submit: string;
     failed: string;
@@ -318,6 +321,19 @@ export interface Locales {
     emailHint: string;
     avatarUrl: string;
     avatarUrlHint: string;
+    editAvatar: string;
+    phone: string;
+    addressSection: string;
+    addressLine: string;
+    addressComplement: string;
+    city: string;
+    cityHint: string;
+    postalCode: string;
+    country: string;
+    countryPlaceholder: string;
+    coordinates: string;
+    coordinatesHint: string;
+    coordinatesEmpty: string;
     emailInvalid: string;
     urlInvalid: string;
     save: string;

@@ -29,12 +29,10 @@ const userAvatar = computed(() => {
   if (url)
     return {
       src: url,
-      alt: auth.session?.name ?? auth.session?.username ?? "user",
+      alt: auth.session?.displayName ?? auth.session?.email ?? "user",
     };
-  return { alt: auth.session?.name ?? auth.session?.username ?? "?" };
+  return { alt: auth.session?.displayName ?? auth.session?.email ?? "?" };
 });
-
-const rootBadge = computed(() => (auth.session?.isRoot ? { label: t("layout.rootBadge"), color: "warning" as const } : null));
 
 const domainStore = useDomainStore();
 const { t } = useI18n();
@@ -137,20 +135,26 @@ function closeDomain() {
           :content="{ align: 'center', collisionPadding: 12 }"
           :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width) min-w-48' }"
         >
-          <UButton
-            :avatar="userAvatar"
-            trailing-icon="i-lucide-chevrons-up-down"
-            color="neutral"
-            variant="ghost"
-            square
-            class="w-full data-[state=open]:bg-elevated overflow-hidden"
-            :ui="{ trailingIcon: 'text-dimmed ms-auto', label: 'flex items-center gap-1.5 min-w-0' }"
+          <button
+            type="button"
+            class="w-full flex items-center gap-2 rounded-md p-1.5 overflow-hidden text-left hover:bg-elevated data-[state=open]:bg-elevated transition-colors"
           >
-            <span class="truncate min-w-0">{{ auth.session?.name ?? auth.session?.username ?? "Account" }}</span>
-            <UBadge v-if="rootBadge" :color="rootBadge.color" variant="subtle" size="xs" class="min-w-0 max-w-24 shrink-0">
-              <span class="truncate block">{{ rootBadge.label }}</span>
-            </UBadge>
-          </UButton>
+            <!-- Rail (collapsed) shows only the avatar; expanded shows the full
+                 UUser (left-aligned, truncating) + the chevron pushed right. -->
+            <template v-if="open">
+              <UUser
+                :name="auth.session?.displayName ?? auth.session?.email ?? 'Account'"
+                :description="auth.session?.displayName ? (auth.session?.email ?? undefined) : undefined"
+                :avatar="userAvatar"
+                :chip="auth.session?.isRoot ? { color: 'warning' } : undefined"
+                size="md"
+                class="min-w-0 flex-1"
+                :ui="{ root: 'min-w-0', wrapper: 'min-w-0 flex-1 overflow-hidden', name: 'truncate', description: 'truncate' }"
+              />
+              <UIcon name="i-lucide-chevrons-up-down" class="text-dimmed shrink-0 size-4" />
+            </template>
+            <UAvatar v-else v-bind="userAvatar" size="md" class="mx-auto" />
+          </button>
         </UDropdownMenu>
       </template>
     </USidebar>

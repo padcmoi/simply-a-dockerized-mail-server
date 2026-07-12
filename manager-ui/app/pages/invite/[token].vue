@@ -11,8 +11,7 @@ const loading = ref(true);
 const invalid = ref(false);
 const info = ref<InviteInfo | null>(null);
 
-const username = ref("");
-const name = ref("");
+const displayName = ref("");
 const password = ref("");
 const submitting = ref(false);
 const done = ref(false);
@@ -38,8 +37,7 @@ async function submit() {
     await $fetch(`/api/v1/accounts/invite/${token.value}/accept`, {
       method: "POST",
       body: {
-        username: username.value,
-        name: name.value || undefined,
+        displayName: displayName.value || undefined,
         password: password.value,
       },
     });
@@ -108,12 +106,8 @@ onMounted(loadInvitation);
         </div>
       </div>
 
-      <UFormField :label="t('invite.usernameLabel')" :hint="t('invite.usernameHint')" required>
-        <UInput v-model="username" autocomplete="username" pattern="[a-z0-9_.\-]+" minlength="3" class="w-full" required />
-      </UFormField>
-
       <UFormField :label="t('invite.nameLabel')" :hint="t('invite.nameHint')">
-        <UInput v-model="name" autocomplete="name" class="w-full" />
+        <UInput v-model="displayName" autocomplete="name" class="w-full" />
       </UFormField>
 
       <UFormField :label="t('invite.passwordLabel')" required>

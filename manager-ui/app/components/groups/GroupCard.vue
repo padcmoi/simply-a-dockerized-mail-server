@@ -25,7 +25,7 @@ const { t } = useI18n();
       <UButton icon="i-lucide-trash-2" size="xs" color="error" variant="ghost" square @click="emit('delete')" />
     </div>
     <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
-      <span>{{ t("groups.table.owner") }}: {{ group.ownerUsername ?? "-" }}</span>
+      <span>{{ t("groups.table.owner") }}: {{ group.ownerEmail ?? "-" }}</span>
       <span>{{ t("groups.table.members") }}: {{ group.memberCount }}</span>
     </div>
   </UCard>

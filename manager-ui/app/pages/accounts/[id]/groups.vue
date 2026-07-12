@@ -1,9 +1,8 @@
 <script setup lang="ts">
 interface AccountDetail {
   id: string;
-  username: string;
-  name: string | null;
-  email: string | null;
+  email: string;
+  displayName: string | null;
   isRoot: boolean;
   enabled: boolean;
   groups: { id: string; name: string }[];
@@ -38,7 +37,7 @@ const availableOptions = computed(() => {
 });
 
 watchEffect(() => {
-  setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: account.value?.username ?? "..." }]);
+  setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: account.value?.email ?? "..." }]);
 });
 
 async function load() {
@@ -103,7 +102,7 @@ onMounted(load);
 
     <UCard v-else-if="account">
       <template #header>
-        <h2 class="font-semibold truncate">{{ t("accounts.groupsPage.title", { username: account.username }) }}</h2>
+        <h2 class="font-semibold truncate">{{ t("accounts.groupsPage.title", { email: account.email }) }}</h2>
       </template>
 
       <div class="flex flex-wrap gap-2 mb-4">

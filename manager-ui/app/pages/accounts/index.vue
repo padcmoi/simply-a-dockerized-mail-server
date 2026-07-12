@@ -8,9 +8,8 @@ definePageMeta({
 
 interface ManagerAccount {
   id: string;
-  username: string;
-  name: string | null;
-  email: string | null;
+  email: string;
+  displayName: string | null;
   isRoot: boolean;
   enabled: boolean;
   lastLogin: string | null;
@@ -61,16 +60,14 @@ const groupInviteOptions = computed(() => groups.value.map((g) => ({ label: g.na
 // header. Same source feeds the desktop column headers below and
 // ListToolbar's mobile sort select.
 const SORTABLE_COLUMNS = computed(() => [
-  { key: "username", label: t("accounts.table.username") },
-  { key: "name", label: t("accounts.table.name") },
   { key: "email", label: t("accounts.table.email") },
+  { key: "displayName", label: t("accounts.table.name") },
   { key: "enabled", label: t("accounts.table.status") },
 ]);
 
 const columns = computed(() => [
-  { accessorKey: "username", header: header("username", t("accounts.table.username")) },
-  { accessorKey: "name", header: header("name", t("accounts.table.name")) },
   { accessorKey: "email", header: header("email", t("accounts.table.email")) },
+  { accessorKey: "displayName", header: header("displayName", t("accounts.table.name")) },
   { id: "group", header: t("accounts.table.group") },
   { id: "status", header: header("enabled", t("accounts.table.status")) },
   { id: "actions", header: "" },
@@ -151,18 +148,15 @@ async function onDeleteConfirmed() {
     <template v-else>
       <UCard class="hidden xl:block">
         <UTable :loading="loading" :data="accounts" :columns="columns" sticky>
-          <template #username-cell="{ row }">
+          <template #email-cell="{ row }">
             <div class="flex items-center gap-2">
-              <UAvatar :alt="row.original.name ?? row.original.username" size="xs" />
-              <span class="font-medium">{{ row.original.username }}</span>
+              <UAvatar :alt="row.original.displayName ?? row.original.email" size="xs" />
+              <span class="font-medium">{{ row.original.email }}</span>
               <UBadge v-if="row.original.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
             </div>
           </template>
-          <template #name-cell="{ row }">
-            <span class="text-muted">{{ row.original.name ?? "-" }}</span>
-          </template>
-          <template #email-cell="{ row }">
-            <span class="text-muted text-sm">{{ row.original.email ?? "-" }}</span>
+          <template #displayName-cell="{ row }">
+            <span class="text-muted">{{ row.original.displayName ?? "-" }}</span>
           </template>
           <template #group-cell="{ row }">
             <div v-if="row.original.isRoot" class="text-xs text-muted italic">

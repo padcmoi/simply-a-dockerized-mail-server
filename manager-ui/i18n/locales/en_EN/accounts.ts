@@ -29,7 +29,7 @@ export default {
   groupsPage: {
     alertTitle: "Group membership for this account.",
     alertDescription: "Assign or remove groups; permissions update immediately.",
-    title: "Manage groups ({username})",
+    title: "Manage groups ({email})",
     pickPlaceholder: "Select a group to add",
     add: "Add",
     removeTooltip: "Remove from this group",
@@ -38,7 +38,7 @@ export default {
   editPage: {
     alertTitle: "Edit this account's profile.",
     alertDescription: "Display name, email, avatar and enabled status.",
-    title: "Edit account ({username})",
+    title: "Edit account ({email})",
     nameLabel: "Display name",
     emailLabel: "Email",
     avatarUrlLabel: "Avatar URL",
