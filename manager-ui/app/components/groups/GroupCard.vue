@@ -3,7 +3,7 @@ import type { GroupItem } from "~/composables/useGroups";
 
 const emit = defineEmits<{ delete: [] }>();
 
-defineProps<{ group: GroupItem }>();
+defineProps<{ group: GroupItem; isMember: boolean }>();
 
 const { t } = useI18n();
 </script>
@@ -18,6 +18,7 @@ const { t } = useI18n();
             t("groups.defaultBadge")
           }}</UBadge>
           <UIcon v-if="group.protected" name="i-lucide-lock" class="shrink-0 text-warning" :title="t('groups.protectedBadge')" />
+          <UIcon v-if="isMember" name="i-lucide-circle-check" class="shrink-0 text-success" :title="t('groups.memberBadge')" />
         </div>
         <p class="text-sm text-muted truncate">{{ group.description || t("groups.noDescription") }}</p>
       </div>

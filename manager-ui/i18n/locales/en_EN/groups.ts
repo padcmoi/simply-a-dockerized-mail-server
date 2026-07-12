@@ -9,6 +9,7 @@ export default {
   noDescription: "No description",
   defaultBadge: "Default",
   protectedBadge: "Protected",
+  memberBadge: "You are a member",
   table: {
     name: "Name",
     description: "Description",

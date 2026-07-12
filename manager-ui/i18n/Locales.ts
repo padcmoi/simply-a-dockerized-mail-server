@@ -614,6 +614,7 @@ export interface Locales {
     noDescription: string;
     defaultBadge: string;
     protectedBadge: string;
+    memberBadge: string;
     table: {
       name: string;
       description: string;

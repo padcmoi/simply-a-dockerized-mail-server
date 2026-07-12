@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { GroupItem } from "~/composables/useGroups";
+import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
   requiredGlobal: [
@@ -30,7 +31,13 @@ const columns = computed(() => [
   { id: "actions", header: "" },
 ]);
 
+// Ids of the groups the current account belongs to (its own memberships, from
+// the session -- includes invisible ones, though those never appear in this
+// list for a non-root anyway). Drives the "you are a member" green check.
+const myGroupIds = computed(() => new Set((auth.session?.groups ?? []).map((g) => g.id)));
+
 const { t } = useI18n();
+const auth = useAuthStore();
 const { set: setBreadcrumb } = useBreadcrumb();
 const toast = useToast();
 setBreadcrumb([{ label: t("nav.groups") }]);
@@ -136,6 +143,12 @@ async function onDeleteConfirmed() {
                 class="shrink-0 text-warning"
                 :title="t('groups.protectedBadge')"
               />
+              <UIcon
+                v-if="myGroupIds.has(row.original.id)"
+                name="i-lucide-circle-check"
+                class="shrink-0 text-success"
+                :title="t('groups.memberBadge')"
+              />
             </div>
           </template>
           <template #description-cell="{ row }">
@@ -163,7 +176,14 @@ async function onDeleteConfirmed() {
 
       <div class="xl:hidden space-y-3">
         <p v-if="groups.length === 0" class="text-sm text-muted text-center py-6">{{ t("groups.empty") }}</p>
-        <GroupCard v-for="group in groups" v-else :key="group.id" :group="group" @delete="requestDelete(group)" />
+        <GroupCard
+          v-for="group in groups"
+          v-else
+          :key="group.id"
+          :group="group"
+          :is-member="myGroupIds.has(group.id)"
+          @delete="requestDelete(group)"
+        />
       </div>
 
       <ListPagination v-model:page="page" :total="total" :limit="limit" />
