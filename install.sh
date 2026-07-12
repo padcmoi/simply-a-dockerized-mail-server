@@ -255,7 +255,6 @@ if ! stage_done secrets; then
 	set_secret_if_placeholder RSPAMD_PASSWORD "$(rand_alnum)"
 	set_secret_if_placeholder MANAGER_JWT_ACCESS_SECRET "$(rand_b64)"
 	set_secret_if_placeholder MANAGER_JWT_REFRESH_SECRET "$(rand_b64)"
-	set_secret_if_placeholder MANAGER_ADMIN_PASSWORD "$(rand_alnum)"
 	stage_set secrets
 fi
 
@@ -263,8 +262,6 @@ DB_NAME=$(env_get DB_NAME)
 DB_USER=$(env_get DB_USER)
 DB_PASS=$(env_get DB_PASSWORD)
 DB_ROOT=$(env_get DB_ROOT_PASSWORD)
-ADMIN_USER=$(env_get MANAGER_ADMIN_USERNAME)
-ADMIN_PASS=$(env_get MANAGER_ADMIN_PASSWORD)
 MANAGEUI_PORT=$(env_get BINDING_PORT_MANAGEUI)
 ROUNDCUBE_PORT=$(env_get BINDING_PORT_ROUNDCUBE)
 PHPMYADMIN_PORT=$(env_get BINDING_PORT_PHPMYADMIN)
@@ -299,23 +296,66 @@ fi
 # 5. Seed root account
 # ---------------------------------------------------------------------------
 if ! stage_done admin; then
+	# The root account's email and password are asked here and kept ONLY in shell
+	# memory for the duration of this stage: neither is ever written to .env (a
+	# plaintext admin password lingering on disk is a needless secret to leak) --
+	# the account is identified by email + a bcrypt hash in the DB, nothing here is
+	# needed at runtime. On a resume where this stage already ran, it is skipped,
+	# so nothing is re-prompted.
+	ADMIN_EMAIL=$(prompt_re "Email of the first (root) account" "" \
+		'^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' \
+		"a valid email like admin@example.com")
+	# Choose the password (hidden, confirmed), or leave blank to auto-generate a
+	# strong one shown once at the end (terminal only, stored nowhere).
+	ADMIN_PASS=""
+	ADMIN_PASS_GENERATED=0
+	while true; do
+		printf '\033[1;36m[?]\033[0m Password for the root account (8+ chars, blank = auto-generate): ' >&2
+		read -rs ADMIN_PW1
+		printf '\n' >&2
+		if [ -z "$ADMIN_PW1" ]; then
+			ADMIN_PASS=$(rand_alnum)
+			ADMIN_PASS_GENERATED=1
+			break
+		fi
+		if [ ${#ADMIN_PW1} -lt 8 ]; then
+			warn "password must be at least 8 characters"
+			continue
+		fi
+		printf '\033[1;36m[?]\033[0m Confirm password: ' >&2
+		read -rs ADMIN_PW2
+		printf '\n' >&2
+		if [ "$ADMIN_PW1" = "$ADMIN_PW2" ]; then
+			ADMIN_PASS="$ADMIN_PW1"
+			break
+		fi
+		warn "passwords do not match, try again"
+	done
+	unset ADMIN_PW1 ADMIN_PW2
+
 	c "hashing root password and upserting accounts row..."
 	ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
 		node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" |
 		tr -d '\r')
-	# is_root=1 marks this row as the bootstrap super-admin. The seeded account
-	# is the only one created by install.sh; every subsequent account, domain,
-	# postmaster reservation and DKIM key is created from the manager-ui (or
-	# the manager-api directly) by this root user. Re-running install keeps the
-	# row but rehashes its password (NOT a no-op: lets the operator reset it by
-	# picking a new MANAGER_ADMIN_PASSWORD and a fresh install on top). `id` is
-	# a uuid with no DB-side default (TypeORM generates it for every account
-	# created through the API), so this raw INSERT has to supply its own, and it
-	# stays out of the UPDATE list so a re-run never rotates it.
+	# is_root=1 marks this row as the bootstrap super-admin. The login identity is
+	# the email (no username). The seeded account is the only one created by
+	# install.sh; every subsequent account, domain, postmaster reservation and
+	# DKIM key is created from the manager-ui (or the manager-api directly) by this
+	# root user. Re-running install (with the admin stage reset) keeps the row but
+	# rehashes its password (NOT a no-op: lets the operator reset it by entering a
+	# new one at the prompt). `id` is a char(36) uuid with no DB-side default
+	# (TypeORM generates it for API-created accounts), so this raw INSERT supplies
+	# its own; it stays out of the UPDATE list so a re-run never rotates it, and
+	# the ON DUPLICATE key is the unique email. The second statement gives the
+	# account its 1-1 profile row (empty for now) via a by-email id lookup, so it
+	# works whether the account was just created or already existed.
+	NEW_UUID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen)
 	docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
-INSERT INTO accounts (id, username, password, is_root, enabled, created_at, updated_at)
-VALUES (UUID(), '${ADMIN_USER}', '${ADMIN_HASH}', 1, 1, NOW(), NOW())
+INSERT INTO accounts (id, email, password, is_root, enabled, created_at, updated_at)
+VALUES ('${NEW_UUID}', '${ADMIN_EMAIL}', '${ADMIN_HASH}', 1, 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE password=VALUES(password), is_root=1, updated_at=NOW();
+INSERT IGNORE INTO account_profiles (account_id, created_at, updated_at)
+SELECT id, NOW(), NOW() FROM accounts WHERE email='${ADMIN_EMAIL}';
 SQL
 	ok "root account ready"
 	stage_set admin
@@ -338,9 +378,9 @@ cat <<EOF | tee INSTALL_INFO.txt
 URLs (binding IPs are set in .env, default 127.0.0.1 for UIs):
 ${URLS}
 
-Root credentials (is_root=1 super-admin):
-  login        : ${ADMIN_USER}
-  password     : ${ADMIN_PASS}
+Root account (is_root=1 super-admin):
+  login (email): ${ADMIN_EMAIL:-<seeded on a previous run>}
+  password     : the one you set during install (stored nowhere)
 
 Sign in at the manager UI above, then create your first domain
 (Domains -> +Add). The API reserves postmaster@<domain> inactive and
@@ -354,6 +394,14 @@ phpMyAdmin / MariaDB credentials:
 See DOMAIN_DNS.md for the full DNS record set (MX, SPF, DMARC, DKIM).
 ==========================================================================
 EOF
+
+# An auto-generated root password is the only copy in existence: show it ONCE,
+# to the terminal only -- never tee'd into INSTALL_INFO.txt, never in .env. A
+# password the operator chose is deliberately not echoed (they already have it).
+if [ "${ADMIN_PASS_GENERATED:-0}" = "1" ]; then
+	warn "auto-generated root password (save it now, it is stored nowhere):"
+	printf '    \033[1;33m%s\033[0m\n' "$ADMIN_PASS" >&2
+fi
 
 # Install reached the end: wipe every installer-owned scaffolding key
 # (`_INSTALL_STAGE`, anything matching `^_[A-Z_]+=`) so the live .env carries
