@@ -4,6 +4,7 @@ export default {
   home: "Accueil",
   sieveLong: "Sieve - Expéditeurs rejetés",
   profile: "Profil",
+  preferences: "Préférences",
   signOut: "Se déconnecter",
   appearance: "Apparence",
   light: "Clair",

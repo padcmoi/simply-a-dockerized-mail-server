@@ -17,6 +17,7 @@ const headerTitle = computed(() => {
     "/accounts": t("nav.accounts"),
     "/groups": t("nav.groups"),
     "/profile": t("layout.profile"),
+    "/preferences": t("layout.preferences"),
     "/api-tokens": t("nav.apiTokens"),
   };
   for (const k of Object.keys(map)) if (route.path.startsWith(k)) return map[k];

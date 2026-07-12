@@ -13,6 +13,7 @@ import aliases from "./fr_FR/aliases";
 import quotas from "./fr_FR/quotas";
 import sieve from "./fr_FR/sieve";
 import profile from "./fr_FR/profile";
+import preferences from "./fr_FR/preferences";
 import accounts from "./fr_FR/accounts";
 import invite from "./fr_FR/invite";
 import domainDashboard from "./fr_FR/domainDashboard";
@@ -39,6 +40,7 @@ export default {
   quotas,
   sieve,
   profile,
+  preferences,
   accounts,
   invite,
   domainDashboard,

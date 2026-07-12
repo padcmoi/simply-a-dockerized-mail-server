@@ -41,6 +41,7 @@ export interface Locales {
     home: string;
     sieveLong: string;
     profile: string;
+    preferences: string;
     signOut: string;
     appearance: string;
     light: string;
@@ -49,6 +50,14 @@ export interface Locales {
     toggleSidebar: string;
     rootBadge: string;
     noGroupBadge: string;
+  };
+  preferences: {
+    title: string;
+    subtitle: string;
+    language: string;
+    appearance: string;
+    pageSize: string;
+    pageSizeHint: string;
   };
   common: {
     active: string;

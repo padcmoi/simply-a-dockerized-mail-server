@@ -133,7 +133,10 @@ export function useNav(onSignOut: () => Promise<void>) {
   });
 
   const userItems = computed<DropdownMenuItem[][]>(() => [
-    [{ label: t("layout.profile"), icon: "i-lucide-user", to: "/profile" }],
+    [
+      { label: t("layout.profile"), icon: "i-lucide-user", to: "/profile" },
+      { label: t("layout.preferences"), icon: "i-lucide-settings", to: "/preferences" },
+    ],
     [
       {
         label: t("app.language"),

@@ -4,6 +4,7 @@ export default {
   home: "Home",
   sieveLong: "Sieve - Rejected senders",
   profile: "Profile",
+  preferences: "Preferences",
   signOut: "Sign out",
   appearance: "Appearance",
   light: "Light",
