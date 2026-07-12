@@ -32,13 +32,21 @@ export class GroupsService {
   // `query.limit` absent = legacy unpaginated behavior, still relied on by
   // useGroups() picker consumers (accounts/index.vue's invite modal,
   // accounts/[id]/groups.vue's group picker) which need the full list.
-  async list(query: PaginationQuery) {
+  // Invisible groups are hidden from every non-root account, on BOTH the
+  // paginated list and the legacy unpaginated picker path. Root sees all.
+  async list(actingUser: ActingUser, query: PaginationQuery) {
+    const base = actingUser.isRoot ? {} : { isInvisible: 0 };
     if (query.limit === undefined) {
-      const allGroups = await this.groups.find({ order: { name: "ASC" } });
+      const allGroups = await this.groups.find({ where: base, order: { name: "ASC" } });
       return this.enrichGroups(allGroups);
     }
 
-    const where = query.search ? [{ name: Like(`%${query.search}%`) }, { description: Like(`%${query.search}%`) }] : {};
+    const where = query.search
+      ? [
+          { ...base, name: Like(`%${query.search}%`) },
+          { ...base, description: Like(`%${query.search}%`) },
+        ]
+      : base;
     const sortBy = resolveSortColumn(query.sortBy, GROUPS_SORTABLE_COLUMNS, "createdAt");
     const [rows, total] = await this.groups.findAndCount({
       where,
@@ -73,6 +81,7 @@ export class GroupsService {
       ownerUsername: g.ownerId !== null ? (ownerMap.get(g.ownerId) ?? null) : null,
       isDefault: g.isDefault === 1,
       protected: g.isProtected === 1,
+      invisible: g.isInvisible === 1,
       memberCount: countMap.get(g.id) ?? 0,
     }));
   }
@@ -91,7 +100,7 @@ export class GroupsService {
   }
 
   async update(id: string, actingUser: ActingUser, input: UpdateGroupDto) {
-    const group = await this.findOrFail(id);
+    const group = await this.findOrFail(id, actingUser);
     if (input.name !== undefined && input.name !== group.name) {
       const clash = await this.groups.findOne({ where: { name: input.name, id: Not(id) } });
       if (clash) throw new ConflictException(`Group "${input.name}" already exists`);
@@ -144,7 +153,26 @@ export class GroupsService {
       });
     }
 
-    return this.toItem(await this.findOrFail(id));
+    // Toggling visibility is ROOT-ONLY too, and deliberately NOT an ACL (same
+    // rationale as protection). Written straight to the repo -- invisibility is
+    // a pure app-side view policy the guard lib never enforces. Guarded on an
+    // actual change so a non-root re-submitting the unchanged value is fine.
+    if (input.invisible !== undefined && input.invisible !== (group.isInvisible === 1)) {
+      if (!actingUser.isRoot) {
+        throw new ForbiddenException("Only a root account can change a group's visibility");
+      }
+      await this.groups.update(id, { isInvisible: input.invisible ? 1 : 0 });
+      await this.auditLog.record({
+        actorId: actingUser.id,
+        action: "group.visibility.changed",
+        entityType: "group",
+        entityId: id,
+        before: { invisible: group.isInvisible === 1 },
+        after: { invisible: input.invisible },
+      });
+    }
+
+    return this.toItem(await this.findOrFail(id, actingUser));
   }
 
   // "Only one default group at a time" -- unicity itself is enforced by the
@@ -163,7 +191,7 @@ export class GroupsService {
   }
 
   async remove(id: string, actingUser: ActingUser) {
-    const group = await this.findOrFail(id);
+    const group = await this.findOrFail(id, actingUser);
 
     // Protection is absolute: a protected group is never deletable, by anyone,
     // root included. The rule lives in the lib (guard.deleteGroup refuses it),
@@ -216,8 +244,8 @@ export class GroupsService {
     return { ok: true };
   }
 
-  async getDetail(id: string) {
-    const group = await this.findOrFail(id);
+  async getDetail(id: string, actingUser: ActingUser) {
+    const group = await this.findOrFail(id, actingUser);
     const item = await this.toItem(group);
 
     const [globalRows, domainRows] = await Promise.all([
@@ -252,7 +280,7 @@ export class GroupsService {
   }
 
   async setGlobalPermissions(id: string, actingUser: ActingUser, permissions: SetGlobalPermissionsDto["permissions"]) {
-    await this.findOrFail(id);
+    await this.findOrFail(id, actingUser);
 
     const before = await this.cpg.guard.findGroupGlobalPermissions(id);
 
@@ -285,11 +313,11 @@ export class GroupsService {
       after: permissions,
     });
 
-    return this.getDetail(id);
+    return this.getDetail(id, actingUser);
   }
 
   async setDomainPermissions(id: string, actingUser: ActingUser, permissions: SetDomainPermissionsDto["permissions"]) {
-    await this.findOrFail(id);
+    await this.findOrFail(id, actingUser);
 
     if (permissions.length) {
       const domainIds = [...new Set(permissions.map((p) => p.domainId))];
@@ -317,11 +345,11 @@ export class GroupsService {
       after: permissions,
     });
 
-    return this.getDetail(id);
+    return this.getDetail(id, actingUser);
   }
 
   async updateOwner(id: string, actingUser: ActingUser, newOwnerId: string) {
-    const group = await this.findOrFail(id);
+    const group = await this.findOrFail(id, actingUser);
     await this.assertOwnerOrRootOrPermitted(group, actingUser, "transfer-group-ownership");
     const newOwner = await this.accounts.findOne({ where: { id: newOwnerId } });
     if (!newOwner) throw new NotFoundException(`Account #${newOwnerId} not found`);
@@ -337,16 +365,16 @@ export class GroupsService {
       after: { ownerId: newOwnerId },
     });
 
-    return this.getDetail(id);
+    return this.getDetail(id, actingUser);
   }
 
-  async listMembers(id: string) {
-    await this.findOrFail(id);
+  async listMembers(id: string, actingUser: ActingUser) {
+    await this.findOrFail(id, actingUser);
     return this.memberList(id);
   }
 
   async addMember(id: string, actingUser: ActingUser, accountId: string) {
-    const group = await this.findOrFail(id);
+    const group = await this.findOrFail(id, actingUser);
     await this.assertOwnerOrRootOrPermitted(group, actingUser, "add-group-member");
     const account = await this.accounts.findOne({ where: { id: accountId } });
     if (!account) throw new NotFoundException(`Account #${accountId} not found`);
@@ -368,7 +396,7 @@ export class GroupsService {
   }
 
   async removeMember(id: string, actingUser: ActingUser, accountId: string) {
-    const group = await this.findOrFail(id);
+    const group = await this.findOrFail(id, actingUser);
     await this.assertOwnerOrRootOrPermitted(group, actingUser, "remove-group-member");
     const membership = await this.groupMembers.findOne({ where: { accountId, groupId: id } });
     if (!membership) {
@@ -378,9 +406,18 @@ export class GroupsService {
     return this.memberList(id);
   }
 
-  private async findOrFail(id: string) {
+  // When `actingUser` is passed, an invisible group is treated as nonexistent
+  // for a non-root: a 404 (not 403) so the response never even confirms the
+  // group exists. This makes invisibility airtight across every group endpoint
+  // -- a non-root cannot view, edit, enumerate members of, or touch the
+  // permissions of an invisible group even by guessing its id, whatever
+  // permissions or membership it holds. Root always passes.
+  private async findOrFail(id: string, actingUser?: ActingUser) {
     const group = await this.groups.findOne({ where: { id } });
     if (!group) throw new NotFoundException(`Group #${id} not found`);
+    if (actingUser && !actingUser.isRoot && group.isInvisible === 1) {
+      throw new NotFoundException(`Group #${id} not found`);
+    }
     return group;
   }
 
@@ -423,6 +460,7 @@ export class GroupsService {
       ownerUsername,
       isDefault: group.isDefault === 1,
       protected: group.isProtected === 1,
+      invisible: group.isInvisible === 1,
       memberCount,
     };
   }

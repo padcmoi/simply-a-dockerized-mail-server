@@ -57,6 +57,8 @@ export const updateGroupSchema = z.object({
   // Root-only at the service layer (see GroupsService.update); accepted from the
   // shared group settings form, which a non-root may submit unchanged.
   protected: z.boolean().optional(),
+  // Root-only too: hides the group entirely from every non-root account.
+  invisible: z.boolean().optional(),
 });
 
 export const permissionEntrySchema = permissionUnion(GLOBAL_ACTIONS);

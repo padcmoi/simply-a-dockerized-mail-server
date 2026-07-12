@@ -33,6 +33,14 @@ export class Group {
   @Column({ name: "is_protected", type: "tinyint", width: 1, default: 0 })
   isProtected!: number;
 
+  // A root-only "extra protection": an invisible group is completely hidden from
+  // every non-root account (list + detail + every sub-resource all 404),
+  // regardless of membership/ownership/held permissions. Pure app-side policy in
+  // GroupsService, stricter than and orthogonal to the access-gating. Toggling
+  // it is root-only, not an ACL.
+  @Column({ name: "is_invisible", type: "tinyint", width: 1, default: 0 })
+  isInvisible!: number;
+
   @Column({
     name: "created_at",
     type: "datetime",

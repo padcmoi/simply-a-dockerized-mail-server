@@ -58,8 +58,8 @@ export class GroupsController {
   @Get()
   @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "list-groups"] }])
   @ListGroupsDocs()
-  list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
-    return this.svc.list(query);
+  list(@Req() req: AuthedRequest, @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
+    return this.svc.list(req.user, query);
   }
 
   // Static catalog, not tied to any specific group -- the single source of
@@ -117,8 +117,8 @@ export class GroupsController {
   @Get(":id")
   @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "view-group"] }])
   @GetGroupDocs()
-  getDetail(@Param("id", ParseUUIDPipe) id: string) {
-    return this.svc.getDetail(id);
+  getDetail(@Req() req: AuthedRequest, @Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.getDetail(id, req.user);
   }
 
   // The action anti-lockout protects (see lockoutProtected in
@@ -163,8 +163,8 @@ export class GroupsController {
   @Get(":id/members")
   @RequireGlobalPermissions([{ resource: "groups", actions: ["access", "list-group-members"] }])
   @ListMembersDocs()
-  listMembers(@Param("id", ParseUUIDPipe) id: string) {
-    return this.svc.listMembers(id);
+  listMembers(@Req() req: AuthedRequest, @Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.listMembers(id, req.user);
   }
 
   // Same disjunction as updateOwner above (see GroupsService.addMember).
