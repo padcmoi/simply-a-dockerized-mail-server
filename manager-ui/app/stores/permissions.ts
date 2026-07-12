@@ -8,6 +8,10 @@ interface GlobalPermission {
 
 interface DomainPermission {
   domainId: number;
+  // Resolved server-side (see JwtAuthController.withDomainNames); "#<id>" when
+  // the domain was deleted. Lets the UI show the FQDN even for a domain the
+  // caller does not own.
+  domainName: string;
   resource: string;
   action: string;
 }
