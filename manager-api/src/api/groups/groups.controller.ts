@@ -9,6 +9,7 @@ import {
   ServiceEnforcedGlobalPermissions,
 } from "../../core/custom-permission-guard/require-permissions.decorator";
 import {
+  AddAllMembersDocs,
   AddMemberDocs,
   CreateGroupDocs,
   GetGroupDocs,
@@ -16,6 +17,7 @@ import {
   GroupsApi,
   ListGroupsDocs,
   ListMembersDocs,
+  RemoveAllMembersDocs,
   RemoveGroupDocs,
   RemoveMemberDocs,
   SetDomainPermissionsDocs,
@@ -165,6 +167,26 @@ export class GroupsController {
   @ListMembersDocs()
   listMembers(@Req() req: AuthedRequest, @Param("id", ParseUUIDPipe) id: string) {
     return this.svc.listMembers(id, req.user);
+  }
+
+  // Root-only bulk membership ops, not an ACL. The empty @RequireGlobalPermissions
+  // is intentional: the guard short-circuits an empty requirement to allow-all,
+  // so any authenticated caller clears the guard and the "root only" rule is
+  // enforced in the service (GroupsService.addAllAccounts / removeAllMembers).
+  // Declared before the :accountId routes so DELETE .../members/all is matched
+  // as a static segment, never captured by :accountId.
+  @Post(":id/members/all")
+  @RequireGlobalPermissions([])
+  @AddAllMembersDocs()
+  addAllMembers(@Req() req: AuthedRequest, @Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.addAllAccounts(id, req.user);
+  }
+
+  @Delete(":id/members/all")
+  @RequireGlobalPermissions([])
+  @RemoveAllMembersDocs()
+  removeAllMembers(@Req() req: AuthedRequest, @Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.removeAllMembers(id, req.user);
   }
 
   // Same disjunction as updateOwner above (see GroupsService.addMember).

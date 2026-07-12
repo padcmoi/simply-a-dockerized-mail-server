@@ -406,6 +406,54 @@ export class GroupsService {
     return this.memberList(id);
   }
 
+  // Root-only, deliberately NOT an ACL: assigns every known account to this
+  // group. The route carries an empty @RequireGlobalPermissions, which the guard
+  // short-circuits to allow-all, so the "root only" rule is the isRoot check
+  // right here (root vs non-root belongs in the service for these fleet-wide
+  // ops). Idempotent by construction: each assignAccountToGroup is an
+  // insert-if-absent for the (account, group) pair, so re-running after new
+  // accounts appear folds them in and leaves every existing membership -- here
+  // or in another group -- untouched. No anti-escalation: root bypasses it.
+  async addAllAccounts(id: string, actingUser: ActingUser) {
+    if (!actingUser.isRoot) {
+      throw new ForbiddenException("Only a root account can assign every account to a group");
+    }
+    await this.findOrFail(id, actingUser);
+    const accounts = await this.accounts.find({ select: { id: true } });
+    for (const account of accounts) {
+      await this.cpg.guard.assignAccountToGroup(account.id, id);
+    }
+    await this.auditLog.record({
+      actorId: actingUser.id,
+      action: "group.members.assigned-all",
+      entityType: "group",
+      entityId: id,
+      after: { count: accounts.length },
+    });
+    return this.memberList(id);
+  }
+
+  // Root-only counterpart to addAllAccounts: clears the group's membership.
+  // removeAccountFromGroup is a plain delete, so this is idempotent too.
+  async removeAllMembers(id: string, actingUser: ActingUser) {
+    if (!actingUser.isRoot) {
+      throw new ForbiddenException("Only a root account can remove every member of a group");
+    }
+    await this.findOrFail(id, actingUser);
+    const rows = await this.groupMembers.find({ where: { groupId: id } });
+    for (const row of rows) {
+      await this.cpg.guard.removeAccountFromGroup(row.accountId, id);
+    }
+    await this.auditLog.record({
+      actorId: actingUser.id,
+      action: "group.members.removed-all",
+      entityType: "group",
+      entityId: id,
+      before: { count: rows.length },
+    });
+    return this.memberList(id);
+  }
+
   // When `actingUser` is passed, an invisible group is treated as nonexistent
   // for a non-root: a 404 (not 403) so the response never even confirms the
   // group exists. This makes invisibility airtight across every group endpoint

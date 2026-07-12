@@ -272,6 +272,42 @@ export const AddMemberDocs = () =>
     ApiResponse({ status: 404, description: "Group not found, or the account does not exist" })
   );
 
+export const AddAllMembersDocs = () =>
+  applyDecorators(
+    idParam(),
+    ApiOperation({
+      summary: "Assign every known account to a group (root only)",
+      description:
+        "Root-only, not an ACL: the route's empty @RequireGlobalPermissions clears the guard for any authenticated caller and the isRoot rule is enforced in the service. Idempotent -- inserts a membership per account only if absent, leaving existing memberships untouched, so re-running also folds in accounts created since the last run.",
+    }),
+    ApiResponse({
+      status: 201,
+      description: "All accounts assigned; full member list returned",
+      schema: { example: groupMembersExample },
+    }),
+    ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
+    ApiResponse({ status: 403, description: "Only a root account may bulk-assign every account" }),
+    ApiResponse({ status: 404, description: "Group not found" })
+  );
+
+export const RemoveAllMembersDocs = () =>
+  applyDecorators(
+    idParam(),
+    ApiOperation({
+      summary: "Remove every member of a group (root only)",
+      description:
+        "Root-only counterpart to the bulk assign: clears the group's membership. Enforced in the service like its counterpart. Idempotent.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "All members removed; empty member list returned",
+      schema: { example: [] },
+    }),
+    ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
+    ApiResponse({ status: 403, description: "Only a root account may remove every member" }),
+    ApiResponse({ status: 404, description: "Group not found" })
+  );
+
 export const RemoveMemberDocs = () =>
   applyDecorators(
     idParam(),
