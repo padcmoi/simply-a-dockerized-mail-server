@@ -196,6 +196,39 @@ export const JwtMePermissionsDocs = () =>
     })
   );
 
+export const JwtMyGroupPermissionsDocs = () =>
+  applyDecorators(
+    ApiSecurity("apiToken"),
+    ApiOperation({
+      summary: "Return the permissions of a group the caller belongs to",
+      description:
+        "Self-scoped: returns the raw global and domain permission rows of a group the caller is a MEMBER of " +
+        "(root may read any group). Membership is the only gate, so it works even for an invisible group -- the " +
+        "single place a member may inspect what their own group grants, even one hidden everywhere else. A " +
+        "non-member non-root gets 403. Domain ids are returned raw; the caller resolves names client-side.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Group permissions returned",
+      schema: {
+        example: {
+          globalPermissions: [{ resource: "domains", action: "access" }],
+          domainPermissions: [{ domainId: 5, resource: "recipients", action: "access" }],
+        },
+      },
+    }),
+    ApiResponse({
+      status: 401,
+      description: "Missing or invalid access token / API key",
+      schema: { example: { message: "Unauthorized", statusCode: 401 } },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "The caller is not a member of this group (and is not root)",
+      schema: { example: { message: "You are not a member of this group", error: "Forbidden", statusCode: 403 } },
+    })
+  );
+
 export const JwtUpdateProfileDocs = () =>
   applyDecorators(
     ApiSecurity("apiToken"),

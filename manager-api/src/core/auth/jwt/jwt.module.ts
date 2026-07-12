@@ -6,6 +6,7 @@ import { Account } from "../../entities/account.entity";
 import { GroupMember } from "../../entities/group-member.entity";
 import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
+import { VirtualDomain } from "../../entities/virtual-domain.entity";
 import { CustomPermissionGuardModule } from "../../custom-permission-guard/custom-permission-guard.module";
 import { JwtAuthController } from "./jwt.controller";
 import { JwtAuthService } from "./jwt.service";
@@ -15,7 +16,7 @@ import { JwtStrategy } from "./jwt.strategy";
   imports: [
     PassportModule,
     JwtModule.register({}),
-    TypeOrmModule.forFeature([Account, Group, GroupMember, RefreshToken]),
+    TypeOrmModule.forFeature([Account, Group, GroupMember, RefreshToken, VirtualDomain]),
     CustomPermissionGuardModule,
   ],
   providers: [JwtAuthService, JwtStrategy],
