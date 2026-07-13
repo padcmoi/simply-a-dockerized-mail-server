@@ -479,6 +479,11 @@ export interface Locales {
       learned: string;
       unavailable: string;
       noHistory: string;
+      bayes: {
+        title: string;
+        noData: string;
+        hint: string;
+      };
     };
     rspamdPage: {
       subtitle: string;

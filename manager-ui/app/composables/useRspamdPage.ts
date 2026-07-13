@@ -16,6 +16,18 @@ export interface RspamdBayesStatfile {
   revision: number;
 }
 
+export interface RspamdBayesRecipient {
+  recipient: string;
+  learnsHam: number;
+  learnsSpam: number;
+}
+
+export interface RspamdDomainBayes {
+  recipients: RspamdBayesRecipient[];
+  totalHam: number;
+  totalSpam: number;
+}
+
 export interface RspamdStats {
   scanned: number;
   actions: RspamdActions;
@@ -23,6 +35,9 @@ export interface RspamdStats {
   // endpoint, which only ever returns { scanned, actions }.
   learned?: number;
   statfiles?: RspamdBayesStatfile[];
+  // Domain-scoped only: per-recipient Bayes learn counts for this domain,
+  // absent on the server-wide /rspamd endpoint.
+  bayes?: RspamdDomainBayes;
 }
 
 export interface RspamdHistoryItem {

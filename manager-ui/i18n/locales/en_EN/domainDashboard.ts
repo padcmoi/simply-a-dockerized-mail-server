@@ -46,6 +46,11 @@ export default {
     learned: "Learned",
     unavailable: "Rspamd unreachable",
     noHistory: "No scan history for this domain yet",
+    bayes: {
+      title: "Bayes learning",
+      noData: "No recipient has trained the filter yet",
+      hint: "Learning happens per recipient when a message is moved to or out of the Junk folder.",
+    },
   },
   rspamdPage: {
     subtitle: "Spam filter stats and scan history for this domain.",

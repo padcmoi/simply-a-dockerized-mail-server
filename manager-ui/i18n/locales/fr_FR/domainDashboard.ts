@@ -46,6 +46,11 @@ export default {
     learned: "Appris",
     unavailable: "Rspamd inaccessible",
     noHistory: "Aucun historique de scan pour ce domaine",
+    bayes: {
+      title: "Apprentissage Bayes",
+      noData: "Aucun destinataire n'a encore entraîné le filtre",
+      hint: "L'apprentissage se fait par destinataire quand un message est déplacé vers ou hors du dossier Indésirables.",
+    },
   },
   rspamdPage: {
     subtitle: "Statistiques du filtre anti-spam et historique des scans pour ce domaine.",

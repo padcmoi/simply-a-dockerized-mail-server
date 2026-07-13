@@ -1,5 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { resolveSortColumn, type PaginatedResult, type PaginationQuery } from "../common/pagination.validation";
+import { readDomainBayes, type RspamdDomainBayes } from "./bayes-redis";
+
+export type { BayesRecipientStat, RspamdDomainBayes } from "./bayes-redis";
 
 export const RSPAMD_HISTORY_SORTABLE_COLUMNS = ["sender_smtp", "rcpt", "action", "score", "size", "time"] as const;
 type RspamdSortableColumn = (typeof RSPAMD_HISTORY_SORTABLE_COLUMNS)[number];
@@ -51,10 +54,14 @@ export interface RspamdStats {
 
 // Rspamd has no per-domain counterpart to its own server-wide /stat endpoint
 // -- this narrower shape is tallied from the same (domain-filtered) /history
-// rows the history endpoint already returns, see DomainsRspamdController.
+// rows the history endpoint already returns, see DomainsRspamdController. The
+// Bayes block is the exception: rspamd's per-recipient statfiles carry the
+// domain in their key, so those ARE resolvable per domain -- read from Redis,
+// see bayes-redis.ts.
 export interface RspamdDomainStats {
   scanned: number;
   actions: RspamdActions;
+  bayes: RspamdDomainBayes;
 }
 
 // "soft reject" has no configurable threshold in rspamd's own /saveactions
@@ -119,6 +126,17 @@ export class RspamdService {
       throw new HttpException(`Rspamd returned ${res.status}`, HttpStatus.BAD_GATEWAY);
     }
     return res.json() as Promise<RspamdStats>;
+  }
+
+  // Per-recipient Bayes learn counts for one domain, read from Redis. Best-effort
+  // on purpose: this feeds a secondary widget, so Redis being unreachable returns
+  // an empty result rather than failing the whole domain stats response.
+  async domainBayes(domain: string): Promise<RspamdDomainBayes> {
+    try {
+      return await readDomainBayes(domain);
+    } catch {
+      return { recipients: [], totalHam: 0, totalSpam: 0 };
+    }
   }
 
   async getActions(): Promise<RspamdActionThresholds> {

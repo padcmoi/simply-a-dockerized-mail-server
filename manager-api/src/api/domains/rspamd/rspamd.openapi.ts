@@ -73,14 +73,17 @@ export const GetDomainRspamdHistoryDocs = () =>
 export const GetDomainRspamdStatsDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: "Rspamd action breakdown computed from this domain's scan history",
+      summary: "Rspamd action breakdown and per-recipient Bayes learns for this domain",
       description:
         "Fetches this domain's scan history (same source as GET history, always requesting rspamd's default page " +
-        "size) and tallies a count per action -- rspamd has no per-domain stats endpoint of its own.",
+        "size) and tallies a count per action -- rspamd has no per-domain stats endpoint of its own. The `bayes` " +
+        "block is read from the Redis Bayes backend instead: rspamd trains a per-recipient statfile (selector " +
+        "rcpt:addr), so learn counts ARE resolvable per domain by matching each statfile key's @domain suffix. " +
+        "Redis being unreachable degrades to an empty `bayes` block, never a 5xx.",
     }),
     ApiResponse({
       status: 200,
-      description: "Scanned count + per-action breakdown derived from the domain's scan history",
+      description: "Scanned count, per-action breakdown, and per-recipient Bayes learns for this domain",
       schema: {
         example: {
           scanned: 128,
@@ -91,6 +94,11 @@ export const GetDomainRspamdStatsDocs = () =>
             "add header": 8,
             greylist: 2,
             "no action": 113,
+          },
+          bayes: {
+            recipients: [{ recipient: "user@example.com", learnsHam: 73, learnsSpam: 71 }],
+            totalHam: 73,
+            totalSpam: 71,
           },
         },
       },
