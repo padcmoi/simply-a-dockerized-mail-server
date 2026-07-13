@@ -12,7 +12,10 @@
     "format:check": "prettier --check \"{app,server}/**/*.{ts,vue,js,mjs,css}\" \"*.{ts,vue,js,mjs,json}\"",
     "lint": "nuxt prepare && eslint .",
     "lint:fix": "nuxt prepare && eslint . --fix",
-    "typecheck": "nuxt prepare && vue-tsc --noEmit"
+    "typecheck": "nuxt prepare && vue-tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.115",
@@ -37,10 +40,13 @@
     "@types/node": "^22.20.0",
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",
+    "@vitest/coverage-v8": "^3",
     "eslint": "^10.6.0",
     "eslint-plugin-vue": "^10.9.2",
+    "happy-dom": "^20.10.6",
     "prettier": "^3.9.4",
     "typescript": "^5.9.3",
+    "vitest": "^3",
     "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "^3.3.6"
   },

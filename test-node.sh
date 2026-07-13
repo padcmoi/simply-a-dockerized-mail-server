@@ -42,7 +42,9 @@ ensure_deps "$REPO_ROOT/manager-ui"
 
 run "manager-api: typecheck" "$REPO_ROOT/manager-api" "typecheck"
 run "manager-api: lint" "$REPO_ROOT/manager-api" "lint"
+run "manager-api: test" "$REPO_ROOT/manager-api" "test:cov"
 run "manager-ui: typecheck" "$REPO_ROOT/manager-ui" "typecheck"
 run "manager-ui: lint" "$REPO_ROOT/manager-ui" "lint"
+run "manager-ui: test" "$REPO_ROOT/manager-ui" "test"
 
 exit $EXIT_CODE
