@@ -6,17 +6,23 @@
 -- literal, and this file stays readable SQL that an editor can lint.
 --
 -- Expected session variables:
---   @admin_user       MANAGER_ADMIN_USERNAME
---   @admin_hash       bcrypt hash of MANAGER_ADMIN_PASSWORD
+--   @admin_email      the root account's login email
+--   @admin_hash       bcrypt hash of the admin password
 --   @primary_domain   the FQDN under test
 --   @postmaster_hash  sha512-crypt hash, never used to log in
 
 -- `accounts.id` is a char(36) uuid the application generates on insert (see
 -- Account.generateId), so the column has no database default and any seed
--- written outside the app must supply one.
-INSERT INTO accounts (id, username, password, is_root, enabled, created_at, updated_at)
-VALUES (UUID(), @admin_user, @admin_hash, 1, 1, NOW(), NOW())
+-- written outside the app must supply one. The account is identified by email
+-- (username/name/avatar_url were dropped in 1783882664787) and its personal
+-- attributes live in a 1-1 account_profiles row, so a second statement gives
+-- it an (empty) profile via a by-email id lookup, mirroring install.sh.
+INSERT INTO accounts (id, email, password, is_root, enabled, created_at, updated_at)
+VALUES (UUID(), @admin_email, @admin_hash, 1, 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE password = VALUES(password), updated_at = NOW();
+
+INSERT IGNORE INTO account_profiles (account_id, created_at, updated_at)
+SELECT id, NOW(), NOW() FROM accounts WHERE email = @admin_email;
 
 -- The quota triggers of 1782760166966-CreateVirtualMail fill virtual_quota_*
 -- on their own; INSERT IGNORE keeps a re-run from tripping over them.
