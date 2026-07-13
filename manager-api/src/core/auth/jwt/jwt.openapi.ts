@@ -1,7 +1,19 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../common/pagination.openapi";
+import { SESSIONS_SORTABLE_COLUMNS } from "./jwt.service";
 
 export const JwtAuthApi = () => applyDecorators(ApiTags("auth-jwt"));
+
+const sessionExample = {
+  id: 12,
+  userAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+  ip: "203.0.113.7",
+  createdAt: "2026-07-13T10:00:00.000Z",
+  expiresAt: "2026-07-20T10:00:00.000Z",
+  revokedAt: null,
+  active: true,
+};
 
 const validationFailedExample = {
   message: "Validation failed",
@@ -176,29 +188,32 @@ export const JwtMeSessionsDocs = () =>
   applyDecorators(
     ApiSecurity("apiToken"),
     ApiOperation({
-      summary: "List the authenticated account's sessions (refresh tokens)",
+      summary: "List the authenticated account's active sessions",
       description:
-        "Self-scoped: returns the caller's own refresh tokens, newest first, with device (user agent), IP, " +
-        "creation and expiry timestamps and an `active` flag (not revoked and not expired). The raw token is " +
-        "never exposed.",
+        "Self-scoped: the caller's currently-live refresh tokens (neither revoked nor expired), newest first, " +
+        "with device (user agent), IP and timestamps. This is a small set (one per device); revoked/expired " +
+        "sign-ins are served, paginated, by GET me/sessions/history. The raw token is never exposed.",
+    }),
+    ApiResponse({ status: 200, description: "Active sessions returned", schema: { example: [sessionExample] } }),
+    ApiResponse({ status: 401, description: "Missing or invalid access token / API key" })
+  );
+
+export const JwtMeSessionHistoryDocs = () =>
+  applyDecorators(
+    ApiSecurity("apiToken"),
+    ApiPaginationQuery(SESSIONS_SORTABLE_COLUMNS),
+    ApiOperation({
+      summary: "List the authenticated account's inactive sessions (paginated)",
+      description:
+        "Self-scoped: the caller's revoked or expired refresh tokens, paginated and searchable (by user agent " +
+        "or IP) like every other list. This set grows over time as tokens rotate, so it is never returned whole.",
     }),
     ApiResponse({
       status: 200,
-      description: "Sessions returned",
-      schema: {
-        example: [
-          {
-            id: 12,
-            userAgent: "Mozilla/5.0",
-            ip: "203.0.113.7",
-            createdAt: "2026-07-13T10:00:00.000Z",
-            expiresAt: "2026-07-20T10:00:00.000Z",
-            revokedAt: null,
-            active: true,
-          },
-        ],
-      },
+      description: "Session history returned",
+      schema: { example: paginatedExample({ ...sessionExample, revokedAt: "2026-07-14T09:00:00.000Z", active: false }) },
     }),
+    ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
     ApiResponse({ status: 401, description: "Missing or invalid access token / API key" })
   );
 

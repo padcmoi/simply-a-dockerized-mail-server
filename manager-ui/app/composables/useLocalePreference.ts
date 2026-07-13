@@ -22,7 +22,12 @@ export interface LocaleOption {
 }
 
 export function useLocalePreference() {
-  const { locale, locales, setLocale } = useI18n();
+  // The global i18n instance off nuxtApp, NOT useI18n(): this composable is also
+  // called from the locale-preference plugin (to apply the saved choice on
+  // mount), and useI18n() throws "Must be called at the top of a setup function"
+  // outside a component setup. nuxtApp.$i18n works in a plugin and a component
+  // alike, and it is the app-wide locale we want to read and switch anyway.
+  const { locale, locales, setLocale } = useNuxtApp().$i18n;
 
   const preference = useLocalStorage<string>(LOCALE_PREFERENCE_KEY, "system");
 

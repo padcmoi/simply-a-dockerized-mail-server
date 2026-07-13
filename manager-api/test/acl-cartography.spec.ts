@@ -37,6 +37,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/auth/jwt/me/overview",
   "GET /api/v1/auth/jwt/me/permissions",
   "GET /api/v1/auth/jwt/me/sessions",
+  "GET /api/v1/auth/jwt/me/sessions/history",
   "PATCH /api/v1/auth/jwt/me",
   "POST /api/v1/groups/:id/members/all",
 ].sort();

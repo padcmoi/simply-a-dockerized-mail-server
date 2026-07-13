@@ -13,13 +13,17 @@ let setLocale: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   locale = ref("en_EN");
   setLocale = vi.fn();
-  vi.stubGlobal("useI18n", () => ({
-    locale,
-    locales: ref([
-      { code: "en_EN", name: "English" },
-      { code: "fr_FR", name: "Français" },
-    ]),
-    setLocale,
+  // The composable reads i18n off nuxtApp.$i18n (so it works in the plugin too),
+  // not useI18n(), so that is what the test provides.
+  vi.stubGlobal("useNuxtApp", () => ({
+    $i18n: {
+      locale,
+      locales: ref([
+        { code: "en_EN", name: "English" },
+        { code: "fr_FR", name: "Français" },
+      ]),
+      setLocale,
+    },
   }));
   // Return the region code passed in, so flag mapping is assertable as a string.
   vi.stubGlobal("countryFlagEmoji", (c: string) => c);

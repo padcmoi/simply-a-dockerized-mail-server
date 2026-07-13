@@ -6,6 +6,9 @@ export interface JwtPayload {
   sub: string;
   email: string;
   isRoot: boolean;
+  // Session (refresh token) id this access token was minted with. CombinedAuthGuard
+  // rejects the token as soon as that session is revoked; older tokens carry none.
+  sid?: number;
 }
 
 @Injectable()

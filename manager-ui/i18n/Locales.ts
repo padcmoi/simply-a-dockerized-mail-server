@@ -87,6 +87,7 @@ export interface Locales {
     // which labels dovecot's own delivery counter on the quotas page.
     lastModification: string;
     cancel: string;
+    back: string;
     clear: string;
     apply: string;
     invite: string;
@@ -96,6 +97,12 @@ export interface Locales {
     itemsPerPage: string;
     noResults: string;
     totalCount: string;
+  };
+  // Full-page error states rendered by app/error.vue (Nuxt error boundary).
+  error: {
+    generic: { title: string; description: string };
+    403: { title: string; description: string };
+    404: { title: string; description: string };
   };
   confirm: {
     title: string;
@@ -336,6 +343,15 @@ export interface Locales {
       breadcrumb: string;
       alertTitle: string;
       alertDescription: string;
+      activeTitle: string;
+      expiredTitle: string;
+      activeEmpty: string;
+      deviceOn: string;
+      colDevice: string;
+      colIp: string;
+      colSignedIn: string;
+      colEnded: string;
+      colStatus: string;
       unknownDevice: string;
       unknownIp: string;
       signedIn: string;

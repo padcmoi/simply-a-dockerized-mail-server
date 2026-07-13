@@ -16,24 +16,70 @@ const { call } = useApi();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 
-const sessions = ref<Session[]>([]);
-const loading = ref(false);
+setBreadcrumb([{ label: t("layout.profile"), to: "/profile" }, { label: t("profile.sessionsPage.breadcrumb") }]);
+
+// Active sessions: a small live set (one per device), fetched as a plain array.
+const active = ref<Session[]>([]);
+const activeLoading = ref(false);
+const activeLoaded = ref(false);
 const revokingId = ref<number | null>(null);
 
-setBreadcrumb([{ label: t("layout.profile"), to: "/profile" }, { label: t("profile.sessionsPage.breadcrumb") }]);
+// Expired/revoked sessions: grows over time (every refresh rotates a token), so
+// it is server-paginated + searchable exactly like every other list.
+const {
+  items: history,
+  total,
+  loading: historyLoading,
+  hasLoadedOnce: historyLoaded,
+  page,
+  limit,
+  search,
+  sortBy,
+  sortDir,
+  load: loadHistory,
+} = usePaginatedList<Session>("sessions-history", "/auth/jwt/me/sessions/history", "createdAt");
+
+const UButton = resolveComponent("UButton");
+const { header } = useSortableColumns(sortBy, sortDir, UButton);
+
+const SORTABLE_COLUMNS = computed(() => [
+  { key: "createdAt", label: t("profile.sessionsPage.colSignedIn") },
+  { key: "expiresAt", label: t("profile.sessionsPage.colEnded") },
+]);
+
+const columns = computed(() => [
+  { id: "device", header: t("profile.sessionsPage.colDevice") },
+  { id: "ip", header: t("profile.sessionsPage.colIp") },
+  { accessorKey: "createdAt", header: header("createdAt", t("profile.sessionsPage.colSignedIn")) },
+  { accessorKey: "expiresAt", header: header("expiresAt", t("profile.sessionsPage.colEnded")) },
+  { id: "status", header: t("profile.sessionsPage.colStatus") },
+]);
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString(locale.value.replace(/_/g, "-"));
 }
 
-async function load() {
-  loading.value = true;
+function deviceLabel(ua: string | null) {
+  const parsed = parseUserAgent(ua);
+  if (parsed.browser && parsed.os) {
+    return t("profile.sessionsPage.deviceOn", { browser: parsed.browser, os: parsed.os });
+  }
+  return parsed.browser ?? parsed.os ?? t("profile.sessionsPage.unknownDevice");
+}
+
+function deviceIcon(ua: string | null) {
+  return parseUserAgent(ua).icon;
+}
+
+async function loadActive() {
+  activeLoading.value = true;
   try {
-    sessions.value = await call<Session[]>("/auth/jwt/me/sessions");
+    active.value = await call<Session[]>("/auth/jwt/me/sessions");
   } catch (e) {
     toast.add({ title: t("profile.sessionsPage.toast.loadFailed"), description: (e as Error).message, color: "error" });
   } finally {
-    loading.value = false;
+    activeLoading.value = false;
+    activeLoaded.value = true;
   }
 }
 
@@ -42,7 +88,8 @@ async function revoke(id: number) {
   try {
     await call(`/auth/jwt/me/sessions/${id}`, { method: "DELETE" });
     toast.add({ title: t("profile.sessionsPage.toast.revoked"), color: "success" });
-    await load();
+    // The revoked session leaves the active set and joins the history.
+    await Promise.all([loadActive(), loadHistory()]);
   } catch (e) {
     toast.add({ title: t("profile.sessionsPage.toast.revokeFailed"), description: (e as Error).message, color: "error" });
   } finally {
@@ -50,7 +97,7 @@ async function revoke(id: number) {
   }
 }
 
-onMounted(load);
+onMounted(loadActive);
 </script>
 
 <template>
@@ -67,39 +114,32 @@ onMounted(load);
       {{ t("profile.backToProfile") }}
     </UButton>
 
+    <!-- Container 1: active sessions (live, one per device) -->
     <UCard>
       <template #header>
-        <h2 class="font-semibold">{{ t("profile.sessions") }}</h2>
+        <h2 class="font-semibold">{{ t("profile.sessionsPage.activeTitle") }}</h2>
       </template>
 
-      <div v-if="loading && sessions.length === 0" class="space-y-3 py-1">
-        <USkeleton v-for="i in 3" :key="i" class="h-12 w-full" />
+      <div v-if="activeLoading && !activeLoaded" class="space-y-3 py-1">
+        <USkeleton v-for="i in 2" :key="i" class="h-12 w-full" />
       </div>
 
-      <UEmptyState v-else-if="sessions.length === 0" icon="i-lucide-monitor" :title="t('profile.sessionsPage.empty')" />
+      <UEmptyState v-else-if="active.length === 0" icon="i-lucide-monitor" :title="t('profile.sessionsPage.activeEmpty')" />
 
       <ul v-else class="divide-y divide-default">
-        <li v-for="s in sessions" :key="s.id" class="py-3 flex items-center gap-3">
+        <li v-for="s in active" :key="s.id" class="py-3 flex items-center gap-3">
           <div class="rounded-md p-2 bg-elevated shrink-0">
-            <UIcon name="i-lucide-monitor" class="text-primary" />
+            <UIcon :name="deviceIcon(s.userAgent)" class="text-primary" />
           </div>
           <div class="min-w-0 flex-1">
-            <p class="font-medium truncate">{{ s.userAgent || t("profile.sessionsPage.unknownDevice") }}</p>
+            <p class="font-medium truncate">{{ deviceLabel(s.userAgent) }}</p>
             <p class="text-xs text-muted truncate">
-              {{ s.ip || t("profile.sessionsPage.unknownIp") }} · {{ t("profile.sessionsPage.signedIn") }} {{ fmt(s.createdAt) }}
+              {{ s.ip || t("profile.sessionsPage.unknownIp") }} · {{ t("profile.sessionsPage.signedIn") }}
+              {{ fmt(s.createdAt) }}
             </p>
           </div>
-          <UBadge v-if="s.active" color="success" variant="subtle" class="shrink-0">
-            {{ t("profile.sessionsPage.active") }}
-          </UBadge>
-          <UBadge v-else-if="s.revokedAt" color="neutral" variant="subtle" class="shrink-0">
-            {{ t("profile.sessionsPage.revoked") }}
-          </UBadge>
-          <UBadge v-else color="neutral" variant="subtle" class="shrink-0">
-            {{ t("profile.sessionsPage.expired") }}
-          </UBadge>
+          <UBadge color="success" variant="subtle" class="shrink-0">{{ t("profile.sessionsPage.active") }}</UBadge>
           <UButton
-            v-if="s.active"
             icon="i-lucide-log-out"
             color="error"
             variant="ghost"
@@ -111,5 +151,75 @@ onMounted(load);
         </li>
       </ul>
     </UCard>
+
+    <!-- Container 2: expired / revoked sessions (paginated + searchable table) -->
+    <div class="space-y-4">
+      <h2 class="font-semibold">{{ t("profile.sessionsPage.expiredTitle") }}</h2>
+
+      <ListToolbar
+        v-model:search="search"
+        v-model:limit="limit"
+        v-model:sort-by="sortBy"
+        v-model:sort-dir="sortDir"
+        :total="total"
+        :sortable-columns="SORTABLE_COLUMNS"
+      />
+
+      <ListSkeleton v-if="!historyLoaded" :columns="5" />
+
+      <template v-else>
+        <UCard class="hidden xl:block">
+          <UTable :loading="historyLoading" :data="history" :columns="columns" sticky>
+            <template #device-cell="{ row }">
+              <div class="flex items-center gap-2">
+                <UIcon :name="deviceIcon(row.original.userAgent)" class="text-muted shrink-0" />
+                <span class="truncate">{{ deviceLabel(row.original.userAgent) }}</span>
+              </div>
+            </template>
+            <template #ip-cell="{ row }">
+              <span class="text-muted">{{ row.original.ip || t("profile.sessionsPage.unknownIp") }}</span>
+            </template>
+            <template #createdAt-cell="{ row }">
+              <span class="text-muted">{{ fmt(row.original.createdAt) }}</span>
+            </template>
+            <template #expiresAt-cell="{ row }">
+              <span class="text-muted">{{ fmt(row.original.revokedAt ?? row.original.expiresAt) }}</span>
+            </template>
+            <template #status-cell="{ row }">
+              <UBadge v-if="row.original.revokedAt" color="warning" variant="subtle" size="sm">
+                {{ t("profile.sessionsPage.revoked") }}
+              </UBadge>
+              <UBadge v-else color="neutral" variant="subtle" size="sm">{{ t("profile.sessionsPage.expired") }}</UBadge>
+            </template>
+          </UTable>
+        </UCard>
+
+        <div class="xl:hidden space-y-3">
+          <p v-if="history.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
+          <UCard v-for="s in history" v-else :key="s.id" :ui="{ body: 'p-3 sm:p-3' }">
+            <div class="flex items-start gap-3">
+              <div class="rounded-md p-2 bg-elevated shrink-0">
+                <UIcon :name="deviceIcon(s.userAgent)" class="text-muted" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-medium truncate">{{ deviceLabel(s.userAgent) }}</p>
+                  <UBadge v-if="s.revokedAt" color="warning" variant="subtle" size="xs" class="shrink-0">
+                    {{ t("profile.sessionsPage.revoked") }}
+                  </UBadge>
+                  <UBadge v-else color="neutral" variant="subtle" size="xs" class="shrink-0">
+                    {{ t("profile.sessionsPage.expired") }}
+                  </UBadge>
+                </div>
+                <p class="text-xs text-muted truncate">{{ s.ip || t("profile.sessionsPage.unknownIp") }}</p>
+                <p class="text-xs text-muted truncate">{{ t("profile.sessionsPage.signedIn") }} {{ fmt(s.createdAt) }}</p>
+              </div>
+            </div>
+          </UCard>
+        </div>
+
+        <ListPagination v-model:page="page" :total="total" :limit="limit" />
+      </template>
+    </div>
   </div>
 </template>

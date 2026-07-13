@@ -14,6 +14,7 @@ import { ApiTokenModule } from "./core/auth/api-token/api-token.module";
 import { CombinedAuthGuard } from "./core/auth/auth.guard";
 import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
 import { CustomPermissionGuardModule } from "./core/custom-permission-guard/custom-permission-guard.module";
+import { RefreshToken } from "./core/entities/refresh-token.entity";
 
 @Module({
   imports: [
@@ -32,6 +33,8 @@ import { CustomPermissionGuardModule } from "./core/custom-permission-guard/cust
       migrationsTableName: "migrations",
       charset: "utf8mb4",
     }),
+    // The global CombinedAuthGuard checks the session behind each access token.
+    TypeOrmModule.forFeature([RefreshToken]),
     HealthModule,
     JwtAuthModule,
     ApiTokenModule,

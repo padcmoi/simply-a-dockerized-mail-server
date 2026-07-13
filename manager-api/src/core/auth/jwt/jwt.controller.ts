@@ -12,11 +12,13 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Req,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import type { Request } from "express";
 import { In, Repository } from "typeorm";
+import { PaginationQuery, paginationQuerySchema } from "../../common/pagination.validation";
 import { ZodValidationPipe } from "../../common/zod.pipe";
 import { CustomPermissionGuardService } from "../../custom-permission-guard/custom-permission-guard.service";
 import { VirtualDomain } from "../../entities/virtual-domain.entity";
@@ -29,6 +31,7 @@ import {
   JwtMeDocs,
   JwtMeOverviewDocs,
   JwtMePermissionsDocs,
+  JwtMeSessionHistoryDocs,
   JwtMeSessionsDocs,
   JwtMyGroupPermissionsDocs,
   JwtRefreshDocs,
@@ -128,7 +131,13 @@ export class JwtAuthController {
   @Get("me/sessions")
   @JwtMeSessionsDocs()
   meSessions(@Req() req: AuthedRequest) {
-    return this.auth.listSessions(req.user.id);
+    return this.auth.listActiveSessions(req.user.id);
+  }
+
+  @Get("me/sessions/history")
+  @JwtMeSessionHistoryDocs()
+  meSessionHistory(@Req() req: AuthedRequest, @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
+    return this.auth.listSessionHistory(req.user.id, query);
   }
 
   @Delete("me/sessions/:id")

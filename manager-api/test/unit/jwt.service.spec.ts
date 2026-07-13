@@ -21,7 +21,9 @@ function makeMocks() {
       findOne: vi.fn(),
       find: vi.fn().mockResolvedValue([]),
       save: vi.fn((x) => Promise.resolve(x)),
-      insert: vi.fn().mockResolvedValue(undefined),
+      insert: vi.fn().mockResolvedValue({ identifiers: [{ id: 1 }] }),
+      update: vi.fn().mockResolvedValue(undefined),
+      createQueryBuilder: vi.fn(),
     },
     geocoding: { geocodeCity: vi.fn() },
   };
@@ -69,8 +71,9 @@ describe("JwtAuthService", () => {
       expect(typeof res.refreshToken).toBe("string");
       expect(res.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
       expect(m.accounts.save).toHaveBeenCalledWith(expect.objectContaining({ lastLogin: expect.any(Date) }));
+      // The access token is bound to its session (sid = the inserted row id).
       expect(m.jwt.signAsync).toHaveBeenCalledWith(
-        { sub: "a1", email: "a@b.com", isRoot: true },
+        { sub: "a1", email: "a@b.com", isRoot: true, sid: 1 },
         expect.objectContaining({ expiresIn: expect.any(Number) })
       );
       const inserted = m.refreshTokens.insert.mock.calls[0][0];
@@ -83,6 +86,20 @@ describe("JwtAuthService", () => {
       compare.mockResolvedValueOnce(true as never);
       await svc.login("a@b.com", "pw");
       expect(m.refreshTokens.insert.mock.calls[0][0]).toMatchObject({ userAgent: null, ip: null });
+    });
+    it("revokes the device's earlier live tokens first (one session per device)", async () => {
+      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
+      compare.mockResolvedValueOnce(true as never);
+      await svc.login("a@b.com", "pw", "UA/1.0", "1.2.3.4");
+      expect(m.refreshTokens.update).toHaveBeenCalledTimes(1);
+      const [criteria] = m.refreshTokens.update.mock.calls[0];
+      expect(criteria).toMatchObject({ accountId: "a1", userAgent: "UA/1.0", ip: "1.2.3.4" });
+    });
+    it("skips device consolidation when no ua/ip fingerprint is available", async () => {
+      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
+      compare.mockResolvedValueOnce(true as never);
+      await svc.login("a@b.com", "pw");
+      expect(m.refreshTokens.update).not.toHaveBeenCalled();
     });
   });
 
@@ -99,18 +116,29 @@ describe("JwtAuthService", () => {
       m.refreshTokens.findOne.mockResolvedValueOnce({ revokedAt: null, expiresAt: new Date(Date.now() - 1000), account: {} });
       await expect(svc.refresh("raw")).rejects.toBeInstanceOf(UnauthorizedException);
     });
-    it("rotates the token and issues a fresh pair", async () => {
+    it("rotates the secret in place on the same row, without spawning a new session", async () => {
+      const originalExpiry = new Date(Date.now() + 60_000);
       const stored = {
+        tokenHash: "old-hash",
         revokedAt: null,
-        expiresAt: new Date(Date.now() + 60_000),
+        expiresAt: originalExpiry,
+        userAgent: "old-ua",
+        ip: "0.0.0.0",
         account: { id: "a1", email: "a@b.com", isRoot: 0 },
       };
       m.refreshTokens.findOne.mockResolvedValueOnce(stored);
       const res = await svc.refresh("raw", "UA", "9.9.9.9");
-      expect(stored.revokedAt).toBeInstanceOf(Date);
+      // same row, secret rotated, expiry slid, fingerprint refreshed, NOT revoked
+      expect(stored.revokedAt).toBeNull();
+      expect(m.refreshTokens.insert).not.toHaveBeenCalled();
       expect(m.refreshTokens.save).toHaveBeenCalledWith(stored);
+      expect(stored.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(stored.tokenHash).not.toBe("old-hash");
+      expect(stored.expiresAt.getTime()).toBeGreaterThan(originalExpiry.getTime());
+      expect(stored.userAgent).toBe("UA");
+      expect(stored.ip).toBe("9.9.9.9");
       expect(res.accessToken).toBe("access-token");
-      expect(m.refreshTokens.insert).toHaveBeenCalledTimes(1);
+      expect(typeof res.refreshToken).toBe("string");
     });
   });
 
@@ -134,18 +162,52 @@ describe("JwtAuthService", () => {
     });
   });
 
-  describe("listSessions", () => {
-    it("returns the caller's tokens newest first with an active flag", async () => {
+  describe("listActiveSessions", () => {
+    it("queries only live tokens (scoped to the account, newest first) and flags them active", async () => {
       const future = new Date(Date.now() + 100000);
-      const past = new Date(Date.now() - 100000);
       m.refreshTokens.find.mockResolvedValueOnce([
-        { id: 1, userAgent: "UA", ip: "1.2.3.4", createdAt: past, expiresAt: future, revokedAt: null },
-        { id: 2, userAgent: null, ip: null, createdAt: past, expiresAt: past, revokedAt: null },
-        { id: 3, userAgent: null, ip: null, createdAt: past, expiresAt: future, revokedAt: new Date() },
+        { id: 1, userAgent: "UA", ip: "1.2.3.4", createdAt: new Date(), expiresAt: future, revokedAt: null },
       ]);
-      const res = await svc.listSessions("a1");
-      expect(m.refreshTokens.find).toHaveBeenCalledWith({ where: { accountId: "a1" }, order: { createdAt: "DESC" } });
-      expect(res.map((s) => s.active)).toEqual([true, false, false]);
+      const res = await svc.listActiveSessions("a1");
+      const arg = m.refreshTokens.find.mock.calls[0][0];
+      expect(arg.where).toMatchObject({ accountId: "a1" });
+      expect(arg.order).toEqual({ createdAt: "DESC" });
+      expect(res).toEqual([expect.objectContaining({ id: 1, active: true })]);
+    });
+  });
+
+  describe("listSessionHistory", () => {
+    // A chainable query-builder double: every builder method returns the same
+    // object so the service's fluent chain works, and getManyAndCount yields
+    // the [rows, total] pair.
+    function makeQb(rows: unknown[], total: number) {
+      const qb = {
+        where: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        skip: vi.fn().mockReturnThis(),
+        take: vi.fn().mockReturnThis(),
+        getManyAndCount: vi.fn().mockResolvedValue([rows, total]),
+      };
+      return qb;
+    }
+
+    it("paginates inactive tokens and maps them with active=false", async () => {
+      const qb = makeQb([{ id: 3, userAgent: "UA", ip: "1.2.3.4", createdAt: new Date(), expiresAt: new Date(), revokedAt: new Date() }], 1);
+      m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb as never);
+      const res = await svc.listSessionHistory("a1", { offset: 0, limit: 10, sortDir: "desc" } as never);
+      expect(res.total).toBe(1);
+      expect(res.items).toEqual([expect.objectContaining({ id: 3, active: false })]);
+      expect(qb.skip).toHaveBeenCalledWith(0);
+      expect(qb.take).toHaveBeenCalledWith(10);
+    });
+
+    it("adds a search filter (user agent or IP) when provided", async () => {
+      const qb = makeQb([], 0);
+      m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb as never);
+      await svc.listSessionHistory("a1", { offset: 0, limit: 25, sortDir: "asc", search: "chrome" } as never);
+      // account scope + inactive filter + search = 1 where + 2 andWhere.
+      expect(qb.andWhere).toHaveBeenCalledTimes(2);
     });
   });
 

@@ -4,6 +4,7 @@ import apiErrors from "./en_EN/apiErrors";
 import nav from "./en_EN/nav";
 import layout from "./en_EN/layout";
 import common from "./en_EN/common";
+import error from "./en_EN/error";
 import confirm from "./en_EN/confirm";
 import login from "./en_EN/login";
 import dashboard from "./en_EN/dashboard";
@@ -31,6 +32,7 @@ export default {
   nav,
   layout,
   common,
+  error,
   confirm,
   login,
   dashboard,

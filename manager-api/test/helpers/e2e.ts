@@ -9,6 +9,7 @@ import { ApiTokenService } from "../../src/core/auth/api-token/api-token.service
 import { GlobalPermissionGuard } from "../../src/core/custom-permission-guard/global-permission.guard";
 import { DomainPermissionGuard } from "../../src/core/custom-permission-guard/domain-permission.guard";
 import { CustomPermissionGuardService } from "../../src/core/custom-permission-guard/custom-permission-guard.service";
+import { RefreshToken } from "../../src/core/entities/refresh-token.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 
 const SECRET = process.env.MANAGER_JWT_ACCESS_SECRET ?? "test-access-secret";
@@ -97,6 +98,9 @@ export async function buildHarness(opts: {
       { provide: APP_GUARD, useClass: CombinedAuthGuard },
       { provide: CustomPermissionGuardService, useValue: cpg },
       { provide: getRepositoryToken(VirtualDomain), useValue: domainRepo },
+      // The guard checks the session behind a JWT; harness tokens carry no sid, so
+      // this findOne is never hit, but the repo must resolve for the guard to build.
+      { provide: getRepositoryToken(RefreshToken), useValue: { findOne: vi.fn() } },
       { provide: ApiTokenService, useValue: { validate: vi.fn().mockResolvedValue(null) } },
       ...(opts.providers ?? []),
     ],

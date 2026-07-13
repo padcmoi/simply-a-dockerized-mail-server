@@ -21,7 +21,8 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
     revoke: vi.fn(),
     me: vi.fn(),
     updateProfile: vi.fn(),
-    listSessions: vi.fn(),
+    listActiveSessions: vi.fn(),
+    listSessionHistory: vi.fn(),
     revokeSession: vi.fn(),
   };
   const getEffectivePermissions = vi.fn();
@@ -136,10 +137,31 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
       await api().get("/api/v1/auth/jwt/me/sessions").expect(401);
     });
     it("200 with a token and forwards the caller id", async () => {
-      auth.listSessions.mockResolvedValueOnce([{ id: 1, userAgent: "UA", ip: "1.2.3.4", active: true }]);
+      auth.listActiveSessions.mockResolvedValueOnce([{ id: 1, userAgent: "UA", ip: "1.2.3.4", active: true }]);
       const res = await api().get("/api/v1/auth/jwt/me/sessions").set(bearer(h.token(USER))).expect(200);
       expect(res.body).toHaveLength(1);
-      expect(auth.listSessions).toHaveBeenCalledWith(USER.id);
+      expect(auth.listActiveSessions).toHaveBeenCalledWith(USER.id);
+    });
+  });
+
+  describe("GET me/sessions/history (authenticated, no ACL, paginated)", () => {
+    it("401 without a token", async () => {
+      await api().get("/api/v1/auth/jwt/me/sessions/history").expect(401);
+    });
+    it("200 with a token and forwards (callerId, parsed pagination query)", async () => {
+      auth.listSessionHistory.mockResolvedValueOnce({ items: [{ id: 2, active: false }], total: 1 });
+      const res = await api()
+        .get("/api/v1/auth/jwt/me/sessions/history?limit=10&offset=0&search=chrome&sortBy=createdAt&sortDir=asc")
+        .set(bearer(h.token(USER)))
+        .expect(200);
+      expect(res.body).toEqual({ items: [{ id: 2, active: false }], total: 1 });
+      expect(auth.listSessionHistory).toHaveBeenCalledWith(
+        USER.id,
+        expect.objectContaining({ limit: 10, offset: 0, search: "chrome", sortBy: "createdAt", sortDir: "asc" })
+      );
+    });
+    it("400 when limit is not 10/25/50 (zod)", async () => {
+      await api().get("/api/v1/auth/jwt/me/sessions/history?limit=7").set(bearer(h.token(USER))).expect(400);
     });
   });
 
