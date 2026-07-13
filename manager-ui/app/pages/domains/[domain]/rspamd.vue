@@ -71,7 +71,7 @@ watchEffect(() => {
 
     <RspamdStatTiles :stats="stats" :loading="loading" />
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
       <RspamdStatsCard :stats="stats" :loading="loading" :unavailable="statsUnavailable" />
       <RspamdDomainBayesCard :bayes="stats?.bayes" :loading="loading" />
     </div>

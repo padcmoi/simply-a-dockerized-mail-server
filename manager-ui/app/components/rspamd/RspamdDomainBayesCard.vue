@@ -29,7 +29,7 @@ watch(sorted, () => {
 </script>
 
 <template>
-  <UCard>
+  <UCard class="h-full" :ui="{ root: 'flex flex-col', body: 'flex-1 flex flex-col' }">
     <template #header>
       <div class="flex items-center justify-between gap-2">
         <h2 class="font-semibold flex items-center gap-2">
@@ -69,12 +69,12 @@ watch(sorted, () => {
           </div>
         </div>
       </div>
-      <div v-if="sorted.length > PAGE_SIZE" class="mt-4">
+      <div v-if="sorted.length > PAGE_SIZE" class="mt-auto pt-4">
         <ListPagination v-model:page="page" :total="sorted.length" :limit="PAGE_SIZE" />
       </div>
     </template>
 
-    <div v-else class="flex flex-col items-center justify-center text-center gap-2 py-10 text-muted">
+    <div v-else class="flex-1 flex flex-col items-center justify-center text-center gap-2 py-10 text-muted">
       <UIcon name="i-lucide-brain-circuit" class="size-8 text-dimmed" />
       <p class="text-sm">{{ t("domainDashboard.rspamd.bayes.noData") }}</p>
       <p class="text-xs text-dimmed max-w-xs">{{ t("domainDashboard.rspamd.bayes.hint") }}</p>
