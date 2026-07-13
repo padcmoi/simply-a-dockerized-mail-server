@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Headers,
   HttpCode,
   Ip,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -18,15 +20,19 @@ import { In, Repository } from "typeorm";
 import { ZodValidationPipe } from "../../common/zod.pipe";
 import { CustomPermissionGuardService } from "../../custom-permission-guard/custom-permission-guard.service";
 import { VirtualDomain } from "../../entities/virtual-domain.entity";
+import { VirtualUser } from "../../entities/virtual-user.entity";
 import { Public } from "../auth.decorator";
 import {
   JwtAuthApi,
   JwtLoginDocs,
   JwtLogoutDocs,
   JwtMeDocs,
+  JwtMeOverviewDocs,
   JwtMePermissionsDocs,
+  JwtMeSessionsDocs,
   JwtMyGroupPermissionsDocs,
   JwtRefreshDocs,
+  JwtRevokeSessionDocs,
   JwtUpdateProfileDocs,
 } from "./jwt.openapi";
 import { JwtAuthService } from "./jwt.service";
@@ -42,7 +48,8 @@ export class JwtAuthController {
   constructor(
     private readonly auth: JwtAuthService,
     private readonly cpg: CustomPermissionGuardService,
-    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>
+    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>
   ) {}
 
   // Resolves each domain-scoped permission's domainId to its FQDN, server-side,
@@ -95,10 +102,39 @@ export class JwtAuthController {
     return this.auth.me(req.user.id);
   }
 
+  // Self-scoped overview: the domains and recipients the caller owns (owner_id on
+  // virtual_domains / virtual_users). Powers the "what you own" section of the
+  // profile page; same shape as the admin GET /accounts/:id/overview, minus the
+  // account block the caller already has from GET /me.
+  @Get("me/overview")
+  @JwtMeOverviewDocs()
+  async meOverview(@Req() req: AuthedRequest) {
+    const [domains, recipients] = await Promise.all([
+      this.domains.find({ where: { ownerId: req.user.id }, order: { domain: "ASC" } }),
+      this.virtualUsers.find({ where: { ownerId: req.user.id }, order: { email: "ASC" } }),
+    ]);
+    return {
+      domains: domains.map((d) => ({ id: d.id, domain: d.domain, active: d.active === 1, quota: d.quota })),
+      recipients: recipients.map((r) => ({ id: r.id, email: r.email, domain: r.domain, active: r.active === 1, quota: r.quota })),
+    };
+  }
+
   @Patch("me")
   @JwtUpdateProfileDocs()
   updateProfile(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(updateProfileSchema)) body: UpdateProfileDto) {
     return this.auth.updateProfile(req.user.id, body);
+  }
+
+  @Get("me/sessions")
+  @JwtMeSessionsDocs()
+  meSessions(@Req() req: AuthedRequest) {
+    return this.auth.listSessions(req.user.id);
+  }
+
+  @Delete("me/sessions/:id")
+  @JwtRevokeSessionDocs()
+  revokeSession(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
+    return this.auth.revokeSession(req.user.id, id);
   }
 
   @Get("me/permissions")

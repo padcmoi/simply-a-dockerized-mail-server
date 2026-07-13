@@ -22,7 +22,12 @@ const { t } = useI18n();
     <div class="flex items-start justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
         <UAvatar :alt="account.displayName ?? account.email" size="sm" />
-        <span class="font-semibold truncate break-all">{{ account.email }}</span>
+        <NuxtLink
+          :to="`/accounts/${account.id}`"
+          class="font-semibold truncate break-all text-primary hover:underline underline-offset-2 transition-colors"
+        >
+          {{ account.email }}
+        </NuxtLink>
         <UBadge v-if="account.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
       </div>
       <UBadge :color="account.enabled ? 'success' : 'neutral'" variant="subtle" size="sm" class="shrink-0">
@@ -47,7 +52,7 @@ const { t } = useI18n();
       <UButton icon="i-lucide-users-round" size="sm" color="neutral" variant="outline" :to="`/accounts/${account.id}/groups`">
         {{ t("accounts.table.manageGroups") }}
       </UButton>
-      <UButton icon="i-lucide-pencil" size="sm" color="neutral" variant="outline" :to="`/accounts/${account.id}`">
+      <UButton icon="i-lucide-pencil" size="sm" color="neutral" variant="outline" :to="`/accounts/${account.id}/edit`">
         {{ t("accounts.table.editAccount") }}
       </UButton>
       <UButton v-if="account.enabled" icon="i-lucide-user-x" size="sm" color="error" variant="outline" @click="emit('revoke')">

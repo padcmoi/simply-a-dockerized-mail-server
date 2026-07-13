@@ -9,6 +9,7 @@ import {
   AcceptInvitationDocs,
   AccountsApi,
   GetAccountDocs,
+  GetAccountOverviewDocs,
   GetInvitationDocs,
   ListAccountNamesDocs,
   ListAccountsDocs,
@@ -69,7 +70,14 @@ export class AccountsController {
     return this.svc.getById(id);
   }
 
-  @Patch(":id")
+  @Get(":id/overview")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "view-account"] }])
+  @GetAccountOverviewDocs()
+  overview(@Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.getOverview(id);
+  }
+
+  @Patch(":id/edit")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "edit-account"] }])
   @UpdateAccountDocs()
   update(@Param("id", ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(updateAccountSchema)) body: UpdateAccountDto) {

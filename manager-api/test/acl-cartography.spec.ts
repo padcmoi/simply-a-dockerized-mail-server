@@ -30,10 +30,13 @@ const EXPECTED_PUBLIC = [
 // is enforced inside GroupsService (empty @RequireGlobalPermissions on purpose).
 // Every other authenticated route MUST declare a permission requirement.
 const EXPECTED_NO_ACL_AUTHED = [
+  "DELETE /api/v1/auth/jwt/me/sessions/:id",
   "DELETE /api/v1/groups/:id/members/all",
   "GET /api/v1/auth/jwt/me",
   "GET /api/v1/auth/jwt/me/groups/:id/permissions",
+  "GET /api/v1/auth/jwt/me/overview",
   "GET /api/v1/auth/jwt/me/permissions",
+  "GET /api/v1/auth/jwt/me/sessions",
   "PATCH /api/v1/auth/jwt/me",
   "POST /api/v1/groups/:id/members/all",
 ].sort();

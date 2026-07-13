@@ -10,21 +10,38 @@ vi.stubGlobal("defineStore", defineStore);
 const { useNav } = await import("~/composables/useNav");
 const { useDomainStore } = await import("~/stores/domain");
 
-let setLocale: ReturnType<typeof vi.fn>;
+let setLocalePreference: ReturnType<typeof vi.fn>;
 let colorMode: { value: string; preference: string };
 
 beforeEach(() => {
   setActivePinia(createPinia());
-  setLocale = vi.fn();
+  setLocalePreference = vi.fn();
   colorMode = reactive({ value: "dark", preference: "dark" });
   vi.stubGlobal("useI18n", () => ({
     t: (k: string) => k,
-    locale: ref("en"),
+    locale: ref("en_EN"),
     locales: ref([
-      { code: "en", name: "English" },
-      { code: "fr", name: "Français" },
+      { code: "en_EN", name: "English" },
+      { code: "fr_FR", name: "Français" },
     ]),
-    setLocale,
+    setLocale: vi.fn(),
+  }));
+  // The language sub-menu now goes through useLocalePreference (tri-state, with a
+  // "system" entry), so stub it: preference "system", three flagged options.
+  vi.stubGlobal("useLocalePreference", () => ({
+    preference: ref("system"),
+    resolved: ref("en_EN"),
+    detected: ref("en_EN"),
+    options: ref([
+      { value: "system", flag: "🇬🇧", name: null },
+      { value: "en_EN", flag: "🇬🇧", name: "English" },
+      { value: "fr_FR", flag: "🇫🇷", name: "Français" },
+    ]),
+    availableCodes: ref(["en_EN", "fr_FR"]),
+    flagFor: (c: string) => c,
+    detectBrowserLocale: () => "en_EN",
+    apply: vi.fn(),
+    setPreference: setLocalePreference,
   }));
   vi.stubGlobal("useColorMode", () => colorMode);
   vi.stubGlobal("useRoute", () => ({ path: "/" }));
@@ -138,17 +155,19 @@ describe("useNav user menu", () => {
     expect(onSignOut).toHaveBeenCalledTimes(1);
   });
 
-  it("builds a language sub-menu checked on the active locale, switching on check", () => {
+  it("builds a language sub-menu from the locale options, checked on the preference", () => {
     asRoot();
     const { userItems } = useNav(noop);
     const language = userItems.value[1][0] as {
       children: { label: string; checked: boolean; onUpdateChecked: (c: boolean) => void }[];
     };
-    expect(language.children.map((c) => c.label)).toEqual(["English", "Français"]);
-    expect(language.children[0].checked).toBe(true); // active locale "en"
-    expect(language.children[1].checked).toBe(false);
-    language.children[1].onUpdateChecked(true);
-    expect(setLocale).toHaveBeenCalledWith("fr");
+    // system + the two configured locales, each label carrying its flag.
+    expect(language.children).toHaveLength(3);
+    expect(language.children.map((c) => c.label)).toEqual(["🇬🇧  layout.system", "🇬🇧  English", "🇫🇷  Français"]);
+    // preference is "system", so only the first entry is checked.
+    expect(language.children.map((c) => c.checked)).toEqual([true, false, false]);
+    language.children[2].onUpdateChecked(true);
+    expect(setLocalePreference).toHaveBeenCalledWith("fr_FR");
   });
 
   it("reflects the color mode and updates the preference on toggle", () => {

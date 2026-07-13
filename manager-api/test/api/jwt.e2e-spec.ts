@@ -4,6 +4,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
 import { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
+import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
 
 // login / refresh / logout are @Public (no token needed). me + me/* are
@@ -20,12 +21,15 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
     revoke: vi.fn(),
     me: vi.fn(),
     updateProfile: vi.fn(),
+    listSessions: vi.fn(),
+    revokeSession: vi.fn(),
   };
   const getEffectivePermissions = vi.fn();
   const findGroupMemberIds = vi.fn();
   const findGroupGlobalPermissions = vi.fn();
   const findGroupDomainPermissions = vi.fn();
-  const domainRepo = { findBy: vi.fn() };
+  const domainRepo = { findBy: vi.fn(), find: vi.fn() };
+  const virtualUserRepo = { find: vi.fn() };
 
   beforeAll(async () => {
     h = await buildHarness({
@@ -33,6 +37,7 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
       providers: [
         { provide: JwtAuthService, useValue: auth },
         { provide: getRepositoryToken(VirtualDomain), useValue: domainRepo },
+        { provide: getRepositoryToken(VirtualUser), useValue: virtualUserRepo },
       ],
     });
     Object.assign(h.cpg.guard, {
@@ -105,6 +110,50 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
       const res = await api().get("/api/v1/auth/jwt/me").set(bearer(h.token(USER))).expect(200);
       expect(res.body.email).toBe("user@test.local");
       expect(auth.me).toHaveBeenCalledWith(USER.id);
+    });
+  });
+
+  describe("GET me/overview (authenticated, no ACL)", () => {
+    it("401 without a token", async () => {
+      await api().get("/api/v1/auth/jwt/me/overview").expect(401);
+    });
+    it("401 with a garbage bearer token", async () => {
+      await api().get("/api/v1/auth/jwt/me/overview").set("Authorization", "Bearer nope").expect(401);
+    });
+    it("200 with a token: returns the caller's owned domains and recipients", async () => {
+      domainRepo.find.mockResolvedValueOnce([{ id: 5, domain: "ex.com", active: 1, quota: "0" }]);
+      virtualUserRepo.find.mockResolvedValueOnce([{ id: 9, email: "j@ex.com", domain: "ex.com", active: 0, quota: "100" }]);
+      const res = await api().get("/api/v1/auth/jwt/me/overview").set(bearer(h.token(USER))).expect(200);
+      expect(domainRepo.find).toHaveBeenCalledWith({ where: { ownerId: USER.id }, order: { domain: "ASC" } });
+      expect(virtualUserRepo.find).toHaveBeenCalledWith({ where: { ownerId: USER.id }, order: { email: "ASC" } });
+      expect(res.body.domains).toEqual([{ id: 5, domain: "ex.com", active: true, quota: "0" }]);
+      expect(res.body.recipients).toEqual([{ id: 9, email: "j@ex.com", domain: "ex.com", active: false, quota: "100" }]);
+    });
+  });
+
+  describe("GET me/sessions (authenticated, no ACL)", () => {
+    it("401 without a token", async () => {
+      await api().get("/api/v1/auth/jwt/me/sessions").expect(401);
+    });
+    it("200 with a token and forwards the caller id", async () => {
+      auth.listSessions.mockResolvedValueOnce([{ id: 1, userAgent: "UA", ip: "1.2.3.4", active: true }]);
+      const res = await api().get("/api/v1/auth/jwt/me/sessions").set(bearer(h.token(USER))).expect(200);
+      expect(res.body).toHaveLength(1);
+      expect(auth.listSessions).toHaveBeenCalledWith(USER.id);
+    });
+  });
+
+  describe("DELETE me/sessions/:id (authenticated, no ACL)", () => {
+    it("401 without a token", async () => {
+      await api().delete("/api/v1/auth/jwt/me/sessions/7").expect(401);
+    });
+    it("200 with a token and forwards (callerId, id)", async () => {
+      auth.revokeSession.mockResolvedValueOnce({ ok: true });
+      await api().delete("/api/v1/auth/jwt/me/sessions/7").set(bearer(h.token(USER))).expect(200);
+      expect(auth.revokeSession).toHaveBeenCalledWith(USER.id, 7);
+    });
+    it("400 when :id is not an integer", async () => {
+      await api().delete("/api/v1/auth/jwt/me/sessions/nope").set(bearer(h.token(USER))).expect(400);
     });
   });
 

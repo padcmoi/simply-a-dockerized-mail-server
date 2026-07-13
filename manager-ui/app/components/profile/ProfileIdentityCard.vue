@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { useAuthStore } from "~/stores/auth";
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const { call } = useApi();
 const auth = useAuthStore();
 const toast = useToast();
@@ -10,11 +10,6 @@ const toast = useToast();
 const loading = ref(false);
 // Read-only: geocoded from the city server-side (see GeocodingService).
 const coords = ref<{ latitude: string | null; longitude: string | null }>({ latitude: null, longitude: null });
-// The avatar URL is edited in a modal (opened from a pencil on the avatar) rather
-// than as a raw field in the form -- a long URL inline is ugly. `avatarDraft`
-// holds the edit until Apply, so Cancel reverts.
-const avatarModalOpen = ref(false);
-const avatarDraft = ref("");
 const form = reactive({
   displayName: "",
   email: "",
@@ -27,40 +22,7 @@ const form = reactive({
   country: "",
 });
 
-const avatarPreview = computed(() => {
-  const alt = form.displayName || auth.session?.email || "?";
-  return form.avatarUrl.trim() ? { src: form.avatarUrl.trim(), alt } : { alt };
-});
-
-// Live preview inside the modal, reflecting the draft URL as it is typed.
-const avatarDraftPreview = computed(() => {
-  const alt = form.displayName || auth.session?.email || "?";
-  const src = avatarDraft.value.trim();
-  return src ? { src, alt } : { alt };
-});
-
-// All countries, localized name + flag emoji, sorted by name. value = the
-// canonical English name so what is stored stays stable across UI locales and
-// geocodes reliably (see GeocodingService). The app's locale codes use an
-// underscore (`fr_FR`); Intl needs a BCP 47 tag (`fr-FR`), so convert -- an
-// underscore tag makes the Intl.DisplayNames constructor throw and would blank
-// the whole form. Wrapped defensively so an unknown tag can never break render.
-const countryOptions = computed(() => {
-  const uiLocale = locale.value.replace(/_/g, "-");
-  let enNames: Intl.DisplayNames | null = null;
-  let localNames: Intl.DisplayNames | null = null;
-  try {
-    enNames = new Intl.DisplayNames(["en"], { type: "region" });
-    localNames = new Intl.DisplayNames([uiLocale], { type: "region" });
-  } catch {
-    enNames = null;
-    localNames = null;
-  }
-  return COUNTRY_CODES.map((code) => {
-    const name = localNames?.of(code) ?? code;
-    return { value: enNames?.of(code) ?? code, label: `${countryFlagEmoji(code)} ${name}`, sortKey: name };
-  }).sort((a, b) => a.sortKey.localeCompare(b.sortKey, uiLocale));
-});
+const avatarAlt = computed(() => form.displayName || auth.session?.email || "?");
 
 const schema = z.object({
   displayName: z.string().max(255).optional(),
@@ -100,26 +62,6 @@ async function fetchProfileForm() {
   form.postalCode = me.postalCode ?? "";
   form.country = me.country ?? "";
   coords.value = { latitude: me.latitude, longitude: me.longitude };
-}
-
-// Void wrapper: an inline `@click="form.country = ''"` returns the assigned
-// string, which Vue's void click-handler type rejects.
-function clearCountry() {
-  form.country = "";
-}
-
-function openAvatarModal() {
-  avatarDraft.value = form.avatarUrl;
-  avatarModalOpen.value = true;
-}
-
-function applyAvatar() {
-  form.avatarUrl = avatarDraft.value.trim();
-  avatarModalOpen.value = false;
-}
-
-function closeAvatarModal() {
-  avatarModalOpen.value = false;
 }
 
 async function save() {
@@ -180,17 +122,7 @@ const identityLoading = computed(() => identityStatus.value !== "success" && ide
     </div>
     <UForm v-else :schema="schema" :state="form" class="space-y-6" @submit="save">
       <div class="flex items-center gap-4">
-        <div class="relative shrink-0">
-          <UAvatar :src="avatarPreview.src" :alt="avatarPreview.alt" size="3xl" />
-          <UButton
-            icon="i-lucide-pencil"
-            color="neutral"
-            size="xs"
-            class="absolute -bottom-1 -end-1 rounded-full ring-2 ring-default"
-            :aria-label="t('profile.editAvatar')"
-            @click="openAvatarModal"
-          />
-        </div>
+        <ProfileAvatarEditField v-model="form.avatarUrl" :alt="avatarAlt" />
         <div class="min-w-0">
           <p class="font-medium truncate">{{ auth.session?.email }}</p>
           <div class="flex flex-wrap gap-1">
@@ -230,60 +162,14 @@ const identityLoading = computed(() => identityStatus.value !== "success" && ide
         </UFormField>
       </div>
 
-      <USeparator :label="t('profile.addressSection')" />
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-        <UFormField :label="t('profile.addressLine')" name="addressLine" class="sm:col-span-2">
-          <UInput v-model="form.addressLine" icon="i-lucide-map-pin" class="w-full" />
-        </UFormField>
-
-        <UFormField :label="t('profile.addressComplement')" name="addressComplement" class="sm:col-span-2">
-          <UInput v-model="form.addressComplement" icon="i-lucide-map-pin" class="w-full" />
-        </UFormField>
-
-        <UFormField :label="t('profile.city')" name="city">
-          <UInput v-model="form.city" icon="i-lucide-building-2" class="w-full" />
-        </UFormField>
-
-        <UFormField :label="t('profile.postalCode')" name="postalCode">
-          <UInput v-model="form.postalCode" class="w-full" />
-        </UFormField>
-
-        <UFormField :label="t('profile.country')" name="country">
-          <USelectMenu
-            v-model="form.country"
-            value-key="value"
-            :items="countryOptions"
-            :placeholder="t('profile.countryPlaceholder')"
-            icon="i-lucide-globe"
-            class="w-full"
-          >
-            <!-- Country is optional: a clear button (replacing the chevron once a
-                 value is set) empties the field back to no country. -->
-            <template #trailing>
-              <UButton
-                v-if="form.country"
-                icon="i-lucide-x"
-                color="neutral"
-                variant="link"
-                size="xs"
-                :aria-label="t('common.clear')"
-                @mousedown.stop.prevent
-                @click.stop="clearCountry"
-              />
-              <UIcon v-else name="i-lucide-chevron-down" class="size-5 text-dimmed" />
-            </template>
-          </USelectMenu>
-        </UFormField>
-
-        <UFormField :label="t('profile.coordinates')">
-          <div class="flex items-center gap-2 text-sm py-1.5">
-            <UIcon name="i-lucide-locate-fixed" class="text-dimmed shrink-0" />
-            <span v-if="coords.latitude && coords.longitude">{{ coords.latitude }}, {{ coords.longitude }}</span>
-            <span v-else class="text-muted">{{ t("profile.coordinatesEmpty") }}</span>
-          </div>
-        </UFormField>
-      </div>
+      <ProfileAddressFields
+        v-model:address-line="form.addressLine"
+        v-model:address-complement="form.addressComplement"
+        v-model:city="form.city"
+        v-model:postal-code="form.postalCode"
+        v-model:country="form.country"
+        :coords="coords"
+      />
 
       <div class="flex justify-end">
         <UButton type="submit" :loading="loading" icon="i-lucide-save" color="primary">
@@ -291,24 +177,5 @@ const identityLoading = computed(() => identityStatus.value !== "success" && ide
         </UButton>
       </div>
     </UForm>
-
-    <UModal v-model:open="avatarModalOpen" :title="t('profile.avatarUrl')">
-      <template #body>
-        <div class="space-y-4">
-          <div class="flex justify-center">
-            <UAvatar :src="avatarDraftPreview.src" :alt="avatarDraftPreview.alt" size="3xl" />
-          </div>
-          <UFormField :label="t('profile.avatarUrl')" :description="t('profile.avatarUrlHint')">
-            <UInput v-model="avatarDraft" type="url" placeholder="https://..." icon="i-lucide-image" class="w-full" autofocus />
-          </UFormField>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-2 w-full">
-          <UButton color="neutral" variant="ghost" @click="closeAvatarModal">{{ t("common.cancel") }}</UButton>
-          <UButton color="primary" icon="i-lucide-check" @click="applyAvatar">{{ t("common.apply") }}</UButton>
-        </div>
-      </template>
-    </UModal>
   </UCard>
 </template>

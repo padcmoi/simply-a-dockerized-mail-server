@@ -87,6 +87,37 @@ export class JwtAuthService {
     return this.toProfile(account);
   }
 
+  // The caller's own sessions (refresh tokens), newest first. `active` is a token
+  // that is neither revoked nor past its expiry: the sign-ins still usable to mint
+  // a new access token. The raw token hash never leaves the service.
+  async listSessions(accountId: string) {
+    const now = new Date();
+    const rows = await this.refreshTokens.find({ where: { accountId }, order: { createdAt: "DESC" } });
+    return rows.map((r) => ({
+      id: r.id,
+      userAgent: r.userAgent,
+      ip: r.ip,
+      createdAt: r.createdAt,
+      expiresAt: r.expiresAt,
+      revokedAt: r.revokedAt,
+      active: !r.revokedAt && r.expiresAt > now,
+    }));
+  }
+
+  // Revoke one of the caller's own sessions. Scoped by accountId so a caller can
+  // never revoke another account's session by guessing an id. Idempotent: an
+  // already-revoked session is left as-is. A missing id (or one owned by someone
+  // else) is a 404, not a silent success.
+  async revokeSession(accountId: string, id: number) {
+    const stored = await this.refreshTokens.findOne({ where: { id, accountId } });
+    if (!stored) throw new NotFoundException("Session not found");
+    if (!stored.revokedAt) {
+      stored.revokedAt = new Date();
+      await this.refreshTokens.save(stored);
+    }
+    return { ok: true };
+  }
+
   async updateProfile(accountId: string, input: UpdateProfileDto): Promise<ProfileResponse> {
     const account = await this.accounts.findOne({ where: { id: accountId } });
     if (!account) throw new NotFoundException("Account not found");

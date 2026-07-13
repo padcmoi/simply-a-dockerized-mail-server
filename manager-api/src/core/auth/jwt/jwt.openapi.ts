@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 
 export const JwtAuthApi = () => applyDecorators(ApiTags("auth-jwt"));
 
@@ -143,6 +143,79 @@ export const JwtLogoutDocs = () =>
       description: "Validation failed (refreshToken shorter than 8 characters)",
       schema: { example: validationFailedExample },
     })
+  );
+
+export const JwtMeOverviewDocs = () =>
+  applyDecorators(
+    ApiSecurity("apiToken"),
+    ApiOperation({
+      summary: "Return the domains and recipients the authenticated account owns",
+      description:
+        "Self-scoped: lists every `virtual_domains` and `virtual_users` row whose `owner_id` is the caller " +
+        "(req.user.id). No permission beyond being authenticated; powers the 'what you own' section of the " +
+        "profile page.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Owned domains and recipients returned",
+      schema: {
+        example: {
+          domains: [{ id: 1, domain: "example.com", active: true, quota: "0" }],
+          recipients: [{ id: 1, email: "jane@example.com", domain: "example.com", active: true, quota: "0" }],
+        },
+      },
+    }),
+    ApiResponse({
+      status: 401,
+      description: "Missing or invalid access token / API key",
+      schema: { example: { message: "Unauthorized", statusCode: 401 } },
+    })
+  );
+
+export const JwtMeSessionsDocs = () =>
+  applyDecorators(
+    ApiSecurity("apiToken"),
+    ApiOperation({
+      summary: "List the authenticated account's sessions (refresh tokens)",
+      description:
+        "Self-scoped: returns the caller's own refresh tokens, newest first, with device (user agent), IP, " +
+        "creation and expiry timestamps and an `active` flag (not revoked and not expired). The raw token is " +
+        "never exposed.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Sessions returned",
+      schema: {
+        example: [
+          {
+            id: 12,
+            userAgent: "Mozilla/5.0",
+            ip: "203.0.113.7",
+            createdAt: "2026-07-13T10:00:00.000Z",
+            expiresAt: "2026-07-20T10:00:00.000Z",
+            revokedAt: null,
+            active: true,
+          },
+        ],
+      },
+    }),
+    ApiResponse({ status: 401, description: "Missing or invalid access token / API key" })
+  );
+
+export const JwtRevokeSessionDocs = () =>
+  applyDecorators(
+    ApiSecurity("apiToken"),
+    ApiParam({ name: "id", type: Number, description: "refresh_tokens.id (one of the caller's own sessions)" }),
+    ApiOperation({
+      summary: "Revoke one of the authenticated account's sessions",
+      description:
+        "Self-scoped: revokes a single refresh token owned by the caller (scoped by account id, so another " +
+        "account's session can never be revoked by guessing an id). Idempotent; a since-revoked session stays " +
+        "revoked. Revoking a session stops it from minting new access tokens on its next refresh.",
+    }),
+    ApiResponse({ status: 200, description: "Session revoked", schema: { example: { ok: true } } }),
+    ApiResponse({ status: 401, description: "Missing or invalid access token / API key" }),
+    ApiResponse({ status: 404, description: "No such session for this account" })
   );
 
 export const JwtMeDocs = () =>

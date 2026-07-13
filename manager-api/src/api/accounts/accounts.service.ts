@@ -11,6 +11,9 @@ import { Account } from "../../core/entities/account.entity";
 import { AccountProfile } from "../../core/entities/account-profile.entity";
 import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
+import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
+import { VirtualUser } from "../../core/entities/virtual-user.entity";
+import { GeocodingService } from "../../core/geocoding/geocoding.service";
 import { MailerService } from "../../core/mailer/mailer.service";
 import type { AcceptInvitationDto, SendInvitationDto, UpdateAccountDto } from "./accounts.validation";
 
@@ -42,7 +45,10 @@ export class AccountsService {
     @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     private readonly mailer: MailerService,
     private readonly cpg: CustomPermissionGuardService,
-    private readonly antiEscalation: AntiEscalationService
+    private readonly antiEscalation: AntiEscalationService,
+    private readonly geocoding: GeocodingService,
+    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>
   ) {}
 
   // `notInGroup` (a group id) filters out accounts that are already members of
@@ -164,10 +170,11 @@ export class AccountsService {
     };
   }
 
-  // Admin-facing account edit: the login identity (email), the enabled flag, and
-  // the display name (the one profile field an administrator manages). The rest
-  // of the profile -- address, city, geolocation -- is the account owner's own,
-  // edited through PATCH /auth/jwt/me.
+  // Admin-facing account edit: the full set of a user's editable fields. email
+  // (login identity) and enabled are account-level; everything else is a profile
+  // attribute on account_profiles, with `city`/`country` refreshing the geocoded
+  // coordinates. Same field set an owner edits through PATCH /auth/jwt/me, plus
+  // the admin-only enabled flag.
   async updateAccount(id: string, input: UpdateAccountDto) {
     const account = await this.accounts.findOne({ where: { id } });
     if (!account) throw new NotFoundException(`Account #${id} not found`);
@@ -181,12 +188,57 @@ export class AccountsService {
       account.enabled = input.enabled ? 1 : 0;
     }
     await this.accounts.save(account);
-    if (input.displayName !== undefined) {
+
+    const profileFields = [
+      "displayName",
+      "avatarUrl",
+      "phone",
+      "addressLine",
+      "addressComplement",
+      "city",
+      "postalCode",
+      "country",
+    ] as const;
+    const touchesProfile = profileFields.some((f) => input[f] !== undefined);
+    if (touchesProfile) {
       const profile = (await this.profiles.findOne({ where: { accountId: id } })) ?? this.profiles.create({ accountId: id });
-      profile.displayName = input.displayName;
+      for (const f of profileFields) {
+        if (input[f] !== undefined) profile[f] = input[f] as never;
+      }
+      // Whenever the city (or country) is touched, refresh the coordinates: a set
+      // city gets geocoded (best-effort; null coords if it fails), a cleared city
+      // clears them. Kept in the same save so a profile never carries stale coords.
+      if (input.city !== undefined || input.country !== undefined) {
+        if (profile.city) {
+          const coords = await this.geocoding.geocodeCity(profile.city, profile.country);
+          profile.latitude = coords?.latitude ?? null;
+          profile.longitude = coords?.longitude ?? null;
+        } else {
+          profile.latitude = null;
+          profile.longitude = null;
+        }
+      }
       await this.profiles.save(profile);
     }
     return this.getById(id);
+  }
+
+  // Account overview (the intermediate dashboard page): the account itself plus
+  // everything it owns across the mail stack. Domains and recipients both carry
+  // a plain `owner_id` FK to accounts, so "belongs to this account" is a direct
+  // filter on each table -- no join through the ACL layer. Reuses getById so the
+  // 404 and the account shape (groups included) stay identical to GET /:id.
+  async getOverview(id: string) {
+    const account = await this.getById(id);
+    const [domains, recipients] = await Promise.all([
+      this.domains.find({ where: { ownerId: id }, order: { domain: "ASC" } }),
+      this.virtualUsers.find({ where: { ownerId: id }, order: { email: "ASC" } }),
+    ]);
+    return {
+      account,
+      domains: domains.map((d) => ({ id: d.id, domain: d.domain, active: d.active === 1, quota: d.quota })),
+      recipients: recipients.map((r) => ({ id: r.id, email: r.email, domain: r.domain, active: r.active === 1, quota: r.quota })),
+    };
   }
 
   async revokeAccount(id: string) {

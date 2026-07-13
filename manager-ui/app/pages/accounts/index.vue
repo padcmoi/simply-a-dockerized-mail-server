@@ -151,7 +151,12 @@ async function onDeleteConfirmed() {
           <template #email-cell="{ row }">
             <div class="flex items-center gap-2">
               <UAvatar :alt="row.original.displayName ?? row.original.email" size="xs" />
-              <span class="font-medium">{{ row.original.email }}</span>
+              <NuxtLink
+                :to="`/accounts/${row.original.id}`"
+                class="font-medium text-primary hover:underline underline-offset-2 transition-colors"
+              >
+                {{ row.original.email }}
+              </NuxtLink>
               <UBadge v-if="row.original.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
             </div>
           </template>
@@ -192,7 +197,7 @@ async function onDeleteConfirmed() {
                 color="neutral"
                 variant="ghost"
                 :title="t('accounts.table.editAccount')"
-                :to="`/accounts/${row.original.id}`"
+                :to="`/accounts/${row.original.id}/edit`"
               />
               <UButton
                 v-if="!row.original.isRoot && row.original.enabled && canRevokeAccount"

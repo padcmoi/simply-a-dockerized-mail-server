@@ -14,6 +14,7 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
     listNames: vi.fn(),
     list: vi.fn(),
     getById: vi.fn(),
+    getOverview: vi.fn(),
     updateAccount: vi.fn(),
     revokeAccount: vi.fn(),
     sendInvitation: vi.fn(),
@@ -38,7 +39,8 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
     ["get", "/api/v1/accounts/names"],
     ["get", "/api/v1/accounts"],
     ["get", `/api/v1/accounts/${UUID}`],
-    ["patch", `/api/v1/accounts/${UUID}`],
+    ["get", `/api/v1/accounts/${UUID}/overview`],
+    ["patch", `/api/v1/accounts/${UUID}/edit`],
     ["delete", `/api/v1/accounts/${UUID}`],
     ["post", "/api/v1/accounts/invite"],
   ];
@@ -143,40 +145,82 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
     });
   });
 
-  describe("PATCH /accounts/:id", () => {
+  describe("GET /accounts/:id/overview", () => {
     it("403 for a user without the permission", async () => {
-      await api().patch(`/api/v1/accounts/${UUID}`).set("Authorization", `Bearer ${h.token(USER)}`).send({ enabled: true }).expect(403);
+      await api().get(`/api/v1/accounts/${UUID}/overview`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+    });
+
+    it("200 for a user granted the exact permission", async () => {
+      h.cpg.grantGlobal("accounts", "access", "view-account");
+      svc.getOverview.mockResolvedValueOnce({ account: { id: UUID }, domains: [], recipients: [] });
+      await api().get(`/api/v1/accounts/${UUID}/overview`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
+    });
+
+    it("200 for root and forwards the id", async () => {
+      svc.getOverview.mockResolvedValueOnce({ account: { id: UUID }, domains: [], recipients: [] });
+      await api().get(`/api/v1/accounts/${UUID}/overview`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      expect(svc.getOverview).toHaveBeenCalledWith(UUID);
+    });
+
+    it("400 when :id is not a uuid", async () => {
+      await api().get("/api/v1/accounts/not-a-uuid/overview").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+    });
+  });
+
+  describe("PATCH /accounts/:id/edit", () => {
+    it("403 for a user without the permission", async () => {
+      await api().patch(`/api/v1/accounts/${UUID}/edit`).set("Authorization", `Bearer ${h.token(USER)}`).send({ enabled: true }).expect(403);
     });
 
     it("200 for a user granted the exact permission", async () => {
       h.cpg.grantGlobal("accounts", "access", "edit-account");
       svc.updateAccount.mockResolvedValueOnce({ id: UUID });
       await api()
-        .patch(`/api/v1/accounts/${UUID}`)
+        .patch(`/api/v1/accounts/${UUID}/edit`)
         .set("Authorization", `Bearer ${h.token(USER)}`)
         .send({ enabled: false })
         .expect(200);
     });
 
-    it("200 for root and forwards id + body", async () => {
+    it("200 for root and forwards id + the full profile body", async () => {
       svc.updateAccount.mockResolvedValueOnce({ id: UUID });
+      const body = {
+        email: "new@x.com",
+        displayName: "New",
+        avatarUrl: "https://example.com/a.png",
+        phone: "+33123456789",
+        addressLine: "10 rue de la Paix",
+        addressComplement: "Apt 4B",
+        city: "Paris",
+        postalCode: "75002",
+        country: "France",
+        enabled: true,
+      };
       await api()
-        .patch(`/api/v1/accounts/${UUID}`)
+        .patch(`/api/v1/accounts/${UUID}/edit`)
         .set("Authorization", `Bearer ${h.token(ROOT)}`)
-        .send({ email: "new@x.com", displayName: "New", enabled: true })
+        .send(body)
         .expect(200);
-      expect(svc.updateAccount).toHaveBeenCalledWith(UUID, { email: "new@x.com", displayName: "New", enabled: true });
+      expect(svc.updateAccount).toHaveBeenCalledWith(UUID, body);
     });
 
     it("400 when :id is not a uuid", async () => {
-      await api().patch("/api/v1/accounts/nope").set("Authorization", `Bearer ${h.token(ROOT)}`).send({ enabled: true }).expect(400);
+      await api().patch("/api/v1/accounts/nope/edit").set("Authorization", `Bearer ${h.token(ROOT)}`).send({ enabled: true }).expect(400);
     });
 
     it("400 on an invalid body (zod)", async () => {
       await api()
-        .patch(`/api/v1/accounts/${UUID}`)
+        .patch(`/api/v1/accounts/${UUID}/edit`)
         .set("Authorization", `Bearer ${h.token(ROOT)}`)
         .send({ email: "not-an-email" })
+        .expect(400);
+    });
+
+    it("400 on an invalid profile field (zod: avatarUrl not a url)", async () => {
+      await api()
+        .patch(`/api/v1/accounts/${UUID}/edit`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .send({ avatarUrl: "not-a-url" })
         .expect(400);
     });
   });

@@ -8,7 +8,8 @@ export function useNav(onSignOut: () => Promise<void>) {
   const perms = usePermissionsStore();
   const domainStore = useDomainStore();
   const route = useRoute();
-  const { t, locale, locales, setLocale } = useI18n();
+  const { t } = useI18n();
+  const { preference: localePreference, options: localeOptions, setPreference: setLocalePreference } = useLocalePreference();
   const colorMode = useColorMode();
 
   // Nested account/group detail routes (e.g. /accounts/3/groups) are separate
@@ -141,13 +142,12 @@ export function useNav(onSignOut: () => Promise<void>) {
       {
         label: t("app.language"),
         icon: "i-lucide-languages",
-        children: locales.value.map((l) => ({
-          label: l.name ?? l.code,
-          icon: "i-lucide-globe",
+        children: localeOptions.value.map((o) => ({
+          label: `${o.flag}  ${o.name ?? t("layout.system")}`,
           type: "checkbox",
-          checked: locale.value === l.code,
+          checked: localePreference.value === o.value,
           onUpdateChecked: (c: boolean) => {
-            if (c) setLocale(l.code);
+            if (c) setLocalePreference(o.value);
           },
           onSelect: (e: Event) => e.preventDefault(),
         })),

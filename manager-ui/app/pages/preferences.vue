@@ -5,7 +5,8 @@
 // No permission gate -- available to any authenticated account, like /profile.
 definePageMeta({});
 
-const { t, locale, locales, setLocale } = useI18n();
+const { t } = useI18n();
+const { preference: localePreference, options: localeOptions, setPreference: setLocalePreference } = useLocalePreference();
 const colorMode = useColorMode();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("layout.preferences") }]);
@@ -45,15 +46,15 @@ function setTheme(value: string) {
     <UCard>
       <div class="flex flex-wrap gap-2">
         <UButton
-          v-for="l in locales"
-          :key="l.code"
-          icon="i-lucide-globe"
+          v-for="opt in localeOptions"
+          :key="opt.value"
           size="sm"
-          :color="locale === l.code ? 'primary' : 'neutral'"
-          :variant="locale === l.code ? 'solid' : 'subtle'"
-          @click="setLocale(l.code)"
+          :color="localePreference === opt.value ? 'primary' : 'neutral'"
+          :variant="localePreference === opt.value ? 'solid' : 'subtle'"
+          @click="setLocalePreference(opt.value)"
         >
-          {{ l.name ?? l.code }}
+          <span class="text-base leading-none">{{ opt.flag }}</span>
+          {{ opt.name ?? t("layout.system") }}
         </UButton>
       </div>
     </UCard>

@@ -73,18 +73,54 @@ export const GetAccountDocs = () =>
     ApiResponse({ status: 404, description: "Account not found" })
   );
 
+const accountOverviewExample = {
+  account: accountDetailExample,
+  domains: [{ id: 1, domain: "example.com", active: true, quota: "0" }],
+  recipients: [{ id: 1, email: "jane@example.com", domain: "example.com", active: true, quota: "0" }],
+};
+
+export const GetAccountOverviewDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: String, description: "accounts.id (uuid)" }),
+    ApiOperation({
+      summary: "Get an account overview: the account plus the domains and recipients it owns",
+      description:
+        "Powers the account dashboard page. Returns the account (with its groups) alongside every `virtual_domains` and `virtual_users` row whose `owner_id` is this account, so an administrator sees everything an account owns in one place.",
+    }),
+    ApiResponse({ status: 200, description: "Overview returned", schema: { example: accountOverviewExample } }),
+    ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
+    ApiResponse({ status: 403, description: "Insufficient permissions (accounts:view-account required)" }),
+    ApiResponse({ status: 404, description: "Account not found" })
+  );
+
 export const UpdateAccountDocs = () =>
   applyDecorators(
-    ApiParam({ name: "id", type: Number, description: "accounts.id" }),
+    ApiParam({ name: "id", type: String, description: "accounts.id (uuid)" }),
     ApiOperation({
-      summary: "Update a manager account's profile fields and enabled status (root only)",
-      description: "Group membership is managed separately via the groups endpoints, not through this route.",
+      summary: "Update a manager account's full profile and enabled status",
+      description:
+        "Edits every editable field of a user: email (login identity), the enabled flag, and all account_profiles attributes (display name, avatar, phone, address, city, postal code, country). Setting or changing the city re-geocodes latitude/longitude. Group membership is managed separately via the groups endpoints, not through this route.",
     }),
-    ApiBody({ schema: { example: { displayName: "John Doe", email: "jdoe@example.com", enabled: true } } }),
+    ApiBody({
+      schema: {
+        example: {
+          email: "jdoe@example.com",
+          displayName: "John Doe",
+          avatarUrl: "https://example.com/avatar.png",
+          phone: "+33123456789",
+          addressLine: "10 rue de la Paix",
+          addressComplement: "Apt 4B",
+          city: "Paris",
+          postalCode: "75002",
+          country: "France",
+          enabled: true,
+        },
+      },
+    }),
     ApiResponse({ status: 200, description: "Account updated", schema: { example: accountDetailExample } }),
     ApiResponse({ status: 400, description: "Invalid body, or attempting to disable a root account" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
-    ApiResponse({ status: 403, description: "Root access required" }),
+    ApiResponse({ status: 403, description: "Insufficient permissions (accounts:edit-account required)" }),
     ApiResponse({ status: 404, description: "Account not found" }),
     ApiResponse({ status: 409, description: "Email already used by another account" })
   );

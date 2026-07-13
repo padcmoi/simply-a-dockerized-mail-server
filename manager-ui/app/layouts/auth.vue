@@ -10,13 +10,15 @@ function toggleColorMode() {
     <UContainer class="min-h-dvh flex items-center justify-center py-8">
       <slot />
     </UContainer>
-    <UButton
-      :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
-      color="neutral"
-      variant="ghost"
-      class="fixed top-3 right-3"
-      square
-      @click="toggleColorMode"
-    />
+    <div class="fixed top-3 right-3 flex items-center gap-1">
+      <LocaleSwitcher />
+      <UButton
+        :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
+        color="neutral"
+        variant="ghost"
+        square
+        @click="toggleColorMode"
+      />
+    </div>
   </UMain>
 </template>

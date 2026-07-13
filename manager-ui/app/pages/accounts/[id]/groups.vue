@@ -37,7 +37,11 @@ const availableOptions = computed(() => {
 });
 
 watchEffect(() => {
-  setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: account.value?.email ?? "..." }]);
+  setBreadcrumb([
+    { label: t("nav.accounts"), to: "/accounts" },
+    { label: account.value?.email ?? "...", to: `/accounts/${accountId.value}` },
+    { label: t("accounts.groupsPage.breadcrumb") },
+  ]);
 });
 
 async function load() {

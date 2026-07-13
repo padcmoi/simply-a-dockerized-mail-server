@@ -314,6 +314,39 @@ export interface Locales {
   profile: {
     alertTitle: string;
     alertDescription: string;
+    overviewAlertTitle: string;
+    overviewAlertDescription: string;
+    editProfile: string;
+    editProfileHint: string;
+    preferencesHint: string;
+    permissionsHint: string;
+    editBreadcrumb: string;
+    backToProfile: string;
+    comingSoonTitle: string;
+    soon: string;
+    changePassword: string;
+    changePasswordHint: string;
+    twoFactor: string;
+    twoFactorHint: string;
+    sessions: string;
+    sessionsHint: string;
+    auditLog: string;
+    auditLogHint: string;
+    sessionsPage: {
+      breadcrumb: string;
+      alertTitle: string;
+      alertDescription: string;
+      unknownDevice: string;
+      unknownIp: string;
+      signedIn: string;
+      expires: string;
+      active: string;
+      revoked: string;
+      expired: string;
+      revoke: string;
+      empty: string;
+      toast: { revoked: string; revokeFailed: string; loadFailed: string };
+    };
     identity: string;
     displayName: string;
     displayNameHint: string;
@@ -376,10 +409,24 @@ export interface Locales {
       groupPlaceholder: string;
       submit: string;
     };
+    overviewPage: {
+      alertTitle: string;
+      alertDescription: string;
+      activeCount: string;
+      quotaLabel: string;
+      ownedDomains: string;
+      ownedRecipients: string;
+      noDomains: string;
+      noRecipients: string;
+      stats: { groupsSub: string };
+      actions: { edit: string; groups: string };
+      toast: { loadFailed: string };
+    };
     groupsPage: {
       alertTitle: string;
       alertDescription: string;
       title: string;
+      breadcrumb: string;
       pickPlaceholder: string;
       add: string;
       removeTooltip: string;
@@ -389,6 +436,7 @@ export interface Locales {
       alertTitle: string;
       alertDescription: string;
       title: string;
+      breadcrumb: string;
       nameLabel: string;
       emailLabel: string;
       avatarUrlLabel: string;

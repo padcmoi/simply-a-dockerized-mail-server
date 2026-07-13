@@ -51,7 +51,10 @@ function makeMocks() {
     },
   };
   const antiEscalation = { assertActingUserHolds: vi.fn(async () => undefined) };
-  return { accounts, profiles, invitations, groups, groupMembers, mailer, cpg, antiEscalation };
+  const geocoding = { geocodeCity: vi.fn(async () => ({ latitude: "48.8566", longitude: "2.3522" })) };
+  const domains = { find: vi.fn(async () => []) };
+  const virtualUsers = { find: vi.fn(async () => []) };
+  return { accounts, profiles, invitations, groups, groupMembers, mailer, cpg, antiEscalation, geocoding, domains, virtualUsers };
 }
 
 describe("AccountsService", () => {
@@ -68,7 +71,10 @@ describe("AccountsService", () => {
       m.groupMembers as never,
       m.mailer as never,
       m.cpg as never,
-      m.antiEscalation as never
+      m.antiEscalation as never,
+      m.geocoding as never,
+      m.domains as never,
+      m.virtualUsers as never
     );
   });
 
@@ -313,6 +319,98 @@ describe("AccountsService", () => {
 
       expect(m.profiles.create).toHaveBeenCalledWith({ accountId: "a1" });
       expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ accountId: "a1", displayName: "Fresh" }));
+    });
+
+    it("persists every profile field and geocodes when the city is set", async () => {
+      const account = { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null };
+      m.accounts.findOne.mockResolvedValue(account);
+      m.profiles.findOne.mockResolvedValue({ accountId: "a1" });
+      m.groupMembers.find.mockResolvedValue([]);
+
+      await svc.updateAccount("a1", {
+        avatarUrl: "https://x/a.png",
+        phone: "+331",
+        addressLine: "10 rue",
+        addressComplement: "Apt 4",
+        city: "Paris",
+        postalCode: "75002",
+        country: "France",
+      });
+
+      expect(m.geocoding.geocodeCity).toHaveBeenCalledWith("Paris", "France");
+      expect(m.profiles.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          avatarUrl: "https://x/a.png",
+          phone: "+331",
+          addressLine: "10 rue",
+          addressComplement: "Apt 4",
+          city: "Paris",
+          postalCode: "75002",
+          country: "France",
+          latitude: "48.8566",
+          longitude: "2.3522",
+        })
+      );
+    });
+
+    it("clears the coordinates when the city is cleared", async () => {
+      const account = { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null };
+      m.accounts.findOne.mockResolvedValue(account);
+      m.profiles.findOne.mockResolvedValue({ accountId: "a1", city: "Paris", latitude: "1", longitude: "2" });
+      m.groupMembers.find.mockResolvedValue([]);
+
+      await svc.updateAccount("a1", { city: null });
+
+      expect(m.geocoding.geocodeCity).not.toHaveBeenCalled();
+      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ city: null, latitude: null, longitude: null }));
+    });
+
+    it("does not geocode when only non-address profile fields change", async () => {
+      const account = { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null };
+      m.accounts.findOne.mockResolvedValue(account);
+      m.profiles.findOne.mockResolvedValue({ accountId: "a1" });
+      m.groupMembers.find.mockResolvedValue([]);
+
+      await svc.updateAccount("a1", { phone: "+331" });
+
+      expect(m.geocoding.geocodeCity).not.toHaveBeenCalled();
+      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ phone: "+331" }));
+    });
+
+    it("never touches the profile when no profile field is provided", async () => {
+      const account = { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null };
+      m.accounts.findOne.mockResolvedValue(account);
+      m.profiles.findOne.mockResolvedValue(null);
+      m.groupMembers.find.mockResolvedValue([]);
+
+      await svc.updateAccount("a1", { enabled: false });
+
+      expect(m.profiles.save).not.toHaveBeenCalled();
+      expect(m.profiles.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getOverview", () => {
+    it("throws NotFound when the account is absent (via getById)", async () => {
+      m.accounts.findOne.mockResolvedValue(null);
+      await expect(svc.getOverview("x")).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("returns the account with the domains and recipients it owns", async () => {
+      const account = { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null };
+      m.accounts.findOne.mockResolvedValue(account);
+      m.profiles.findOne.mockResolvedValue(null);
+      m.groupMembers.find.mockResolvedValue([]);
+      m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com", active: 1, quota: "0" }]);
+      m.virtualUsers.find.mockResolvedValue([{ id: 9, email: "j@ex.com", domain: "ex.com", active: 0, quota: "100" }]);
+
+      const res = await svc.getOverview("a1");
+
+      expect(m.domains.find).toHaveBeenCalledWith({ where: { ownerId: "a1" }, order: { domain: "ASC" } });
+      expect(m.virtualUsers.find).toHaveBeenCalledWith({ where: { ownerId: "a1" }, order: { email: "ASC" } });
+      expect(res.account.id).toBe("a1");
+      expect(res.domains).toEqual([{ id: 5, domain: "ex.com", active: true, quota: "0" }]);
+      expect(res.recipients).toEqual([{ id: 9, email: "j@ex.com", domain: "ex.com", active: false, quota: "100" }]);
     });
   });
 

@@ -17,7 +17,12 @@ function makeMocks() {
     profiles: { findOne: vi.fn(), create: vi.fn((x) => ({ ...x })), save: vi.fn((x) => Promise.resolve(x)) },
     groups: { findBy: vi.fn().mockResolvedValue([]) },
     groupMembers: { find: vi.fn().mockResolvedValue([]) },
-    refreshTokens: { findOne: vi.fn(), save: vi.fn((x) => Promise.resolve(x)), insert: vi.fn().mockResolvedValue(undefined) },
+    refreshTokens: {
+      findOne: vi.fn(),
+      find: vi.fn().mockResolvedValue([]),
+      save: vi.fn((x) => Promise.resolve(x)),
+      insert: vi.fn().mockResolvedValue(undefined),
+    },
     geocoding: { geocodeCity: vi.fn() },
   };
 }
@@ -124,6 +129,41 @@ describe("JwtAuthService", () => {
       const stored = { revokedAt: null };
       m.refreshTokens.findOne.mockResolvedValueOnce(stored);
       await svc.revoke("raw");
+      expect(stored.revokedAt).toBeInstanceOf(Date);
+      expect(m.refreshTokens.save).toHaveBeenCalledWith(stored);
+    });
+  });
+
+  describe("listSessions", () => {
+    it("returns the caller's tokens newest first with an active flag", async () => {
+      const future = new Date(Date.now() + 100000);
+      const past = new Date(Date.now() - 100000);
+      m.refreshTokens.find.mockResolvedValueOnce([
+        { id: 1, userAgent: "UA", ip: "1.2.3.4", createdAt: past, expiresAt: future, revokedAt: null },
+        { id: 2, userAgent: null, ip: null, createdAt: past, expiresAt: past, revokedAt: null },
+        { id: 3, userAgent: null, ip: null, createdAt: past, expiresAt: future, revokedAt: new Date() },
+      ]);
+      const res = await svc.listSessions("a1");
+      expect(m.refreshTokens.find).toHaveBeenCalledWith({ where: { accountId: "a1" }, order: { createdAt: "DESC" } });
+      expect(res.map((s) => s.active)).toEqual([true, false, false]);
+    });
+  });
+
+  describe("revokeSession", () => {
+    it("404 when the session is unknown or owned by someone else", async () => {
+      m.refreshTokens.findOne.mockResolvedValueOnce(null);
+      await expect(svc.revokeSession("a1", 9)).rejects.toBeInstanceOf(NotFoundException);
+      expect(m.refreshTokens.findOne).toHaveBeenCalledWith({ where: { id: 9, accountId: "a1" } });
+    });
+    it("is idempotent on an already-revoked session", async () => {
+      m.refreshTokens.findOne.mockResolvedValueOnce({ id: 9, revokedAt: new Date() });
+      await expect(svc.revokeSession("a1", 9)).resolves.toEqual({ ok: true });
+      expect(m.refreshTokens.save).not.toHaveBeenCalled();
+    });
+    it("stamps revokedAt on a live session", async () => {
+      const stored = { id: 9, revokedAt: null };
+      m.refreshTokens.findOne.mockResolvedValueOnce(stored);
+      await svc.revokeSession("a1", 9);
       expect(stored.revokedAt).toBeInstanceOf(Date);
       expect(m.refreshTokens.save).toHaveBeenCalledWith(stored);
     });

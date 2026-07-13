@@ -1,11 +1,29 @@
 <script setup lang="ts">
-interface AccountDetail {
-  id: string;
+interface OwnedDomain {
+  id: number;
+  domain: string;
+  active: boolean;
+  quota: string;
+}
+interface OwnedRecipient {
+  id: number;
   email: string;
-  displayName: string | null;
-  isRoot: boolean;
-  enabled: boolean;
-  groups: { id: string; name: string }[];
+  domain: string;
+  active: boolean;
+  quota: string;
+}
+interface AccountOverview {
+  account: {
+    id: string;
+    email: string;
+    displayName: string | null;
+    avatarUrl: string | null;
+    isRoot: boolean;
+    enabled: boolean;
+    groups: { id: string; name: string }[];
+  };
+  domains: OwnedDomain[];
+  recipients: OwnedRecipient[];
 }
 
 definePageMeta({
@@ -20,13 +38,21 @@ const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { isRoot, hasGlobal } = usePermissions();
 
-const account = ref<AccountDetail | null>(null);
+const overview = ref<AccountOverview | null>(null);
 const loading = ref(false);
-const saving = ref(false);
-const form = reactive({ displayName: "", email: "", enabled: true });
 
 const accountId = computed(() => String(route.params.id));
+const account = computed(() => overview.value?.account ?? null);
+const domains = computed(() => overview.value?.domains ?? []);
+const recipients = computed(() => overview.value?.recipients ?? []);
+const activeDomains = computed(() => domains.value.filter((d) => d.active).length);
+const activeRecipients = computed(() => recipients.value.filter((r) => r.active).length);
+const avatarAlt = computed(() => account.value?.displayName || account.value?.email || "?");
+
+const canEdit = computed(() => isRoot.value || hasGlobal("accounts", "edit-account"));
+const canManageGroups = computed(() => isRoot.value || hasGlobal("accounts", "view-account"));
 
 watchEffect(() => {
   setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: account.value?.email ?? "..." }]);
@@ -35,33 +61,11 @@ watchEffect(() => {
 async function load() {
   loading.value = true;
   try {
-    account.value = await call<AccountDetail>(`/accounts/${accountId.value}`);
-    form.displayName = account.value.displayName ?? "";
-    form.email = account.value.email ?? "";
-    form.enabled = account.value.enabled;
+    overview.value = await call<AccountOverview>(`/accounts/${accountId.value}/overview`);
   } catch (e) {
-    toast.add({ title: t("accounts.editPage.toast.loadFailed"), description: (e as Error).message, color: "error" });
+    toast.add({ title: t("accounts.overviewPage.toast.loadFailed"), description: (e as Error).message, color: "error" });
   } finally {
     loading.value = false;
-  }
-}
-
-async function save() {
-  saving.value = true;
-  try {
-    account.value = await call<AccountDetail>(`/accounts/${accountId.value}`, {
-      method: "PATCH",
-      body: {
-        displayName: form.displayName || null,
-        email: form.email || undefined,
-        enabled: form.enabled,
-      },
-    });
-    toast.add({ title: t("accounts.editPage.toast.saved"), color: "success" });
-  } catch (e) {
-    toast.add({ title: t("accounts.editPage.toast.saveFailed"), description: (e as Error).message, color: "error" });
-  } finally {
-    saving.value = false;
   }
 }
 
@@ -71,9 +75,9 @@ onMounted(load);
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <UAlert
-      icon="i-lucide-user-cog"
-      :title="t('accounts.editPage.alertTitle')"
-      :description="t('accounts.editPage.alertDescription')"
+      icon="i-lucide-layout-dashboard"
+      :title="t('accounts.overviewPage.alertTitle')"
+      :description="t('accounts.overviewPage.alertDescription')"
       color="neutral"
       variant="subtle"
     />
@@ -82,32 +86,79 @@ onMounted(load);
       {{ t("accounts.backToList") }}
     </UButton>
 
-    <div v-if="loading && !account" class="flex justify-center py-10">
+    <div v-if="loading && !overview" class="flex justify-center py-10">
       <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
     </div>
 
-    <UCard v-else-if="account">
-      <template #header>
-        <h2 class="font-semibold truncate">{{ t("accounts.editPage.title", { email: account.email }) }}</h2>
-      </template>
+    <template v-else-if="account">
+      <UCard>
+        <div class="flex items-center gap-4 flex-wrap">
+          <UAvatar :src="account.avatarUrl ?? undefined" :alt="avatarAlt" size="3xl" class="shrink-0" />
+          <div class="min-w-0">
+            <p class="text-lg font-semibold truncate">{{ account.email }}</p>
+            <p class="text-sm text-muted truncate">{{ account.displayName || "-" }}</p>
+          </div>
+          <div class="flex flex-wrap gap-1 ml-auto">
+            <UBadge v-if="account.isRoot" color="warning" variant="subtle" icon="i-lucide-shield">
+              {{ t("layout.rootBadge") }}
+            </UBadge>
+            <UBadge :color="account.enabled ? 'success' : 'neutral'" variant="subtle">
+              {{ account.enabled ? t("common.active") : t("common.inactive") }}
+            </UBadge>
+          </div>
+        </div>
+      </UCard>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <DomainStatCard
+          :label="t('nav.domains')"
+          :value="domains.length"
+          :sub="t('accounts.overviewPage.activeCount', { count: activeDomains })"
+          icon="i-lucide-globe"
+          icon-color="text-primary"
+        />
+        <DomainStatCard
+          :label="t('nav.recipients')"
+          :value="recipients.length"
+          :sub="t('accounts.overviewPage.activeCount', { count: activeRecipients })"
+          icon="i-lucide-users"
+          icon-color="text-info"
+        />
+        <DomainStatCard
+          :label="t('nav.groups')"
+          :value="account.groups.length"
+          :sub="t('accounts.overviewPage.stats.groupsSub')"
+          icon="i-lucide-users-round"
+          icon-color="text-success"
+        />
+      </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <UFormField :label="t('accounts.editPage.emailLabel')">
-          <UInput v-model="form.email" type="email" class="w-full" />
-        </UFormField>
-        <UFormField :label="t('accounts.editPage.nameLabel')">
-          <UInput v-model="form.displayName" class="w-full" />
-        </UFormField>
+        <UCard
+          v-if="canEdit"
+          :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+          @click="navigateTo(`/accounts/${accountId}/edit`)"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-user-cog" class="text-primary text-xl" />
+            <span class="font-medium">{{ t("accounts.overviewPage.actions.edit") }}</span>
+            <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+          </div>
+        </UCard>
+        <UCard
+          v-if="canManageGroups && !account.isRoot"
+          :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+          @click="navigateTo(`/accounts/${accountId}/groups`)"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-users-round" class="text-success text-xl" />
+            <span class="font-medium">{{ t("accounts.overviewPage.actions.groups") }}</span>
+            <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+          </div>
+        </UCard>
       </div>
-      <UFormField :label="t('accounts.editPage.enabledLabel')" :description="t('accounts.editPage.enabledHint')" class="mt-4">
-        <USwitch v-model="form.enabled" />
-      </UFormField>
 
-      <template #footer>
-        <div class="flex justify-end">
-          <UButton color="primary" :loading="saving" @click="save">{{ t("accounts.editPage.save") }}</UButton>
-        </div>
-      </template>
-    </UCard>
+      <AccountsOwnedResourcesCards :domains="domains" :recipients="recipients" />
+    </template>
   </div>
 </template>
