@@ -30,6 +30,7 @@ interface AccountSummary {
 const route = useRoute();
 const { t, locale } = useI18n();
 const { call } = useApi();
+const { timeAgo } = useDateTime();
 const { set: setBreadcrumb } = useBreadcrumb();
 
 const account = ref<AccountSummary | null>(null);
@@ -69,6 +70,7 @@ const columns = computed(() => [
   { id: "device", header: t("profile.sessionsPage.colDevice") },
   { id: "ip", header: t("profile.sessionsPage.colIp") },
   { accessorKey: "createdAt", header: header("createdAt", t("profile.sessionsPage.colSignedIn")) },
+  { id: "lastSeen", header: t("accounts.allSessions.colLastSeen") },
   { accessorKey: "expiresAt", header: header("expiresAt", t("profile.sessionsPage.colEnded")) },
   { id: "status", header: t("profile.sessionsPage.colStatus") },
 ]);
@@ -131,7 +133,7 @@ onMounted(loadAccount);
       :sortable-columns="SORTABLE_COLUMNS"
     />
 
-    <ListSkeleton v-if="!historyLoaded" :columns="5" />
+    <ListSkeleton v-if="!historyLoaded" :columns="6" />
 
     <template v-else-if="total === 0">
       <UEmptyState icon="i-lucide-history" :title="t('accounts.allSessions.expiredEmpty')" />
@@ -151,6 +153,11 @@ onMounted(loadAccount);
           </template>
           <template #createdAt-cell="{ row }">
             <span class="text-muted">{{ fmt(row.original.createdAt) }}</span>
+          </template>
+          <template #lastSeen-cell="{ row }">
+            <span class="text-muted" :title="row.original.lastSeenAt ? fmt(row.original.lastSeenAt) : undefined">
+              {{ timeAgo(row.original.lastSeenAt) ?? "-" }}
+            </span>
           </template>
           <template #expiresAt-cell="{ row }">
             <span class="text-muted">{{ fmt(row.original.revokedAt ?? row.original.expiresAt) }}</span>
@@ -183,6 +190,9 @@ onMounted(loadAccount);
               </div>
               <p class="text-xs text-muted truncate">{{ s.ip || t("profile.sessionsPage.unknownIp") }}</p>
               <p class="text-xs text-muted truncate">{{ t("profile.sessionsPage.signedIn") }} {{ fmt(s.createdAt) }}</p>
+              <p class="text-xs text-muted truncate">
+                {{ t("accounts.allSessions.colLastSeen") }}: {{ timeAgo(s.lastSeenAt) ?? "-" }}
+              </p>
             </div>
           </div>
         </UCard>

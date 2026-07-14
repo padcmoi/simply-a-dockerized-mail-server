@@ -13,10 +13,17 @@ interface AccountSessionSummary {
   activeCount: number;
   expiredCount: number;
   online: boolean;
+  // Last-seen among the account's active sessions: the active section's
+  // "seen X ago" once it is no longer online.
+  lastSeenAt: string | null;
+  // Last-seen among the account's expired sessions: the expired table's column.
+  // Kept distinct so an expired row never borrows the active session's time.
+  expiredLastSeenAt: string | null;
 }
 
 const { t } = useI18n();
 const { call } = useApi();
+const { timeAgo } = useDateTime();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: t("accounts.allSessions.label") }]);
@@ -43,11 +50,13 @@ const expiredAccounts = computed(() => overview.value.filter((a) => a.expiredCou
 const EXPIRED_SORTABLE = computed(() => [
   { key: "email", label: t("accounts.allSessions.colAccount") },
   { key: "expiredCount", label: t("accounts.allSessions.colExpired") },
+  { key: "expiredLastSeenAt", label: t("accounts.allSessions.colLastSeen") },
 ]);
 
 const expiredColumns = computed(() => [
   { id: "account", header: header("email", t("accounts.allSessions.colAccount")) },
   { accessorKey: "expiredCount", header: header("expiredCount", t("accounts.allSessions.colExpired")) },
+  { accessorKey: "expiredLastSeenAt", header: header("expiredLastSeenAt", t("accounts.allSessions.colLastSeen")) },
   { id: "actions", header: "" },
 ]);
 
@@ -59,9 +68,15 @@ const expiredFiltered = computed(() => {
       )
     : expiredAccounts.value;
   const dir = expiredSortDir.value === "asc" ? 1 : -1;
-  return [...rows].sort((a, b) =>
-    expiredSortBy.value === "email" ? dir * (a.email ?? "").localeCompare(b.email ?? "") : dir * (a.expiredCount - b.expiredCount)
-  );
+  return [...rows].sort((a, b) => {
+    if (expiredSortBy.value === "email") return dir * (a.email ?? "").localeCompare(b.email ?? "");
+    if (expiredSortBy.value === "expiredLastSeenAt") {
+      const av = a.expiredLastSeenAt ? new Date(a.expiredLastSeenAt).getTime() : 0;
+      const bv = b.expiredLastSeenAt ? new Date(b.expiredLastSeenAt).getTime() : 0;
+      return dir * (av - bv);
+    }
+    return dir * (a.expiredCount - b.expiredCount);
+  });
 });
 const expiredTotal = computed(() => expiredFiltered.value.length);
 const expiredPaged = computed(() => {
@@ -86,6 +101,10 @@ async function load() {
 
 function accountLabel(a: AccountSessionSummary) {
   return a.displayName || a.email || a.accountId;
+}
+
+function lastSeenLabel(a: AccountSessionSummary) {
+  return (a.expiredLastSeenAt ? timeAgo(a.expiredLastSeenAt) : null) ?? "-";
 }
 
 function openActive(a: AccountSessionSummary) {
@@ -141,9 +160,7 @@ onMounted(load);
             <p class="font-medium truncate">{{ accountLabel(a) }}</p>
             <p v-if="a.displayName && a.email" class="text-xs text-muted truncate">{{ a.email }}</p>
           </div>
-          <UBadge v-if="a.online" color="success" variant="solid" icon="i-lucide-circle" class="shrink-0">
-            {{ t("accounts.allSessions.online") }}
-          </UBadge>
+          <SessionPresence :online="a.online" :last-seen-at="a.lastSeenAt" />
           <UBadge color="primary" variant="subtle" class="shrink-0">
             {{ t("accounts.allSessions.activeCount", { count: a.activeCount }) }}
           </UBadge>
@@ -192,6 +209,9 @@ onMounted(load);
                 {{ t("accounts.allSessions.expiredCount", { count: row.original.expiredCount }) }}
               </UBadge>
             </template>
+            <template #expiredLastSeenAt-cell="{ row }">
+              <span class="text-muted">{{ lastSeenLabel(row.original) }}</span>
+            </template>
             <template #actions-cell="{ row }">
               <div class="flex justify-end">
                 <UButton
@@ -222,6 +242,7 @@ onMounted(load);
               <div class="min-w-0 flex-1">
                 <p class="font-medium truncate">{{ accountLabel(a) }}</p>
                 <p v-if="a.displayName && a.email" class="text-xs text-muted truncate">{{ a.email }}</p>
+                <p class="text-xs text-muted truncate">{{ t("accounts.allSessions.colLastSeen") }}: {{ lastSeenLabel(a) }}</p>
               </div>
               <UBadge color="neutral" variant="subtle" size="sm" class="shrink-0">
                 {{ t("accounts.allSessions.expiredCount", { count: a.expiredCount }) }}

@@ -20,6 +20,7 @@ export default {
     expiredCount: "{count} expired",
     colAccount: "Account",
     colExpired: "Expired sessions",
+    colLastSeen: "Last seen",
     viewDetails: "View details",
     toast: {
       loadFailed: "Failed to load the sessions",

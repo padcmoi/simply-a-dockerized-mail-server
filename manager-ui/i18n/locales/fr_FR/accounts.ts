@@ -20,6 +20,7 @@ export default {
     expiredCount: "{count} expirée(s)",
     colAccount: "Compte",
     colExpired: "Sessions expirées",
+    colLastSeen: "Dernier vu",
     viewDetails: "Voir le détail",
     toast: {
       loadFailed: "Échec du chargement des sessions",

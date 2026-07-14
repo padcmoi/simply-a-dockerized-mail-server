@@ -40,6 +40,7 @@ export default {
     expires: "Expires",
     active: "Active",
     online: "Online",
+    lastSeen: "Last seen {time}",
     revoked: "Revoked",
     expired: "Expired",
     revoke: "Revoke",

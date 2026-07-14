@@ -143,9 +143,7 @@ onMounted(loadActive);
               {{ fmt(s.createdAt) }}
             </p>
           </div>
-          <UBadge v-if="s.online" color="success" variant="solid" icon="i-lucide-circle" class="shrink-0">
-            {{ t("profile.sessionsPage.online") }}
-          </UBadge>
+          <SessionPresence :online="s.online" :last-seen-at="s.lastSeenAt" />
           <UBadge color="success" variant="subtle" class="shrink-0">{{ t("profile.sessionsPage.active") }}</UBadge>
           <UButton
             icon="i-lucide-log-out"

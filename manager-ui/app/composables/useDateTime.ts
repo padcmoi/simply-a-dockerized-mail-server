@@ -19,5 +19,22 @@ export function useDateTime() {
     return date.toLocaleString(intlLocale.value, { dateStyle: "medium", timeStyle: "short" });
   }
 
-  return { formatDateTime };
+  // Relative "time ago" for a past timestamp ("3 minutes ago" / "il y a 3
+  // minutes"), localized. Returns null for a missing/unparseable value so the
+  // caller can render nothing. Computed at call time, so it refreshes whenever
+  // its data reloads (the sessions list re-fetches on the shared refresh tick).
+  function timeAgo(iso: string | null | undefined) {
+    if (!iso) return null;
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return null;
+    const diffSec = Math.round((date.getTime() - Date.now()) / 1000);
+    const rtf = new Intl.RelativeTimeFormat(intlLocale.value, { numeric: "auto" });
+    const abs = Math.abs(diffSec);
+    if (abs < 60) return rtf.format(diffSec, "second");
+    if (abs < 3600) return rtf.format(Math.round(diffSec / 60), "minute");
+    if (abs < 86400) return rtf.format(Math.round(diffSec / 3600), "hour");
+    return rtf.format(Math.round(diffSec / 86400), "day");
+  }
+
+  return { formatDateTime, timeAgo };
 }

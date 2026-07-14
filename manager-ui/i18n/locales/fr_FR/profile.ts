@@ -41,6 +41,7 @@ export default {
     expires: "Expire",
     active: "Active",
     online: "En ligne",
+    lastSeen: "Vu {time}",
     revoked: "Révoquée",
     expired: "Expirée",
     revoke: "Révoquer",

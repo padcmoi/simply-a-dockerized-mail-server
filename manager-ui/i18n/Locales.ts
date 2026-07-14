@@ -360,6 +360,7 @@ export interface Locales {
       expires: string;
       active: string;
       online: string;
+      lastSeen: string;
       revoked: string;
       expired: string;
       revoke: string;
@@ -422,6 +423,7 @@ export interface Locales {
       expiredCount: string;
       colAccount: string;
       colExpired: string;
+      colLastSeen: string;
       viewDetails: string;
       toast: {
         loadFailed: string;
