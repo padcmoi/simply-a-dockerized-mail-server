@@ -13,6 +13,10 @@ const { locale } = useI18n();
 // watchers for the whole app lifetime. useSessionRefresh() already calls
 // useWindowFocus() internally, so this single call covers both triggers.
 useSessionRefresh();
+// Periodic data refresh while the window is focused (near real-time), on its own
+// composable (single responsibility). Stops when focus is lost; adapts its cadence
+// to the connection speed.
+useFocusHeartbeat();
 </script>
 
 <template>

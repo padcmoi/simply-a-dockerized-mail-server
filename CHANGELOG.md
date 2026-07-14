@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): a focus-gated heartbeat (`useFocusHeartbeat`) bumps the shared refresh tick on an interval while the tab is focused, so on-screen data stays near real-time; it stops entirely on focus loss and adapts its cadence to the connection (fast by default, far slower on data-saver or 2G/3G) (14-07-2026)
 - refactor(ui): `useWindowFocus` is now a pure, reusable getter (window-focus state plus the route-access check, no watcher or side effect), and `useSessionRefresh` is the single install point that reacts to both window focus and tab visibility through one refresh routine, ending the duplicated focus and visibility logic (14-07-2026)
 - fix(ui): focus and page reload no longer log the user out mid-session; `auth.refreshIfNeeded` only rotates the single-use refresh token when the access token is within two minutes of expiring, so a still-valid token is never consumed by a focus or visibility trigger racing a reload (14-07-2026)
 - fix(ui): token refresh is now single-flight, so concurrent triggers (the useApi 401 retry, window focus, tab visibility) share one `/auth/jwt/refresh` call instead of each POSTing the same single-use, rotate-in-place refresh token. Before, the first caller rotated the token and the rest sent an already-rotated one, got a 401 and were logged out mid-session while actively using the app (14-07-2026)
