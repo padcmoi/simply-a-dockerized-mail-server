@@ -430,6 +430,8 @@ export interface Locales {
         revoked: string;
         revokedAll: string;
         revokeFailed: string;
+        purged: string;
+        purgeFailed: string;
       };
       detail: {
         activeTitle: string;
@@ -437,6 +439,9 @@ export interface Locales {
         revokeAll: string;
         activeCrumb: string;
         expiredCrumb: string;
+        purge: string;
+        purgeConfirmTitle: string;
+        purgeConfirmDescription: string;
       };
     };
     table: {
@@ -867,6 +872,7 @@ export interface Locales {
             "invite-account": string;
             "view-account-sessions": string;
             "revoke-account-sessions": string;
+            "purge-account-sessions": string;
           };
           apiTokens: {
             access: string;

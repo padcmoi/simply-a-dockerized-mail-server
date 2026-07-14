@@ -27,6 +27,8 @@ export default {
       revoked: "Session révoquée",
       revokedAll: "Toutes les sessions révoquées",
       revokeFailed: "Échec de la révocation de la session",
+      purged: "Historique des sessions purgé",
+      purgeFailed: "Échec de la purge de l'historique",
     },
     detail: {
       activeTitle: "Sessions actives de {account}",
@@ -34,6 +36,10 @@ export default {
       revokeAll: "Tout révoquer",
       activeCrumb: "Actives",
       expiredCrumb: "Expirées",
+      purge: "Purger l'historique",
+      purgeConfirmTitle: "Purger toutes les sessions expirées de {account} ?",
+      purgeConfirmDescription:
+        "Supprime définitivement l'historique des sessions expirées et révoquées du compte. Les sessions actives ne sont pas touchées.",
     },
   },
   table: {

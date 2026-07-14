@@ -32,10 +32,16 @@ const { t, locale } = useI18n();
 const { call } = useApi();
 const { timeAgo } = useDateTime();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { bump } = useDataRefresh();
+const { isRoot, hasGlobal } = usePermissions();
+const toast = useToast();
 
 const account = ref<AccountSummary | null>(null);
+const confirmOpen = ref(false);
+const purging = ref(false);
 
 const userId = computed(() => route.params.userId as string);
+const canPurge = computed(() => isRoot.value || hasGlobal("accounts", "purge-account-sessions"));
 const accountLabel = computed(() =>
   account.value ? account.value.displayName || account.value.email || userId.value : userId.value
 );
@@ -52,6 +58,7 @@ const {
   search,
   sortBy,
   sortDir,
+  load,
 } = usePaginatedList<Session>(
   `account-sessions-history-${userId.value}`,
   `/accounts/${userId.value}/sessions/history`,
@@ -113,6 +120,20 @@ async function loadAccount() {
   }
 }
 
+async function purge() {
+  purging.value = true;
+  try {
+    await call(`/accounts/${userId.value}/sessions/history`, { method: "DELETE" });
+    toast.add({ title: t("accounts.allSessions.toast.purged"), color: "success" });
+    await load();
+    bump();
+  } catch (e) {
+    toast.add({ title: t("accounts.allSessions.toast.purgeFailed"), description: (e as Error).message, color: "error" });
+  } finally {
+    purging.value = false;
+  }
+}
+
 onMounted(loadAccount);
 </script>
 
@@ -122,7 +143,21 @@ onMounted(loadAccount);
       {{ t("accounts.allSessions.label") }}
     </UButton>
 
-    <h2 class="font-semibold">{{ t("accounts.allSessions.detail.expiredTitle", { account: accountLabel }) }}</h2>
+    <div class="flex items-center justify-between gap-2">
+      <h2 class="font-semibold">{{ t("accounts.allSessions.detail.expiredTitle", { account: accountLabel }) }}</h2>
+      <UButton
+        v-if="canPurge && total > 0"
+        icon="i-lucide-trash-2"
+        color="error"
+        variant="soft"
+        size="xs"
+        :loading="purging"
+        class="shrink-0"
+        @click="confirmOpen = true"
+      >
+        {{ t("accounts.allSessions.detail.purge") }}
+      </UButton>
+    </div>
 
     <ListToolbar
       v-model:search="search"
@@ -200,5 +235,12 @@ onMounted(loadAccount);
 
       <ListPagination v-model:page="page" :total="total" :limit="limit" />
     </template>
+
+    <ConfirmModal
+      v-model:open="confirmOpen"
+      :title="t('accounts.allSessions.detail.purgeConfirmTitle', { account: accountLabel })"
+      :description="t('accounts.allSessions.detail.purgeConfirmDescription')"
+      @confirm="purge"
+    />
   </div>
 </template>

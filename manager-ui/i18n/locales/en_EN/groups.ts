@@ -158,6 +158,7 @@ export default {
           "invite-account": "Invite an account",
           "view-account-sessions": "View sessions",
           "revoke-account-sessions": "Revoke sessions",
+          "purge-account-sessions": "Purge session history",
         },
         apiTokens: {
           access: "Access",
