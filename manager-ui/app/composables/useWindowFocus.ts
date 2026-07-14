@@ -2,14 +2,12 @@ import { useWindowFocus as useVueWindowFocus } from "@vueuse/core";
 import { useAuthStore } from "~/stores/auth";
 import { usePermissionsStore } from "~/stores/permissions";
 import { useDomainStore } from "~/stores/domain";
-import { useDataRefresh } from "~/composables/useDataRefresh";
 
 export function useWindowFocus() {
   const auth = useAuthStore();
   const perms = usePermissionsStore();
   const domain = useDomainStore();
   const focused = useVueWindowFocus();
-  const { bump } = useDataRefresh();
 
   async function checkCurrentRoute() {
     const route = useRoute();
@@ -37,33 +35,7 @@ export function useWindowFocus() {
     }
   }
 
-  async function onFocusGain() {
-    console.info("[windowFocus] focus gained, verifying session");
-    if (!auth.isAuthenticated) {
-      console.info("[windowFocus] not authenticated, skipping");
-      return;
-    }
-    const ok = await auth.refresh().catch(() => false);
-    console.info("[windowFocus] auth.refresh() →", ok);
-    if (!ok) {
-      console.info("[windowFocus] token invalid → /login");
-      await navigateTo("/login");
-      return;
-    }
-    await Promise.all([auth.fetchProfile(), perms.fetch()]).catch(() => undefined);
-    console.info("[windowFocus] profile + permissions refreshed");
-    await checkCurrentRoute();
-    bump();
-  }
-
-  function onFocusLoss() {
-    console.info("[windowFocus] focus lost");
-  }
-
-  watch(focused, (isFocused) => {
-    if (isFocused) onFocusGain();
-    else onFocusLoss();
-  });
+  watch(focused, (v) => console.info("useWindowFocus", v ? "focus" : "lost"));
 
   return { focused, checkCurrentRoute };
 }

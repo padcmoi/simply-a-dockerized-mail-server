@@ -6,16 +6,14 @@ import { useDataRefresh } from "~/composables/useDataRefresh";
 export function useSessionRefresh() {
   const auth = useAuthStore();
   const perms = usePermissionsStore();
-  const { checkCurrentRoute } = useWindowFocus();
+  const { focused, checkCurrentRoute } = useWindowFocus();
   const { bump } = useDataRefresh();
+  const visibility = useDocumentVisibility();
 
   async function refresh() {
     if (!auth.isAuthenticated) return;
-    console.info("[sessionRefresh] calling auth.refresh()");
-    const ok = await auth.refresh().catch(() => false);
-    console.info("[sessionRefresh] auth.refresh() result:", ok);
+    const ok = await auth.refreshIfNeeded().catch(() => false);
     if (!ok) {
-      console.info("[sessionRefresh] refresh failed → navigating to /login");
       await navigateTo("/login");
       return;
     }
@@ -24,10 +22,11 @@ export function useSessionRefresh() {
     bump();
   }
 
-  const visibility = useDocumentVisibility();
-  console.info("[sessionRefresh] init, current visibility:", visibility.value);
+  watch(focused, (isFocused) => {
+    if (isFocused) refresh();
+  });
+
   watch(visibility, (state) => {
-    console.info("[sessionRefresh] visibilitychange →", state);
     if (state === "visible") refresh();
   });
 
