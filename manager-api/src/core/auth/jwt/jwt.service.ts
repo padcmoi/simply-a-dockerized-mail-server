@@ -251,6 +251,21 @@ export class JwtAuthService {
       .sort((a, b) => b.activeCount - a.activeCount || b.expiredCount - a.expiredCount);
   }
 
+  // Admin "purge history": permanently delete every expired or revoked session
+  // row of one account (the ones the history list shows). Live sessions are left
+  // untouched -- this only clears the trail, it does not sign anyone out. Returns
+  // how many rows were removed.
+  async purgeAccountSessionHistory(accountId: string) {
+    const now = new Date();
+    const res = await this.refreshTokens
+      .createQueryBuilder()
+      .delete()
+      .where("account_id = :accountId", { accountId })
+      .andWhere("(revoked_at IS NOT NULL OR expires_at <= :now)", { now })
+      .execute();
+    return { ok: true, purged: res.affected ?? 0 };
+  }
+
   // Admin "kick all": revoke every still-live session of one account in a single
   // call. The auth guard rejects each revoked session's access token on its next
   // request (the sid claim), so the account is signed out everywhere at once.

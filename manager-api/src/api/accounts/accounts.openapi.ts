@@ -267,3 +267,15 @@ export const RevokeAllAccountSessionsDocs = () =>
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
     ApiResponse({ status: 403, description: "Missing accounts:revoke-account-sessions" })
   );
+
+export const PurgeAccountSessionsDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: String, description: "accounts.id (uuid)" }),
+    ApiOperation({
+      summary: "Permanently delete every expired or revoked session of an account (accounts:purge-account-sessions)",
+      description: "Clears the account's session history in one call. Live sessions are untouched; nobody is signed out.",
+    }),
+    ApiResponse({ status: 200, description: "History purged", schema: { example: { ok: true, purged: 42 } } }),
+    ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
+    ApiResponse({ status: 403, description: "Missing accounts:purge-account-sessions" })
+  );

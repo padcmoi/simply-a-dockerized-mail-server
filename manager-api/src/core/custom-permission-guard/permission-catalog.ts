@@ -49,6 +49,7 @@ export const GLOBAL_ACTIONS = {
     "invite-account",
     "view-account-sessions",
     "revoke-account-sessions",
+    "purge-account-sessions",
   ],
   // An api token acts on behalf of its owner, and every route here is scoped to
   // the caller's own tokens (see ApiTokenController). The actions gate whether

@@ -30,6 +30,7 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
     listSessionHistory: vi.fn(),
     revokeSession: vi.fn(),
     revokeAllActiveSessions: vi.fn(),
+    purgeAccountSessionHistory: vi.fn(),
   };
 
   beforeAll(async () => {
@@ -59,6 +60,7 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
     ["get", "/api/v1/accounts/sessions/overview"],
     ["get", `/api/v1/accounts/${UUID}/sessions/active`],
     ["get", `/api/v1/accounts/${UUID}/sessions/history`],
+    ["delete", `/api/v1/accounts/${UUID}/sessions/history`],
     ["delete", `/api/v1/accounts/${UUID}/sessions/${SESSION_ID}`],
     ["delete", `/api/v1/accounts/${UUID}/sessions`],
   ];
@@ -381,6 +383,28 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
 
     it("400 when :sessionId is not an integer", async () => {
       await api().delete(`/api/v1/accounts/${UUID}/sessions/abc`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+    });
+  });
+
+  describe("DELETE /accounts/:id/sessions/history", () => {
+    it("403 for a user without the permission", async () => {
+      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+    });
+
+    it("403 for a user with only revoke (purge is a distinct action)", async () => {
+      h.cpg.grantGlobal("accounts", "access", "revoke-account-sessions");
+      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+    });
+
+    it("200 for a user granted purge-account-sessions and forwards the id", async () => {
+      h.cpg.grantGlobal("accounts", "access", "purge-account-sessions");
+      jwtAuth.purgeAccountSessionHistory.mockResolvedValueOnce({ ok: true, purged: 42 });
+      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
+      expect(jwtAuth.purgeAccountSessionHistory).toHaveBeenCalledWith(UUID);
+    });
+
+    it("400 when :id is not a uuid", async () => {
+      await api().delete("/api/v1/accounts/not-a-uuid/sessions/history").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
     });
   });
 

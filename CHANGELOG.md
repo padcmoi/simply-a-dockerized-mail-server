@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api): administrators can purge an account's session history in one call. `DELETE /accounts/:id/sessions/history` permanently deletes every expired or revoked session row of the account (live sessions untouched, nobody signed out), gated by a new `accounts:purge-account-sessions` action distinct from revoke (14-07-2026)
 - feat(ui): active sessions now show "last seen X ago" once they drop off "online" (both the profile page and the admin views, via a shared SessionPresence component), and the admin sessions view gains a sortable "Last seen" column on the expired-accounts table plus a per-session last-seen on the expired detail page, all as relative time with the exact timestamp on hover (14-07-2026)
 - feat(api): the account sessions overview now reports last-seen per bucket, the most recent among an account's active sessions and, separately, among its expired ones, so the UI can show when an account was last seen without ever mixing an active session's time into an expired row (14-07-2026)
 - feat(ui): a Session management card on the accounts page opens an admin sessions view grouped by account. Active sessions show per account as a list with online badges and counts, expired sessions as a searchable, paginated table; each account drills into a dedicated active or expired page (kick a single device or all at once), with the mode shown in the breadcrumb. The redundant per-page refresh button is dropped in favour of the global header one (14-07-2026)

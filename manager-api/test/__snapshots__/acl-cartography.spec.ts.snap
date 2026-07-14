@@ -5,6 +5,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "DELETE /api/v1/accounts/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,revoke-account]",
   "DELETE /api/v1/accounts/:id/sessions  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,revoke-account-sessions]",
   "DELETE /api/v1/accounts/:id/sessions/:sessionId  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,revoke-account-sessions]",
+  "DELETE /api/v1/accounts/:id/sessions/history  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,purge-account-sessions]",
   "DELETE /api/v1/admin/domains/:domainId  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:domains[access] superadmin[access,delete-any-domain]",
   "DELETE /api/v1/api-tokens/:id  ::  auth=JWT+ApiToken guards=[GlobalPermissionGuard] global:api-tokens[access,delete-api-token]",
   "DELETE /api/v1/auth/jwt/me/sessions/:id  ::  auth=ApiToken+JWT guards=[]",

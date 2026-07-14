@@ -29,6 +29,7 @@ import {
   GetInvitationDocs,
   ListAccountNamesDocs,
   ListAccountsDocs,
+  PurgeAccountSessionsDocs,
   RevokeAccountDocs,
   RevokeAccountSessionDocs,
   RevokeAllAccountSessionsDocs,
@@ -113,6 +114,15 @@ export class AccountsController {
     @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery
   ) {
     return this.jwtAuth.listSessionHistory(id, query);
+  }
+
+  // Declared before ":id/sessions/:sessionId" so "history" is not parsed as a
+  // session id (ParseIntPipe would 400 on it).
+  @Delete(":id/sessions/history")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "purge-account-sessions"] }])
+  @PurgeAccountSessionsDocs()
+  purgeAccountSessions(@Param("id", ParseUUIDPipe) id: string) {
+    return this.jwtAuth.purgeAccountSessionHistory(id);
   }
 
   @Delete(":id/sessions/:sessionId")
