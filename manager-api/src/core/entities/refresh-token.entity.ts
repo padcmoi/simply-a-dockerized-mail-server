@@ -29,6 +29,11 @@ export class RefreshToken {
   @Column({ name: "revoked_at", type: "datetime", nullable: true })
   revokedAt!: Date | null;
 
+  // Last time the session was used (the auth guard touches it on each request,
+  // throttled). A session seen within the last minute is "online now".
+  @Column({ name: "last_seen_at", type: "datetime", nullable: true })
+  lastSeenAt!: Date | null;
+
   @Column({
     name: "created_at",
     type: "datetime",

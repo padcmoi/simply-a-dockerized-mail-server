@@ -6,7 +6,10 @@ interface Session {
   createdAt: string;
   expiresAt: string;
   revokedAt: string | null;
+  lastSeenAt: string | null;
   active: boolean;
+  // Seen within the last minute: currently in use, not just valid.
+  online: boolean;
 }
 
 definePageMeta({});
@@ -54,6 +57,8 @@ const columns = computed(() => [
   { accessorKey: "expiresAt", header: header("expiresAt", t("profile.sessionsPage.colEnded")) },
   { id: "status", header: t("profile.sessionsPage.colStatus") },
 ]);
+
+watch(useDataRefresh().tick, () => loadActive());
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString(locale.value.replace(/_/g, "-"));
@@ -138,6 +143,9 @@ onMounted(loadActive);
               {{ fmt(s.createdAt) }}
             </p>
           </div>
+          <UBadge v-if="s.online" color="success" variant="solid" icon="i-lucide-circle" class="shrink-0">
+            {{ t("profile.sessionsPage.online") }}
+          </UBadge>
           <UBadge color="success" variant="subtle" class="shrink-0">{{ t("profile.sessionsPage.active") }}</UBadge>
           <UButton
             icon="i-lucide-log-out"

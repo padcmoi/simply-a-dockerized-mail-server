@@ -165,6 +165,10 @@ export class JwtAuthService {
   }
 
   private toSessionDto(r: RefreshToken, active: boolean) {
+    // "online now": an active session touched within the last minute is currently
+    // in use by someone, as opposed to merely valid but idle. The guard refreshes
+    // last_seen_at on each request (throttled), so 60s gives ~1 minute precision.
+    const online = active && !!r.lastSeenAt && Date.now() - new Date(r.lastSeenAt).getTime() <= 60_000;
     return {
       id: r.id,
       userAgent: r.userAgent,
@@ -172,7 +176,9 @@ export class JwtAuthService {
       createdAt: r.createdAt,
       expiresAt: r.expiresAt,
       revokedAt: r.revokedAt,
+      lastSeenAt: r.lastSeenAt,
       active,
+      online,
     };
   }
 

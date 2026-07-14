@@ -39,6 +39,7 @@ export default {
     signedIn: "Signed in",
     expires: "Expires",
     active: "Active",
+    online: "Online",
     revoked: "Revoked",
     expired: "Expired",
     revoke: "Revoke",

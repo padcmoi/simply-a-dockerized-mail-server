@@ -174,6 +174,16 @@ describe("JwtAuthService", () => {
       expect(arg.order).toEqual({ createdAt: "DESC" });
       expect(res).toEqual([expect.objectContaining({ id: 1, active: true })]);
     });
+    it("flags a session online when it was last seen within the last minute", async () => {
+      const future = new Date(Date.now() + 100000);
+      m.refreshTokens.find.mockResolvedValueOnce([
+        { id: 1, expiresAt: future, revokedAt: null, lastSeenAt: new Date(Date.now() - 10_000) },
+        { id: 2, expiresAt: future, revokedAt: null, lastSeenAt: new Date(Date.now() - 120_000) },
+        { id: 3, expiresAt: future, revokedAt: null, lastSeenAt: null },
+      ]);
+      const res = await svc.listActiveSessions("a1");
+      expect(res.map((s) => s.online)).toEqual([true, false, false]);
+    });
   });
 
   describe("listSessionHistory", () => {

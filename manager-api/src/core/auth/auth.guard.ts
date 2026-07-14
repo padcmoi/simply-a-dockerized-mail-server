@@ -26,7 +26,15 @@ export class CombinedAuthGuard implements CanActivate {
   private async sessionIsLive(payload: JwtPayload) {
     if (payload.sid === undefined) return true;
     const session = await this.refreshTokens.findOne({ where: { id: payload.sid } });
-    return !!session && !session.revokedAt && session.expiresAt > new Date();
+    const now = new Date();
+    if (!session || session.revokedAt || session.expiresAt <= now) return false;
+    // Mark the session as seen, at most once every 30s. That keeps the "online
+    // now" flag (last seen within a minute) accurate to ~1 minute without writing
+    // on every single request. Fire-and-forget: never delay the request for it.
+    if (!session.lastSeenAt || now.getTime() - session.lastSeenAt.getTime() > 30_000) {
+      void this.refreshTokens.update(session.id, { lastSeenAt: now }).catch(() => undefined);
+    }
+    return true;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

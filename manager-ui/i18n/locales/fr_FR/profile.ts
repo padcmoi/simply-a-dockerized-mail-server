@@ -40,6 +40,7 @@ export default {
     signedIn: "Connexion",
     expires: "Expire",
     active: "Active",
+    online: "En ligne",
     revoked: "Révoquée",
     expired: "Expirée",
     revoke: "Révoquer",

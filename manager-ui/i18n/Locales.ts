@@ -357,6 +357,7 @@ export interface Locales {
       signedIn: string;
       expires: string;
       active: string;
+      online: string;
       revoked: string;
       expired: string;
       revoke: string;
