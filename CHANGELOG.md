@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api): the account sessions overview now reports last-seen per bucket, the most recent among an account's active sessions and, separately, among its expired ones, so the UI can show when an account was last seen without ever mixing an active session's time into an expired row (14-07-2026)
 - feat(ui): a Session management card on the accounts page opens an admin sessions view grouped by account. Active sessions show per account as a list with online badges and counts, expired sessions as a searchable, paginated table; each account drills into a dedicated active or expired page (kick a single device or all at once), with the mode shown in the breadcrumb. The redundant per-page refresh button is dropped in favour of the global header one (14-07-2026)
 - feat(api): administrators can view and revoke any account's sessions. A per-account overview (`GET /accounts/sessions/overview`) reports each account's active and expired session counts plus online state, per-account active and paginated-history endpoints drill in, and a single session or all of an account's sessions can be revoked, signing those devices out on their next request via the `sid` claim. Two new ACL actions gate it: `accounts:view-account-sessions` and `accounts:revoke-account-sessions` (14-07-2026)
 - style(ui): tidy blank-line spacing in the auth layout (14-07-2026)

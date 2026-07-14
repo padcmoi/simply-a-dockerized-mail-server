@@ -203,6 +203,8 @@ const sessionsOverviewExample = {
   activeCount: 3,
   expiredCount: 12,
   online: true,
+  lastSeenAt: "2026-07-14T09:31:00.000Z",
+  expiredLastSeenAt: "2026-07-13T21:04:00.000Z",
 };
 
 export const SessionsOverviewDocs = () =>

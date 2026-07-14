@@ -208,10 +208,21 @@ export class JwtAuthService {
       .select("t.account_id", "accountId")
       .addSelect("SUM(CASE WHEN t.revoked_at IS NULL AND t.expires_at > :now THEN 1 ELSE 0 END)", "activeCount")
       .addSelect("SUM(CASE WHEN t.revoked_at IS NOT NULL OR t.expires_at <= :now THEN 1 ELSE 0 END)", "expiredCount")
+      // Last-seen is kept per bucket, never mixed: the active bucket feeds the
+      // active section's "seen X ago", the expired bucket feeds the expired
+      // table's column. An account's expired last-seen must not borrow its
+      // active session's.
       .addSelect("MAX(CASE WHEN t.revoked_at IS NULL AND t.expires_at > :now THEN t.last_seen_at END)", "lastActiveSeenAt")
+      .addSelect("MAX(CASE WHEN t.revoked_at IS NOT NULL OR t.expires_at <= :now THEN t.last_seen_at END)", "lastExpiredSeenAt")
       .setParameter("now", now)
       .groupBy("t.account_id")
-      .getRawMany<{ accountId: string; activeCount: string; expiredCount: string; lastActiveSeenAt: string | null }>();
+      .getRawMany<{
+        accountId: string;
+        activeCount: string;
+        expiredCount: string;
+        lastActiveSeenAt: string | null;
+        lastExpiredSeenAt: string | null;
+      }>();
 
     const accountIds = raw.map((r) => r.accountId);
     if (!accountIds.length) return [];
@@ -230,6 +241,12 @@ export class JwtAuthService {
         activeCount: Number(r.activeCount),
         expiredCount: Number(r.expiredCount),
         online: !!r.lastActiveSeenAt && now.getTime() - new Date(r.lastActiveSeenAt).getTime() <= 60_000,
+        // Active bucket: last-seen among the account's still-live sessions, for
+        // the active section's "seen X ago" once it drops off "online".
+        lastSeenAt: r.lastActiveSeenAt ? new Date(r.lastActiveSeenAt).toISOString() : null,
+        // Expired bucket: last-seen among the account's expired/revoked sessions,
+        // for the expired table's column (never the active session's).
+        expiredLastSeenAt: r.lastExpiredSeenAt ? new Date(r.lastExpiredSeenAt).toISOString() : null,
       }))
       .sort((a, b) => b.activeCount - a.activeCount || b.expiredCount - a.expiredCount);
   }
