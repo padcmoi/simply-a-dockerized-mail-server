@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- style(ui): tidy blank-line spacing in the auth layout (14-07-2026)
 - refactor(ui): the default layout is now pure assembly; the sidebar moved to `AppNavigation`, the top bar to `AppHeader`, their shared open state to a `useSidebar` composable, and the content region is wrapped in the semantic `UMain`. `AppHeader` carries a new `HeaderRefreshButton` that bumps the shared refresh tick and whose icon spins on every bump from any source, and it hides itself when the window loses focus (14-07-2026)
 - feat(ui): a focus-gated heartbeat (`useFocusHeartbeat`) bumps the shared refresh tick on an interval while the tab is focused, so on-screen data stays near real-time; it stops entirely on focus loss and adapts its cadence to the connection (fast by default, far slower on data-saver or 2G/3G) (14-07-2026)
 - refactor(ui): `useWindowFocus` is now a pure, reusable getter (window-focus state plus the route-access check, no watcher or side effect), and `useSessionRefresh` is the single install point that reacts to both window focus and tab visibility through one refresh routine, ending the duplicated focus and visibility logic (14-07-2026)
