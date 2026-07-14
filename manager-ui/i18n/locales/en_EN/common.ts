@@ -23,6 +23,7 @@ export default {
   lastActivity: "Last activity",
   lastModification: "Last modification",
   cancel: "Cancel",
+  close: "Close",
   back: "Back",
   clear: "Clear",
   apply: "Apply",

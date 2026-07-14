@@ -88,6 +88,7 @@ export interface Locales {
     // which labels dovecot's own delivery counter on the quotas page.
     lastModification: string;
     cancel: string;
+    close: string;
     back: string;
     clear: string;
     apply: string;
@@ -407,6 +408,35 @@ export interface Locales {
     alertDescription: string;
     inviteButton: string;
     backToList: string;
+    allSessions: {
+      label: string;
+      hint: string;
+      alertTitle: string;
+      alertDescription: string;
+      activeTitle: string;
+      activeEmpty: string;
+      expiredTitle: string;
+      expiredEmpty: string;
+      online: string;
+      activeCount: string;
+      expiredCount: string;
+      colAccount: string;
+      colExpired: string;
+      viewDetails: string;
+      toast: {
+        loadFailed: string;
+        revoked: string;
+        revokedAll: string;
+        revokeFailed: string;
+      };
+      detail: {
+        activeTitle: string;
+        expiredTitle: string;
+        revokeAll: string;
+        activeCrumb: string;
+        expiredCrumb: string;
+      };
+    };
     table: {
       username: string;
       name: string;
@@ -833,6 +863,8 @@ export interface Locales {
             "edit-account": string;
             "revoke-account": string;
             "invite-account": string;
+            "view-account-sessions": string;
+            "revoke-account-sessions": string;
           };
           apiTokens: {
             access: string;

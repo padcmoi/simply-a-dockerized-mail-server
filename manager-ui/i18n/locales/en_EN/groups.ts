@@ -156,6 +156,8 @@ export default {
           "edit-account": "Edit an account",
           "revoke-account": "Revoke an account",
           "invite-account": "Invite an account",
+          "view-account-sessions": "View sessions",
+          "revoke-account-sessions": "Revoke sessions",
         },
         apiTokens: {
           access: "Access",

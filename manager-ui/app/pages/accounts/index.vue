@@ -52,6 +52,7 @@ const { groups } = useGroups();
 const canInvite = computed(() => isRoot.value || hasGlobal("accounts", "invite-account"));
 const canEditAccount = computed(() => isRoot.value || hasGlobal("accounts", "view-account"));
 const canRevokeAccount = computed(() => isRoot.value || hasGlobal("accounts", "revoke-account"));
+const canViewSessions = computed(() => isRoot.value || hasGlobal("accounts", "view-account-sessions"));
 
 const groupInviteOptions = computed(() => groups.value.map((g) => ({ label: g.name, value: g.id })));
 
@@ -118,8 +119,17 @@ async function onDeleteConfirmed() {
       variant="subtle"
     />
 
-    <div class="flex items-center justify-between gap-2">
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="() => load()" />
+    <ProfileActionCard
+      v-if="canViewSessions"
+      icon="i-lucide-monitor"
+      icon-color="text-warning"
+      :label="t('accounts.allSessions.label')"
+      :hint="t('accounts.allSessions.hint')"
+      to="/accounts/sessions"
+      class="w-full sm:max-w-md"
+    />
+
+    <div class="flex items-center justify-end gap-2">
       <UButton
         v-if="canInvite"
         icon="i-lucide-mail-plus"

@@ -23,6 +23,7 @@ export default {
   lastActivity: "Dernière activité",
   lastModification: "Dernière modification",
   cancel: "Annuler",
+  close: "Fermer",
   back: "Retour",
   clear: "Effacer",
   apply: "Appliquer",

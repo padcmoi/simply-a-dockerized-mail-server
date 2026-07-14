@@ -158,6 +158,8 @@ export default {
           "edit-account": "Modifier un compte",
           "revoke-account": "Révoquer un compte",
           "invite-account": "Inviter un compte",
+          "view-account-sessions": "Voir les sessions",
+          "revoke-account-sessions": "Révoquer des sessions",
         },
         apiTokens: {
           access: "Accès",
