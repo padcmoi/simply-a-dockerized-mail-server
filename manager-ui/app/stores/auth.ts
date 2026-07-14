@@ -44,6 +44,16 @@ export interface UpdateProfileInput {
 // rotation. refresh() only ever runs on the client, so a module-level var is safe.
 let refreshInFlight: Promise<boolean> | null = null;
 
+// Proactive, focus-driven refresh must NOT rotate a still-valid access token.
+// Because the refresh token is single-use (rotates in place), rotating it on every
+// window focus / tab visibility gain -- while the access token is still valid --
+// raced with page reloads: an F5 landing between the server rotating the token and
+// the store persisting the new one replayed a just-consumed token and logged the
+// user out. So focus/visibility only rotate when the access token is actually near
+// expiry; the 401 retry in useApi stays the backstop for one that expired unseen.
+// TTL is 15 min, so a 2 min buffer keeps a comfortable margin.
+const ACCESS_TOKEN_REFRESH_BUFFER_MS = 120_000;
+
 export const useAuthStore = defineStore("auth", {
   state: () => ({ session: null as Session | null }),
   getters: { isAuthenticated: (state) => state.session !== null },
@@ -128,6 +138,23 @@ export const useAuthStore = defineStore("auth", {
         }
       })();
       return refreshInFlight;
+    },
+    // True when the access token is missing its expiry or is within the buffer of
+    // expiring. Focus/visibility handlers gate their rotation on this so a token
+    // with plenty of life left is left untouched (see ACCESS_TOKEN_REFRESH_BUFFER_MS).
+    accessTokenExpiresSoon() {
+      if (!this.session) return false;
+      const expiresAt = Date.parse(this.session.expiresAt);
+      if (Number.isNaN(expiresAt)) return true;
+      return expiresAt - Date.now() <= ACCESS_TOKEN_REFRESH_BUFFER_MS;
+    },
+    // Focus/visibility entry point: rotate only when the access token is near
+    // expiry, otherwise report success without touching the single-use refresh
+    // token. Returns false only when there is no session at all.
+    async refreshIfNeeded() {
+      if (!this.session) return false;
+      if (!this.accessTokenExpiresSoon()) return true;
+      return this.refresh();
     },
     authHeaders() {
       // Always return a `Record<string, string>`-typed object so $fetch's

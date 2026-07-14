@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- fix(ui): focus and page reload no longer log the user out mid-session; `auth.refreshIfNeeded` only rotates the single-use refresh token when the access token is within two minutes of expiring, so a still-valid token is never consumed by a focus or visibility trigger racing a reload (14-07-2026)
 - fix(ui): token refresh is now single-flight, so concurrent triggers (the useApi 401 retry, window focus, tab visibility) share one `/auth/jwt/refresh` call instead of each POSTing the same single-use, rotate-in-place refresh token. Before, the first caller rotated the token and the rest sent an already-rotated one, got a 401 and were logged out mid-session while actively using the app (14-07-2026)
 - feat(api): sessions now report whether they are online right now, not just valid. A new nullable `last_seen_at` column on `refresh_tokens` (migration 1784020149947) is touched by the auth guard on each request, throttled to at most once every 30 seconds, and `GET /auth/jwt/me/sessions` exposes an `online` flag (seen within the last minute) so a device idle for over a minute reads as active but offline (14-07-2026)
 - feat(ui): the profile sessions page shows a green Online badge on the active sessions currently in use, and refreshes the active list (so those badges stay live) whenever the window regains focus, via the shared refresh tick, instead of only on a full reload (14-07-2026)

@@ -189,3 +189,40 @@ describe("auth store refresh", () => {
     expect(auth.session).toBeNull();
   });
 });
+
+describe("auth store refreshIfNeeded", () => {
+  it("returns false and never fetches without a session", async () => {
+    const fetchMock = stubFetch();
+    const auth = useAuthStore();
+    expect(await auth.refreshIfNeeded()).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("leaves a still-valid access token untouched (no rotation, no fetch)", async () => {
+    const fetchMock = stubFetch();
+    const auth = useAuthStore();
+    // Expiry far in the future -> well outside the refresh buffer.
+    auth.session = { accessToken: "at", refreshToken: "rt", expiresAt: "2099-01-01", email: "e@x.io" };
+    expect(await auth.refreshIfNeeded()).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(auth.session?.accessToken).toBe("at");
+    expect(auth.session?.refreshToken).toBe("rt");
+  });
+
+  it("rotates when the access token is already expired", async () => {
+    const fetchMock = stubFetch();
+    const auth = useAuthStore();
+    auth.session = { accessToken: "at", refreshToken: "rt", expiresAt: "2000-01-01", email: "e@x.io" };
+    expect(await auth.refreshIfNeeded()).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/jwt/refresh", expect.objectContaining({ method: "POST" }));
+    expect(auth.session?.accessToken).toBe("at2");
+  });
+
+  it("rotates when the expiry is unparseable (fails safe)", async () => {
+    const fetchMock = stubFetch();
+    const auth = useAuthStore();
+    auth.session = { accessToken: "at", refreshToken: "rt", expiresAt: "not-a-date", email: "e@x.io" };
+    expect(await auth.refreshIfNeeded()).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith("/api/v1/auth/jwt/refresh", expect.objectContaining({ method: "POST" }));
+  });
+});
