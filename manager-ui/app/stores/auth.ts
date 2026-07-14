@@ -36,6 +36,14 @@ export interface UpdateProfileInput {
   country?: string | null;
 }
 
+// Single-flight guard for token refresh (client-only). The refresh token rotates
+// in place (single-use), so when several triggers -- the useApi 401 retry, window
+// focus, the visibility change, the focus heartbeat -- call refresh() at once, the
+// first rotates the token and the rest POST an already-rotated one, get a 401 and
+// log the user out. Sharing one in-flight promise makes them all await the same
+// rotation. refresh() only ever runs on the client, so a module-level var is safe.
+let refreshInFlight: Promise<boolean> | null = null;
+
 export const useAuthStore = defineStore("auth", {
   state: () => ({ session: null as Session | null }),
   getters: { isAuthenticated: (state) => state.session !== null },
@@ -96,22 +104,30 @@ export const useAuthStore = defineStore("auth", {
       usePermissionsStore().$reset();
     },
     async refresh() {
-      if (!this.session) return false;
-      try {
-        const data = await $fetch<{
-          accessToken: string;
-          refreshToken: string;
-          expiresAt: string;
-        }>("/api/v1/auth/jwt/refresh", {
-          method: "POST",
-          body: { refreshToken: this.session.refreshToken },
-        });
-        this.session = { ...this.session, ...data };
-        return true;
-      } catch {
-        this.session = null;
-        return false;
-      }
+      const current = this.session;
+      if (!current) return false;
+      // Coalesce concurrent callers onto one in-flight /refresh (see refreshInFlight).
+      if (refreshInFlight) return refreshInFlight;
+      refreshInFlight = (async () => {
+        try {
+          const data = await $fetch<{
+            accessToken: string;
+            refreshToken: string;
+            expiresAt: string;
+          }>("/api/v1/auth/jwt/refresh", {
+            method: "POST",
+            body: { refreshToken: current.refreshToken },
+          });
+          this.session = { ...(this.session ?? current), ...data };
+          return true;
+        } catch {
+          this.session = null;
+          return false;
+        } finally {
+          refreshInFlight = null;
+        }
+      })();
+      return refreshInFlight;
     },
     authHeaders() {
       // Always return a `Record<string, string>`-typed object so $fetch's
