@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api): administrators can view and revoke any account's sessions. A per-account overview (`GET /accounts/sessions/overview`) reports each account's active and expired session counts plus online state, per-account active and paginated-history endpoints drill in, and a single session or all of an account's sessions can be revoked, signing those devices out on their next request via the `sid` claim. Two new ACL actions gate it: `accounts:view-account-sessions` and `accounts:revoke-account-sessions` (14-07-2026)
 - style(ui): tidy blank-line spacing in the auth layout (14-07-2026)
 - refactor(ui): the default layout is now pure assembly; the sidebar moved to `AppNavigation`, the top bar to `AppHeader`, their shared open state to a `useSidebar` composable, and the content region is wrapped in the semantic `UMain`. `AppHeader` carries a new `HeaderRefreshButton` that bumps the shared refresh tick and whose icon spins on every bump from any source, and it hides itself when the window loses focus (14-07-2026)
 - feat(ui): a focus-gated heartbeat (`useFocusHeartbeat`) bumps the shared refresh tick on an interval while the tab is focused, so on-screen data stays near real-time; it stops entirely on focus loss and adapts its cadence to the connection (fast by default, far slower on data-saver or 2G/3G) (14-07-2026)

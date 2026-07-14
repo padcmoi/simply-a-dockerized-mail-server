@@ -196,6 +196,55 @@ export class JwtAuthService {
     return { ok: true };
   }
 
+  // Admin overview: one row per account that has any session, with its active
+  // and expired/revoked counts and whether an active session is online now
+  // (an active session seen within the last minute). Feeds the grouped-by-account
+  // sessions page; drilling into an account uses listActiveSessions /
+  // listSessionHistory below, which are already scoped by accountId.
+  async listSessionsOverview() {
+    const now = new Date();
+    const raw = await this.refreshTokens
+      .createQueryBuilder("t")
+      .select("t.account_id", "accountId")
+      .addSelect("SUM(CASE WHEN t.revoked_at IS NULL AND t.expires_at > :now THEN 1 ELSE 0 END)", "activeCount")
+      .addSelect("SUM(CASE WHEN t.revoked_at IS NOT NULL OR t.expires_at <= :now THEN 1 ELSE 0 END)", "expiredCount")
+      .addSelect("MAX(CASE WHEN t.revoked_at IS NULL AND t.expires_at > :now THEN t.last_seen_at END)", "lastActiveSeenAt")
+      .setParameter("now", now)
+      .groupBy("t.account_id")
+      .getRawMany<{ accountId: string; activeCount: string; expiredCount: string; lastActiveSeenAt: string | null }>();
+
+    const accountIds = raw.map((r) => r.accountId);
+    if (!accountIds.length) return [];
+    const [accountRows, profileRows] = await Promise.all([
+      this.accounts.findBy({ id: In(accountIds) }),
+      this.profiles.find({ where: { accountId: In(accountIds) } }),
+    ]);
+    const emailById = new Map(accountRows.map((a) => [a.id, a.email]));
+    const nameById = new Map(profileRows.map((p) => [p.accountId, p.displayName]));
+
+    return raw
+      .map((r) => ({
+        accountId: r.accountId,
+        email: emailById.get(r.accountId) ?? null,
+        displayName: nameById.get(r.accountId) ?? null,
+        activeCount: Number(r.activeCount),
+        expiredCount: Number(r.expiredCount),
+        online: !!r.lastActiveSeenAt && now.getTime() - new Date(r.lastActiveSeenAt).getTime() <= 60_000,
+      }))
+      .sort((a, b) => b.activeCount - a.activeCount || b.expiredCount - a.expiredCount);
+  }
+
+  // Admin "kick all": revoke every still-live session of one account in a single
+  // call. The auth guard rejects each revoked session's access token on its next
+  // request (the sid claim), so the account is signed out everywhere at once.
+  async revokeAllActiveSessions(accountId: string) {
+    const res = await this.refreshTokens.update(
+      { accountId, revokedAt: IsNull(), expiresAt: MoreThan(new Date()) },
+      { revokedAt: new Date() }
+    );
+    return { ok: true, revoked: res.affected ?? 0 };
+  }
+
   async updateProfile(accountId: string, input: UpdateProfileDto): Promise<ProfileResponse> {
     const account = await this.accounts.findOne({ where: { id: accountId } });
     if (!account) throw new NotFoundException("Account not found");

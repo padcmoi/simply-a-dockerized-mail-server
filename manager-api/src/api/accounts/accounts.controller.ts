@@ -1,12 +1,28 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import type { Request } from "express";
 import { paginationQuerySchema, type PaginationQuery } from "../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
 import { Public } from "../../core/auth/auth.decorator";
 import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global-permission.guard";
 import { RequireGlobalPermissions } from "../../core/custom-permission-guard/require-permissions.decorator";
+import { JwtAuthService } from "../../core/auth/jwt/jwt.service";
 import {
   AcceptInvitationDocs,
+  AccountActiveSessionsDocs,
+  AccountSessionHistoryDocs,
   AccountsApi,
   GetAccountDocs,
   GetAccountOverviewDocs,
@@ -14,7 +30,10 @@ import {
   ListAccountNamesDocs,
   ListAccountsDocs,
   RevokeAccountDocs,
+  RevokeAccountSessionDocs,
+  RevokeAllAccountSessionsDocs,
   SendInvitationDocs,
+  SessionsOverviewDocs,
   UpdateAccountDocs,
 } from "./accounts.openapi";
 import { AccountsService } from "./accounts.service";
@@ -42,7 +61,14 @@ type AuthedRequest = Request & {
 @Controller({ path: "accounts", version: "1" })
 @UseGuards(GlobalPermissionGuard)
 export class AccountsController {
-  constructor(private readonly svc: AccountsService) {}
+  constructor(
+    private readonly svc: AccountsService,
+    // Session data + revocation live in JwtAuthService (RefreshToken repo, DTO,
+    // online logic); reuse it here for the admin, per-account session views
+    // instead of duplicating that logic. Its methods are already scoped by the
+    // accountId we pass, so an admin acts on the target member's sessions.
+    private readonly jwtAuth: JwtAuthService
+  ) {}
 
   // Usernames only, no email/roles: this is what the group member picker reads,
   // hence `groups` depending on it (see permission-catalog.ts).
@@ -61,6 +87,46 @@ export class AccountsController {
   @ListAccountsDocs()
   list(@Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
     return this.svc.list(query);
+  }
+
+  // Session routes are declared before the ":id" routes: "sessions/overview"
+  // would otherwise be captured by ":id/overview" (and fail the UUID parse).
+  @Get("sessions/overview")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "view-account-sessions"] }])
+  @SessionsOverviewDocs()
+  sessionsOverview() {
+    return this.jwtAuth.listSessionsOverview();
+  }
+
+  @Get(":id/sessions/active")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "view-account-sessions"] }])
+  @AccountActiveSessionsDocs()
+  accountActiveSessions(@Param("id", ParseUUIDPipe) id: string) {
+    return this.jwtAuth.listActiveSessions(id);
+  }
+
+  @Get(":id/sessions/history")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "view-account-sessions"] }])
+  @AccountSessionHistoryDocs()
+  accountSessionHistory(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery
+  ) {
+    return this.jwtAuth.listSessionHistory(id, query);
+  }
+
+  @Delete(":id/sessions/:sessionId")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "revoke-account-sessions"] }])
+  @RevokeAccountSessionDocs()
+  revokeAccountSession(@Param("id", ParseUUIDPipe) id: string, @Param("sessionId", ParseIntPipe) sessionId: number) {
+    return this.jwtAuth.revokeSession(id, sessionId);
+  }
+
+  @Delete(":id/sessions")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "revoke-account-sessions"] }])
+  @RevokeAllAccountSessionsDocs()
+  revokeAllAccountSessions(@Param("id", ParseUUIDPipe) id: string) {
+    return this.jwtAuth.revokeAllActiveSessions(id);
   }
 
   @Get(":id")

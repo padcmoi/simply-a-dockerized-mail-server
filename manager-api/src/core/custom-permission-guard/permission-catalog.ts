@@ -36,7 +36,20 @@ export const GLOBAL_ACTIONS = {
   // `list-account-names` guards GET /accounts/names, the trimmed-down list the
   // group member picker needs; `groups` depends on it for exactly that reason.
   // The heavier routes each carry their own action.
-  accounts: ["access", "list-account-names", "list-accounts", "view-account", "edit-account", "revoke-account", "invite-account"],
+  // `view-account-sessions` covers reading a member's sessions, active AND
+  // expired (one action, not two). `revoke-account-sessions` covers kicking one
+  // or several of a member's sessions at once.
+  accounts: [
+    "access",
+    "list-account-names",
+    "list-accounts",
+    "view-account",
+    "edit-account",
+    "revoke-account",
+    "invite-account",
+    "view-account-sessions",
+    "revoke-account-sessions",
+  ],
   // An api token acts on behalf of its owner, and every route here is scoped to
   // the caller's own tokens (see ApiTokenController). The actions gate whether
   // an account may manage tokens at all, not whose tokens it may touch.
