@@ -11,6 +11,7 @@ export default {
   dark: "Dark",
   system: "System",
   toggleSidebar: "Toggle sidebar",
+  refreshData: "Refresh data",
   rootBadge: "Root",
   noGroupBadge: "No group",
 } satisfies Locales["layout"];

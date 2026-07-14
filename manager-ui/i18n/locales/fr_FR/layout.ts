@@ -11,6 +11,7 @@ export default {
   dark: "Sombre",
   system: "Système",
   toggleSidebar: "Replier la barre latérale",
+  refreshData: "Rafraîchir les données",
   rootBadge: "Root",
   noGroupBadge: "Aucun groupe",
 } satisfies Locales["layout"];

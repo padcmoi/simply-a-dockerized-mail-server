@@ -48,6 +48,7 @@ export interface Locales {
     dark: string;
     system: string;
     toggleSidebar: string;
+    refreshData: string;
     rootBadge: string;
     noGroupBadge: string;
   };

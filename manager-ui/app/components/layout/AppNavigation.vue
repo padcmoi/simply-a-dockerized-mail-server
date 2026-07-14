@@ -1,0 +1,132 @@
+<script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
+import { useDomainStore } from "~/stores/domain";
+
+const { open, close } = useSidebar();
+const { globalNavItems, domainNavItems, userItems } = useNav(onSignOut);
+
+const domainStore = useDomainStore();
+const auth = useAuthStore();
+const route = useRoute();
+const { t } = useI18n();
+const isMobile = useMediaQuery("(max-width: 1023px)");
+
+const userAvatar = computed(() => {
+  const url = auth.session?.avatarUrl;
+  if (url) return { src: url, alt: auth.session?.displayName ?? auth.session?.email ?? "user" };
+  return { alt: auth.session?.displayName ?? auth.session?.email ?? "?" };
+});
+
+// USidebar switches to a mobile slideover under 1024px (same breakpoint it uses
+// internally); clicking a nav link navigates but doesn't close it, so close it
+// ourselves on every route change while on mobile. On desktop this would instead
+// collapse the sidebar to icon-rail mode, which we don't want, hence the guard.
+watch(
+  () => route.fullPath,
+  () => {
+    if (isMobile.value) close();
+  }
+);
+
+async function onSignOut() {
+  await auth.logout();
+  await navigateTo("/login");
+}
+
+function closeDomain() {
+  domainStore.clear();
+  navigateTo("/domains");
+}
+</script>
+
+<template>
+  <USidebar
+    v-model:open="open"
+    collapsible="icon"
+    rail
+    :ui="{
+      container: 'h-full',
+      inner: 'bg-elevated/25 divide-transparent',
+      body: 'py-0',
+    }"
+  >
+    <template #header>
+      <UButton
+        icon="i-lucide-mail"
+        :label="t('app.name')"
+        color="neutral"
+        variant="ghost"
+        square
+        to="/dashboard"
+        class="w-full overflow-hidden"
+        :ui="{ leadingIcon: 'text-primary' }"
+      />
+    </template>
+
+    <template #default="{ state }">
+      <UNavigationMenu
+        :key="`global-${state}`"
+        :items="globalNavItems"
+        orientation="vertical"
+        :ui="{ link: 'p-1.5 overflow-hidden' }"
+      />
+
+      <template v-if="domainStore.selected">
+        <USeparator class="my-2" />
+        <div class="flex items-center gap-1.5 px-1.5 py-1 min-w-0">
+          <NuxtLink :to="`/domains/${domainStore.selected.domain}`" class="flex items-center gap-1.5 min-w-0 flex-1 group">
+            <UIcon name="i-lucide-folder-open" class="text-primary shrink-0 size-4" />
+            <span v-if="open" class="text-xs font-semibold truncate text-muted group-hover:text-primary transition-colors">
+              {{ domainStore.selected.domain }}
+            </span>
+          </NuxtLink>
+          <UButton
+            v-if="open"
+            icon="i-lucide-x"
+            size="xs"
+            color="neutral"
+            variant="ghost"
+            square
+            class="shrink-0"
+            @click="closeDomain"
+          />
+        </div>
+        <UNavigationMenu
+          :key="`domain-${state}`"
+          :items="domainNavItems"
+          orientation="vertical"
+          :ui="{ link: 'p-1.5 overflow-hidden' }"
+        />
+      </template>
+    </template>
+
+    <template #footer>
+      <UDropdownMenu
+        :items="userItems"
+        :content="{ align: 'center', collisionPadding: 12 }"
+        :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width) min-w-48' }"
+      >
+        <button
+          type="button"
+          class="w-full flex items-center gap-2 rounded-md p-1.5 overflow-hidden text-left hover:bg-elevated data-[state=open]:bg-elevated transition-colors"
+        >
+          <!-- Rail (collapsed) shows only the avatar; expanded shows the full
+               UUser (left-aligned, truncating) + the chevron pushed right. -->
+          <template v-if="open">
+            <UUser
+              :name="auth.session?.displayName ?? auth.session?.email ?? 'Account'"
+              :description="auth.session?.displayName ? (auth.session?.email ?? undefined) : undefined"
+              :avatar="userAvatar"
+              :chip="auth.session?.isRoot ? { color: 'warning' } : undefined"
+              size="md"
+              class="min-w-0 flex-1"
+              :ui="{ root: 'min-w-0', wrapper: 'min-w-0 flex-1 overflow-hidden', name: 'truncate', description: 'truncate' }"
+            />
+            <UIcon name="i-lucide-chevrons-up-down" class="text-dimmed shrink-0 size-4" />
+          </template>
+          <UAvatar v-else v-bind="userAvatar" size="md" class="mx-auto" />
+        </button>
+      </UDropdownMenu>
+    </template>
+  </USidebar>
+</template>
