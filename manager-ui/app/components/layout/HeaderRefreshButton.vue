@@ -5,6 +5,7 @@ const SPIN_MS = 600;
 
 const { t } = useI18n();
 const { tick, bump } = useDataRefresh();
+const { editing } = useHeartbeatStatus();
 const focused = useVueWindowFocus();
 
 const spinning = ref(false);
@@ -29,12 +30,12 @@ onScopeDispose(() => {
 <template>
   <UButton
     v-if="focused"
-    color="neutral"
+    :color="editing ? 'warning' : 'neutral'"
     variant="ghost"
     :aria-label="t('layout.refreshData')"
     :title="t('layout.refreshData')"
     @click="bump"
   >
-    <UIcon name="i-lucide-refresh-cw" :class="{ 'animate-spin': spinning }" />
+    <UIcon :name="editing ? 'i-lucide-refresh-cw-off' : 'i-lucide-refresh-cw'" :class="{ 'animate-spin': spinning }" />
   </UButton>
 </template>

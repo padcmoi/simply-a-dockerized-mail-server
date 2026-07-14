@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): the header auto-refresh now pauses while the user is in a form field (input, textarea, select, checkbox and the ARIA-role controls Nuxt UI renders as buttons), so a reload never wipes what they are editing. The refresh icon turns warning and switches to the crossed-out variant while paused, and the 5s/30s cycle resumes as soon as focus leaves the field (14-07-2026)
 - feat(ui): the expired sessions page gains a Purge history button (shown only with the accounts:purge-account-sessions permission and a non-empty history) that, behind a confirmation, deletes the account's whole expired/revoked session history at once (14-07-2026)
 - feat(api): administrators can purge an account's session history in one call. `DELETE /accounts/:id/sessions/history` permanently deletes every expired or revoked session row of the account (live sessions untouched, nobody signed out), gated by a new `accounts:purge-account-sessions` action distinct from revoke (14-07-2026)
 - feat(ui): active sessions now show "last seen X ago" once they drop off "online" (both the profile page and the admin views, via a shared SessionPresence component), and the admin sessions view gains a sortable "Last seen" column on the expired-accounts table plus a per-session last-seen on the expired detail page, all as relative time with the exact timestamp on hover (14-07-2026)
