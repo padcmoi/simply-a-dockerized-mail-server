@@ -1,25 +1,30 @@
 <script setup lang="ts">
+import { z } from "zod";
+
 definePageMeta({ layout: "auth" });
 
 interface InviteInfo {
   email: string;
-  groupName: string | null;
+  groups: string[];
   expiresAt: string;
 }
+
+const route = useRoute();
+const { t } = useI18n();
+const toast = useToast();
 
 const loading = ref(true);
 const invalid = ref(false);
 const info = ref<InviteInfo | null>(null);
-
-const displayName = ref("");
-const password = ref("");
 const submitting = ref(false);
 const done = ref(false);
+const form = reactive({ displayName: "", password: "" });
 
 const token = computed(() => route.params.token as string);
-const route = useRoute();
-const { t } = useI18n();
-const toast = useToast();
+const schema = z.object({
+  displayName: z.string().max(255).optional(),
+  password: z.string().min(8, t("invite.passwordMin")),
+});
 
 async function loadInvitation() {
   try {
@@ -36,10 +41,7 @@ async function submit() {
   try {
     await $fetch(`/api/v1/accounts/invite/${token.value}/accept`, {
       method: "POST",
-      body: {
-        displayName: displayName.value || undefined,
-        password: password.value,
-      },
+      body: { displayName: form.displayName || undefined, password: form.password },
     });
     done.value = true;
   } catch (e) {
@@ -91,32 +93,32 @@ onMounted(loadInvitation);
       </UButton>
     </div>
 
-    <form v-else class="space-y-4" @submit.prevent="submit">
+    <UForm v-else :schema="schema" :state="form" class="space-y-4" @submit="submit">
       <div class="rounded-lg bg-elevated p-3 space-y-2 text-sm">
         <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-at-sign" class="text-muted" />
+          <UIcon name="i-lucide-at-sign" class="text-muted shrink-0" />
           <span class="text-muted">{{ t("invite.emailLabel") }}:</span>
-          <span class="font-medium">{{ info?.email }}</span>
+          <span class="font-medium truncate">{{ info?.email }}</span>
         </div>
         <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-users" class="text-muted" />
+          <UIcon name="i-lucide-users" class="text-muted shrink-0" />
           <span class="text-muted">{{ t("invite.groupLabel") }}:</span>
-          <span v-if="info?.groupName" class="font-medium">{{ info.groupName }}</span>
+          <span v-if="info?.groups.length" class="font-medium">{{ info.groups.join(", ") }}</span>
           <span v-else class="italic text-muted">{{ t("invite.noGroup") }}</span>
         </div>
       </div>
 
-      <UFormField :label="t('invite.nameLabel')" :hint="t('invite.nameHint')">
-        <UInput v-model="displayName" autocomplete="name" class="w-full" />
+      <UFormField :label="t('invite.nameLabel')" :hint="t('invite.nameHint')" name="displayName">
+        <UInput v-model="form.displayName" icon="i-lucide-user" autocomplete="name" placeholder="Jane Doe" class="w-full" />
       </UFormField>
 
-      <UFormField :label="t('invite.passwordLabel')" required>
-        <UInput v-model="password" type="password" autocomplete="new-password" minlength="8" class="w-full" required />
+      <UFormField :label="t('invite.passwordLabel')" name="password" required>
+        <UInput v-model="form.password" type="password" icon="i-lucide-lock" autocomplete="new-password" class="w-full" />
       </UFormField>
 
       <UButton type="submit" color="primary" block :loading="submitting" icon="i-lucide-user-plus">
         {{ t("invite.submit") }}
       </UButton>
-    </form>
+    </UForm>
   </UCard>
 </template>
