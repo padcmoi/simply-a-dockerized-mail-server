@@ -1,8 +1,16 @@
 import { z } from "zod";
 
+// A domain is mandatory: the invitation email is sent from postmaster@<domain>
+// so SPF/DKIM are valid and it does not land in spam. groupIds may target several
+// groups at once; the default group is auto-assigned on account creation and is
+// never part of this list.
 export const sendInvitationSchema = z.object({
   email: z.string().email(),
-  groupId: z.string().uuid().nullable().default(null),
+  domainId: z.coerce.number().int().positive(),
+  groupIds: z.array(z.string().uuid()).default([]),
+  // When true, accepting the invitation makes the new account the owner of the
+  // chosen domain (virtual_domains.owner_id). A domain has a single owner.
+  makeOwner: z.boolean().default(false),
 });
 
 // Identity comes from the invitation's email; accepting only sets the password

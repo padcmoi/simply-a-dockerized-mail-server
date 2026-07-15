@@ -171,7 +171,14 @@ export class AccountsController {
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "invite-account"] }])
   @SendInvitationDocs()
   sendInvitation(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(sendInvitationSchema)) body: SendInvitationDto) {
-    return this.svc.sendInvitation(req.user, body);
+    // Build the invite link from the real host the admin is on (behind the
+    // reverse proxy), never a hard-coded/env default -- so it never points to
+    // example.com.
+    const fwdProto = req.headers["x-forwarded-proto"];
+    const fwdHost = req.headers["x-forwarded-host"];
+    const proto = (Array.isArray(fwdProto) ? fwdProto[0] : fwdProto)?.split(",")[0]?.trim() || req.protocol;
+    const host = (Array.isArray(fwdHost) ? fwdHost[0] : fwdHost)?.split(",")[0]?.trim() || req.get("host") || "";
+    return this.svc.sendInvitation(req.user, body, `${proto}://${host}`);
   }
 
   @Get("invite/:token")

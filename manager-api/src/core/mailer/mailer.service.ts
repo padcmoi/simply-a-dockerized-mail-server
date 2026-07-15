@@ -12,11 +12,12 @@ export class MailerService {
     ignoreTLS: true,
   });
 
-  async sendInvitation(to: string, link: string, groupName: string | null) {
-    const from = process.env.MANAGER_SMTP_FROM ?? `noreply@${process.env.MAIL_HOSTNAME ?? "localhost"}`;
-    const scopeText = groupName ? `group: ${groupName}` : "no group (no permissions until assigned)";
-    const scopeHtml = groupName
-      ? `group: <strong><code>${groupName}</code></strong>`
+  async sendInvitation(input: { to: string; link: string; fromDomain: string; groupNames: string[] }) {
+    const { to, link, fromDomain, groupNames } = input;
+    const from = `postmaster@${fromDomain}`;
+    const scopeText = groupNames.length ? `groups: ${groupNames.join(", ")}` : "no group (no permissions until assigned)";
+    const scopeHtml = groupNames.length
+      ? `groups: <strong><code>${groupNames.join(", ")}</code></strong>`
       : "<strong>no group (no permissions until assigned)</strong>";
 
     try {

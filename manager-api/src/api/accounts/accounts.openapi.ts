@@ -148,7 +148,16 @@ export const SendInvitationDocs = () =>
       description:
         "If `groupId` is omitted or null, the invitation falls back to whichever group is currently flagged as default, if any. Any previous unaccepted, still-valid invitation for the same email is expired immediately.",
     }),
-    ApiBody({ schema: { example: { email: "jdoe@example.com", groupId: 3 } } }),
+    ApiBody({
+      schema: {
+        example: {
+          email: "jdoe@example.com",
+          domainId: 1,
+          groupIds: ["3f2a1b4c-0000-0000-0000-000000000000"],
+          makeOwner: false,
+        },
+      },
+    }),
     ApiResponse({ status: 201, description: "Invitation email sent", schema: { example: { ok: true } } }),
     ApiResponse({ status: 400, description: "Invalid body (e.g. malformed email)" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
@@ -163,7 +172,7 @@ export const GetInvitationDocs = () =>
     ApiResponse({
       status: 200,
       description: "Invitation details returned",
-      schema: { example: { email: "jdoe@example.com", groupName: "Support Team", expiresAt: "2026-07-11T10:00:00.000Z" } },
+      schema: { example: { email: "jdoe@example.com", groups: ["Support Team"], expiresAt: "2026-07-11T10:00:00.000Z" } },
     }),
     ApiResponse({ status: 400, description: "Invitation already used, or expired" }),
     ApiResponse({ status: 404, description: "Invitation not found" })

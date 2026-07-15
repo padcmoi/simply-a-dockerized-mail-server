@@ -250,7 +250,19 @@ export class AccountsService {
     return { ok: true };
   }
 
-  async sendInvitation(actingUser: ActingUser, input: SendInvitationDto) {
+  private parseGroupIds(inv: AccountInvitation): string[] {
+    if (inv.groupIds) {
+      try {
+        const parsed = JSON.parse(inv.groupIds) as unknown;
+        if (Array.isArray(parsed)) return parsed.filter((x): x is string => typeof x === "string");
+      } catch {
+        // fall back to the legacy single group_id below
+      }
+    }
+    return inv.groupId ? [inv.groupId] : [];
+  }
+
+  async sendInvitation(actingUser: ActingUser, input: SendInvitationDto, baseUrl: string) {
     const existing = await this.invitations.findOne({
       where: { email: input.email, acceptedAt: IsNull() },
     });
@@ -259,24 +271,36 @@ export class AccountsService {
       await this.invitations.save(existing);
     }
 
-    let group: Group | null = null;
-    if (input.groupId) {
-      group = await this.groups.findOne({ where: { id: input.groupId } });
-      if (!group) throw new NotFoundException(`Group #${input.groupId} not found`);
-      // Anti-escalade: accepting this invitation assigns the chosen group to the
-      // new account (see acceptInvitation), granting its permissions by union. A
-      // non-root inviter may therefore only invite into a group whose permissions
-      // it already holds in full, otherwise `invite-account` alone would mint an
-      // account more powerful than the inviter (e.g. straight into "admin"). Only
-      // an explicitly chosen group is checked: the default-group fallback below is
-      // the system floor every account gets via onAccountCreated anyway.
+    // A domain is mandatory: the email is sent from postmaster@<domain> (an
+    // address every domain must have) so it is not treated as spam. Never fall
+    // back to internal defaults.
+    const domain = await this.domains.findOne({ where: { id: input.domainId } });
+    if (!domain) throw new NotFoundException(`Domain #${input.domainId} not found`);
+
+    // Making the invitee the domain owner reassigns virtual_domains.owner_id
+    // (single owner) on acceptance -- a sensitive move that requires ALL of:
+    // accounts:set-domain-owner (handing ownership out through an invitation),
+    // domains:transfer-domain-ownership (the bridge mirror transferring ownership
+    // of any domain) and domain_owner_elevated:transfer-domain-ownership (the
+    // elevated escape hatch). Root bypasses ACL as everywhere else.
+    if (input.makeOwner && !actingUser.isRoot) {
+      await this.cpg.guard.assertOne.global(actingUser.id, "accounts", { acrud: ["set-domain-owner"] });
+      await this.cpg.guard.assertOne.global(actingUser.id, "domains", { acrud: ["transfer-domain-ownership"] });
+      await this.cpg.guard.assertOne.global(actingUser.id, "domain_owner_elevated", { acrud: ["transfer-domain-ownership"] });
+    }
+
+    const groups = input.groupIds.length ? await this.groups.findBy({ id: In(input.groupIds) }) : [];
+    if (groups.length !== input.groupIds.length) throw new NotFoundException("One or more groups not found");
+    // Anti-escalade: a non-root inviter may only invite into groups whose
+    // permissions it already holds in full (accepting unions them onto the new
+    // account). The default group, auto-assigned on creation, is the system floor
+    // and is never part of this list.
+    for (const group of groups) {
       const [groupGlobal, groupDomain] = await Promise.all([
         this.cpg.guard.findGroupGlobalPermissions(group.id),
         this.cpg.guard.findGroupDomainPermissions(group.id),
       ]);
       await this.antiEscalation.assertActingUserHolds(actingUser, groupGlobal, groupDomain);
-    } else {
-      group = await this.groups.findOne({ where: { isDefault: 1 } });
     }
 
     const token = randomBytes(32).toString("hex");
@@ -286,13 +310,20 @@ export class AccountsService {
         token,
         email: input.email,
         invitedBy: actingUser.id,
-        groupId: group?.id ?? null,
+        groupId: null,
+        groupIds: JSON.stringify(input.groupIds),
+        ownerDomainId: input.makeOwner ? domain.id : null,
         expiresAt,
       })
     );
 
-    const uiUrl = (process.env.MANAGER_UI_URL ?? "http://localhost").replace(/\/$/, "");
-    await this.mailer.sendInvitation(input.email, `${uiUrl}/invite/${token}`, group?.name ?? null);
+    const link = `${baseUrl.replace(/\/+$/, "")}/invite/${token}`;
+    await this.mailer.sendInvitation({
+      to: input.email,
+      link,
+      fromDomain: domain.domain,
+      groupNames: groups.map((g) => g.name),
+    });
     return { ok: true };
   }
 
@@ -301,12 +332,9 @@ export class AccountsService {
     if (!inv) throw new NotFoundException("Invitation not found");
     if (inv.acceptedAt) throw new BadRequestException("Invitation already used");
     if (inv.expiresAt < new Date()) throw new BadRequestException("Invitation expired");
-    let groupName: string | null = null;
-    if (inv.groupId !== null) {
-      const group = await this.groups.findOne({ where: { id: inv.groupId } });
-      groupName = group?.name ?? null;
-    }
-    return { email: inv.email, groupName, expiresAt: inv.expiresAt };
+    const groupIds = this.parseGroupIds(inv);
+    const groups = groupIds.length ? await this.groups.findBy({ id: In(groupIds) }) : [];
+    return { email: inv.email, groups: groups.map((g) => g.name), expiresAt: inv.expiresAt };
   }
 
   async acceptInvitation(token: string, input: AcceptInvitationDto) {
@@ -327,8 +355,19 @@ export class AccountsService {
       })
     );
     await this.profiles.save(this.profiles.create({ accountId: account.id, displayName: input.displayName ?? null }));
-    if (inv.groupId !== null) {
-      await this.cpg.guard.assignAccountToGroup(account.id, inv.groupId);
+    // Every account gets the default group (the system floor), on top of any
+    // explicitly invited groups. There is no account-creation hook, so it is
+    // assigned here. assignAccountToGroup is idempotent, hence the Set.
+    const groupIds = new Set(this.parseGroupIds(inv));
+    const defaultGroup = await this.groups.findOne({ where: { isDefault: 1 } });
+    if (defaultGroup) groupIds.add(defaultGroup.id);
+    for (const groupId of groupIds) {
+      await this.cpg.guard.assignAccountToGroup(account.id, groupId);
+    }
+    // Deferred ownership: now that the account exists, make it the domain's owner
+    // (single owner on virtual_domains.owner_id, replacing any current one).
+    if (inv.ownerDomainId) {
+      await this.domains.update(inv.ownerDomainId, { ownerId: account.id });
     }
     inv.acceptedAt = new Date();
     await this.invitations.save(inv);

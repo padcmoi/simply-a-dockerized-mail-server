@@ -282,28 +282,37 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
       await api()
         .post("/api/v1/accounts/invite")
         .set("Authorization", `Bearer ${h.token(USER)}`)
-        .send({ email: "new@user.com" })
+        .send({ email: "new@user.com", domainId: 1 })
         .expect(201);
     });
 
-    it("201 for root and forwards the acting user + validated body", async () => {
+    it("201 for root and forwards the acting user + validated body + base url", async () => {
       svc.sendInvitation.mockResolvedValueOnce({ ok: true });
       await api()
         .post("/api/v1/accounts/invite")
         .set("Authorization", `Bearer ${h.token(ROOT)}`)
-        .send({ email: "new@user.com" })
+        .send({ email: "new@user.com", domainId: 2 })
         .expect(201);
       expect(svc.sendInvitation).toHaveBeenCalledWith(
         { id: ROOT.id, email: ROOT.email, isRoot: true },
-        { email: "new@user.com", groupId: null }
+        { email: "new@user.com", domainId: 2, groupIds: [], makeOwner: false },
+        expect.any(String)
       );
     });
 
-    it("400 on an invalid body (zod)", async () => {
+    it("400 on an invalid email (zod)", async () => {
       await api()
         .post("/api/v1/accounts/invite")
         .set("Authorization", `Bearer ${h.token(ROOT)}`)
-        .send({ email: "not-an-email" })
+        .send({ email: "not-an-email", domainId: 1 })
+        .expect(400);
+    });
+
+    it("400 when the domain is missing (zod: domain is mandatory)", async () => {
+      await api()
+        .post("/api/v1/accounts/invite")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .send({ email: "new@user.com" })
         .expect(400);
     });
   });
@@ -428,7 +437,7 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
   // The two invitation routes are @Public(): no Authorization header, no ACL.
   describe("GET /accounts/invite/:token (public)", () => {
     it("200 with no Authorization header and forwards the token", async () => {
-      svc.getInvitation.mockResolvedValueOnce({ email: "x@y.com", groupName: null, expiresAt: new Date() });
+      svc.getInvitation.mockResolvedValueOnce({ email: "x@y.com", groups: [], expiresAt: new Date() });
       await api().get("/api/v1/accounts/invite/tok-123").expect(200);
       expect(svc.getInvitation).toHaveBeenCalledWith("tok-123");
     });
