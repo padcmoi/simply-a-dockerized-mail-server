@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(api): account invitations gain a group_ids column (multiple groups stored as a JSON array, superseding the single group_id) and an owner_domain_id column (the domain whose ownership transfers on acceptance), backed by two migrations (15-07-2026)
 - feat(ui): the header auto-refresh now pauses while the user is in a form field (input, textarea, select, checkbox and the ARIA-role controls Nuxt UI renders as buttons), so a reload never wipes what they are editing. The refresh icon turns warning and switches to the crossed-out variant while paused, and the 5s/30s cycle resumes as soon as focus leaves the field (14-07-2026)
 - feat(ui): the expired sessions page gains a Purge history button (shown only with the accounts:purge-account-sessions permission and a non-empty history) that, behind a confirmation, deletes the account's whole expired/revoked session history at once (14-07-2026)
 - feat(api): administrators can purge an account's session history in one call. `DELETE /accounts/:id/sessions/history` permanently deletes every expired or revoked session row of the account (live sessions untouched, nobody signed out), gated by a new `accounts:purge-account-sessions` action distinct from revoke (14-07-2026)

@@ -17,6 +17,12 @@ export class AccountInvitation {
   @Column({ name: "group_id", type: "char", length: 36, nullable: true })
   groupId!: string | null;
 
+  @Column({ name: "group_ids", type: "text", nullable: true })
+  groupIds!: string | null;
+
+  @Column({ name: "owner_domain_id", type: "int", nullable: true })
+  ownerDomainId!: number | null;
+
   @Column({ name: "accepted_at", type: "datetime", nullable: true })
   acceptedAt!: Date | null;
 
