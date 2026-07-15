@@ -55,14 +55,16 @@ const {
   "dashboard-main",
   async () => {
     const [domainList, rejectList, diskData] = await Promise.all([
-      call<Domain[]>("/domains"),
-      call<Reject[]>("/sieve/reject-senders"),
-      call<DiskInfo>("/domains/disk"),
+      call<Domain[]>("/domains").catch(() => [] as Domain[]),
+      call<Reject[]>("/sieve/reject-senders").catch(() => [] as Reject[]),
+      call<DiskInfo>("/domains/disk").catch(() => null),
     ]);
+
     const [recs, als] = await Promise.all([
-      Promise.all(domainList.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`))),
-      Promise.all(domainList.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`))),
+      Promise.all(domainList.map((d) => call<Recipient[]>(`/domains/${d.id}/recipients`).catch(() => [] as Recipient[]))),
+      Promise.all(domainList.map((d) => call<Alias[]>(`/domains/${d.id}/aliases`).catch(() => [] as Alias[]))),
     ]);
+
     return { domains: domainList, recipients: recs.flat(), aliases: als.flat(), rejects: rejectList, disk: diskData };
   },
   {
@@ -72,11 +74,6 @@ const {
   }
 );
 
-// NOT `pending`: with `server: false`, Nuxt defers the initial fetch to
-// `onBeforeMount`, so `pending` stays false through SSR render AND the gap
-// before that callback fires -- the SSR'd HTML would flash "0" before ever
-// showing a skeleton. `status` starts at "idle" both server- and
-// client-side and only flips once a fetch has genuinely settled.
 const domains = computed(() => data.value?.domains ?? []);
 const recipients = computed(() => data.value?.recipients ?? []);
 const aliases = computed(() => data.value?.aliases ?? []);
