@@ -32,9 +32,6 @@ const {
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
-const inviteOpen = ref(false);
-const inviteSending = ref(false);
-
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
@@ -44,7 +41,6 @@ const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("nav.accounts") }]);
 const { isRoot, hasGlobal } = usePermissions();
-const { groups } = useGroups();
 
 // The API now gates these routes on `accounts:*` rather than IsRootGuard, so the
 // buttons follow the actual permission instead of assuming root. Hiding an entry
@@ -54,7 +50,12 @@ const canEditAccount = computed(() => isRoot.value || hasGlobal("accounts", "vie
 const canRevokeAccount = computed(() => isRoot.value || hasGlobal("accounts", "revoke-account"));
 const canViewSessions = computed(() => isRoot.value || hasGlobal("accounts", "view-account-sessions"));
 
-const groupInviteOptions = computed(() => groups.value.map((g) => ({ label: g.name, value: g.id })));
+const inviteMenu = computed(() => [
+  [
+    { label: t("accounts.invite.byEmail"), icon: "i-lucide-mail", to: "/accounts/create/email" },
+    { label: t("accounts.invite.byToken"), icon: "i-lucide-key-round", to: "/accounts/create/token" },
+  ],
+]);
 
 // `group` has no matching real column (computed post-query, see
 // accounts.service.ts's enrichWithGroups) -- not sortable, stays a plain
@@ -73,20 +74,6 @@ const columns = computed(() => [
   { id: "status", header: header("enabled", t("accounts.table.status")) },
   { id: "actions", header: "" },
 ]);
-
-async function sendInvite(data: { email: string; groupId: string | null }) {
-  inviteSending.value = true;
-  try {
-    await call("/accounts/invite", { method: "POST", body: data });
-    toast.add({ title: t("accounts.toast.invited"), color: "success" });
-    inviteOpen.value = false;
-    await load();
-  } catch {
-    toast.add({ title: t("accounts.toast.inviteFailed"), color: "error" });
-  } finally {
-    inviteSending.value = false;
-  }
-}
 
 async function revokeAccount(acc: ManagerAccount) {
   try {
@@ -130,18 +117,11 @@ async function onDeleteConfirmed() {
     />
 
     <div class="flex items-center justify-end gap-2">
-      <UButton
-        v-if="canInvite"
-        icon="i-lucide-mail-plus"
-        color="primary"
-        @click="
-          () => {
-            inviteOpen = true;
-          }
-        "
-      >
-        {{ t("accounts.inviteButton") }}
-      </UButton>
+      <UDropdownMenu v-if="canInvite" :items="inviteMenu">
+        <UButton icon="i-lucide-user-plus" color="primary" trailing-icon="i-lucide-chevron-down">
+          {{ t("accounts.inviteButton") }}
+        </UButton>
+      </UDropdownMenu>
     </div>
 
     <ListToolbar
@@ -236,13 +216,6 @@ async function onDeleteConfirmed() {
 
       <ListPagination v-model:page="page" :total="total" :limit="limit" />
     </template>
-
-    <AccountInviteModal
-      v-model:open="inviteOpen"
-      :group-options="groupInviteOptions"
-      :sending="inviteSending"
-      @submit="sendInvite"
-    />
 
     <ConfirmModal v-model:open="confirmOpen" :title="t('accounts.confirmRevoke')" @confirm="onDeleteConfirmed" />
   </div>
