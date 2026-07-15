@@ -13,6 +13,7 @@ export default {
   nameLabel: "Nom affiché (optionnel)",
   nameHint: "Affiché dans la barre latérale.",
   passwordLabel: "Mot de passe",
+  passwordMin: "Au moins 8 caractères",
   submit: "Créer mon compte",
   success: "Compte créé",
   successHint: "Vous pouvez maintenant vous connecter avec vos identifiants.",

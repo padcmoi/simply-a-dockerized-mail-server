@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): i18n (en/fr) for the reworked invitation flow, the domain-owner section (current owner, switch label and hint, deferred-change confirmation, missing-permission notice) and the set-domain-owner permission label (15-07-2026)
 - feat(api): the account invitation flow is reworked end to end. A domain is now mandatory and the email is sent from that domain's postmaster address so SPF/DKIM pass and it is not flagged as spam; an invitation can target several groups at once while the default group is still auto-assigned on acceptance; the invite link is built from the real request host; and the invitee can be designated as the domain owner (applied on acceptance) behind the accounts:set-domain-owner, domains:transfer-domain-ownership and domain_owner_elevated:transfer-domain-ownership actions (15-07-2026)
 - feat(api): new global `accounts:set-domain-owner` action in the permission catalog, gating who may hand out domain ownership through an invitation (15-07-2026)
 - feat(api): account invitations gain a group_ids column (multiple groups stored as a JSON array, superseding the single group_id) and an owner_domain_id column (the domain whose ownership transfers on acceptance), backed by two migrations (15-07-2026)

@@ -457,12 +457,31 @@ export interface Locales {
       lastLogin: string;
     };
     invite: {
-      title: string;
+      byEmail: string;
+      byToken: string;
+      emailAlertTitle: string;
+      emailAlertDescription: string;
       emailLabel: string;
-      groupLabel: string;
-      groupHint: string;
-      groupPlaceholder: string;
+      domainLabel: string;
+      domainHint: string;
+      domainPlaceholder: string;
+      groupsLabel: string;
+      groupsHint: string;
+      groupsPlaceholder: string;
+      ownerSectionTitle: string;
+      currentOwnerLabel: string;
+      noOwner: string;
+      makeOwnerLabel: string;
+      makeOwnerHint: string;
+      makeOwnerNoRight: string;
+      makeOwnerConfirmTitle: string;
+      makeOwnerConfirmDescription: string;
       submit: string;
+      domainsLoadFailed: string;
+      tokenAlertTitle: string;
+      tokenAlertDescription: string;
+      tokenSoonTitle: string;
+      tokenSoonHint: string;
     };
     overviewPage: {
       alertTitle: string;
@@ -528,6 +547,7 @@ export interface Locales {
     nameLabel: string;
     nameHint: string;
     passwordLabel: string;
+    passwordMin: string;
     submit: string;
     success: string;
     successHint: string;
@@ -870,6 +890,7 @@ export interface Locales {
             "edit-account": string;
             "revoke-account": string;
             "invite-account": string;
+            "set-domain-owner": string;
             "view-account-sessions": string;
             "revoke-account-sessions": string;
             "purge-account-sessions": string;

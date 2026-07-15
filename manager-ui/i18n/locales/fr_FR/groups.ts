@@ -158,6 +158,7 @@ export default {
           "edit-account": "Modifier un compte",
           "revoke-account": "Révoquer un compte",
           "invite-account": "Inviter un compte",
+          "set-domain-owner": "Définir le propriétaire d'un domaine",
           "view-account-sessions": "Voir les sessions",
           "revoke-account-sessions": "Révoquer des sessions",
           "purge-account-sessions": "Purger l'historique des sessions",

@@ -156,6 +156,7 @@ export default {
           "edit-account": "Edit an account",
           "revoke-account": "Revoke an account",
           "invite-account": "Invite an account",
+          "set-domain-owner": "Set a domain owner",
           "view-account-sessions": "View sessions",
           "revoke-account-sessions": "Revoke sessions",
           "purge-account-sessions": "Purge session history",
