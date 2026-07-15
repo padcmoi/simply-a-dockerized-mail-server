@@ -14,6 +14,15 @@ export default defineAppConfig({
         description: "select-none",
       },
     },
+    // Same omission on the radio group: neither the radio control nor its label
+    // ships a pointer cursor even though both are clickable -- apply it app-wide
+    // so every radio button, present and future, gets it for free.
+    radioGroup: {
+      slots: {
+        base: "cursor-pointer",
+        label: "cursor-pointer select-none",
+      },
+    },
     // Same omission on the dropdown menu: its `item` slot only carries
     // `data-disabled:cursor-not-allowed`, so an enabled entry keeps the text
     // cursor. Nested entries are covered too (the account menu's language and
