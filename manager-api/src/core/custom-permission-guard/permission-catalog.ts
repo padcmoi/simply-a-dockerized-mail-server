@@ -47,6 +47,7 @@ export const GLOBAL_ACTIONS = {
     "edit-account",
     "revoke-account",
     "invite-account",
+    "set-domain-owner",
     "view-account-sessions",
     "revoke-account-sessions",
     "purge-account-sessions",
