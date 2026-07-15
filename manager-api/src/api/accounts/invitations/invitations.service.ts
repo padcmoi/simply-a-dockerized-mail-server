@@ -65,8 +65,29 @@ export class AccountsInvitationsService {
       await this.cpg.guard.assertOne.global(actingUser.id, "domain_owner_elevated", { acrud: ["transfer-domain-ownership"] });
     }
 
-    const groups = input.groupIds.length ? await this.groups.findBy({ id: In(input.groupIds) }) : [];
-    if (groups.length !== input.groupIds.length) throw new NotFoundException("One or more groups not found");
+    // useDomainGroup joins the invitee to the group dedicated to this domain
+    // (found by its imposed name, or created here if it does not exist yet).
+    // The group's mere existence is NOT the signal -- once created it stays in
+    // the DB forever, so membership must follow this flag's CURRENT value, not
+    // whether a past invite for the same domain happened to create the group.
+    // Folded into the same groupIds the rest of this method already handles, so
+    // anti-escalation and acceptance-time assignment apply to it like any
+    // explicitly chosen group.
+    const effectiveGroupIds = new Set(input.groupIds);
+    if (input.useDomainGroup) {
+      const dedicatedName = `__custom-${domain.domain}-group`;
+      let dedicated = await this.groups.findOne({ where: { name: dedicatedName } });
+      if (!dedicated) {
+        dedicated = await this.groups.save(
+          this.groups.create({ name: dedicatedName, description: null, ownerId: null, isDefault: 0 })
+        );
+      }
+      effectiveGroupIds.add(dedicated.id);
+    }
+    const groupIdList = [...effectiveGroupIds];
+
+    const groups = groupIdList.length ? await this.groups.findBy({ id: In(groupIdList) }) : [];
+    if (groups.length !== groupIdList.length) throw new NotFoundException("One or more groups not found");
     // Anti-escalade: a non-root inviter may only invite into groups whose
     // permissions it already holds in full (accepting unions them onto the new
     // account). The default group, auto-assigned on creation, is the system floor
@@ -87,7 +108,7 @@ export class AccountsInvitationsService {
         email: input.email,
         invitedBy: actingUser.id,
         groupId: null,
-        groupIds: JSON.stringify(input.groupIds),
+        groupIds: JSON.stringify(groupIdList),
         ownerDomainId: input.makeOwner ? domain.id : null,
         expiresAt,
       })

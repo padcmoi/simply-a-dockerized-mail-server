@@ -11,6 +11,13 @@ export const sendInvitationSchema = z.object({
   // When true, accepting the invitation makes the new account the owner of the
   // chosen domain (virtual_domains.owner_id). A domain has a single owner.
   makeOwner: z.boolean().default(false),
+  // When true, the invitee also joins the group dedicated to this domain
+  // (custom-<domain>-group; found or created here). Whether that group already
+  // exists says nothing about the CURRENT intent of this particular invite --
+  // a domain's dedicated group, once created, stays in the DB forever, so
+  // membership must be driven by this explicit flag, not by the group's mere
+  // existence (which stayed true even after the admin toggled the switch back off).
+  useDomainGroup: z.boolean().default(false),
 });
 
 // Identity comes from the invitation's email; accepting only sets the password

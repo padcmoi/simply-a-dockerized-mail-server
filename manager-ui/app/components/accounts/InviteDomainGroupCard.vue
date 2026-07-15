@@ -4,6 +4,13 @@ import type { DependsOnEntry, GroupDetail, PermissionsCatalog } from "~/composab
 
 const emit = defineEmits<{ created: [] }>();
 
+// Whether the invitation must join the invitee to this domain's dedicated
+// group. The parent page reads this to send `useDomainGroup` alongside the
+// invite -- the backend then finds/creates the group and assigns it on
+// acceptance; the group's mere existence in the DB is not a reliable signal
+// on its own (it outlives any single invite), so the parent needs this.
+const enabled = defineModel<boolean>("enabled", { default: false });
+
 const props = defineProps<{
   domainId: number | undefined;
   domainLabel: string | undefined;
@@ -25,7 +32,6 @@ const { data: catalog } = useAsyncData<PermissionsCatalog | null>(
   { server: false, default: () => null }
 );
 
-const enabled = ref(false);
 const detail = ref<GroupDetail | null>(null);
 const saving = ref(false);
 // Name of the group whose editor state we own (created from this card). Set

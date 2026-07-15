@@ -26,6 +26,7 @@ const domainId = ref<number | undefined>(undefined);
 const selectedGroupIds = ref<string[]>([]);
 const makeOwner = ref(false);
 const ownerConfirmOpen = ref(false);
+const useDomainGroup = ref(false);
 const domains = ref<DomainOption[]>([]);
 const sending = ref(false);
 
@@ -46,6 +47,7 @@ const canSubmit = computed(() => /.+@.+\..+/.test(email.value) && domainId.value
 
 watch(domainId, () => {
   makeOwner.value = false;
+  useDomainGroup.value = false;
 });
 
 // Turning the switch ON is the sensitive move: it only takes effect once the
@@ -80,6 +82,7 @@ async function submit() {
         domainId: domainId.value,
         groupIds: selectedGroupIds.value,
         makeOwner: makeOwner.value,
+        useDomainGroup: useDomainGroup.value,
       },
     });
     toast.add({ title: t("accounts.toast.invited"), color: "success" });
@@ -185,7 +188,12 @@ onMounted(() => {
         </div>
       </UCard>
 
-      <InviteDomainGroupCard :domain-id="domainId" :domain-label="selectedDomain?.domain" @created="loadGroups" />
+      <InviteDomainGroupCard
+        v-model:enabled="useDomainGroup"
+        :domain-id="domainId"
+        :domain-label="selectedDomain?.domain"
+        @created="loadGroups"
+      />
 
       <div class="flex justify-end gap-2">
         <UButton color="neutral" variant="ghost" to="/accounts">{{ t("common.cancel") }}</UButton>
