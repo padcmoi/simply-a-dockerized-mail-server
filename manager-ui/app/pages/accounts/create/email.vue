@@ -185,6 +185,8 @@ onMounted(() => {
         </div>
       </UCard>
 
+      <InviteDomainGroupCard :domain-id="domainId" :domain-label="selectedDomain?.domain" @created="loadGroups" />
+
       <div class="flex justify-end gap-2">
         <UButton color="neutral" variant="ghost" to="/accounts">{{ t("common.cancel") }}</UButton>
         <UButton type="submit" color="primary" icon="i-lucide-send" :loading="sending" :disabled="!canSubmit">

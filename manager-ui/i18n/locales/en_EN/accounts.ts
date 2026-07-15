@@ -82,6 +82,18 @@ export default {
     tokenAlertDescription: "Generate a link to share manually, without sending an email.",
     tokenSoonTitle: "Coming soon",
     tokenSoonHint: "Token invitations are not available yet.",
+    groupPerms: {
+      title: "Group and domain permissions",
+      hint: "A group dedicated to this domain receives these domain permissions, and nothing else (no global permissions). Its name is imposed, not chosen.",
+      switchLabel: "Use a dedicated domain group",
+      groupLabel: "Group:",
+      exists: "existing",
+      willCreate: "will be created",
+      permsLabel: "Permissions for {domain}",
+      noRight: "You need the groups permission with all its actions (or root) to manage groups here.",
+      saved: "Group permissions saved",
+      failed: "Failed to save the group permissions",
+    },
   },
   overviewPage: {
     alertTitle: "Account overview.",

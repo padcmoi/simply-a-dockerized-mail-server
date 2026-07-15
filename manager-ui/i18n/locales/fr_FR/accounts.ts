@@ -82,6 +82,18 @@ export default {
     tokenAlertDescription: "Générer un lien à partager manuellement, sans envoi d'email.",
     tokenSoonTitle: "Bientôt disponible",
     tokenSoonHint: "Les invitations par token ne sont pas encore disponibles.",
+    groupPerms: {
+      title: "Groupe et permissions du domaine",
+      hint: "Un groupe dédié à ce domaine reçoit ces permissions de domaine, et rien d'autre (aucune permission globale). Son nom est imposé, pas choisi.",
+      switchLabel: "Utiliser un groupe de domaine dédié",
+      groupLabel: "Groupe :",
+      exists: "existant",
+      willCreate: "sera créé",
+      permsLabel: "Permissions pour {domain}",
+      noRight: "Il faut la permission groupes avec toutes ses actions (ou root) pour gérer les groupes ici.",
+      saved: "Permissions du groupe enregistrées",
+      failed: "Échec de l'enregistrement des permissions du groupe",
+    },
   },
   overviewPage: {
     alertTitle: "Vue d'ensemble du compte.",

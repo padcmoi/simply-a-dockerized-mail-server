@@ -482,6 +482,18 @@ export interface Locales {
       tokenAlertDescription: string;
       tokenSoonTitle: string;
       tokenSoonHint: string;
+      groupPerms: {
+        title: string;
+        hint: string;
+        switchLabel: string;
+        groupLabel: string;
+        exists: string;
+        willCreate: string;
+        permsLabel: string;
+        noRight: string;
+        saved: string;
+        failed: string;
+      };
     };
     overviewPage: {
       alertTitle: string;
