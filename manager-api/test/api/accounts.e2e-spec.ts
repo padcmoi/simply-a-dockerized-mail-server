@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import request from "supertest";
-import { AccountsController } from "../../src/api/accounts/accounts.controller";
-import { AccountsService } from "../../src/api/accounts/accounts.service";
-import { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
+import { AccountsController } from "../../src/api/accounts/crud/crud.controller";
+import { AccountsService } from "../../src/api/accounts/crud/crud.service";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
 
 // A well-formed uuid so ParseUUIDPipe passes and only the guard / body pipe can
 // reject; a deliberately malformed one is used for the 400 assertions.
 const UUID = "11111111-1111-1111-1111-111111111111";
-const SESSION_ID = 42;
 
+// Core account management (CRUD). Sessions and invitations are separate
+// controllers with their own e2e specs.
 describe("AccountsController (e2e: auth + ACL + behavior)", () => {
   let h: Harness;
   const svc = {
@@ -19,27 +19,12 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
     getOverview: vi.fn(),
     updateAccount: vi.fn(),
     revokeAccount: vi.fn(),
-    sendInvitation: vi.fn(),
-    getInvitation: vi.fn(),
-    acceptInvitation: vi.fn(),
-  };
-  // The session routes delegate to JwtAuthService (reused for the admin views).
-  const jwtAuth = {
-    listSessionsOverview: vi.fn(),
-    listActiveSessions: vi.fn(),
-    listSessionHistory: vi.fn(),
-    revokeSession: vi.fn(),
-    revokeAllActiveSessions: vi.fn(),
-    purgeAccountSessionHistory: vi.fn(),
   };
 
   beforeAll(async () => {
     h = await buildHarness({
       controllers: [AccountsController],
-      providers: [
-        { provide: AccountsService, useValue: svc },
-        { provide: JwtAuthService, useValue: jwtAuth },
-      ],
+      providers: [{ provide: AccountsService, useValue: svc }],
     });
   });
   afterAll(() => h.close());
@@ -56,13 +41,6 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
     ["get", `/api/v1/accounts/${UUID}/overview`],
     ["patch", `/api/v1/accounts/${UUID}/edit`],
     ["delete", `/api/v1/accounts/${UUID}`],
-    ["post", "/api/v1/accounts/invite"],
-    ["get", "/api/v1/accounts/sessions/overview"],
-    ["get", `/api/v1/accounts/${UUID}/sessions/active`],
-    ["get", `/api/v1/accounts/${UUID}/sessions/history`],
-    ["delete", `/api/v1/accounts/${UUID}/sessions/history`],
-    ["delete", `/api/v1/accounts/${UUID}/sessions/${SESSION_ID}`],
-    ["delete", `/api/v1/accounts/${UUID}/sessions`],
   ];
 
   describe("auth (401)", () => {
@@ -264,194 +242,6 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
 
     it("400 when :id is not a uuid", async () => {
       await api().delete("/api/v1/accounts/nope").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
-    });
-  });
-
-  describe("POST /accounts/invite", () => {
-    it("403 for a user without the permission", async () => {
-      await api()
-        .post("/api/v1/accounts/invite")
-        .set("Authorization", `Bearer ${h.token(USER)}`)
-        .send({ email: "new@user.com" })
-        .expect(403);
-    });
-
-    it("201 for a user granted the exact permission", async () => {
-      h.cpg.grantGlobal("accounts", "access", "invite-account");
-      svc.sendInvitation.mockResolvedValueOnce({ ok: true });
-      await api()
-        .post("/api/v1/accounts/invite")
-        .set("Authorization", `Bearer ${h.token(USER)}`)
-        .send({ email: "new@user.com", domainId: 1 })
-        .expect(201);
-    });
-
-    it("201 for root and forwards the acting user + validated body + base url", async () => {
-      svc.sendInvitation.mockResolvedValueOnce({ ok: true });
-      await api()
-        .post("/api/v1/accounts/invite")
-        .set("Authorization", `Bearer ${h.token(ROOT)}`)
-        .send({ email: "new@user.com", domainId: 2 })
-        .expect(201);
-      expect(svc.sendInvitation).toHaveBeenCalledWith(
-        { id: ROOT.id, email: ROOT.email, isRoot: true },
-        { email: "new@user.com", domainId: 2, groupIds: [], makeOwner: false },
-        expect.any(String)
-      );
-    });
-
-    it("400 on an invalid email (zod)", async () => {
-      await api()
-        .post("/api/v1/accounts/invite")
-        .set("Authorization", `Bearer ${h.token(ROOT)}`)
-        .send({ email: "not-an-email", domainId: 1 })
-        .expect(400);
-    });
-
-    it("400 when the domain is missing (zod: domain is mandatory)", async () => {
-      await api()
-        .post("/api/v1/accounts/invite")
-        .set("Authorization", `Bearer ${h.token(ROOT)}`)
-        .send({ email: "new@user.com" })
-        .expect(400);
-    });
-  });
-
-  describe("GET /accounts/sessions/overview", () => {
-    it("403 for a user without the permission", async () => {
-      await api().get("/api/v1/accounts/sessions/overview").set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
-    });
-
-    it("200 for a user granted view-account-sessions", async () => {
-      h.cpg.grantGlobal("accounts", "access", "view-account-sessions");
-      jwtAuth.listSessionsOverview.mockResolvedValueOnce([]);
-      await api().get("/api/v1/accounts/sessions/overview").set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
-    });
-
-    it("200 for root", async () => {
-      jwtAuth.listSessionsOverview.mockResolvedValueOnce([]);
-      await api().get("/api/v1/accounts/sessions/overview").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
-      expect(jwtAuth.listSessionsOverview).toHaveBeenCalled();
-    });
-  });
-
-  describe("GET /accounts/:id/sessions/active", () => {
-    it("403 for a user without the permission", async () => {
-      await api().get(`/api/v1/accounts/${UUID}/sessions/active`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
-    });
-
-    it("200 for a user granted view-account-sessions and forwards the id", async () => {
-      h.cpg.grantGlobal("accounts", "access", "view-account-sessions");
-      jwtAuth.listActiveSessions.mockResolvedValueOnce([]);
-      await api().get(`/api/v1/accounts/${UUID}/sessions/active`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
-      expect(jwtAuth.listActiveSessions).toHaveBeenCalledWith(UUID);
-    });
-
-    it("400 when :id is not a uuid", async () => {
-      await api().get("/api/v1/accounts/not-a-uuid/sessions/active").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
-    });
-  });
-
-  describe("GET /accounts/:id/sessions/history", () => {
-    it("403 for a user without the permission", async () => {
-      await api().get(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
-    });
-
-    it("200 for root and forwards the validated pagination query", async () => {
-      jwtAuth.listSessionHistory.mockResolvedValueOnce({ items: [], total: 0 });
-      await api().get(`/api/v1/accounts/${UUID}/sessions/history?limit=10`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
-      expect(jwtAuth.listSessionHistory).toHaveBeenCalledWith(UUID, expect.objectContaining({ limit: 10, offset: 0 }));
-    });
-
-    it("400 on an invalid pagination query (zod)", async () => {
-      await api().get(`/api/v1/accounts/${UUID}/sessions/history?limit=7`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
-    });
-
-    it("400 when :id is not a uuid", async () => {
-      await api().get("/api/v1/accounts/not-a-uuid/sessions/history").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
-    });
-  });
-
-  describe("DELETE /accounts/:id/sessions/:sessionId", () => {
-    it("403 for a user without the permission", async () => {
-      await api()
-        .delete(`/api/v1/accounts/${UUID}/sessions/${SESSION_ID}`)
-        .set("Authorization", `Bearer ${h.token(USER)}`)
-        .expect(403);
-    });
-
-    it("200 for a user granted revoke-account-sessions and forwards id + sessionId", async () => {
-      h.cpg.grantGlobal("accounts", "access", "revoke-account-sessions");
-      jwtAuth.revokeSession.mockResolvedValueOnce({ ok: true });
-      await api()
-        .delete(`/api/v1/accounts/${UUID}/sessions/${SESSION_ID}`)
-        .set("Authorization", `Bearer ${h.token(USER)}`)
-        .expect(200);
-      expect(jwtAuth.revokeSession).toHaveBeenCalledWith(UUID, SESSION_ID);
-    });
-
-    it("400 when :sessionId is not an integer", async () => {
-      await api().delete(`/api/v1/accounts/${UUID}/sessions/abc`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
-    });
-  });
-
-  describe("DELETE /accounts/:id/sessions/history", () => {
-    it("403 for a user without the permission", async () => {
-      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
-    });
-
-    it("403 for a user with only revoke (purge is a distinct action)", async () => {
-      h.cpg.grantGlobal("accounts", "access", "revoke-account-sessions");
-      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
-    });
-
-    it("200 for a user granted purge-account-sessions and forwards the id", async () => {
-      h.cpg.grantGlobal("accounts", "access", "purge-account-sessions");
-      jwtAuth.purgeAccountSessionHistory.mockResolvedValueOnce({ ok: true, purged: 42 });
-      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
-      expect(jwtAuth.purgeAccountSessionHistory).toHaveBeenCalledWith(UUID);
-    });
-
-    it("400 when :id is not a uuid", async () => {
-      await api().delete("/api/v1/accounts/not-a-uuid/sessions/history").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
-    });
-  });
-
-  describe("DELETE /accounts/:id/sessions", () => {
-    it("403 for a user without the permission", async () => {
-      await api().delete(`/api/v1/accounts/${UUID}/sessions`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
-    });
-
-    it("200 for a user granted revoke-account-sessions and forwards the id", async () => {
-      h.cpg.grantGlobal("accounts", "access", "revoke-account-sessions");
-      jwtAuth.revokeAllActiveSessions.mockResolvedValueOnce({ ok: true, revoked: 3 });
-      await api().delete(`/api/v1/accounts/${UUID}/sessions`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
-      expect(jwtAuth.revokeAllActiveSessions).toHaveBeenCalledWith(UUID);
-    });
-
-    it("400 when :id is not a uuid", async () => {
-      await api().delete("/api/v1/accounts/not-a-uuid/sessions").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
-    });
-  });
-
-  // The two invitation routes are @Public(): no Authorization header, no ACL.
-  describe("GET /accounts/invite/:token (public)", () => {
-    it("200 with no Authorization header and forwards the token", async () => {
-      svc.getInvitation.mockResolvedValueOnce({ email: "x@y.com", groups: [], expiresAt: new Date() });
-      await api().get("/api/v1/accounts/invite/tok-123").expect(200);
-      expect(svc.getInvitation).toHaveBeenCalledWith("tok-123");
-    });
-  });
-
-  describe("POST /accounts/invite/:token/accept (public)", () => {
-    it("201 with no Authorization header and forwards token + body", async () => {
-      svc.acceptInvitation.mockResolvedValueOnce({ ok: true, email: "x@y.com" });
-      await api().post("/api/v1/accounts/invite/tok-123/accept").send({ password: "longenough", displayName: "Jo" }).expect(201);
-      expect(svc.acceptInvitation).toHaveBeenCalledWith("tok-123", { password: "longenough", displayName: "Jo" });
-    });
-
-    it("400 on an invalid body (zod: password too short)", async () => {
-      await api().post("/api/v1/accounts/invite/tok-123/accept").send({ password: "short" }).expect(400);
     });
   });
 });

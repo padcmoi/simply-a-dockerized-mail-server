@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- refactor(api): the accounts module is split into dedicated crud, sessions and invitations NestJS sub-modules aggregated by AccountsModule (mirroring the domains layout); routes, guards and permissions are unchanged, and a module-compile test now asserts the real dependency graph resolves at boot (15-07-2026)
 - feat(api): `account_invitations.invited_by` is now a real foreign key to `accounts` with ON DELETE SET NULL, so deleting an inviter nulls the pointer on their invitations instead of leaving a dangling id (15-07-2026)
 - feat(ui): the invitation acceptance page is redesigned to match the login/identity style, with a zod-validated form (optional display name, password with a minimum length) and icon-prefixed fields, and it lists the groups the account will join (15-07-2026)
 - feat(ui): the account invite modal is replaced by dedicated pages. The accounts list opens a create menu (by email / by token); /accounts/create/email offers a mandatory domain selector, multi-group selection (default group hidden) and a domain-owner card that shows the current owner and a switch to designate the invitee, confirmed before staging and locked (with a notice) unless the user holds the three ownership actions; /accounts/create/token is a non-functional placeholder (15-07-2026)

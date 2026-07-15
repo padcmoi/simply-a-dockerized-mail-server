@@ -1,30 +1,18 @@
 import { Module } from "@nestjs/common";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { AclModule } from "../../core/acl/acl.module";
-import { JwtAuthModule } from "../../core/auth/jwt/jwt.module";
-import { CustomPermissionGuardModule } from "../../core/custom-permission-guard/custom-permission-guard.module";
-import { AccountInvitation } from "../../core/entities/account-invitation.entity";
-import { Account } from "../../core/entities/account.entity";
-import { AccountProfile } from "../../core/entities/account-profile.entity";
-import { GroupMember } from "../../core/entities/group-member.entity";
-import { Group } from "../../core/entities/group.entity";
-import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
-import { VirtualUser } from "../../core/entities/virtual-user.entity";
-import { GeocodingModule } from "../../core/geocoding/geocoding.module";
-import { MailerModule } from "../../core/mailer/mailer.module";
-import { AccountsController } from "./accounts.controller";
-import { AccountsService } from "./accounts.service";
+import { AccountsCrudModule } from "./crud/crud.module";
+import { AccountsInvitationsModule } from "./invitations/invitations.module";
+import { AccountsSessionsModule } from "./sessions/sessions.module";
 
+// Aggregator for the accounts feature. It owns no controllers of its own: the
+// account surface is split into three sibling sub-modules in this folder.
+//
+// Import ORDER matters. NestJS registers a module's own controllers before those
+// of its imports, and routes are matched in registration order. The sessions and
+// invitations controllers carry static-prefixed routes (e.g. `sessions/overview`,
+// `invite/:token`) that would otherwise be captured by the CRUD controller's
+// `:id`/`:id/overview` params. Listing them BEFORE AccountsCrudModule makes their
+// routes register first, so the static prefixes win over the param routes.
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Account, AccountProfile, AccountInvitation, Group, GroupMember, VirtualDomain, VirtualUser]),
-    MailerModule,
-    CustomPermissionGuardModule,
-    AclModule,
-    GeocodingModule,
-    JwtAuthModule,
-  ],
-  providers: [AccountsService],
-  controllers: [AccountsController],
+  imports: [AccountsSessionsModule, AccountsInvitationsModule, AccountsCrudModule],
 })
 export class AccountsModule {}

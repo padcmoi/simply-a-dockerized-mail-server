@@ -2,7 +2,9 @@
 // on its route/guard/permission metadata. A new controller that is not added
 // here is caught by the "controller count" assertion in acl-cartography.spec.ts,
 // which cross-checks this list against a glob of the source tree.
-import { AccountsController } from "../../src/api/accounts/accounts.controller";
+import { AccountsController } from "../../src/api/accounts/crud/crud.controller";
+import { AccountsInvitationsController } from "../../src/api/accounts/invitations/invitations.controller";
+import { AccountsSessionsController } from "../../src/api/accounts/sessions/sessions.controller";
 import { AdminDomainsController } from "../../src/api/domains/admin-domains/admin-domains.controller";
 import { AliasesController } from "../../src/api/domains/aliases/aliases.controller";
 import { DkimCheckController } from "../../src/api/domains/dkim-check/dkim-check.controller";
@@ -21,6 +23,8 @@ import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
 
 export const ALL_CONTROLLERS = [
   AccountsController,
+  AccountsInvitationsController,
+  AccountsSessionsController,
   AdminDomainsController,
   AliasesController,
   DkimCheckController,
