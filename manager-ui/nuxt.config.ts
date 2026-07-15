@@ -24,6 +24,12 @@ export default defineNuxtConfig({
           if (Array.isArray(plugins) && tsConfig.vueCompilerOptions) {
             tsConfig.vueCompilerOptions.plugins = plugins.filter((p) => p !== "vue-router/volar/sfc-route-blocks");
           }
+          // Nuxt's generated tsconfig includes only test/nuxt, so vue-tsc never
+          // type-checked the vitest suite under test/. Add it so `typecheck`
+          // covers the specs the same way it covers app code (paths generated in
+          // .nuxt, hence the ../ prefix).
+          tsConfig.include = tsConfig.include ?? [];
+          if (!tsConfig.include.includes("../test/**/*.ts")) tsConfig.include.push("../test/**/*.ts");
         });
       });
     },

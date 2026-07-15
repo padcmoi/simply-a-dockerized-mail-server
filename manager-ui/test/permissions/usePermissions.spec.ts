@@ -5,12 +5,22 @@ import { usePermissions } from "~/composables/usePermissions";
 // usePermissions imports its two Pinia stores directly, so mock the modules
 // (rather than the composable's store logic, which the store specs own). The
 // hoisted holder lets each test set the session/data the fakes return.
-const h = vi.hoisted(() => ({
-  session: null as { isRoot?: boolean } | null,
-  data: { global: [], domain: [] } as unknown,
-  hasGlobal: vi.fn(),
-  hasDomain: vi.fn(),
-}));
+// Mirrors the permissions store's (non-exported) PermissionsData shape so the
+// mock's `data` is typed instead of laundered through `as unknown`.
+type MockPermissionsData = {
+  global: { resource: string; action: string }[];
+  domain: { domainId: number; resource: string; action: string; domainName: string }[];
+};
+
+const h = vi.hoisted(() => {
+  const data: MockPermissionsData = { global: [], domain: [] };
+  return {
+    session: null as { isRoot?: boolean } | null,
+    data,
+    hasGlobal: vi.fn(),
+    hasDomain: vi.fn(),
+  };
+});
 
 vi.mock("~/stores/auth", () => ({
   useAuthStore: () => ({

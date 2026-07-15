@@ -89,7 +89,7 @@ describe("useApiTokens.create", () => {
       lastUsedIp: null,
       createdAt: "2026-02-02",
     });
-    expect(tokens.value[1].id).toBe(1);
+    expect(tokens.value[1]!.id).toBe(1);
     expect(call).toHaveBeenCalledWith("/api-tokens", { method: "POST", body: { name: "deploy", allowedIps: ["10.0.0.1"] } });
   });
 });
@@ -100,7 +100,7 @@ describe("useApiTokens.update", () => {
     const { tokens, update } = useApiTokens();
     tokens.value = [tokenItem({ id: 1, name: "old" })];
     await update(1, { name: "new" });
-    expect(tokens.value[0].name).toBe("new");
+    expect(tokens.value[0]!.name).toBe("new");
     expect(call).toHaveBeenCalledWith("/api-tokens/1", { method: "PATCH", body: { name: "new" } });
   });
 
@@ -109,7 +109,7 @@ describe("useApiTokens.update", () => {
     const { tokens, update } = useApiTokens();
     tokens.value = [tokenItem({ id: 1, name: "old" })];
     await update(42, { name: "new" });
-    expect(tokens.value[0].name).toBe("old");
+    expect(tokens.value[0]!.name).toBe("old");
   });
 });
 
@@ -119,7 +119,7 @@ describe("useApiTokens.revoke / delete / abandon / regenerate", () => {
     const { tokens, revoke } = useApiTokens();
     tokens.value = [tokenItem({ id: 5, revokedAt: null })];
     await revoke(5);
-    expect(tokens.value[0].revokedAt).toEqual(expect.any(String));
+    expect(tokens.value[0]!.revokedAt).toEqual(expect.any(String));
     expect(call).toHaveBeenCalledWith("/api-tokens/5/revoke", { method: "POST" });
   });
 
@@ -157,7 +157,7 @@ describe("useApiTokens.revoke / delete / abandon / regenerate", () => {
     tokens.value = [tokenItem({ id: 7, clientId: "cid-old" })];
     const result = await regenerate(7);
     expect(result).toBe(created);
-    expect(tokens.value[0].clientId).toBe("cid-rotated");
+    expect(tokens.value[0]!.clientId).toBe("cid-rotated");
     expect(call).toHaveBeenCalledWith("/api-tokens/7/regenerate", { method: "POST" });
   });
 });

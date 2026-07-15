@@ -41,7 +41,7 @@ describe("useDomainBarChartData.chartData", () => {
       { domain: "b.com", count: 2 },
     ]);
     expect(chartData.value.labels).toEqual(["a.com", "b.com"]);
-    const ds = chartData.value.datasets[0];
+    const ds = chartData.value.datasets[0]!;
     expect(ds.data).toEqual([5, 2]);
     expect(ds.backgroundColor).toBe("rgba(96,165,250,0.35)");
     expect(ds.borderColor).toBe("#60a5fa");

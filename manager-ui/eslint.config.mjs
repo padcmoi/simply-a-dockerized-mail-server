@@ -171,5 +171,41 @@ export default withNuxt(
       "no-empty-pattern": "warn",
       "no-constant-condition": "warn",
     },
+  },
+  {
+    // The vitest specs were outside every strict block above, so no-explicit-any
+    // and the cast ban never applied. Hold them to the same type-honesty bar as
+    // app code (without the app-only style rules like the named-import cap).
+    name: "gestlok/rules-test",
+    files: ["test/**/*.ts"],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: { ecmaVersion: "latest", sourceType: "module" },
+    },
+    plugins: {
+      "@typescript-eslint": typescriptEslintPlugin,
+    },
+    rules: {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": noUnusedVarsConfig,
+      "@typescript-eslint/no-explicit-any": "error",
+      "no-restricted-syntax": [
+        "error",
+        { selector: "TSAsExpression > TSNeverKeyword", message: "Do not use `as never` in a spec; type the double instead." },
+        {
+          selector: "TSAsExpression > TSUnknownKeyword",
+          message: "Do not launder types through `as unknown as ...` in a spec; type the double instead.",
+        },
+      ],
+    },
+  },
+  {
+    // test/setup.ts bridges Vue's real reactivity exports to Nuxt's auto-import
+    // globals dynamically: the one place a contained cast is warranted.
+    name: "gestlok/rules-test-setup",
+    files: ["test/setup.ts"],
+    rules: {
+      "no-restricted-syntax": "off",
+    },
   }
 );

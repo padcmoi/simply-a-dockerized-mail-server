@@ -149,7 +149,7 @@ describe("useNav user menu", () => {
     asRoot();
     const onSignOut = vi.fn();
     const { userItems } = useNav(onSignOut);
-    const signOut = userItems.value[2][0] as { label: string; onSelect: () => void };
+    const signOut = userItems.value[2]![0] as { label: string; onSelect: () => void };
     expect(signOut.label).toBe("layout.signOut");
     signOut.onSelect();
     expect(onSignOut).toHaveBeenCalledTimes(1);
@@ -158,7 +158,7 @@ describe("useNav user menu", () => {
   it("builds a language sub-menu from the locale options, checked on the preference", () => {
     asRoot();
     const { userItems } = useNav(noop);
-    const language = userItems.value[1][0] as {
+    const language = userItems.value[1]![0] as {
       children: { label: string; checked: boolean; onUpdateChecked: (c: boolean) => void }[];
     };
     // system + the two configured locales, each label carrying its flag.
@@ -166,21 +166,21 @@ describe("useNav user menu", () => {
     expect(language.children.map((c) => c.label)).toEqual(["🇬🇧  layout.system", "🇬🇧  English", "🇫🇷  Français"]);
     // preference is "system", so only the first entry is checked.
     expect(language.children.map((c) => c.checked)).toEqual([true, false, false]);
-    language.children[2].onUpdateChecked(true);
+    language.children[2]!.onUpdateChecked(true);
     expect(setLocalePreference).toHaveBeenCalledWith("fr_FR");
   });
 
   it("reflects the color mode and updates the preference on toggle", () => {
     asRoot();
     const { userItems } = useNav(noop);
-    const appearance = userItems.value[1][1] as {
+    const appearance = userItems.value[1]![1] as {
       children: { label: string; checked: boolean; onUpdateChecked: (c: boolean) => void }[];
     };
     const [light, dark, system] = appearance.children;
-    expect(dark.checked).toBe(true); // colorMode.value === "dark"
-    expect(light.checked).toBe(false);
-    expect(system.checked).toBe(false); // preference !== "system"
-    light.onUpdateChecked(true);
+    expect(dark!.checked).toBe(true); // colorMode.value === "dark"
+    expect(light!.checked).toBe(false);
+    expect(system!.checked).toBe(false); // preference !== "system"
+    light!.onUpdateChecked(true);
     expect(colorMode.preference).toBe("light");
   });
 });
