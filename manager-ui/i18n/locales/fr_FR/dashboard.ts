@@ -23,8 +23,8 @@ export default {
     recipients: "destinataires",
   },
   recent: {
-    domains: "Domaines récents",
-    recipients: "Destinataires récents",
+    domains: "Domaines récemment modifiés",
+    recipients: "Destinataires récemment modifiés",
     noDomains: "Aucun domaine pour l'instant",
     noDomainsHint: "Ajoutez votre premier domaine pour commencer à recevoir des mails.",
     noRecipients: "Aucun destinataire pour l'instant",

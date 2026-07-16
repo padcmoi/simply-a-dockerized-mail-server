@@ -13,6 +13,7 @@ interface Recipient {
   email: string;
   domain: string;
   active: number;
+  lastActivity?: string;
 }
 interface Alias {
   id: number;
@@ -129,8 +130,14 @@ const stats = computed(() => [
   },
 ]);
 
-const recentDomains = computed(() => domains.value.slice(0, 5));
-const recentRecipients = computed(() => recipients.value.slice(0, 6));
+// Both API calls return their own rows unsorted by recency, so sort here by
+// lastActivity (most recently created/modified first) before slicing.
+const recentDomains = computed(() =>
+  [...domains.value].sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "")).slice(0, 5)
+);
+const recentRecipients = computed(() =>
+  [...recipients.value].sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "")).slice(0, 6)
+);
 
 const recipientsPerDomain = computed(() =>
   domains.value
