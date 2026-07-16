@@ -110,6 +110,9 @@ async function onDeleteConfirmed() {
         :description="t('groups.alertDescription')"
         class="flex-1 min-w-[16rem]"
       />
+    </div>
+
+    <div class="flex justify-end">
       <UButton icon="i-lucide-plus" color="primary" @click="openCreate">
         {{ t("groups.newGroup") }}
       </UButton>
