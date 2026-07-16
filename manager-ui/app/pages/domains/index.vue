@@ -70,7 +70,7 @@ const domainStore = useDomainStore();
 const auth = useAuthStore();
 const perms = usePermissionsStore();
 const { set: setBreadcrumb } = useBreadcrumb();
-const { disk, diskLoading, assignableMb, loadDisk } = useDomainDisk();
+const { disk, assignableMb, loadDisk } = useDomainDisk();
 
 setBreadcrumb([{ label: t("nav.domains") }]);
 
@@ -121,24 +121,13 @@ onMounted(refreshDisk);
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <div class="flex items-start justify-between gap-3 flex-wrap">
-      <UAlert
-        color="neutral"
-        variant="subtle"
-        icon="i-lucide-info"
-        :title="t('domains.alertTitle')"
-        :description="t('domains.alertDescription')"
-        class="flex-1 min-w-[16rem]"
-      />
-      <UButton
-        icon="i-lucide-refresh-cw"
-        color="neutral"
-        variant="ghost"
-        :loading="loading || diskLoading"
-        square
-        @click="load"
-      />
-    </div>
+    <UAlert
+      color="neutral"
+      variant="subtle"
+      icon="i-lucide-info"
+      :title="t('domains.alertTitle')"
+      :description="t('domains.alertDescription')"
+    />
 
     <DomainsCapacityCard v-if="canSeeAllDomains" :disk="disk" />
 

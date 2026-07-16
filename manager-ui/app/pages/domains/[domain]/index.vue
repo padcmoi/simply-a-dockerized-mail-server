@@ -7,7 +7,6 @@ definePageMeta({
 });
 
 const {
-  REFRESH_OPTIONS,
   domain,
   recipients,
   aliases,
@@ -18,7 +17,6 @@ const {
   loading,
   dkimLoading,
   postfixLoading,
-  refreshInterval,
   activeRecipients,
   usedBytes,
   allocatedBytes,
@@ -31,7 +29,6 @@ const {
   barChartData,
   barChartOptions,
   barChartHeight,
-  load,
 } = useDomainDashboard();
 
 const { isRoot, hasDomain } = usePermissions();
@@ -69,46 +66,27 @@ const dkimStatusText = computed(() => {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <div class="flex items-center justify-between gap-2 flex-wrap">
-      <div class="flex items-center gap-3 min-w-0">
-        <UIcon name="i-lucide-globe" class="text-primary shrink-0 text-xl" />
-        <template v-if="domain">
-          <div class="min-w-0">
-            <h2 class="text-lg font-semibold truncate">
-              {{ domain.domain }}
-            </h2>
-            <p class="text-xs text-muted">{{ $t("domains.alertTitle") }}</p>
-          </div>
-
-          <UBadge :color="domain.active ? 'success' : 'warning'" variant="subtle">
-            {{ domain.active ? $t("common.active") : $t("common.inactive") }}
-          </UBadge>
-
-          <UTooltip v-if="canViewAdmin && dkimCheck" :text="dkimStatusText">
-            <UBadge :color="dkimStatusOk ? 'success' : 'error'" variant="subtle" :icon="dkimStatusIcon"> DKIM </UBadge>
-          </UTooltip>
-        </template>
-        <div v-else class="min-w-0 space-y-1.5">
-          <USkeleton class="h-5 w-40" />
-          <USkeleton class="h-3 w-56" />
+    <div class="flex items-center gap-3 min-w-0 flex-wrap">
+      <UIcon name="i-lucide-globe" class="text-primary shrink-0 text-xl" />
+      <template v-if="domain">
+        <div class="min-w-0">
+          <h2 class="text-lg font-semibold truncate">
+            {{ domain.domain }}
+          </h2>
+          <p class="text-xs text-muted">{{ $t("domains.alertTitle") }}</p>
         </div>
-      </div>
-      <div class="flex items-center gap-3">
-        <div class="flex items-center gap-1.5 text-xs text-muted">
-          <span class="hidden sm:block shrink-0">{{ $t("domainDashboard.autoRefresh.label") }}:</span>
-          <div class="flex gap-0.5">
-            <button
-              v-for="opt in REFRESH_OPTIONS"
-              :key="opt"
-              class="px-2 py-1 rounded text-xs font-medium transition-colors"
-              :class="refreshInterval === opt ? 'bg-primary text-white' : 'bg-elevated text-muted hover:text-default'"
-              @click="refreshInterval = opt"
-            >
-              {{ opt === 0 ? $t("domainDashboard.autoRefresh.off") : `${opt}s` }}
-            </button>
-          </div>
-        </div>
-        <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
+
+        <UBadge :color="domain.active ? 'success' : 'warning'" variant="subtle">
+          {{ domain.active ? $t("common.active") : $t("common.inactive") }}
+        </UBadge>
+
+        <UTooltip v-if="canViewAdmin && dkimCheck" :text="dkimStatusText">
+          <UBadge :color="dkimStatusOk ? 'success' : 'error'" variant="subtle" :icon="dkimStatusIcon"> DKIM </UBadge>
+        </UTooltip>
+      </template>
+      <div v-else class="min-w-0 space-y-1.5">
+        <USkeleton class="h-5 w-40" />
+        <USkeleton class="h-3 w-56" />
       </div>
     </div>
 

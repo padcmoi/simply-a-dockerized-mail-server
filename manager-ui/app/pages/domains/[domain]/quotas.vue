@@ -73,7 +73,7 @@ const recipientCols = computed(() =>
 // response, see quotas.controller.ts). Not `usePaginatedList` since that
 // composable expects the endpoint's top-level shape to be `{items,total}`,
 // not nested under `recipients`.
-const { data, status, refresh } = useAsyncData<{
+const { data, status } = useAsyncData<{
   domain: QuotaRow | null;
   recipients: { items: QuotaRow[]; total: number };
 }>(
@@ -133,10 +133,6 @@ watchEffect(() => {
   ]);
 });
 
-async function load() {
-  await refresh();
-}
-
 function occupancy(row: QuotaRow) {
   return occupancyPercent(Number(row.quota ?? 0), Number(row.bytes));
 }
@@ -144,16 +140,7 @@ function occupancy(row: QuotaRow) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <div class="flex items-start justify-between gap-3 flex-wrap">
-      <UAlert
-        color="neutral"
-        variant="subtle"
-        icon="i-lucide-info"
-        :title="t('quotas.alertTitle')"
-        class="flex-1 min-w-[16rem]"
-      />
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
-    </div>
+    <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('quotas.alertTitle')" />
 
     <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
       {{ t("quotas.perDomain") }}

@@ -636,10 +636,6 @@ export interface Locales {
     blockedSenders: string;
     messages: string;
     activity: string;
-    autoRefresh: {
-      label: string;
-      off: string;
-    };
     owner: {
       title: string;
       current: string;

@@ -85,9 +85,6 @@ interface MainData {
   topMailboxes: MailboxEntry[];
 }
 
-export const REFRESH_OPTIONS = [0, 15, 30, 60] as const;
-const REFRESH_STORAGE_KEY = "mail-manager:domain-refresh-interval";
-
 function occupancyRate(m: MailboxEntry) {
   const q = Number(m.quota);
   return q > 0 ? Number(m.bytes) / q : -1;
@@ -103,19 +100,12 @@ export function useDomainDashboard() {
   const { colors } = useChartColors();
   const { tick } = useDataRefresh();
 
-  const refreshInterval = ref<number>(0);
-  let refreshTimer: ReturnType<typeof setInterval> | null = null;
-
   const domainFqdn = computed(() => String(route.params.domain));
 
   // Main waterfall: resolve the domain by fqdn, then its recipients/aliases/quota
   // in parallel. `loading` (derived from `status`, see below) drives the
   // page's stat-card/disk/top-mailboxes skeletons.
-  const {
-    data: mainData,
-    status: mainStatus,
-    refresh: refreshMain,
-  } = useAsyncData<MainData>(
+  const { data: mainData, status: mainStatus } = useAsyncData<MainData>(
     "domain-dashboard-main",
     async () => {
       const domains = await call<Domain[]>("/domains");
@@ -137,6 +127,7 @@ export function useDomainDashboard() {
     },
     {
       server: false,
+      watch: [tick],
       default: () => ({ domain: null, recipients: [], aliases: [], quota: null, topMailboxes: [] }),
     }
   );
@@ -196,7 +187,7 @@ export function useDomainDashboard() {
   );
   const dkimCheck = computed(() => dkimCheckData.value);
 
-  const { data: rspamdData, refresh: refreshRspamd } = useAsyncData<RspamdHistoryRow[]>(
+  const { data: rspamdData } = useAsyncData<RspamdHistoryRow[]>(
     "domain-dashboard-rspamd",
     async () => {
       if (!domainId.value) return [];
@@ -210,11 +201,7 @@ export function useDomainDashboard() {
   );
   const rspamdHistory = computed(() => rspamdData.value ?? []);
 
-  const {
-    data: postfixData,
-    status: postfixStatus,
-    refresh: refreshPostfix,
-  } = useAsyncData<PostfixQueueStats | null>(
+  const { data: postfixData, status: postfixStatus } = useAsyncData<PostfixQueueStats | null>(
     "domain-dashboard-postfix",
     async () => {
       if (!domain.value) return null;
@@ -357,32 +344,6 @@ export function useDomainDashboard() {
     setBreadcrumb([{ label: t("nav.domains"), to: "/domains" }, { label: domain.value?.domain ?? "..." }]);
   });
 
-  watch(refreshInterval, (val) => {
-    localStorage.setItem(REFRESH_STORAGE_KEY, String(val));
-    startAutoRefresh();
-  });
-
-  function stopAutoRefresh() {
-    if (refreshTimer !== null) {
-      clearInterval(refreshTimer);
-      refreshTimer = null;
-    }
-  }
-
-  function startAutoRefresh() {
-    stopAutoRefresh();
-    if (refreshInterval.value > 0) refreshTimer = setInterval(load, refreshInterval.value * 1_000);
-  }
-
-  function onVisibilityChange() {
-    if (document.visibilityState === "visible") load();
-  }
-
-  async function load() {
-    await refreshMain();
-    await Promise.all([refreshDkim(), refreshDkimCheck(), refreshRspamd(), refreshPostfix()]);
-  }
-
   async function rotateDkim() {
     if (!domain.value) return;
     try {
@@ -431,23 +392,7 @@ export function useDomainDashboard() {
     });
   }
 
-  onMounted(() => {
-    const saved = localStorage.getItem(REFRESH_STORAGE_KEY);
-    if (saved !== null) {
-      const v = parseInt(saved, 10);
-      if ((REFRESH_OPTIONS as readonly number[]).includes(v)) refreshInterval.value = v;
-    }
-    startAutoRefresh();
-    document.addEventListener("visibilitychange", onVisibilityChange);
-  });
-
-  onUnmounted(() => {
-    stopAutoRefresh();
-    document.removeEventListener("visibilitychange", onVisibilityChange);
-  });
-
   return {
-    REFRESH_OPTIONS,
     domain,
     recipients,
     aliases,
@@ -459,7 +404,6 @@ export function useDomainDashboard() {
     loading,
     dkimLoading,
     postfixLoading,
-    refreshInterval,
     domainFqdn,
     activeRecipients,
     usedBytes,
@@ -474,7 +418,6 @@ export function useDomainDashboard() {
     barChartData,
     barChartOptions,
     barChartHeight,
-    load,
     rotateDkim,
     deleteDkim,
     copyToClipboard,

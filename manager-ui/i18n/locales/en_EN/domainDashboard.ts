@@ -68,10 +68,6 @@ export default {
   blockedSenders: "Blocked senders",
   messages: "Messages",
   activity: "sent (Sent folder copies)",
-  autoRefresh: {
-    label: "Auto-refresh",
-    off: "Off",
-  },
   owner: {
     title: "Owner",
     current: "Current owner",

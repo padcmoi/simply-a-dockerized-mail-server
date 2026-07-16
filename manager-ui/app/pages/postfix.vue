@@ -44,16 +44,7 @@ onMounted(load);
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <div class="flex items-start justify-between gap-3 flex-wrap">
-      <UAlert
-        color="neutral"
-        variant="subtle"
-        icon="i-lucide-send"
-        :title="t('postfixPage.subtitle')"
-        class="flex-1 min-w-[16rem]"
-      />
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
-    </div>
+    <UAlert color="neutral" variant="subtle" icon="i-lucide-send" :title="t('postfixPage.subtitle')" />
 
     <UAlert
       v-if="stats && !stats.available"

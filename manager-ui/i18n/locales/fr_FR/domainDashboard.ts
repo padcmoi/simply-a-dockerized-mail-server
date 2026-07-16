@@ -68,10 +68,6 @@ export default {
   blockedSenders: "Expéditeurs bloqués",
   messages: "Messages",
   activity: "envoyés (copies dossier Envoyés)",
-  autoRefresh: {
-    label: "Actualisation",
-    off: "Non",
-  },
   owner: {
     title: "Propriétaire",
     current: "Propriétaire actuel",

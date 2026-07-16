@@ -40,7 +40,6 @@ const {
   search,
   sortBy,
   sortDir,
-  load,
 } = useRspamdPage(domainId);
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
@@ -58,16 +57,7 @@ watchEffect(() => {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <div class="flex items-start justify-between gap-3 flex-wrap">
-      <UAlert
-        color="neutral"
-        variant="subtle"
-        icon="i-lucide-shield"
-        :title="t('domainDashboard.rspamdPage.subtitle')"
-        class="flex-1 min-w-[16rem]"
-      />
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="load" />
-    </div>
+    <UAlert color="neutral" variant="subtle" icon="i-lucide-shield" :title="t('domainDashboard.rspamdPage.subtitle')" />
 
     <RspamdStatTiles :stats="stats" :loading="loading" />
 

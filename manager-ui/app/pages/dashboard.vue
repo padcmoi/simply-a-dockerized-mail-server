@@ -48,11 +48,7 @@ interface DashboardData {
   disk: DiskInfo | null;
 }
 
-const {
-  data,
-  status,
-  refresh: load,
-} = useAsyncData<DashboardData>(
+const { data, status } = useAsyncData<DashboardData>(
   "dashboard-main",
   async () => {
     const [domainList, rejectList, diskData] = await Promise.all([
@@ -153,16 +149,7 @@ const recipientsPerDomain = computed(() =>
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <div class="flex items-start justify-between gap-3 flex-wrap">
-      <UAlert
-        color="neutral"
-        variant="subtle"
-        icon="i-lucide-layout-dashboard"
-        :title="t('dashboard.subtitle')"
-        class="flex-1 min-w-[16rem]"
-      />
-      <UButton icon="i-lucide-refresh-cw" color="neutral" variant="ghost" :loading="loading" square @click="() => load()" />
-    </div>
+    <UAlert color="neutral" variant="subtle" icon="i-lucide-layout-dashboard" :title="t('dashboard.subtitle')" />
 
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <DomainStatCard
