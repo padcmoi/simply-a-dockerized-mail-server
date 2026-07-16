@@ -5,7 +5,13 @@ import { z } from "zod";
 // groups at once; the default group is auto-assigned on account creation and is
 // never part of this list.
 export const sendInvitationSchema = z.object({
-  email: z.string().email(),
+  // Lowercased before it ever reaches the DB: this becomes the account's login
+  // identity (accounts.email) on acceptance, and a mixed-case value would let
+  // "Dodo@x.com" and "dodo@x.com" exist as two different accounts.
+  email: z
+    .string()
+    .email()
+    .transform((v) => v.toLowerCase()),
   domainId: z.coerce.number().int().positive(),
   groupIds: z.array(z.string().uuid()).default([]),
   // When true, accepting the invitation makes the new account the owner of the

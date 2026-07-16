@@ -12,11 +12,15 @@ export const MIN_RECIPIENT_QUOTA_BYTES = 1024 * 1024; // 1 MB
 // as `${localPart}@${domain}`.
 export const createRecipientSchema = z
   .object({
+    // Lowercased before it ever reaches the DB: postfix/dovecot's virtual_users
+    // lookups are case-sensitive, so a mixed-case local-part (e.g. "Dodo@...")
+    // silently makes the mailbox unreachable by real, lowercase incoming mail.
     localPart: z
       .string()
       .min(1)
       .max(64)
-      .regex(/^[a-z0-9._+-]+$/i, "must be a valid mailbox local-part"),
+      .regex(/^[a-z0-9._+-]+$/i, "must be a valid mailbox local-part")
+      .transform((v) => v.toLowerCase()),
     password: z.string().min(8).max(255),
     quota: z
       .number()

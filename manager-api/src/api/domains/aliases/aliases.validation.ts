@@ -8,11 +8,15 @@ import { z } from "zod";
 // a domain into the local-part and have its alias land on a domain the route
 // never authorised. The source is always rebuilt from the route's domain, it
 // is never read from the body.
+// Lowercased before it ever reaches the DB: postfix's virtual_aliases lookups
+// are case-sensitive, so a mixed-case source/destination silently makes the
+// alias never match real, lowercase incoming mail.
 const localPart = z
   .string()
   .min(1)
   .max(64)
-  .regex(/^[a-z0-9._+-]+$/i, "must be a valid mailbox local-part");
+  .regex(/^[a-z0-9._+-]+$/i, "must be a valid mailbox local-part")
+  .transform((v) => v.toLowerCase());
 
 // `.strict()` on both: `source` and `domain` are computed, never accepted. Left
 // unstrict, zod would drop them and answer 200 to a body that plainly asked to
@@ -20,7 +24,11 @@ const localPart = z
 export const createAliasSchema = z
   .object({
     localPart,
-    destination: z.string().email().max(255),
+    destination: z
+      .string()
+      .email()
+      .max(255)
+      .transform((v) => v.toLowerCase()),
     userEndDate: z.string().date().nullable().optional(),
   })
   .strict();
@@ -31,7 +39,12 @@ export const createAliasSchema = z
 export const updateAliasSchema = z
   .object({
     localPart: localPart.optional(),
-    destination: z.string().email().max(255).optional(),
+    destination: z
+      .string()
+      .email()
+      .max(255)
+      .transform((v) => v.toLowerCase())
+      .optional(),
     userEndDate: z.string().date().nullable().optional(),
   })
   .strict();
