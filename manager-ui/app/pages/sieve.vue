@@ -39,6 +39,7 @@ const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { formatDateTime } = useDateTime();
 
 setBreadcrumb([{ label: t("layout.sieveLong") }]);
 
@@ -129,6 +130,15 @@ async function onDeleteConfirmed() {
           <template #enabled-cell="{ row }">
             <USwitch :model-value="!!row.original.enabled" @update:model-value="toggle(row.original.id, row.original.enabled)" />
           </template>
+
+          <template #createdAt-cell="{ row }">
+            <span class="text-muted">{{ formatDateTime(row.original.createdAt) }}</span>
+          </template>
+
+          <template #updatedAt-cell="{ row }">
+            <span class="text-muted">{{ formatDateTime(row.original.updatedAt) }}</span>
+          </template>
+
           <template #actions-cell="{ row }">
             <UButton
               icon="i-lucide-trash-2"
