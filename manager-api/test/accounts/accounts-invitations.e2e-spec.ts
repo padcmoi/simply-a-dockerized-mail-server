@@ -62,7 +62,7 @@ describe("AccountsInvitationsController (e2e: auth + ACL + behavior)", () => {
         .expect(201);
       expect(svc.sendInvitation).toHaveBeenCalledWith(
         { id: ROOT.id, email: ROOT.email, isRoot: true },
-        { email: "new@user.com", domainId: 2, groupIds: [], makeOwner: false },
+        { email: "new@user.com", domainId: 2, groupIds: [], makeOwner: false, useDomainGroup: false },
         expect.any(String)
       );
     });
