@@ -1,7 +1,7 @@
 import { useActiveElement, useWindowFocus as useVueWindowFocus } from "@vueuse/core";
 import { useDataRefresh } from "~/composables/useDataRefresh";
 
-const FAST_MS = 5_000;
+const FAST_MS = 15_000;
 const SLOW_MS = 30_000;
 
 type NetworkInformation = { effectiveType?: string; saveData?: boolean };

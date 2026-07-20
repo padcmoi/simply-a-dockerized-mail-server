@@ -20,6 +20,8 @@ services:
     networks:
       mail:
         ipv4_address: 172.200.0.19
+    ports:
+      - "${BINDING_IP_WS}:${BINDING_PORT_WS}:3001"
     depends_on:
       mariadb:
         condition: service_healthy

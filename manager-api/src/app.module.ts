@@ -15,6 +15,7 @@ import { CombinedAuthGuard } from "./core/auth/auth.guard";
 import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
 import { CustomPermissionGuardModule } from "./core/custom-permission-guard/custom-permission-guard.module";
 import { RefreshToken } from "./core/entities/refresh-token.entity";
+import { WebsocketModule } from "./core/websocket/websocket.module";
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { RefreshToken } from "./core/entities/refresh-token.entity";
     GroupsModule,
     RspamdModule,
     PostfixModule,
+    WebsocketModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: CombinedAuthGuard }],
 })

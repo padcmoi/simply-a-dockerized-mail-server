@@ -62,9 +62,11 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     apiProxyTarget: process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000",
+    realtimeTarget: process.env.NUXT_REALTIME_TARGET ?? "ws://mail-manager-api:3001",
     public: { apiBase: process.env.NUXT_PUBLIC_API_BASE ?? "/api" },
   },
   nitro: {
+    experimental: { websocket: true },
     routeRules: {
       "/api/v1/**": {
         proxy: {

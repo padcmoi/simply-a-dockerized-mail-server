@@ -93,10 +93,10 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
   }, 1000);
   watch(search, applyDebouncedSearch);
 
-  // Two independent useAsyncData calls: stats rarely change and don't
-  // depend on pagination; history does. Nuxt cancels/dedupes a superseded
-  // in-flight call itself when `watch` fires again, so no manual
-  // AbortController bookkeeping is needed (see usePaginatedList.ts).
+  // Domain-scoped stats still come over REST (bumped by `tick` like before).
+  // The global page's stats come over WS only (see realtime.client.ts /
+  // rspamd-stats.watcher.ts) -- this call stays disabled for it.
+  const realtimeStats = domainId ? ref<RspamdStats | null>(null) : useRealtimeTopic<RspamdStats>("rspamd-stats");
   const {
     data: statsData,
     status: statsStatus,
@@ -104,10 +104,11 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
   } = useAsyncData<RspamdStats | null>(
     `${keyPrefix}-stats`,
     async () => {
-      if (domainId) await until(domainId).toBeTruthy();
+      if (!domainId) return null;
+      await until(domainId).toBeTruthy();
       return call<RspamdStats>(`${basePath.value}/stats`).catch(() => null);
     },
-    { server: false, watch: domainId ? [domainId, tick] : [tick], default: () => null }
+    { server: false, immediate: !!domainId, watch: domainId ? [domainId, tick] : [], default: () => null }
   );
 
   // `size=200` bounds how many rows Rspamd's own ring buffer gives us before
@@ -140,8 +141,8 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
     }
   );
 
-  const stats = computed(() => statsData.value);
-  const statsUnavailable = computed(() => statsStatus.value === "success" && !statsData.value);
+  const stats = computed(() => (domainId ? statsData.value : realtimeStats.value));
+  const statsUnavailable = computed(() => (domainId ? statsStatus.value === "success" && !statsData.value : false));
   const history = computed(() => historyData.value?.items ?? []);
   const total = computed(() => historyData.value?.total ?? 0);
 
@@ -177,12 +178,12 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
     { immediate: true }
   );
 
-  const statsLoading = computed(() => statsStatus.value === "pending");
+  const statsLoading = computed(() => (domainId ? statsStatus.value === "pending" : stats.value === null));
   const historyLoading = computed(() => historyStatus.value === "pending");
   const loading = computed(() => statsLoading.value || historyLoading.value);
 
   async function load() {
-    await Promise.all([refreshStats(), refreshHistory()]);
+    await Promise.all([domainId ? refreshStats() : Promise.resolve(), refreshHistory()]);
   }
 
   return {
