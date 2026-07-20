@@ -48,6 +48,24 @@ interface DashboardData {
   disk: DiskInfo | null;
 }
 
+// The server-computed overview (SQL aggregates + disk), pushed over WS to
+// anyone allowed to see every domain. It carries counts and the small
+// recent/per-domain lists rather than the raw ~thousands of rows the REST
+// fallback below fans out for -- lighter, and the single source of truth when
+// present.
+interface DashboardSummary {
+  domains: { total: number; active: number };
+  recipients: { total: number; active: number };
+  aliases: { total: number };
+  blockedSenders: { total: number; enabled: number };
+  disk: DiskInfo | null;
+  recipientsPerDomain: { domain: string; count: number }[];
+  recentDomains: { id: number; domain: string; quota: string; active: number }[];
+  recentRecipients: { id: number; email: string; domain: string; active: number }[];
+}
+
+const summary = useRealtimeTopic<DashboardSummary>("dashboard");
+
 const { data, status } = useAsyncData<DashboardData>(
   "dashboard-main",
   async () => {
@@ -71,21 +89,46 @@ const { data, status } = useAsyncData<DashboardData>(
   }
 );
 
-const domains = computed(() => data.value?.domains ?? []);
-const recipients = computed(() => data.value?.recipients ?? []);
-const aliases = computed(() => data.value?.aliases ?? []);
-const rejects = computed(() => data.value?.rejects ?? []);
-const disk = computed(() => data.value?.disk ?? null);
-const loading = computed(() => status.value !== "success" && status.value !== "error");
+// Same shape as the WS summary, rebuilt from the REST fan-out, so the template
+// reads one `view` object regardless of source (WS when available, REST else).
+const restSummary = computed<DashboardSummary>(() => {
+  const domains = data.value?.domains ?? [];
+  const recipients = data.value?.recipients ?? [];
+  return {
+    domains: { total: domains.length, active: domains.filter((d) => d.active).length },
+    recipients: { total: recipients.length, active: recipients.filter((r) => r.active).length },
+    aliases: { total: (data.value?.aliases ?? []).length },
+    blockedSenders: {
+      total: (data.value?.rejects ?? []).length,
+      enabled: (data.value?.rejects ?? []).filter((r) => r.enabled).length,
+    },
+    disk: data.value?.disk ?? null,
+    recipientsPerDomain: domains
+      .map((d) => ({ domain: d.domain, count: recipients.filter((r) => r.domain === d.domain).length }))
+      .filter((d) => d.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8),
+    recentDomains: [...domains]
+      .sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? ""))
+      .slice(0, 5)
+      .map((d) => ({ id: d.id, domain: d.domain, quota: d.quota, active: d.active })),
+    recentRecipients: [...recipients]
+      .sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? ""))
+      .slice(0, 6)
+      .map((r) => ({ id: r.id, email: r.email, domain: r.domain, active: r.active })),
+  };
+});
+
+const view = computed(() => summary.value ?? restSummary.value);
+const disk = computed(() => view.value.disk);
+const loading = computed(() => !summary.value && status.value !== "success" && status.value !== "error");
 
 const stats = computed(() => [
   {
     key: "domains",
     label: t("dashboard.stats.domains"),
-    value: domains.value.length,
-    sub: t("dashboard.stats.activeCount", {
-      count: domains.value.filter((d) => d.active).length,
-    }),
+    value: view.value.domains.total,
+    sub: t("dashboard.stats.activeCount", { count: view.value.domains.active }),
     icon: "i-lucide-globe",
     color: "primary",
     to: "/domains",
@@ -93,10 +136,8 @@ const stats = computed(() => [
   {
     key: "recipients",
     label: t("dashboard.stats.recipients"),
-    value: recipients.value.length,
-    sub: t("dashboard.stats.activeCount", {
-      count: recipients.value.filter((r) => r.active).length,
-    }),
+    value: view.value.recipients.total,
+    sub: t("dashboard.stats.activeCount", { count: view.value.recipients.active }),
     icon: "i-lucide-users",
     color: "info",
     // Aggregated across every domain -- no single nested route to point at,
@@ -107,7 +148,7 @@ const stats = computed(() => [
   {
     key: "aliases",
     label: t("dashboard.stats.aliases"),
-    value: aliases.value.length,
+    value: view.value.aliases.total,
     sub: t("dashboard.stats.forwarders"),
     icon: "i-lucide-at-sign",
     color: "success",
@@ -116,35 +157,17 @@ const stats = computed(() => [
   {
     key: "rejects",
     label: t("dashboard.stats.blockedSenders"),
-    value: rejects.value.length,
-    sub: t("dashboard.stats.enabledCount", {
-      count: rejects.value.filter((r) => r.enabled).length,
-    }),
+    value: view.value.blockedSenders.total,
+    sub: t("dashboard.stats.enabledCount", { count: view.value.blockedSenders.enabled }),
     icon: "i-lucide-shield-x",
     color: "warning",
     to: "/sieve",
   },
 ]);
 
-// Both API calls return their own rows unsorted by recency, so sort here by
-// lastActivity (most recently created/modified first) before slicing.
-const recentDomains = computed(() =>
-  [...domains.value].sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "")).slice(0, 5)
-);
-const recentRecipients = computed(() =>
-  [...recipients.value].sort((a, b) => (b.lastActivity ?? "").localeCompare(a.lastActivity ?? "")).slice(0, 6)
-);
-
-const recipientsPerDomain = computed(() =>
-  domains.value
-    .map((d) => ({
-      domain: d.domain,
-      count: recipients.value.filter((r) => r.domain === d.domain).length,
-    }))
-    .filter((d) => d.count > 0)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8)
-);
+const recentDomains = computed(() => view.value.recentDomains);
+const recentRecipients = computed(() => view.value.recentRecipients);
+const recipientsPerDomain = computed(() => view.value.recipientsPerDomain);
 </script>
 
 <template>

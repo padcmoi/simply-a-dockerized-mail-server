@@ -12,7 +12,7 @@ const {
   aliases,
   topMailboxes,
   dkimCheck,
-  rspamdHistory,
+  rspamdStats,
   postfixQueue,
   loading,
   dkimLoading,
@@ -233,7 +233,7 @@ const dkimStatusText = computed(() => {
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-      <DomainRspamdCard v-if="canViewRspamd" :history="rspamdHistory" :loading="loading" />
+      <DomainRspamdCard v-if="canViewRspamd" :stats="rspamdStats" :loading="loading" />
       <DomainPostfixCard :queue="postfixQueue" :loading="postfixLoading" />
     </div>
   </div>

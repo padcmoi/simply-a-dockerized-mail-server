@@ -182,6 +182,20 @@ describe("RspamdService", () => {
       expect(res).toHaveLength(2);
       expect(res.every((r) => r.rcpt_smtp[0].endsWith("@example.com"))).toBe(true);
     });
+    it("also matches a domain as the sender, not only the recipient", async () => {
+      fetchMock.mockResolvedValue(
+        okJson({
+          rows: [
+            { ...rows()[0], sender_smtp: "post@sending.com", rcpt_smtp: ["someone@other.com"] },
+            { ...rows()[0], sender_smtp: "other@x.com", rcpt_smtp: ["mailbox@sending.com"] },
+            { ...rows()[0], sender_smtp: "nobody@x.com", rcpt_smtp: ["nobody@x.com"] },
+          ],
+        })
+      );
+      const res = await svc.history("sending.com", 50);
+      expect(res).toHaveLength(2);
+      expect(res.every((r) => r.sender_smtp.endsWith("@sending.com") || r.rcpt_smtp.some((x) => x.endsWith("@sending.com")))).toBe(true);
+    });
     it("tolerates rows without a rcpt_smtp array while filtering", async () => {
       fetchMock.mockResolvedValue(okJson({ rows: [{ ...rows()[0], rcpt_smtp: undefined }] }));
       const res = await svc.history("example.com", 200);

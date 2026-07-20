@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { RspamdHistoryRow } from "~/composables/useDomainDashboard";
+import type { DomainRspamdStats } from "~/composables/useDomainDashboard";
 
 const props = defineProps<{
-  history: RspamdHistoryRow[];
+  stats: DomainRspamdStats;
   loading: boolean;
 }>();
 
-const scanned = computed(() => props.history.length);
-const rejected = computed(() => props.history.filter((r) => r.action === "reject").length);
-const greylisted = computed(() => props.history.filter((r) => r.action === "greylist").length);
-const clean = computed(() => props.history.filter((r) => r.action === "no action").length);
+const scanned = computed(() => props.stats.scanned);
+const rejected = computed(() => props.stats.actions.reject);
+const greylisted = computed(() => props.stats.actions.greylist);
+const clean = computed(() => props.stats.actions["no action"]);
 const spamRate = computed(() => (scanned.value > 0 ? ((rejected.value / scanned.value) * 100).toFixed(1) : "0"));
 
 const { t } = useI18n();

@@ -24,7 +24,11 @@ export interface QuotaDomain {
 }
 export interface QuotaPayload {
   domain: QuotaDomain | null;
-  recipients: { id: number; email: string; bytes: string }[];
+  recipients: { id: number; email: string; bytes: string; quota: string }[];
+}
+export interface DomainRspamdStats {
+  scanned: number;
+  actions: { reject: number; greylist: number; "no action": number } & Record<string, number>;
 }
 export interface MailboxEntry {
   id: number;
@@ -138,12 +142,29 @@ export function useDomainDashboard() {
   // before ever showing a skeleton. `status` starts at "idle" both server-
   // and client-side and only flips once a fetch has genuinely settled.
   const domain = computed(() => mainData.value?.domain ?? null);
-  const recipients = computed(() => mainData.value?.recipients ?? []);
-  const aliases = computed(() => mainData.value?.aliases ?? []);
-  const quota = computed(() => mainData.value?.quota ?? null);
-  const topMailboxes = computed(() => mainData.value?.topMailboxes ?? []);
   const domainId = computed(() => domain.value?.id ?? null);
-  const loading = computed(() => mainStatus.value !== "success" && mainStatus.value !== "error");
+
+  // Realtime overlays: once the domain id resolves, each widget's data follows
+  // its domain-scoped topic and falls back to the REST value from the main
+  // waterfall above until the first frame (or when a domain-scoped
+  // subscription isn't permitted). See the matching watchers.
+  const rtRecipients = useRealtimeTopic<Recipient[]>(() => (domainId.value ? `domain-recipients:${domainId.value}` : null));
+  const rtAliases = useRealtimeTopic<Alias[]>(() => (domainId.value ? `domain-aliases:${domainId.value}` : null));
+  const rtQuota = useRealtimeTopic<QuotaPayload>(() => (domainId.value ? `domain-quota:${domainId.value}` : null));
+  const rtRspamd = useRealtimeTopic<DomainRspamdStats>(() => (domainId.value ? `domain-rspamd:${domainId.value}` : null));
+  const rtPostfix = useRealtimeTopic<PostfixQueueStats>(() => (domainId.value ? `domain-postfix:${domainId.value}` : null));
+
+  const recipients = computed(() => rtRecipients.value ?? mainData.value?.recipients ?? []);
+  const aliases = computed(() => rtAliases.value ?? mainData.value?.aliases ?? []);
+  const quota = computed(() => rtQuota.value?.domain ?? mainData.value?.quota ?? null);
+  const topMailboxes = computed(() => {
+    const wsRecipients = rtQuota.value?.recipients;
+    if (wsRecipients) {
+      return [...wsRecipients].sort((a, b) => occupancyRate(b) - occupancyRate(a)).slice(0, TOP_MAILBOXES);
+    }
+    return mainData.value?.topMailboxes ?? [];
+  });
+  const loading = computed(() => !rtRecipients.value && mainStatus.value !== "success" && mainStatus.value !== "error");
 
   // `immediate: false`: these three only make sense once `domainId` is known
   // (set once the main waterfall above resolves). Without this, the default
@@ -200,6 +221,18 @@ export function useDomainDashboard() {
     { server: false, immediate: false, watch: [domainId, tick], default: () => [] }
   );
   const rspamdHistory = computed(() => rspamdData.value ?? []);
+  // The dashboard's rspamd card needs the per-action tally. It comes from the
+  // domain-rspamd topic when subscribed, else is derived from the history rows
+  // fetched above (the REST fallback).
+  const rspamdStats = computed<DomainRspamdStats>(() => {
+    if (rtRspamd.value) return rtRspamd.value;
+    const rows = rspamdHistory.value;
+    const count = (action: string) => rows.filter((r) => r.action === action).length;
+    return {
+      scanned: rows.length,
+      actions: { reject: count("reject"), greylist: count("greylist"), "no action": count("no action") },
+    };
+  });
 
   const { data: postfixData, status: postfixStatus } = useAsyncData<PostfixQueueStats | null>(
     "domain-dashboard-postfix",
@@ -213,8 +246,8 @@ export function useDomainDashboard() {
     },
     { server: false, immediate: false, watch: [domainId, tick] }
   );
-  const postfixQueue = computed(() => postfixData.value ?? null);
-  const postfixLoading = computed(() => postfixStatus.value !== "success" && postfixStatus.value !== "error");
+  const postfixQueue = computed(() => rtPostfix.value ?? postfixData.value ?? null);
+  const postfixLoading = computed(() => !rtPostfix.value && postfixStatus.value !== "success" && postfixStatus.value !== "error");
 
   const activeRecipients = computed(() => recipients.value.filter((r) => r.active).length);
   const usedBytes = computed(() => Number(quota.value?.bytes ?? 0));
@@ -399,7 +432,7 @@ export function useDomainDashboard() {
     topMailboxes,
     dkimKeys,
     dkimCheck,
-    rspamdHistory,
+    rspamdStats,
     postfixQueue,
     loading,
     dkimLoading,

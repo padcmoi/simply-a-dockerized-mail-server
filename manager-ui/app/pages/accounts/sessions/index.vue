@@ -85,6 +85,13 @@ const expiredPaged = computed(() => {
 });
 
 // Reload on the shared refresh tick (header button, focus, heartbeat).
+const realtimeOverview = useRealtimeTopic<AccountSessionSummary[]>("sessions-overview");
+watch(realtimeOverview, (v) => {
+  if (v) {
+    overview.value = v;
+    loaded.value = true;
+  }
+});
 watch(useDataRefresh().tick, () => load());
 
 async function load() {

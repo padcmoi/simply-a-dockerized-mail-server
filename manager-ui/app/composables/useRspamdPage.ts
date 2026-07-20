@@ -93,10 +93,14 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
   }, 1000);
   watch(search, applyDebouncedSearch);
 
-  // Domain-scoped stats still come over REST (bumped by `tick` like before).
-  // The global page's stats come over WS only (see realtime.client.ts /
-  // rspamd-stats.watcher.ts) -- this call stays disabled for it.
-  const realtimeStats = domainId ? ref<RspamdStats | null>(null) : useRealtimeTopic<RspamdStats>("rspamd-stats");
+  // Stats come over WS: the global page from the "rspamd-stats" topic, a domain
+  // page from "domain-rspamd:<id>" (see the matching watchers). The domain page
+  // keeps its REST call as the fallback until the first WS frame (and for
+  // accounts a domain-scoped subscription can't reach); the global page is
+  // WS-only. `realtimeStats` follows the resolved topic reactively.
+  const realtimeStats = useRealtimeTopic<RspamdStats>(() =>
+    domainId ? (domainId.value ? `domain-rspamd:${domainId.value}` : null) : "rspamd-stats"
+  );
   const {
     data: statsData,
     status: statsStatus,
@@ -141,8 +145,10 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
     }
   );
 
-  const stats = computed(() => (domainId ? statsData.value : realtimeStats.value));
-  const statsUnavailable = computed(() => (domainId ? statsStatus.value === "success" && !statsData.value : false));
+  const stats = computed(() => realtimeStats.value ?? (domainId ? statsData.value : null));
+  const statsUnavailable = computed(() =>
+    domainId ? statsStatus.value === "success" && !statsData.value && !realtimeStats.value : false
+  );
   const history = computed(() => historyData.value?.items ?? []);
   const total = computed(() => historyData.value?.total ?? 0);
 
@@ -178,7 +184,9 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
     { immediate: true }
   );
 
-  const statsLoading = computed(() => (domainId ? statsStatus.value === "pending" : stats.value === null));
+  const statsLoading = computed(() =>
+    domainId ? statsStatus.value === "pending" && !realtimeStats.value : stats.value === null
+  );
   const historyLoading = computed(() => historyStatus.value === "pending");
   const loading = computed(() => statsLoading.value || historyLoading.value);
 

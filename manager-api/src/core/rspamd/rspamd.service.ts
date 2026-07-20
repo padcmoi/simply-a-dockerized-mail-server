@@ -221,7 +221,12 @@ export class RspamdService {
     let rows = data.rows ?? [];
     if (domain) {
       const suffix = `@${domain}`;
-      rows = rows.filter((r) => r.rcpt_smtp?.some((rcpt) => rcpt.endsWith(suffix)));
+      // A scan belongs to the domain whether the domain SENT it (sender@domain,
+      // outbound) or RECEIVED it (rcpt@domain, inbound). Filtering on the
+      // recipient alone hid every message a domain sends -- so a domain that
+      // only sends (e.g. a service posting to another domain) showed 0 scans
+      // despite heavy traffic.
+      rows = rows.filter((r) => r.sender_smtp?.endsWith(suffix) || r.rcpt_smtp?.some((rcpt) => rcpt.endsWith(suffix)));
     }
 
     if (!query || query.limit === undefined) return rows;

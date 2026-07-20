@@ -37,5 +37,10 @@ export function useDomainDisk() {
     }
   }
 
+  const realtimeDisk = useRealtimeTopic<DomainDisk>("domains-disk");
+  watch(realtimeDisk, (v) => {
+    if (v) disk.value = v;
+  });
+
   return { disk, diskLoading, assignableMb, loadDisk };
 }

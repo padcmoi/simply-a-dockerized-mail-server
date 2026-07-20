@@ -14,7 +14,8 @@ import type { WebSocket } from "ws";
 import type { JwtPayload } from "../auth/jwt/jwt.strategy";
 import { CustomPermissionGuardService } from "../custom-permission-guard/custom-permission-guard.service";
 import { RefreshToken } from "../entities/refresh-token.entity";
-import type { TopicPermission } from "./watcher.type";
+import { VirtualDomain } from "../entities/virtual-domain.entity";
+import type { TopicPermission, TopicScope } from "./watcher.type";
 
 const WS_PORT = 3001;
 const AUTH_TIMEOUT_MS = 5_000;
@@ -27,25 +28,42 @@ type AuthSocket = WebSocket & {
   who?: string;
 };
 
+interface TopicMeta {
+  permissions: TopicPermission[];
+  scope: TopicScope;
+  parameterized: boolean;
+}
+
+export interface DynamicHandlers {
+  start(fullTopic: string, base: string, param: string): void;
+  stop(fullTopic: string): void;
+}
+
 @WebSocketGateway(WS_PORT)
 export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly log = new Logger(WebsocketGateway.name);
   private readonly clients = new Set<AuthSocket>();
   private readonly latest = new Map<string, unknown>();
-  private readonly permissions = new Map<string, TopicPermission[]>();
+  private readonly topics = new Map<string, TopicMeta>();
+  private dynamic: DynamicHandlers | null = null;
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly cpg: CustomPermissionGuardService,
-    @InjectRepository(RefreshToken) private readonly refreshTokens: Repository<RefreshToken>
+    @InjectRepository(RefreshToken) private readonly refreshTokens: Repository<RefreshToken>,
+    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>
   ) {}
 
   private get logsConsumers() {
     return process.env.MANAGER_WS_LOG === "true";
   }
 
-  registerTopic(topic: string, permissions: TopicPermission[]) {
-    this.permissions.set(topic, permissions);
+  registerTopic(topic: string, meta: TopicMeta) {
+    this.topics.set(topic, meta);
+  }
+
+  setDynamicHandlers(handlers: DynamicHandlers) {
+    this.dynamic = handlers;
   }
 
   handleConnection(client: AuthSocket) {
@@ -60,6 +78,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   handleDisconnect(client: AuthSocket) {
     this.clients.delete(client);
     const dropped = [...(client.topics ?? [])];
+    for (const fullTopic of dropped) this.onTopicLeft(fullTopic);
     if (this.logsConsumers && dropped.length) {
       this.log.log(`- ${client.who} disconnected, stopped consuming [${dropped.join(", ")}]`);
     }
@@ -89,23 +108,58 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
   @SubscribeMessage("subscribe")
   async onSubscribe(@ConnectedSocket() client: AuthSocket, @MessageBody() data: { topic?: string }) {
-    const topic = data?.topic;
-    if (!topic || !(await client.auth) || !client.userId) return;
-    if (!(await this.mayConsume(client, topic))) {
-      if (this.logsConsumers) this.log.warn(`x ${client.who} denied on "${topic}"`);
-      return;
-    }
-    client.topics?.add(topic);
-    if (this.logsConsumers) this.log.log(`+ ${client.who} consumes "${topic}" (${this.subscriberCount(topic)} consumer(s))`);
-    if (this.latest.has(topic)) this.send(client, topic, this.latest.get(topic));
+    const fullTopic = data?.topic;
+    if (!fullTopic || !(await client.auth) || !client.userId) return;
+    const { base, param } = this.split(fullTopic);
+    const meta = this.topics.get(base);
+    if (!meta || meta.parameterized !== (param !== undefined)) return this.deny(client, fullTopic);
+    if (!(await this.mayConsume(client, meta, param))) return this.deny(client, fullTopic);
+
+    const first = this.subscriberCount(fullTopic) === 0;
+    client.topics?.add(fullTopic);
+    if (meta.parameterized && first) this.dynamic?.start(fullTopic, base, param as string);
+    if (this.logsConsumers)
+      this.log.log(`+ ${client.who} consumes "${fullTopic}" (${this.subscriberCount(fullTopic)} consumer(s))`);
+    if (this.latest.has(fullTopic)) this.send(client, fullTopic, this.latest.get(fullTopic));
   }
 
-  private async mayConsume(client: AuthSocket, topic: string) {
-    const required = this.permissions.get(topic);
-    if (!required) return false;
+  @SubscribeMessage("unsubscribe")
+  onUnsubscribe(@ConnectedSocket() client: AuthSocket, @MessageBody() data: { topic?: string }) {
+    const fullTopic = data?.topic;
+    if (!fullTopic || !client.topics?.delete(fullTopic)) return;
+    this.onTopicLeft(fullTopic);
+    if (this.logsConsumers)
+      this.log.log(`- ${client.who} stopped consuming "${fullTopic}" (${this.subscriberCount(fullTopic)} consumer(s) left)`);
+  }
+
+  // Last subscriber of a parameterized topic gone: stop its poller and drop the
+  // cached value so a later re-subscribe starts fresh and the map stays bounded.
+  private onTopicLeft(fullTopic: string) {
+    const { base } = this.split(fullTopic);
+    const meta = this.topics.get(base);
+    if (meta?.parameterized && this.subscriberCount(fullTopic) === 0) {
+      this.dynamic?.stop(fullTopic);
+      this.latest.delete(fullTopic);
+    }
+  }
+
+  private deny(client: AuthSocket, fullTopic: string) {
+    if (this.logsConsumers) this.log.warn(`x ${client.who} denied on "${fullTopic}"`);
+  }
+
+  private split(fullTopic: string): { base: string; param?: string } {
+    const i = fullTopic.indexOf(":");
+    return i === -1 ? { base: fullTopic } : { base: fullTopic.slice(0, i), param: fullTopic.slice(i + 1) };
+  }
+
+  private async mayConsume(client: AuthSocket, meta: TopicMeta, param?: string) {
     if (client.isRoot) return true;
+    return meta.scope === "domain" ? this.mayConsumeDomain(client, meta, param) : this.mayConsumeGlobal(client, meta);
+  }
+
+  private async mayConsumeGlobal(client: AuthSocket, meta: TopicMeta) {
     try {
-      for (const entry of required) {
+      for (const entry of meta.permissions) {
         await this.cpg.guard.assertOne.global(client.userId!, entry.resource, { acrud: entry.actions });
       }
       return true;
@@ -114,12 +168,23 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     }
   }
 
-  @SubscribeMessage("unsubscribe")
-  onUnsubscribe(@ConnectedSocket() client: AuthSocket, @MessageBody() data: { topic?: string }) {
-    const topic = data?.topic;
-    if (!topic || !client.topics?.delete(topic)) return;
-    if (this.logsConsumers)
-      this.log.log(`- ${client.who} stopped consuming "${topic}" (${this.subscriberCount(topic)} consumer(s) left)`);
+  // Mirrors DomainPermissionGuard: owner-bypass, the domains:access prerequisite,
+  // the "domain" resource access, then each declared domain permission.
+  private async mayConsumeDomain(client: AuthSocket, meta: TopicMeta, param?: string) {
+    const domainId = Number(param);
+    if (!Number.isFinite(domainId)) return false;
+    const domain = await this.domains.findOne({ where: { id: domainId } });
+    if (domain && domain.ownerId === client.userId) return true;
+    try {
+      await this.cpg.guard.assertOne.global(client.userId!, "domains", { acrud: ["access"] });
+      await this.cpg.guard.assertOne.domain(client.userId!, domainId, "domain", { acrud: ["access"] });
+      for (const entry of meta.permissions) {
+        await this.cpg.guard.assertOne.domain(client.userId!, domainId, entry.resource, { acrud: entry.actions });
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   publish(topic: string, data: unknown) {

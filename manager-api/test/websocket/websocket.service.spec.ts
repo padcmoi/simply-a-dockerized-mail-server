@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { DataSource } from "typeorm";
+import type { DomainsService } from "../../src/api/domains/domains.service";
+import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
+import type { PostfixService } from "../../src/core/postfix/postfix.service";
 import type { Watcher } from "../../src/core/websocket/watcher.type";
 import type { WebsocketGateway } from "../../src/core/websocket/websocket.gateway";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
@@ -21,7 +24,7 @@ describe("WebsocketService", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
-    gateway = providerMock<WebsocketGateway>({ publish: vi.fn(), registerTopic: vi.fn() });
+    gateway = providerMock<WebsocketGateway>({ publish: vi.fn(), registerTopic: vi.fn(), setDynamicHandlers: vi.fn() });
     buildWatchers.mockReset();
   });
 
@@ -32,13 +35,45 @@ describe("WebsocketService", () => {
 
   function start(watcher: Partial<Watcher> & Pick<Watcher, "fn">) {
     buildWatchers.mockReturnValue([{ topic: "t", permissions: PERMS, ...watcher }]);
-    service = new WebsocketService(gateway, providerMock<DataSource>({}));
+    service = new WebsocketService(
+      gateway,
+      providerMock<DataSource>({}),
+      providerMock<DomainsService>({}),
+      providerMock<PostfixService>({}),
+      providerMock<JwtAuthService>({})
+    );
     service.onModuleInit();
   }
 
-  it("registers each watcher's declared permissions on the gateway", () => {
+  it("registers each watcher's declared permissions and scope on the gateway", () => {
     start({ fn: () => 1 });
-    expect(gateway.registerTopic).toHaveBeenCalledWith("t", PERMS);
+    expect(gateway.registerTopic).toHaveBeenCalledWith("t", { permissions: PERMS, scope: "global", parameterized: false });
+  });
+
+  it("does not poll a parameterized watcher until asked, then starts on demand", async () => {
+    const fn = vi.fn(() => 1);
+    buildWatchers.mockReturnValue([{ topic: "d", permissions: PERMS, scope: "domain", parameterized: true, fn }]);
+    service = new WebsocketService(
+      gateway,
+      providerMock<DataSource>({}),
+      providerMock<DomainsService>({}),
+      providerMock<PostfixService>({}),
+      providerMock<JwtAuthService>({})
+    );
+    const handlers = { start: (_f: string, _b: string, _p: string) => undefined, stop: (_f: string) => undefined };
+    gateway.setDynamicHandlers.mockImplementation((h: typeof handlers) => Object.assign(handlers, h));
+    service.onModuleInit();
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fn).not.toHaveBeenCalled();
+
+    handlers.start("d:42", "d", "42");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(gateway.publish).toHaveBeenCalledExactlyOnceWith("d:42", 1);
+
+    handlers.stop("d:42");
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(gateway.publish).toHaveBeenCalledTimes(1);
   });
 
   it("publishes the first polled value", async () => {

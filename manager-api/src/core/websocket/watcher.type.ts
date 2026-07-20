@@ -5,9 +5,13 @@ export interface TopicPermission {
   actions: string[];
 }
 
+export type TopicScope = "global" | "domain";
+
 export interface Watcher {
   topic: string;
   permissions: TopicPermission[];
+  scope?: TopicScope;
+  parameterized?: boolean;
   intervalMs?: number;
-  fn: () => unknown | Promise<unknown>;
+  fn: (param?: string) => unknown | Promise<unknown>;
 }

@@ -1,10 +1,19 @@
 import { describe, it, expect } from "vitest";
 import type { DataSource } from "typeorm";
+import type { DomainsService } from "../../src/api/domains/domains.service";
+import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
+import type { PostfixService } from "../../src/core/postfix/postfix.service";
 import { buildWatchers } from "../../src/core/websocket/watchers";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
-import { GLOBAL_ACTIONS } from "../../src/core/custom-permission-guard/permission-catalog";
+import { DOMAIN_ACTIONS, GLOBAL_ACTIONS } from "../../src/core/custom-permission-guard/permission-catalog";
+import { providerMock } from "../helpers/mocks";
 
-const watchers = buildWatchers({} as DataSource);
+const watchers = buildWatchers({
+  dataSource: {} as DataSource,
+  domains: providerMock<DomainsService>({}),
+  postfix: providerMock<PostfixService>({}),
+  sessions: providerMock<JwtAuthService>({}),
+});
 
 describe("websocket watchers", () => {
   it("exposes at least one topic", () => {
@@ -24,11 +33,14 @@ describe("websocket watchers", () => {
   });
 
   // A typo in a resource or action would silently deny every account forever
-  // (assertOne.global throws on an unknown pair), so pin them to the catalog.
+  // (assertOne throws on an unknown pair), so pin them to the catalog matching
+  // the watcher's scope: domain-scoped topics against DOMAIN_ACTIONS, the rest
+  // against GLOBAL_ACTIONS.
   it.each(watchers.map((w) => [w.topic, w] as const))("%s only uses permissions the catalog defines", (_topic, watcher) => {
+    const catalog: Record<string, readonly string[]> = watcher.scope === "domain" ? DOMAIN_ACTIONS : GLOBAL_ACTIONS;
     for (const entry of watcher.permissions) {
-      const actions = GLOBAL_ACTIONS[entry.resource as keyof typeof GLOBAL_ACTIONS] as readonly string[] | undefined;
-      expect(actions, `unknown resource "${entry.resource}"`).toBeDefined();
+      const actions = catalog[entry.resource];
+      expect(actions, `unknown resource "${entry.resource}" for scope ${watcher.scope ?? "global"}`).toBeDefined();
       for (const action of entry.actions) {
         expect(actions, `unknown action "${entry.resource}:${action}"`).toContain(action);
       }

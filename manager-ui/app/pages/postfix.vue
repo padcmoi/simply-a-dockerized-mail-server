@@ -28,6 +28,10 @@ const { set: setBreadcrumb } = useBreadcrumb();
 
 setBreadcrumb([{ label: t("nav.postfix") }]);
 
+const realtimeQueue = useRealtimeTopic<PostfixQueueStats>("postfix-queue");
+watch(realtimeQueue, (v) => {
+  if (v) stats.value = v;
+});
 watch(useDataRefresh().tick, load);
 
 async function load() {
