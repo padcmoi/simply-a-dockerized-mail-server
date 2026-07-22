@@ -15,7 +15,8 @@ import type { JwtPayload } from "../auth/jwt/jwt.strategy";
 import { CustomPermissionGuardService } from "../custom-permission-guard/custom-permission-guard.service";
 import { RefreshToken } from "../entities/refresh-token.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
-import type { TopicPermission, TopicScope } from "./watcher.type";
+import { TopicPresenceService } from "./presence.service";
+import type { TopicCaller, TopicPermission, TopicScope } from "./watcher.type";
 
 const WS_PORT = 3001;
 const AUTH_TIMEOUT_MS = 5_000;
@@ -32,6 +33,7 @@ interface TopicMeta {
   permissions: TopicPermission[];
   scope: TopicScope;
   parameterized: boolean;
+  authorize?: (caller: TopicCaller, param: string) => Promise<boolean>;
 }
 
 export interface DynamicHandlers {
@@ -51,7 +53,8 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     private readonly jwtService: JwtService,
     private readonly cpg: CustomPermissionGuardService,
     @InjectRepository(RefreshToken) private readonly refreshTokens: Repository<RefreshToken>,
-    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>
+    @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
+    private readonly presence: TopicPresenceService
   ) {}
 
   private get logsConsumers() {
@@ -78,7 +81,11 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   handleDisconnect(client: AuthSocket) {
     this.clients.delete(client);
     const dropped = [...(client.topics ?? [])];
-    for (const fullTopic of dropped) this.onTopicLeft(fullTopic);
+    client.topics?.clear();
+    for (const fullTopic of dropped) {
+      if (client.userId) this.presence.leave(client.userId, fullTopic);
+      this.onTopicLeft(fullTopic);
+    }
     if (this.logsConsumers && dropped.length) {
       this.log.log(`- ${client.who} disconnected, stopped consuming [${dropped.join(", ")}]`);
     }
@@ -116,6 +123,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     if (!(await this.mayConsume(client, meta, param))) return this.deny(client, fullTopic);
 
     const first = this.subscriberCount(fullTopic) === 0;
+    if (!client.topics?.has(fullTopic)) this.presence.join(client.userId, fullTopic);
     client.topics?.add(fullTopic);
     if (meta.parameterized && first) this.dynamic?.start(fullTopic, base, param as string);
     if (this.logsConsumers)
@@ -127,6 +135,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   onUnsubscribe(@ConnectedSocket() client: AuthSocket, @MessageBody() data: { topic?: string }) {
     const fullTopic = data?.topic;
     if (!fullTopic || !client.topics?.delete(fullTopic)) return;
+    if (client.userId) this.presence.leave(client.userId, fullTopic);
     this.onTopicLeft(fullTopic);
     if (this.logsConsumers)
       this.log.log(`- ${client.who} stopped consuming "${fullTopic}" (${this.subscriberCount(fullTopic)} consumer(s) left)`);
@@ -152,7 +161,14 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     return i === -1 ? { base: fullTopic } : { base: fullTopic.slice(0, i), param: fullTopic.slice(i + 1) };
   }
 
+  // A "self" topic carries one account's own data, so it is keyed by identity,
+  // not by permission: it is checked before the root bypass, otherwise root
+  // would be able to read another account's stream.
   private async mayConsume(client: AuthSocket, meta: TopicMeta, param?: string) {
+    if (meta.authorize) {
+      return meta.authorize({ userId: client.userId!, isRoot: client.isRoot === true }, param ?? "");
+    }
+    if (meta.scope === "self") return param === client.userId;
     if (client.isRoot) return true;
     return meta.scope === "domain" ? this.mayConsumeDomain(client, meta, param) : this.mayConsumeGlobal(client, meta);
   }

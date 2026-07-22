@@ -32,10 +32,10 @@ onScopeDispose(() => {
     v-if="focused"
     :color="editing ? 'warning' : 'neutral'"
     variant="ghost"
+    :icon="editing ? 'i-lucide-refresh-cw-off' : 'i-lucide-refresh-cw'"
+    :ui="{ leadingIcon: spinning ? 'animate-spin' : '' }"
     :aria-label="t('layout.refreshData')"
     :title="t('layout.refreshData')"
     @click="bump"
-  >
-    <UIcon :name="editing ? 'i-lucide-refresh-cw-off' : 'i-lucide-refresh-cw'" :class="{ 'animate-spin': spinning }" />
-  </UButton>
+  />
 </template>

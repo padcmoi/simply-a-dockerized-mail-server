@@ -61,6 +61,9 @@ export function useNav(onSignOut: () => Promise<void>) {
     ...(canAccessGlobal("groups")
       ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/groups", active: isActive("/groups") }]
       : []),
+    ...(canAccessGlobal("tickets")
+      ? [{ label: t("nav.tickets"), icon: "i-lucide-life-buoy", to: "/tickets", active: isActive("/tickets") }]
+      : []),
     ...(canAccessGlobal("api-tokens")
       ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens", active: isActive("/api-tokens") }]
       : []),

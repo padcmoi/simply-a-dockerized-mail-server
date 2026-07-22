@@ -12,6 +12,8 @@ import domains from "./fr_FR/domains";
 import recipients from "./fr_FR/recipients";
 import aliases from "./fr_FR/aliases";
 import quotas from "./fr_FR/quotas";
+import notifications from "./fr_FR/notifications";
+import tickets from "./fr_FR/tickets";
 import sieve from "./fr_FR/sieve";
 import profile from "./fr_FR/profile";
 import preferences from "./fr_FR/preferences";
@@ -40,6 +42,8 @@ export default {
   recipients,
   aliases,
   quotas,
+  notifications,
+  tickets,
   sieve,
   profile,
   preferences,

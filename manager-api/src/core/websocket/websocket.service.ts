@@ -2,7 +2,9 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/commo
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { DomainsService } from "../../api/domains/domains.service";
+import { TicketsService } from "../../api/tickets/tickets.service";
 import { JwtAuthService } from "../auth/jwt/jwt.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { PostfixService } from "../postfix/postfix.service";
 import { WebsocketGateway } from "./websocket.gateway";
 import { buildWatchers, MIN_INTERVAL_MS } from "./watchers";
@@ -24,7 +26,9 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly domains: DomainsService,
     private readonly postfix: PostfixService,
-    private readonly sessions: JwtAuthService
+    private readonly sessions: JwtAuthService,
+    private readonly notifications: NotificationsService,
+    private readonly tickets: TicketsService
   ) {}
 
   onModuleInit() {
@@ -36,12 +40,20 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
       stop: (fullTopic) => this.stopPoller(fullTopic),
     });
 
-    const deps = { dataSource: this.dataSource, domains: this.domains, postfix: this.postfix, sessions: this.sessions };
+    const deps = {
+      dataSource: this.dataSource,
+      domains: this.domains,
+      postfix: this.postfix,
+      sessions: this.sessions,
+      notifications: this.notifications,
+      tickets: this.tickets,
+    };
     for (const watcher of buildWatchers(deps)) {
       this.gateway.registerTopic(watcher.topic, {
         permissions: watcher.permissions,
         scope: watcher.scope ?? "global",
         parameterized: watcher.parameterized ?? false,
+        authorize: watcher.authorize,
       });
       if (watcher.parameterized) this.parameterized.set(watcher.topic, watcher);
       else this.startPoller(watcher.topic, watcher);

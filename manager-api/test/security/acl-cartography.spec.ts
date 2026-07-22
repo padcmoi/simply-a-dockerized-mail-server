@@ -32,14 +32,21 @@ const EXPECTED_PUBLIC = [
 const EXPECTED_NO_ACL_AUTHED = [
   "DELETE /api/v1/auth/jwt/me/sessions/:id",
   "DELETE /api/v1/groups/:id/members/all",
+  "DELETE /api/v1/notifications/:id",
   "GET /api/v1/auth/jwt/me",
   "GET /api/v1/auth/jwt/me/groups/:id/permissions",
   "GET /api/v1/auth/jwt/me/overview",
   "GET /api/v1/auth/jwt/me/permissions",
   "GET /api/v1/auth/jwt/me/sessions",
   "GET /api/v1/auth/jwt/me/sessions/history",
+  "GET /api/v1/notifications",
+  "GET /api/v1/notifications/feed",
+  "GET /api/v1/notifications/preferences",
   "PATCH /api/v1/auth/jwt/me",
   "POST /api/v1/groups/:id/members/all",
+  "POST /api/v1/notifications/:id/read",
+  "POST /api/v1/notifications/read-all",
+  "PUT /api/v1/notifications/preferences",
 ].sort();
 
 describe("auth/ACL cartography (security contract)", () => {

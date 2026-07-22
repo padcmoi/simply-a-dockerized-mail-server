@@ -30,6 +30,9 @@ const headerTitle = computed(() => {
     <UButton icon="i-lucide-panel-left" color="neutral" variant="ghost" :aria-label="t('layout.toggleSidebar')" @click="toggle" />
     <USeparator orientation="vertical" class="h-5" />
     <h1 class="font-semibold truncate">{{ headerTitle }}</h1>
-    <HeaderRefreshButton class="ml-auto shrink-0" />
+    <div class="ml-auto shrink-0 flex items-center gap-1">
+      <HeaderRefreshButton />
+      <HeaderNotificationsButton />
+    </div>
   </div>
 </template>

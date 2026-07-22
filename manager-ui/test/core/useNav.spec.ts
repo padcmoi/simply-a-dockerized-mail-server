@@ -67,6 +67,7 @@ describe("useNav global nav items", () => {
       "/sieve",
       "/accounts",
       "/groups",
+      "/tickets",
       "/api-tokens",
     ]);
   });

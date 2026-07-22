@@ -9,6 +9,7 @@ export default {
   aliases: "Aliases",
   quotas: "Quotas",
   admin: "Administration",
+  tickets: "Support",
   sieve: "Sieve",
   accounts: "Accounts",
   groups: "Groups",

@@ -1,0 +1,575 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { ForbiddenException, NotFoundException } from "@nestjs/common";
+import { MESSAGE_PAGE, TicketsService, type TicketCaller } from "../../src/api/tickets/tickets.service";
+import type { NotificationsService } from "../../src/core/notifications/notifications.service";
+import { TopicPresenceService } from "../../src/core/websocket/presence.service";
+import type { Account } from "../../src/core/entities/account.entity";
+import type { AccountProfile } from "../../src/core/entities/account-profile.entity";
+import type { SupportTicket } from "../../src/core/entities/support-ticket.entity";
+import type { SupportTicketMessage } from "../../src/core/entities/support-ticket-message.entity";
+import type { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
+import { cpgMock, entity, providerMock, qbMock, repoMock, type CpgMock, type Loose } from "../helpers/mocks";
+
+const DOMAIN_ID = 12;
+const SUPPORT = "support-id";
+const CREATOR = "creator-id";
+const STRANGER = "stranger-id";
+const ROOT_ID = "root-id";
+
+describe("TicketsService (row-level visibility)", () => {
+  let tickets: ReturnType<typeof repoMock<SupportTicket>>;
+  let messages: ReturnType<typeof repoMock<SupportTicketMessage>>;
+  let domains: ReturnType<typeof repoMock<VirtualDomain>>;
+  let accounts: ReturnType<typeof repoMock<Account>>;
+  let profiles: ReturnType<typeof repoMock<AccountProfile>>;
+  let cpg: CpgMock;
+  let notifications: Loose<NotificationsService>;
+  let presence: TopicPresenceService;
+  let svc: TicketsService;
+
+  beforeEach(() => {
+    tickets = repoMock<SupportTicket>();
+    messages = repoMock<SupportTicketMessage>();
+    domains = repoMock<VirtualDomain>();
+    accounts = repoMock<Account>();
+    profiles = repoMock<AccountProfile>();
+    profiles.find.mockResolvedValue([]);
+    messages.findAndCount.mockResolvedValue([[], 0]);
+    accounts.find.mockResolvedValue([]);
+    domains.find.mockResolvedValue([]);
+    domains.findOne.mockResolvedValue(entity<VirtualDomain>({ id: DOMAIN_ID, domain: "example.com" }));
+    cpg = cpgMock();
+    cpg.guard.utils.check.global.mockResolvedValue(false);
+    cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [{ domainId: DOMAIN_ID }] });
+    notifications = providerMock<NotificationsService>({ dispatch: vi.fn().mockResolvedValue(undefined) });
+    presence = new TopicPresenceService();
+    svc = new TicketsService(tickets, messages, domains, accounts, profiles, cpg, notifications, presence);
+  });
+
+  const caller = (userId: string, isRoot = false): TicketCaller => ({ userId, isRoot });
+
+  function updateQb() {
+    const qb = qbMock<SupportTicket>();
+    qb.execute.mockResolvedValue({});
+    return qb;
+  }
+
+  function ticketRow(over: Partial<SupportTicket>): SupportTicket {
+    return entity<SupportTicket>({ id: 5, domainId: DOMAIN_ID, visibility: "private", createdBy: CREATOR, status: "open", ...over });
+  }
+
+  describe("get / visibility", () => {
+    beforeEach(() => messages.findAndCount.mockResolvedValue([[], 0]));
+
+    it("hides a private ticket from a stranger (404, not 403)", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      await expect(svc.get(5, caller(STRANGER))).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("shows a private ticket to its creator", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      await expect(svc.get(5, caller(CREATOR))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("shows a public ticket to anyone", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public", createdBy: CREATOR }));
+      await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("shows a private ticket to the support role (global handle-ticket)", async () => {
+      cpg.guard.utils.check.global.mockResolvedValue(true);
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private" }));
+      await expect(svc.get(5, caller(SUPPORT))).resolves.toMatchObject({ id: 5 });
+      expect(cpg.guard.utils.check.global).toHaveBeenCalledWith(SUPPORT, "tickets", "handle-ticket");
+    });
+
+    it("shows any ticket to root without consulting the guard", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private" }));
+      await expect(svc.get(5, caller("root-id", true))).resolves.toMatchObject({ id: 5 });
+      expect(cpg.guard.utils.check.global).not.toHaveBeenCalled();
+    });
+
+    it("404s an unknown ticket id", async () => {
+      tickets.findOne.mockResolvedValue(null);
+      await expect(svc.get(999, caller("root-id", true))).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe("list / visibility filter", () => {
+    it("restricts a non-support caller to public + own tickets", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      await svc.list({ offset: 0, sortDir: "desc" }, caller(STRANGER));
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c) => c.includes("visibility") && c.includes("createdBy"))).toBe(true);
+    });
+
+    it("shows the support role every ticket (no visibility clause)", async () => {
+      cpg.guard.utils.check.global.mockResolvedValue(true);
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      await svc.list({ offset: 0, sortDir: "desc" }, caller(SUPPORT));
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c) => c.includes("visibility"))).toBe(false);
+    });
+  });
+
+  describe("create", () => {
+    it("stamps the caller as creator, defaults to private/open, and posts the first message", async () => {
+      tickets.save.mockImplementation(async (t) => ({ ...(t as object), id: 1 }) as SupportTicket);
+      messages.save.mockResolvedValue(entity<SupportTicketMessage>({ id: 1 }));
+      const created = await svc.create({ domainId: DOMAIN_ID, subject: "Help", body: "broke" }, caller(CREATOR));
+      expect(created).toMatchObject({ id: 1 });
+      expect(tickets.create).toHaveBeenCalledWith(
+        expect.objectContaining({ domainId: DOMAIN_ID, createdBy: CREATOR, subject: "Help", visibility: "private", status: "open" })
+      );
+      expect(messages.create).toHaveBeenCalledWith(expect.objectContaining({ ticketId: 1, authorId: CREATOR, body: "broke" }));
+    });
+
+    it("404s when the domain does not exist", async () => {
+      domains.findOne.mockResolvedValue(null);
+      await expect(svc.create({ domainId: 999, subject: "a", body: "b" }, caller(CREATOR))).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe("message paging and identity", () => {
+    beforeEach(() => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      messages.findAndCount.mockResolvedValue([
+        [
+          entity<SupportTicketMessage>({ id: 2, authorId: CREATOR, body: "second" }),
+          entity<SupportTicketMessage>({ id: 1, authorId: CREATOR, body: "first" }),
+        ],
+        42,
+      ]);
+      accounts.find.mockResolvedValue([entity<Account>({ id: CREATOR, email: "creator@example.com" })]);
+    });
+
+    it("ships only the last page of a long thread, oldest first inside the page", async () => {
+      const detail = await svc.get(5, caller(CREATOR));
+      expect(messages.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0, take: MESSAGE_PAGE, order: { createdAt: "DESC", id: "DESC" } })
+      );
+      expect(detail.messages.map((m) => m.id)).toEqual([1, 2]);
+      expect(detail.messagesTotal).toBe(42);
+    });
+
+    it("resolves the author display name and avatar of each message", async () => {
+      profiles.find.mockResolvedValue([
+        entity<AccountProfile>({ accountId: CREATOR, displayName: "Jane", avatarUrl: "https://x/a.png" }),
+      ]);
+      const detail = await svc.get(5, caller(CREATOR));
+      expect(detail.messages[0]).toMatchObject({
+        authorEmail: "creator@example.com",
+        authorName: "Jane",
+        authorAvatarUrl: "https://x/a.png",
+      });
+    });
+
+    it("falls back to the email when the account set no display name", async () => {
+      const detail = await svc.get(5, caller(CREATOR));
+      expect(detail.messages[0]).toMatchObject({ authorName: "creator@example.com", authorAvatarUrl: null });
+    });
+
+    it("serves an older page at the requested offset", async () => {
+      await svc.messagesPage(5, caller(CREATOR), { offset: 20, limit: 10, sortDir: "desc" });
+      expect(messages.findAndCount).toHaveBeenCalledWith(expect.objectContaining({ skip: 20, take: 10 }));
+    });
+
+    it("refuses a page of a ticket the caller cannot see", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      await expect(svc.messagesPage(5, caller(STRANGER), { offset: 0, sortDir: "desc" })).rejects.toBeInstanceOf(
+        NotFoundException
+      );
+    });
+  });
+
+  describe("domain access", () => {
+    beforeEach(() => messages.findAndCount.mockResolvedValue([[], 0]));
+
+    it("hides a ticket whose domain the caller has no access to", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [{ domainId: 999 }] });
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.get(5, caller(STRANGER))).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("hides it even from the support role", async () => {
+      cpg.guard.utils.check.global.mockResolvedValue(true);
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [{ domainId: 999 }] });
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.get(5, caller(SUPPORT))).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("counts a domain the caller owns as accessible", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [] });
+      domains.find.mockResolvedValue([entity<VirtualDomain>({ id: DOMAIN_ID })]);
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("lets domains:list-all-domains see every domain's tickets", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({
+        global: [{ resource: "domains", action: "list-all-domains" }],
+        domain: [],
+      });
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("returns an empty list when the caller can reach no domain at all", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [] });
+      domains.find.mockResolvedValue([]);
+      await expect(svc.list({ offset: 0, sortDir: "desc" }, caller(STRANGER))).resolves.toEqual([]);
+      expect(tickets.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it("filters the list to the caller's domains", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      await svc.list({ offset: 0, sortDir: "desc" }, caller(STRANGER));
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c) => c.includes("domainId IN"))).toBe(true);
+    });
+
+    it("refuses to open a ticket about an inaccessible domain", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [{ domainId: 999 }] });
+      await expect(svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b" }, caller(STRANGER))).rejects.toBeInstanceOf(
+        ForbiddenException
+      );
+    });
+  });
+
+  describe("notifications", () => {
+    const ACTOR = "actor-id";
+    const NEIGHBOUR = "neighbour-id";
+
+    function population(ids: string[]) {
+      accounts.find.mockImplementation((opts?: { where?: { enabled?: number } }) =>
+        Promise.resolve(
+          opts?.where?.enabled === 1
+            ? ids.map((id) => entity<Account>({ id, isRoot: 0, enabled: 1 }))
+            : ids.map((id) => entity<Account>({ id, email: `${id}@example.com` }))
+        )
+      );
+    }
+
+    // Per-account answers: `notification` is the prerequisite to be reachable,
+    // `handle-ticket` is what makes an account support staff.
+    function holders(perAccount: Record<string, string[]>) {
+      cpg.guard.utils.check.global.mockImplementation((userId: string, _resource: string, action: string) =>
+        Promise.resolve((perAccount[userId] ?? []).includes(action))
+      );
+    }
+
+    function domainsOf(perAccount: Record<string, number[]>) {
+      cpg.guard.getEffectivePermissions.mockImplementation((userId: string) =>
+        Promise.resolve({ global: [], domain: (perAccount[userId] ?? []).map((domainId) => ({ domainId })) })
+      );
+    }
+
+    const dispatched = () => notifications.dispatch.mock.calls[0]?.[0];
+
+    beforeEach(() => {
+      messages.findAndCount.mockResolvedValue([[], 0]);
+      tickets.save.mockImplementation((t: SupportTicket) => Promise.resolve(t));
+      messages.save.mockResolvedValue(entity<SupportTicketMessage>({ id: 1 }));
+      tickets.create.mockImplementation((t: Partial<SupportTicket>) => entity<SupportTicket>({ id: 5, ...t }));
+      messages.create.mockImplementation((m: Partial<SupportTicketMessage>) => entity<SupportTicketMessage>(m));
+      domains.find.mockImplementation((opts?: { select?: { domain?: boolean } }) =>
+        Promise.resolve(opts?.select?.domain ? [entity<VirtualDomain>({ id: DOMAIN_ID, domain: "example.com" })] : [])
+      );
+      population([ACTOR, NEIGHBOUR]);
+      holders({ [NEIGHBOUR]: ["notification", "handle-ticket"] });
+      domainsOf({ [ACTOR]: [DOMAIN_ID], [NEIGHBOUR]: [DOMAIN_ID] });
+    });
+
+    it("notifies an eligible account when a ticket is opened", async () => {
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(dispatched()).toMatchObject({ accountIds: [NEIGHBOUR], source: "support", type: "ticket-created" });
+    });
+
+    it("never notifies the actor about their own action", async () => {
+      holders({ [ACTOR]: ["notification", "handle-ticket"], [NEIGHBOUR]: ["notification", "handle-ticket"] });
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(dispatched().accountIds).not.toContain(ACTOR);
+    });
+
+    it("never notifies an account without access to the ticket's domain", async () => {
+      domainsOf({ [ACTOR]: [DOMAIN_ID], [NEIGHBOUR]: [999] });
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(notifications.dispatch).not.toHaveBeenCalled();
+    });
+
+    it("narrows to the author and the handler once the ticket is taken in charge", async () => {
+      const THIRD = "third-support-id";
+      population([ACTOR, NEIGHBOUR, THIRD]);
+      holders({
+        [ACTOR]: ["notification", "handle-ticket"],
+        [NEIGHBOUR]: ["notification", "handle-ticket"],
+        [THIRD]: ["notification", "handle-ticket"],
+      });
+      domainsOf({ [ACTOR]: [DOMAIN_ID], [NEIGHBOUR]: [DOMAIN_ID], [THIRD]: [DOMAIN_ID] });
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: NEIGHBOUR, assignedTo: ACTOR, visibility: "public" }));
+      await svc.setStatus(5, "resolved", caller(ACTOR));
+      expect(dispatched().accountIds).toEqual([NEIGHBOUR]);
+    });
+
+    it("still reaches the whole eligible support while the ticket is unassigned", async () => {
+      const THIRD = "third-support-id";
+      population([ACTOR, NEIGHBOUR, THIRD]);
+      holders({
+        [NEIGHBOUR]: ["notification", "handle-ticket"],
+        [THIRD]: ["notification", "handle-ticket"],
+      });
+      domainsOf({ [ACTOR]: [DOMAIN_ID], [NEIGHBOUR]: [DOMAIN_ID], [THIRD]: [DOMAIN_ID] });
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(dispatched().accountIds).toEqual([NEIGHBOUR, THIRD]);
+    });
+
+    it("notifies the handler when the author replies on an assigned ticket", async () => {
+      const THIRD = "third-support-id";
+      population([ACTOR, NEIGHBOUR, THIRD]);
+      holders({
+        [NEIGHBOUR]: ["notification", "handle-ticket"],
+        [THIRD]: ["notification", "handle-ticket"],
+      });
+      domainsOf({ [ACTOR]: [DOMAIN_ID], [NEIGHBOUR]: [DOMAIN_ID], [THIRD]: [DOMAIN_ID] });
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: ACTOR, assignedTo: NEIGHBOUR, visibility: "public" }));
+      tickets.createQueryBuilder.mockReturnValue(updateQb());
+      await svc.reply(5, { body: "up" }, caller(ACTOR));
+      expect(dispatched().accountIds).toEqual([NEIGHBOUR]);
+    });
+
+    it("notifies only the author when a third party takes the ticket in charge", async () => {
+      const THIRD = "third-support-id";
+      population([ACTOR, NEIGHBOUR, THIRD]);
+      holders({
+        [ACTOR]: ["notification", "handle-ticket"],
+        [NEIGHBOUR]: ["notification"],
+        [THIRD]: ["notification", "handle-ticket"],
+      });
+      domainsOf({ [ACTOR]: [DOMAIN_ID], [NEIGHBOUR]: [DOMAIN_ID], [THIRD]: [DOMAIN_ID] });
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: NEIGHBOUR, visibility: "public" }));
+      await svc.take(5, caller(ACTOR));
+      expect(dispatched()).toMatchObject({ accountIds: [NEIGHBOUR], type: "ticket-taken" });
+    });
+
+    it("does not notify an account that already has the thread open", async () => {
+      presence.join(NEIGHBOUR, "ticket:5");
+      tickets.create.mockImplementation((t: Partial<SupportTicket>) => entity<SupportTicket>({ id: 5, ...t }));
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(notifications.dispatch).not.toHaveBeenCalled();
+    });
+
+    // dispatch is the single path to both channels, so an account filtered out
+    // here receives neither the in-app row nor the mail.
+    it("cuts both channels for the reader while still reaching the others", async () => {
+      const THIRD = "third-support-id";
+      population([ACTOR, NEIGHBOUR, THIRD]);
+      holders({
+        [NEIGHBOUR]: ["notification", "handle-ticket"],
+        [THIRD]: ["notification", "handle-ticket"],
+      });
+      domainsOf({ [ACTOR]: [DOMAIN_ID], [NEIGHBOUR]: [DOMAIN_ID], [THIRD]: [DOMAIN_ID] });
+      presence.join(NEIGHBOUR, "ticket:5");
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: ACTOR, visibility: "public" }));
+      tickets.createQueryBuilder.mockReturnValue(updateQb());
+      await svc.reply(5, { body: "up" }, caller(ACTOR));
+      expect(dispatched().accountIds).toEqual([THIRD]);
+      expect(dispatched().accountIds).not.toContain(NEIGHBOUR);
+    });
+
+    it("still notifies an account watching a different thread", async () => {
+      presence.join(NEIGHBOUR, "ticket:999");
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(dispatched().accountIds).toEqual([NEIGHBOUR]);
+    });
+
+    it("notifies again once the account closes the thread", async () => {
+      presence.join(NEIGHBOUR, "ticket:5");
+      presence.leave(NEIGHBOUR, "ticket:5");
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(dispatched().accountIds).toEqual([NEIGHBOUR]);
+    });
+
+    it("never notifies an account lacking the tickets:notification action", async () => {
+      holders({ [NEIGHBOUR]: ["handle-ticket"] });
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(notifications.dispatch).not.toHaveBeenCalled();
+    });
+
+    it("keeps a private ticket out of a non-support account's notifications", async () => {
+      holders({ [NEIGHBOUR]: ["notification"] });
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b", visibility: "private" }, caller(ACTOR));
+      expect(notifications.dispatch).not.toHaveBeenCalled();
+    });
+
+    it("reaches a non-support account on a public ticket", async () => {
+      holders({ [NEIGHBOUR]: ["notification"] });
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b", visibility: "public" }, caller(ACTOR));
+      expect(dispatched().accountIds).toEqual([NEIGHBOUR]);
+    });
+
+    it("notifies the author when someone replies", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: NEIGHBOUR, visibility: "private" }));
+      holders({ [ACTOR]: ["notification", "handle-ticket", "reply-ticket"], [NEIGHBOUR]: ["notification"] });
+      tickets.createQueryBuilder.mockReturnValue(updateQb());
+      await svc.reply(5, { body: "answer" }, caller(ACTOR));
+      expect(dispatched()).toMatchObject({ accountIds: [NEIGHBOUR], type: "ticket-replied" });
+    });
+
+    it("notifies the author when the ticket is taken in charge", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: NEIGHBOUR, visibility: "private" }));
+      holders({ [ACTOR]: ["notification", "handle-ticket"], [NEIGHBOUR]: ["notification"] });
+      await svc.take(5, caller(ACTOR));
+      expect(dispatched()).toMatchObject({ accountIds: [NEIGHBOUR], type: "ticket-taken" });
+    });
+
+    it("carries the new status in the payload on a status change", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: NEIGHBOUR, visibility: "private" }));
+      holders({ [ACTOR]: ["notification", "handle-ticket"], [NEIGHBOUR]: ["notification"] });
+      await svc.setStatus(5, "resolved", caller(ACTOR));
+      expect(dispatched()).toMatchObject({ type: "ticket-status", payload: expect.objectContaining({ status: "resolved" }) });
+    });
+
+    it("carries the domain and the ticket link in the payload", async () => {
+      await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
+      expect(dispatched()).toMatchObject({
+        link: "/tickets/5",
+        payload: expect.objectContaining({ ticketId: 5, subject: "help", domainName: "example.com" }),
+      });
+    });
+
+    it("never fails the request when the notification layer throws", async () => {
+      notifications.dispatch.mockRejectedValue(new Error("db down"));
+      await expect(svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR))).resolves.toMatchObject({
+        id: 5,
+      });
+    });
+  });
+
+  describe("reply", () => {
+    beforeEach(() => {
+      messages.findAndCount.mockResolvedValue([[], 0]);
+      messages.save.mockResolvedValue(entity<SupportTicketMessage>({ id: 1 }));
+      messages.create.mockImplementation((m: Partial<SupportTicketMessage>) => entity<SupportTicketMessage>(m));
+      tickets.createQueryBuilder.mockReturnValue(updateQb());
+      accounts.find.mockResolvedValue([]);
+    });
+
+    it("lets the author answer their own ticket without the reply-ticket action", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, visibility: "private" }));
+      cpg.guard.utils.check.global.mockResolvedValue(false);
+      await expect(svc.reply(5, { body: "up" }, caller(CREATOR))).resolves.toMatchObject({ id: 1 });
+    });
+
+    it("refuses a third party without the reply-ticket action", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, visibility: "public" }));
+      cpg.guard.utils.check.global.mockResolvedValue(false);
+      await expect(svc.reply(5, { body: "up" }, caller(STRANGER))).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it("lets a third party holding reply-ticket answer", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, visibility: "public" }));
+      cpg.guard.utils.check.global.mockImplementation((_u: string, _r: string, action: string) =>
+        Promise.resolve(action === "reply-ticket")
+      );
+      await expect(svc.reply(5, { body: "up" }, caller(STRANGER))).resolves.toMatchObject({ id: 1 });
+    });
+
+    it("lets root answer any ticket", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, visibility: "private" }));
+      cpg.guard.utils.check.global.mockResolvedValue(false);
+      await expect(svc.reply(5, { body: "up" }, caller(ROOT_ID, true))).resolves.toMatchObject({ id: 1 });
+    });
+
+    it("refuses any message on a closed ticket, even from its author", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, status: "closed" }));
+      await expect(svc.reply(5, { body: "up" }, caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it("refuses a message on a closed ticket even from root", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, status: "closed" }));
+      await expect(svc.reply(5, { body: "up" }, caller(ROOT_ID, true))).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it("still accepts a message on a resolved ticket", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, status: "resolved" }));
+      await expect(svc.reply(5, { body: "up" }, caller(CREATOR))).resolves.toMatchObject({ id: 1 });
+    });
+  });
+
+  describe("setStatus", () => {
+    beforeEach(() => {
+      messages.findAndCount.mockResolvedValue([[], 0]);
+      tickets.save.mockImplementation((t: SupportTicket) => Promise.resolve(t));
+      accounts.find.mockResolvedValue([]);
+    });
+
+    it("lets the author close their own ticket without the support role", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, status: "open" }));
+      cpg.guard.utils.check.global.mockResolvedValue(false);
+      await expect(svc.setStatus(5, "closed", caller(CREATOR))).resolves.toMatchObject({ status: "closed" });
+    });
+
+    it("refuses any other status change from the author", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, status: "open" }));
+      cpg.guard.utils.check.global.mockResolvedValue(false);
+      await expect(svc.setStatus(5, "resolved", caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it("refuses the author reopening their closed ticket", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, status: "closed" }));
+      cpg.guard.utils.check.global.mockResolvedValue(false);
+      await expect(svc.setStatus(5, "open", caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it("refuses a third party without the support role", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, visibility: "public" }));
+      cpg.guard.utils.check.global.mockResolvedValue(false);
+      await expect(svc.setStatus(5, "closed", caller(STRANGER))).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it("lets the support role set any status", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR, visibility: "public" }));
+      cpg.guard.utils.check.global.mockImplementation((_u: string, _r: string, action: string) =>
+        Promise.resolve(action === "handle-ticket")
+      );
+      await expect(svc.setStatus(5, "resolved", caller(STRANGER))).resolves.toMatchObject({ status: "resolved" });
+    });
+
+    it("lets root set any status", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR }));
+      cpg.guard.utils.check.global.mockResolvedValue(false);
+      await expect(svc.setStatus(5, "resolved", caller(ROOT_ID, true))).resolves.toMatchObject({ status: "resolved" });
+    });
+  });
+
+  describe("take", () => {
+    beforeEach(() => cpg.guard.utils.check.global.mockResolvedValue(true));
+
+    it("refuses to let the author take charge of their own ticket", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR }));
+      await expect(svc.take(5, caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
+      expect(tickets.save).not.toHaveBeenCalled();
+    });
+
+    it("assigns the ticket to another account and moves an open ticket to in_progress", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ status: "open", createdBy: CREATOR }));
+      tickets.save.mockImplementation(async (t) => t as SupportTicket);
+      const result = (await svc.take(5, caller(SUPPORT))) as SupportTicket;
+      expect(result.assignedTo).toBe(SUPPORT);
+      expect(result.status).toBe("in_progress");
+    });
+
+    it("does not rewind a resolved ticket to in_progress", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ status: "resolved", createdBy: CREATOR }));
+      tickets.save.mockImplementation(async (t) => t as SupportTicket);
+      const result = (await svc.take(5, caller(SUPPORT))) as SupportTicket;
+      expect(result.status).toBe("resolved");
+    });
+  });
+});

@@ -7,8 +7,10 @@ import { AccountsModule } from "./api/accounts/accounts.module";
 import { DomainsModule } from "./api/domains/domains.module";
 import { GroupsModule } from "./api/groups/groups.module";
 import { HealthModule } from "./api/health/health.module";
+import { NotificationsApiModule } from "./api/notifications/notifications.module";
 import { PostfixModule } from "./api/postfix/postfix.module";
 import { RspamdModule } from "./api/rspamd/rspamd.module";
+import { TicketsModule } from "./api/tickets/tickets.module";
 import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.module";
 import { ApiTokenModule } from "./core/auth/api-token/api-token.module";
 import { CombinedAuthGuard } from "./core/auth/auth.guard";
@@ -46,6 +48,8 @@ import { WebsocketModule } from "./core/websocket/websocket.module";
     GroupsModule,
     RspamdModule,
     PostfixModule,
+    TicketsModule,
+    NotificationsApiModule,
     WebsocketModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: CombinedAuthGuard }],

@@ -1,6 +1,8 @@
 import { DataSource } from "typeorm";
 import { DomainsService } from "../../../api/domains/domains.service";
+import { TicketsService } from "../../../api/tickets/tickets.service";
 import { JwtAuthService } from "../../auth/jwt/jwt.service";
+import { NotificationsService } from "../../notifications/notifications.service";
 import { PostfixService } from "../../postfix/postfix.service";
 import { dashboardWatcher } from "./dashboard.watcher";
 import { diskWatcher } from "./disk.watcher";
@@ -9,6 +11,8 @@ import { domainPostfixWatcher } from "./domain-postfix.watcher";
 import { domainQuotaWatcher } from "./domain-quota.watcher";
 import { domainRecipientsWatcher } from "./domain-recipients.watcher";
 import { domainRspamdWatcher } from "./domain-rspamd.watcher";
+import { notificationsWatcher } from "./notifications.watcher";
+import { ticketThreadWatcher } from "./ticket-thread.watcher";
 import { postfixQueueWatcher } from "./postfix-queue.watcher";
 import { rspamdStatsWatcher } from "./rspamd-stats.watcher";
 import { sessionsWatcher } from "./sessions.watcher";
@@ -21,6 +25,8 @@ export interface WatcherDeps {
   domains: DomainsService;
   postfix: PostfixService;
   sessions: JwtAuthService;
+  notifications: NotificationsService;
+  tickets: TicketsService;
 }
 
 export function buildWatchers(deps: WatcherDeps): Watcher[] {
@@ -36,5 +42,7 @@ export function buildWatchers(deps: WatcherDeps): Watcher[] {
     domainQuotaWatcher(dataSource),
     domainRspamdWatcher(dataSource),
     domainPostfixWatcher(dataSource, deps.postfix),
+    notificationsWatcher(deps.notifications),
+    ticketThreadWatcher(deps.tickets),
   ];
 }

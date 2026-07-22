@@ -9,6 +9,10 @@ import { VirtualUser } from "../entities/virtual-user.entity";
 import { VirtualQuotaDomain } from "../entities/virtual-quota-domain.entity";
 import { VirtualQuotaUser } from "../entities/virtual-quota-user.entity";
 import { SieveRejectSender } from "../entities/sieve-reject-sender.entity";
+import { Notification } from "../entities/notification.entity";
+import { NotificationPreference } from "../entities/notification-preference.entity";
+import { SupportTicket } from "../entities/support-ticket.entity";
+import { SupportTicketMessage } from "../entities/support-ticket-message.entity";
 
 // Stand-alone DataSource used exclusively by the TypeORM CLI (migration:generate,
 // migration:run, migration:revert, migration:show). The Nest runtime keeps its
@@ -36,6 +40,10 @@ export default new DataSource({
     VirtualQuotaDomain,
     VirtualQuotaUser,
     SieveRejectSender,
+    SupportTicket,
+    SupportTicketMessage,
+    Notification,
+    NotificationPreference,
   ],
   migrations: ["src/core/database/migrations/*.ts"],
   migrationsTableName: "migrations",

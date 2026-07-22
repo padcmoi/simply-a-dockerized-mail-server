@@ -1,0 +1,90 @@
+import { useAuthStore } from "~/stores/auth";
+
+export const NOTIFICATION_SOURCES = ["support"] as const;
+export type NotificationSource = (typeof NOTIFICATION_SOURCES)[number];
+
+export interface NotificationRow {
+  id: number;
+  source: string;
+  type: string;
+  payload: { ticketId?: number; subject?: string; domainName?: string | null; actor?: string | null; status?: string } | null;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationFeed {
+  unread: number;
+  items: NotificationRow[];
+}
+
+export interface NotificationChannels {
+  inApp: boolean;
+  email: boolean;
+}
+
+export type NotificationPreferences = Record<NotificationSource, NotificationChannels>;
+
+const EMPTY: NotificationFeed = { unread: 0, items: [] };
+
+export function useNotifications() {
+  const auth = useAuthStore();
+  const { call } = useApi();
+  const { tick } = useDataRefresh();
+
+  const accountId = computed(() => auth.session?.accountId ?? null);
+  const pushed = useRealtimeTopic<NotificationFeed>(() => (accountId.value ? `notifications:${accountId.value}` : null));
+  const fetched = useState<NotificationFeed>("notifications-feed", () => ({ ...EMPTY }));
+
+  const feed = computed<NotificationFeed>(() => pushed.value ?? fetched.value);
+  const unread = computed(() => feed.value.unread);
+  const items = computed(() => feed.value.items);
+
+  // A session restored from storage before the account id was exposed carries no
+  // accountId, so the realtime topic can never be built: re-read the profile once
+  // instead of leaving the bell on the REST fallback for the whole session.
+  async function refresh() {
+    if (!auth.isAuthenticated) return;
+    if (!accountId.value) await auth.fetchProfile().catch(() => undefined);
+    fetched.value = await call<NotificationFeed>("/notifications/feed");
+  }
+
+  async function markRead(id: number) {
+    fetched.value = await call<NotificationFeed>(`/notifications/${id}/read`, { method: "POST" });
+  }
+
+  async function markAllRead() {
+    fetched.value = await call<NotificationFeed>("/notifications/read-all", { method: "POST" });
+  }
+
+  async function remove(id: number) {
+    fetched.value = await call<NotificationFeed>(`/notifications/${id}`, { method: "DELETE" });
+  }
+
+  const safeRefresh = () => refresh().catch(() => undefined);
+
+  watch(
+    () => auth.isAuthenticated,
+    (ok) => ok && safeRefresh()
+  );
+  watch(tick, safeRefresh);
+
+  return { feed, unread, items, refresh, markRead, markAllRead, remove };
+}
+
+export function useNotificationPreferences() {
+  const { call } = useApi();
+
+  function load() {
+    return call<NotificationPreferences>("/notifications/preferences");
+  }
+
+  function save(source: NotificationSource, channels: NotificationChannels) {
+    return call<NotificationPreferences>("/notifications/preferences", {
+      method: "PUT",
+      body: { source, ...channels },
+    });
+  }
+
+  return { load, save };
+}

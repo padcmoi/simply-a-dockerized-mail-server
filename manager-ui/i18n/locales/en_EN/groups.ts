@@ -114,6 +114,7 @@ export default {
         apiTokens: "API tokens",
         groups: "Groups",
         domains: "Domains",
+        tickets: "Support tickets",
         superadmin: "Super admin",
         domainOwnerElevated: "Domain owner elevated",
       },
@@ -192,6 +193,15 @@ export default {
           "view-domain": "View any domain",
           "toggle-domain-active": "Activate or deactivate any domain",
           "transfer-domain-ownership": "Transfer any domain's ownership",
+        },
+        tickets: {
+          access: "Access",
+          "list-tickets": "List the tickets",
+          "view-ticket": "Read a ticket",
+          "create-ticket": "Open a ticket",
+          "reply-ticket": "Reply on a ticket one did not open",
+          "handle-ticket": "Take charge of a ticket and change its status",
+          notification: "Be notified about the tickets one may follow",
         },
         superadmin: {
           access: "Access",

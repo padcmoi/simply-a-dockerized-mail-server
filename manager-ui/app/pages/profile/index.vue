@@ -117,6 +117,13 @@ useAsyncData(
         to="/profile/sessions"
       />
       <ProfileActionCard
+        icon="i-lucide-bell"
+        icon-color="text-primary"
+        :label="t('notifications.title')"
+        :hint="t('notifications.pageHint')"
+        to="/profile/notifications"
+      />
+      <ProfileActionCard
         v-for="item in comingSoon"
         :key="item.label"
         :icon="item.icon"

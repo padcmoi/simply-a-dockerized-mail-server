@@ -116,6 +116,7 @@ export default {
         apiTokens: "Jetons API",
         groups: "Groupes",
         domains: "Domaines",
+        tickets: "Tickets de support",
         superadmin: "Super administrateur",
         domainOwnerElevated: "Propriétaire de domaine élevé",
       },
@@ -194,6 +195,15 @@ export default {
           "view-domain": "Voir n'importe quel domaine",
           "toggle-domain-active": "Activer ou désactiver n'importe quel domaine",
           "transfer-domain-ownership": "Transférer la propriété de n'importe quel domaine",
+        },
+        tickets: {
+          access: "Accès",
+          "list-tickets": "Lister les tickets",
+          "view-ticket": "Consulter un ticket",
+          "create-ticket": "Ouvrir un ticket",
+          "reply-ticket": "Répondre à un ticket que l'on n'a pas ouvert",
+          "handle-ticket": "Prendre en charge un ticket et changer son statut",
+          notification: "Être notifié des tickets que l'on peut suivre",
         },
         superadmin: {
           access: "Accès",

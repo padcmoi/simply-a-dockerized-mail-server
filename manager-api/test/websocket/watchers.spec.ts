@@ -3,6 +3,8 @@ import type { DataSource } from "typeorm";
 import type { DomainsService } from "../../src/api/domains/domains.service";
 import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
 import type { PostfixService } from "../../src/core/postfix/postfix.service";
+import type { NotificationsService } from "../../src/core/notifications/notifications.service";
+import type { TicketsService } from "../../src/api/tickets/tickets.service";
 import { buildWatchers } from "../../src/core/websocket/watchers";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
 import { DOMAIN_ACTIONS, GLOBAL_ACTIONS } from "../../src/core/custom-permission-guard/permission-catalog";
@@ -13,6 +15,8 @@ const watchers = buildWatchers({
   domains: providerMock<DomainsService>({}),
   postfix: providerMock<PostfixService>({}),
   sessions: providerMock<JwtAuthService>({}),
+  notifications: providerMock<NotificationsService>({}),
+  tickets: providerMock<TicketsService>({}),
 });
 
 describe("websocket watchers", () => {
@@ -27,10 +31,33 @@ describe("websocket watchers", () => {
 
   // Fail-closed contract: the gateway refuses any topic with no declared
   // permission, so a watcher shipping an empty list would simply be dead.
-  it.each(watchers.map((w) => [w.topic, w] as const))("%s declares at least one permission", (_topic, watcher) => {
-    expect(watcher.permissions.length).toBeGreaterThan(0);
-    for (const entry of watcher.permissions) expect(entry.actions.length).toBeGreaterThan(0);
-  });
+  // A "self" topic is the one exception: it carries the subscriber's own data
+  // and is authorized on identity (param === userId), not on a permission.
+  it.each(watchers.filter((w) => w.scope !== "self" && !w.authorize).map((w) => [w.topic, w] as const))(
+    "%s declares at least one permission",
+    (_topic, watcher) => {
+      expect(watcher.permissions.length).toBeGreaterThan(0);
+      for (const entry of watcher.permissions) expect(entry.actions.length).toBeGreaterThan(0);
+    }
+  );
+
+  // An unparameterized "self" topic would have no identity to match against,
+  // so the gateway would hand the same stream to every subscriber.
+  it.each(watchers.filter((w) => w.scope === "self").map((w) => [w.topic, w] as const))(
+    "%s is a parameterized self topic",
+    (_topic, watcher) => {
+      expect(watcher.parameterized).toBe(true);
+    }
+  );
+
+  // A topic owning its authorization answers per row, so it is meaningless
+  // without the row id the subscriber asked for.
+  it.each(watchers.filter((w) => w.authorize).map((w) => [w.topic, w] as const))(
+    "%s authorizes its own parameterized topic",
+    (_topic, watcher) => {
+      expect(watcher.parameterized).toBe(true);
+    }
+  );
 
   // A typo in a resource or action would silently deny every account forever
   // (assertOne throws on an unknown pair), so pin them to the catalog matching

@@ -3,6 +3,8 @@ import type { DataSource } from "typeorm";
 import type { DomainsService } from "../../src/api/domains/domains.service";
 import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
 import type { PostfixService } from "../../src/core/postfix/postfix.service";
+import type { NotificationsService } from "../../src/core/notifications/notifications.service";
+import type { TicketsService } from "../../src/api/tickets/tickets.service";
 import type { Watcher } from "../../src/core/websocket/watcher.type";
 import type { WebsocketGateway } from "../../src/core/websocket/websocket.gateway";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
@@ -40,14 +42,21 @@ describe("WebsocketService", () => {
       providerMock<DataSource>({}),
       providerMock<DomainsService>({}),
       providerMock<PostfixService>({}),
-      providerMock<JwtAuthService>({})
+      providerMock<JwtAuthService>({}),
+      providerMock<NotificationsService>({}),
+      providerMock<TicketsService>({})
     );
     service.onModuleInit();
   }
 
   it("registers each watcher's declared permissions and scope on the gateway", () => {
     start({ fn: () => 1 });
-    expect(gateway.registerTopic).toHaveBeenCalledWith("t", { permissions: PERMS, scope: "global", parameterized: false });
+    expect(gateway.registerTopic).toHaveBeenCalledWith("t", {
+      permissions: PERMS,
+      scope: "global",
+      parameterized: false,
+      authorize: undefined,
+    });
   });
 
   it("does not poll a parameterized watcher until asked, then starts on demand", async () => {
@@ -58,7 +67,9 @@ describe("WebsocketService", () => {
       providerMock<DataSource>({}),
       providerMock<DomainsService>({}),
       providerMock<PostfixService>({}),
-      providerMock<JwtAuthService>({})
+      providerMock<JwtAuthService>({}),
+      providerMock<NotificationsService>({}),
+      providerMock<TicketsService>({})
     );
     const handlers = { start: (_f: string, _b: string, _p: string) => undefined, stop: (_f: string) => undefined };
     gateway.setDynamicHandlers.mockImplementation((h: typeof handlers) => Object.assign(handlers, h));

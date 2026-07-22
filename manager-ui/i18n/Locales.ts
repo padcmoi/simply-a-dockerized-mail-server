@@ -32,10 +32,101 @@ export interface Locales {
     aliases: string;
     quotas: string;
     admin: string;
+    tickets: string;
     sieve: string;
     accounts: string;
     groups: string;
     apiTokens: string;
+  };
+  notifications: {
+    title: string;
+    empty: string;
+    markAllRead: string;
+    someone: string;
+    saved: string;
+    pageHint: string;
+    pageDescription: string;
+    channel: { inApp: string; email: string };
+    source: { support: string };
+    sourceHint: { support: string };
+    event: {
+      "ticket-created": string;
+      "ticket-replied": string;
+      "ticket-taken": string;
+      "ticket-status": string;
+    };
+  };
+  tickets: {
+    alertTitle: string;
+    alertDescription: string;
+    createTitle: string;
+    empty: string;
+    table: {
+      subject: string;
+      status: string;
+      visibility: string;
+      assignee: string;
+      updated: string;
+      unassigned: string;
+      closeOwn: string;
+    };
+    status: { open: string; in_progress: string; resolved: string; closed: string };
+    visibility: { public: string; private: string };
+    form: {
+      title: string;
+      subject: string;
+      subjectPlaceholder: string;
+      body: string;
+      bodyPlaceholder: string;
+      visibility: string;
+      public: string;
+      private: string;
+      publicHint: string;
+      privateHint: string;
+      submit: string;
+      backToList: string;
+    };
+    editor: {
+      undo: string;
+      redo: string;
+      bold: string;
+      italic: string;
+      strike: string;
+      code: string;
+      bulletList: string;
+      orderedList: string;
+      quote: string;
+      codeBlock: string;
+      link: string;
+      clear: string;
+    };
+    detail: {
+      title: string;
+      backToList: string;
+      openedBy: string;
+      reply: string;
+      replyPlaceholder: string;
+      send: string;
+      take: string;
+      authorCannotTake: string;
+      changeStatus: string;
+      authorCloseHint: string;
+      closedNotice: string;
+      loadOlder: string;
+      noMessages: string;
+      you: string;
+      unknown: string;
+    };
+    toast: {
+      created: string;
+      createFailed: string;
+      replied: string;
+      replyFailed: string;
+      taken: string;
+      takeFailed: string;
+      statusChanged: string;
+      statusFailed: string;
+    };
   };
   layout: {
     home: string;
@@ -856,6 +947,7 @@ export interface Locales {
           apiTokens: string;
           groups: string;
           domains: string;
+          tickets: string;
           superadmin: string;
           domainOwnerElevated: string;
         };
@@ -934,6 +1026,15 @@ export interface Locales {
             "view-domain": string;
             "toggle-domain-active": string;
             "transfer-domain-ownership": string;
+          };
+          tickets: {
+            access: string;
+            "list-tickets": string;
+            "view-ticket": string;
+            "create-ticket": string;
+            "reply-ticket": string;
+            "handle-ticket": string;
+            notification: string;
           };
           superadmin: {
             access: string;

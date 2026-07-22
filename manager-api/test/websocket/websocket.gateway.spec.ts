@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ForbiddenException, Logger } from "@nestjs/common";
 import type { JwtService } from "@nestjs/jwt";
 import type { WebSocket } from "ws";
+import { TopicPresenceService } from "../../src/core/websocket/presence.service";
 import { WebsocketGateway } from "../../src/core/websocket/websocket.gateway";
 import type { RefreshToken } from "../../src/core/entities/refresh-token.entity";
 import type { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
@@ -68,6 +69,7 @@ describe("WebsocketGateway", () => {
   let cpg: GuardCpg;
   let refreshTokens: ReturnType<typeof repoMock<RefreshToken>>;
   let domains: ReturnType<typeof repoMock<VirtualDomain>>;
+  let presence: TopicPresenceService;
   let gateway: WebsocketGateway;
 
   beforeEach(() => {
@@ -75,7 +77,8 @@ describe("WebsocketGateway", () => {
     cpg = makeCpg();
     refreshTokens = repoMock<RefreshToken>();
     domains = repoMock<VirtualDomain>();
-    gateway = new WebsocketGateway(jwt, cpg, refreshTokens, domains);
+    presence = new TopicPresenceService();
+    gateway = new WebsocketGateway(jwt, cpg, refreshTokens, domains, presence);
     gateway.registerTopic("rspamd-stats", { permissions: RSPAMD_STATS, scope: "global", parameterized: false });
   });
 
@@ -304,6 +307,141 @@ describe("WebsocketGateway", () => {
       gateway.publish("rspamd-stats", { scanned: 6 });
 
       expect(frames(socket)).toEqual([]);
+    });
+  });
+
+  describe("self-scoped topics", () => {
+    beforeEach(() => {
+      gateway.registerTopic("notifications", { permissions: [], scope: "self", parameterized: true });
+      gateway.setDynamicHandlers({ start: vi.fn(), stop: vi.fn() });
+    });
+
+    it("lets an account consume its own stream with no permission at all", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "notifications:u1" });
+      expect(socket.topics?.has("notifications:u1")).toBe(true);
+      expect(cpg.guard.assertOne.global).not.toHaveBeenCalled();
+    });
+
+    it("denies an account asking for someone else's stream", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "notifications:u2" });
+      expect(socket.topics?.has("notifications:u2")).toBe(false);
+    });
+
+    // Identity, not permission: the root bypass must not apply here, or root
+    // would read every account's private stream.
+    it("denies root on another account's stream", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "root", email: "root@test", isRoot: true });
+      await gateway.onSubscribe(socket, { topic: "notifications:u1" });
+      expect(socket.topics?.has("notifications:u1")).toBe(false);
+    });
+
+    it("still lets root consume its own stream", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "root", email: "root@test", isRoot: true });
+      await gateway.onSubscribe(socket, { topic: "notifications:root" });
+      expect(socket.topics?.has("notifications:root")).toBe(true);
+    });
+
+    it("denies a self topic carrying no param", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "notifications" });
+      expect(socket.topics?.has("notifications")).toBe(false);
+    });
+
+    it("keeps two accounts' streams apart on publish", async () => {
+      const a = makeSocket();
+      const b = makeSocket();
+      await connectAs(a, { sub: "u1", email: "u1@test", isRoot: false });
+      await connectAs(b, { sub: "u2", email: "u2@test", isRoot: false });
+      await gateway.onSubscribe(a, { topic: "notifications:u1" });
+      await gateway.onSubscribe(b, { topic: "notifications:u2" });
+
+      gateway.publish("notifications:u1", { unread: 3 });
+
+      expect(frames(a)).toEqual([{ topic: "notifications:u1", data: { unread: 3 } }]);
+      expect(frames(b)).toEqual([]);
+    });
+  });
+
+  describe("row-authorized topics", () => {
+    let authorize: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      authorize = vi.fn().mockResolvedValue(true);
+      gateway.registerTopic("ticket", { permissions: [], scope: "global", parameterized: true, authorize });
+      gateway.setDynamicHandlers({ start: vi.fn(), stop: vi.fn() });
+    });
+
+    it("hands the decision to the watcher, with the caller and the row id", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "ticket:9" });
+      expect(authorize).toHaveBeenCalledWith({ userId: "u1", isRoot: false }, "9");
+      expect(socket.topics?.has("ticket:9")).toBe(true);
+    });
+
+    it("denies when the watcher refuses the row", async () => {
+      authorize.mockResolvedValue(false);
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "ticket:9" });
+      expect(socket.topics?.has("ticket:9")).toBe(false);
+    });
+
+    // The catalog cannot express a row rule, so root must go through the
+    // watcher too instead of being waved past it.
+    it("asks the watcher even for root", async () => {
+      authorize.mockResolvedValue(false);
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "root", email: "root@test", isRoot: true });
+      await gateway.onSubscribe(socket, { topic: "ticket:9" });
+      expect(authorize).toHaveBeenCalledWith({ userId: "root", isRoot: true }, "9");
+      expect(socket.topics?.has("ticket:9")).toBe(false);
+    });
+
+    it("records presence on subscribe and clears it on unsubscribe", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "ticket:9" });
+      expect(presence.watchers("ticket:9")).toEqual(new Set(["u1"]));
+      gateway.onUnsubscribe(socket, { topic: "ticket:9" });
+      expect(presence.watchers("ticket:9")).toEqual(new Set());
+    });
+
+    it("clears presence when the socket drops without unsubscribing", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "ticket:9" });
+      gateway.handleDisconnect(socket);
+      expect(presence.watchers("ticket:9")).toEqual(new Set());
+    });
+
+    it("keeps an account present while one of its two tabs is still open", async () => {
+      const a = makeSocket();
+      const b = makeSocket();
+      await connectAs(a, { sub: "u1", email: "u1@test", isRoot: false });
+      await connectAs(b, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(a, { topic: "ticket:9" });
+      await gateway.onSubscribe(b, { topic: "ticket:9" });
+      gateway.handleDisconnect(a);
+      expect(presence.watchers("ticket:9")).toEqual(new Set(["u1"]));
+      gateway.handleDisconnect(b);
+      expect(presence.watchers("ticket:9")).toEqual(new Set());
+    });
+
+    it("does not double-count a repeated subscribe from the same socket", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "ticket:9" });
+      await gateway.onSubscribe(socket, { topic: "ticket:9" });
+      gateway.onUnsubscribe(socket, { topic: "ticket:9" });
+      expect(presence.watchers("ticket:9")).toEqual(new Set());
     });
   });
 

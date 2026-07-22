@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 
 interface Session {
+  accountId?: string;
   accessToken: string;
   refreshToken: string;
   expiresAt: string;
@@ -16,6 +17,7 @@ interface Session {
 // The subset of GET /auth/jwt/me the store keeps in the session (the endpoint
 // also returns phone/address/geo, consumed only by the profile page).
 interface Profile {
+  id: string;
   email: string;
   displayName: string | null;
   avatarUrl: string | null;
@@ -77,6 +79,7 @@ export const useAuthStore = defineStore("auth", {
       });
       this.session = {
         ...this.session,
+        accountId: me.id,
         email: me.email,
         displayName: me.displayName,
         avatarUrl: me.avatarUrl,
@@ -93,6 +96,7 @@ export const useAuthStore = defineStore("auth", {
       });
       this.session = {
         ...this.session,
+        accountId: me.id,
         email: me.email,
         displayName: me.displayName,
         avatarUrl: me.avatarUrl,

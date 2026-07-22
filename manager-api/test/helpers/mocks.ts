@@ -82,6 +82,8 @@ const QB_CHAIN = [
   "offset",
   "setParameter",
   "setParameters",
+  "update",
+  "set",
 ] as const;
 
 const QB_TERMINAL = ["getMany", "getManyAndCount", "getRawMany", "getRawOne", "getOne", "getCount", "execute"] as const;

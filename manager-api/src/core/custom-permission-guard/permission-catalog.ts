@@ -95,9 +95,8 @@ export const GLOBAL_ACTIONS = {
     "toggle-domain-active",
     "transfer-domain-ownership",
   ],
-
   domain_owner_elevated: ["access", "delete-dkim-key", "transfer-domain-ownership"],
-
+  tickets: ["access", "list-tickets", "view-ticket", "create-ticket", "reply-ticket", "handle-ticket", "notification"],
   superadmin: ["access", "resize-any-domain-quota", "delete-any-domain"],
 } as const;
 
@@ -149,6 +148,7 @@ export const GLOBAL_RESOURCES_DEPENDS_ON: GlobalDependsOnEntry[] = [
   // names -- `list-account-names` (GET /accounts/names), not the full
   // `list-accounts`. A group manager has no business reading emails and roles.
   { resource: "groups", dependsOn: [{ resource: "accounts", action: ["access", "list-account-names"] }] },
+  { resource: "tickets", dependsOn: [{ resource: "domains", action: ["access"] }] },
 ];
 
 export const DOMAIN_RESOURCE_DEPENDS_ON: DomainDependsOnEntry[] = [

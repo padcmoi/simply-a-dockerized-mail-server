@@ -13,8 +13,10 @@ import { DomainsController } from "../../src/api/domains/domains.controller";
 import { QuotasController } from "../../src/api/domains/quotas/quotas.controller";
 import { RecipientsController } from "../../src/api/domains/recipients/recipients.controller";
 import { DomainsRspamdController } from "../../src/api/domains/rspamd/rspamd.controller";
+import { TicketsController } from "../../src/api/tickets/tickets.controller";
 import { GroupsController } from "../../src/api/groups/groups.controller";
 import { HealthController } from "../../src/api/health/health.controller";
+import { NotificationsController } from "../../src/api/notifications/notifications.controller";
 import { PostfixController } from "../../src/api/postfix/postfix.controller";
 import { RspamdController } from "../../src/api/rspamd/rspamd.controller";
 import { RejectSendersController } from "../../src/api/sieve/reject-senders/reject-senders.controller";
@@ -33,8 +35,10 @@ export const ALL_CONTROLLERS = [
   QuotasController,
   RecipientsController,
   DomainsRspamdController,
+  TicketsController,
   GroupsController,
   HealthController,
+  NotificationsController,
   PostfixController,
   RspamdController,
   RejectSendersController,
