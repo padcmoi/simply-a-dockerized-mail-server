@@ -15,6 +15,7 @@ import type { JwtPayload } from "../auth/jwt/jwt.strategy";
 import { CustomPermissionGuardService } from "../custom-permission-guard/custom-permission-guard.service";
 import { RefreshToken } from "../entities/refresh-token.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
+import { PresenceActivityService } from "./presence-activity.service";
 import { TopicPresenceService } from "./presence.service";
 import type { TopicCaller, TopicPermission, TopicScope } from "./watcher.type";
 
@@ -54,7 +55,8 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     private readonly cpg: CustomPermissionGuardService,
     @InjectRepository(RefreshToken) private readonly refreshTokens: Repository<RefreshToken>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
-    private readonly presence: TopicPresenceService
+    private readonly presence: TopicPresenceService,
+    private readonly activity: PresenceActivityService
   ) {}
 
   private get logsConsumers() {
@@ -86,6 +88,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       if (client.userId) this.presence.leave(client.userId, fullTopic);
       this.onTopicLeft(fullTopic);
     }
+    if (client.userId) this.activity.leave(client.userId, client);
     if (this.logsConsumers && dropped.length) {
       this.log.log(`- ${client.who} disconnected, stopped consuming [${dropped.join(", ")}]`);
     }
@@ -110,7 +113,24 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     client.userId = payload.sub;
     client.isRoot = payload.isRoot === true;
     client.who = payload.email ?? payload.sub;
+    this.activity.join(client.userId, client);
     return true;
+  }
+
+  // A dropped connection does not always raise a close event (a suspended tab,
+  // a NAT timing out): the socket then stays half open and silently delivers
+  // nothing. Answering a ping is what lets the client tell live from dead.
+  @SubscribeMessage("ping")
+  onPing(@ConnectedSocket() client: AuthSocket) {
+    if (client.readyState === client.OPEN) client.send(JSON.stringify({ topic: "#pong", data: null }));
+  }
+
+  // The client reports keyboard/mouse idleness (its own 30s threshold). An idle
+  // account is shown offline even though its session and socket are alive.
+  @SubscribeMessage("activity")
+  async onActivity(@ConnectedSocket() client: AuthSocket, @MessageBody() data: { idle?: boolean }) {
+    if (!(await client.auth) || !client.userId) return;
+    this.activity.setActive(client.userId, client, data?.idle !== true);
   }
 
   @SubscribeMessage("subscribe")
@@ -129,6 +149,26 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     if (this.logsConsumers)
       this.log.log(`+ ${client.who} consumes "${fullTopic}" (${this.subscriberCount(fullTopic)} consumer(s))`);
     if (this.latest.has(fullTopic)) this.send(client, fullTopic, this.latest.get(fullTopic));
+  }
+
+  // Ephemeral peer signal: "I am typing on this thread". It is never stored and
+  // never polled, it just fans out to the other subscribers of that very topic,
+  // and only to them, since the sender had to be subscribed to send it.
+  @SubscribeMessage("typing")
+  async onTyping(@ConnectedSocket() client: AuthSocket, @MessageBody() data: { topic?: string }) {
+    const fullTopic = data?.topic;
+    if (!fullTopic || !(await client.auth) || !client.userId) return;
+    if (!client.topics?.has(fullTopic)) return;
+
+    // `at` makes every keystroke frame distinct, otherwise a repeated identical
+    // payload would not wake a client watching that value.
+    const frame = { topic: `${fullTopic}#typing`, data: { userId: client.userId, who: client.who, at: Date.now() } };
+    for (const peer of this.clients) {
+      if (peer === client) continue;
+      if (peer.readyState === peer.OPEN && peer.topics?.has(fullTopic)) {
+        peer.send(JSON.stringify(frame));
+      }
+    }
   }
 
   @SubscribeMessage("unsubscribe")

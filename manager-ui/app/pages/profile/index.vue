@@ -29,6 +29,7 @@ const selectedGroup = ref<{ id: string; name: string } | null>(null);
 const ownedDomains = ref<OwnedDomain[]>([]);
 const ownedRecipients = ref<OwnedRecipient[]>([]);
 
+const { isOnline } = usePresence();
 const avatarAlt = computed(() => auth.session?.displayName || auth.session?.email || "?");
 // Sections not built yet, surfaced as disabled cards so the roadmap is visible.
 const comingSoon = computed(() => [
@@ -75,7 +76,14 @@ useAsyncData(
 
     <UCard>
       <div class="flex items-center gap-4 flex-wrap">
-        <UAvatar :src="auth.session?.avatarUrl ?? undefined" :alt="avatarAlt" size="3xl" class="shrink-0" />
+        <PresenceAvatar
+          :src="auth.session?.avatarUrl"
+          :alt="avatarAlt"
+          :online="isOnline(auth.session?.accountId)"
+          size="3xl"
+          chip-size="xl"
+          class="shrink-0"
+        />
         <div class="min-w-0">
           <p class="text-lg font-semibold truncate">{{ auth.session?.email }}</p>
           <p class="text-sm text-muted truncate">{{ auth.session?.displayName || "-" }}</p>

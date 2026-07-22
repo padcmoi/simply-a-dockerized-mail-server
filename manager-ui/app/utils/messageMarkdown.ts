@@ -112,8 +112,26 @@ export function parseInline(source: string) {
   return out;
 }
 
+// The editor writes a few named entities of its own (a blank line becomes
+// &nbsp;). Turning them back into their character is safe here precisely
+// because nothing is ever injected as HTML: the result stays a text node.
+const ENTITIES: Record<string, string> = {
+  "&nbsp;": " ",
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+};
+
+function decodeEntities(source: string) {
+  return source.replace(/&(?:nbsp|amp|lt|gt|quot|#39);/g, (match) => ENTITIES[match] ?? match);
+}
+
 export function parseBlocks(source: string) {
-  const lines = (source ?? "").replace(/\r\n?/g, "\n").split("\n");
+  const lines = decodeEntities(source ?? "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n");
   const blocks: BlockNode[] = [];
   let i = 0;
 

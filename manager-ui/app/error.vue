@@ -20,6 +20,7 @@ function goBack() {
 
 <template>
   <NuxtLayout>
+    <ErrorBreadcrumb />
     <div class="flex flex-1 items-center justify-center min-h-[60vh] px-4">
       <div class="text-center space-y-6 max-w-sm">
         <div class="flex justify-center">

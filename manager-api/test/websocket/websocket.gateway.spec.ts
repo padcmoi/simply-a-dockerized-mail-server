@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ForbiddenException, Logger } from "@nestjs/common";
 import type { JwtService } from "@nestjs/jwt";
 import type { WebSocket } from "ws";
+import { PresenceActivityService } from "../../src/core/websocket/presence-activity.service";
 import { TopicPresenceService } from "../../src/core/websocket/presence.service";
 import { WebsocketGateway } from "../../src/core/websocket/websocket.gateway";
 import type { RefreshToken } from "../../src/core/entities/refresh-token.entity";
@@ -70,6 +71,7 @@ describe("WebsocketGateway", () => {
   let refreshTokens: ReturnType<typeof repoMock<RefreshToken>>;
   let domains: ReturnType<typeof repoMock<VirtualDomain>>;
   let presence: TopicPresenceService;
+  let activity: PresenceActivityService;
   let gateway: WebsocketGateway;
 
   beforeEach(() => {
@@ -78,7 +80,8 @@ describe("WebsocketGateway", () => {
     refreshTokens = repoMock<RefreshToken>();
     domains = repoMock<VirtualDomain>();
     presence = new TopicPresenceService();
-    gateway = new WebsocketGateway(jwt, cpg, refreshTokens, domains, presence);
+    activity = new PresenceActivityService();
+    gateway = new WebsocketGateway(jwt, cpg, refreshTokens, domains, presence, activity);
     gateway.registerTopic("rspamd-stats", { permissions: RSPAMD_STATS, scope: "global", parameterized: false });
   });
 
@@ -442,6 +445,141 @@ describe("WebsocketGateway", () => {
       await gateway.onSubscribe(socket, { topic: "ticket:9" });
       gateway.onUnsubscribe(socket, { topic: "ticket:9" });
       expect(presence.watchers("ticket:9")).toEqual(new Set());
+    });
+  });
+
+  describe("idle activity", () => {
+    async function authed(sub: string) {
+      const socket = makeSocket();
+      await connectAs(socket, { sub, email: `${sub}@test`, isRoot: false });
+      return socket;
+    }
+
+    it("registers a fresh socket as active", async () => {
+      await authed("u1");
+      expect(activity.awayUserIds().has("u1")).toBe(false);
+    });
+
+    it("marks the account away once its only socket goes idle", async () => {
+      const a = await authed("u1");
+      await gateway.onActivity(a, { idle: true });
+      expect(activity.awayUserIds().has("u1")).toBe(true);
+    });
+
+    it("brings it back the moment activity resumes", async () => {
+      const a = await authed("u1");
+      await gateway.onActivity(a, { idle: true });
+      await gateway.onActivity(a, { idle: false });
+      expect(activity.awayUserIds().has("u1")).toBe(false);
+    });
+
+    // Two tabs: one idle, one active keeps the account present.
+    it("stays present while any of its sockets is active", async () => {
+      const a = await authed("u1");
+      const b = await authed("u1");
+      await gateway.onActivity(a, { idle: true });
+      expect(activity.awayUserIds().has("u1")).toBe(false);
+      await gateway.onActivity(b, { idle: true });
+      expect(activity.awayUserIds().has("u1")).toBe(true);
+    });
+
+    it("clears activity when the socket drops", async () => {
+      const a = await authed("u1");
+      await gateway.onActivity(a, { idle: true });
+      gateway.handleDisconnect(a);
+      expect(activity.awayUserIds().has("u1")).toBe(false);
+    });
+
+    it("ignores an activity signal from an unauthenticated socket", async () => {
+      const anon = makeSocket();
+      gateway.handleConnection(anon);
+      await gateway.onActivity(anon, { idle: true });
+      expect(activity.awayUserIds().size).toBe(0);
+    });
+  });
+
+  describe("presence bookkeeping", () => {
+    it("isWatching reflects join and leave", () => {
+      const svc = new TopicPresenceService();
+      expect(svc.isWatching("u1", "t")).toBe(false);
+      svc.join("u1", "t");
+      expect(svc.isWatching("u1", "t")).toBe(true);
+      svc.leave("u1", "t");
+      expect(svc.isWatching("u1", "t")).toBe(false);
+    });
+  });
+
+  describe("liveness", () => {
+    it("answers a ping so a half-open socket can be told apart from a quiet one", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      socket.sent.length = 0;
+      gateway.onPing(socket);
+      expect(frames(socket)).toEqual([{ topic: "#pong", data: null }]);
+    });
+
+    it("stays silent on a socket that is no longer open", async () => {
+      const socket = makeSocket();
+      await connectAs(socket, { sub: "u1", email: "u1@test", isRoot: false });
+      socket.sent.length = 0;
+      socket.readyState = 3;
+      gateway.onPing(socket);
+      expect(frames(socket)).toEqual([]);
+    });
+  });
+
+  describe("typing signal", () => {
+    beforeEach(() => {
+      gateway.registerTopic("ticket", { permissions: [], scope: "global", parameterized: true, authorize: () => Promise.resolve(true) });
+      gateway.setDynamicHandlers({ start: vi.fn(), stop: vi.fn() });
+    });
+
+    async function subscribed(sub: string) {
+      const socket = makeSocket();
+      await connectAs(socket, { sub, email: `${sub}@test`, isRoot: false });
+      await gateway.onSubscribe(socket, { topic: "ticket:9" });
+      socket.sent.length = 0;
+      return socket;
+    }
+
+    it("relays the signal to the other subscribers of that thread", async () => {
+      const a = await subscribed("u1");
+      const b = await subscribed("u2");
+      await gateway.onTyping(a, { topic: "ticket:9" });
+      expect(frames(b)).toEqual([{ topic: "ticket:9#typing", data: { userId: "u1", who: "u1@test", at: expect.any(Number) } }]);
+    });
+
+    it("never echoes the signal back to its sender", async () => {
+      const a = await subscribed("u1");
+      await gateway.onTyping(a, { topic: "ticket:9" });
+      expect(frames(a)).toEqual([]);
+    });
+
+    it("does not leak to a subscriber of another thread", async () => {
+      const a = await subscribed("u1");
+      const other = makeSocket();
+      await connectAs(other, { sub: "u3", email: "u3@test", isRoot: false });
+      await gateway.onSubscribe(other, { topic: "ticket:42" });
+      other.sent.length = 0;
+      await gateway.onTyping(a, { topic: "ticket:9" });
+      expect(frames(other)).toEqual([]);
+    });
+
+    // Sending requires being subscribed, which is where authorization happened:
+    // an account cannot announce itself on a thread it may not read.
+    it("ignores a signal on a topic the sender never subscribed to", async () => {
+      const a = await subscribed("u1");
+      const b = await subscribed("u2");
+      await gateway.onTyping(a, { topic: "ticket:42" });
+      expect(frames(b)).toEqual([]);
+    });
+
+    it("ignores a signal from a socket that never authenticated", async () => {
+      const b = await subscribed("u2");
+      const anon = makeSocket();
+      gateway.handleConnection(anon);
+      await gateway.onTyping(anon, { topic: "ticket:9" });
+      expect(frames(b)).toEqual([]);
     });
   });
 

@@ -5,6 +5,7 @@ import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
 import type { PostfixService } from "../../src/core/postfix/postfix.service";
 import type { NotificationsService } from "../../src/core/notifications/notifications.service";
 import type { TicketsService } from "../../src/api/tickets/tickets.service";
+import { PresenceActivityService } from "../../src/core/websocket/presence-activity.service";
 import { buildWatchers } from "../../src/core/websocket/watchers";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
 import { DOMAIN_ACTIONS, GLOBAL_ACTIONS } from "../../src/core/custom-permission-guard/permission-catalog";
@@ -17,6 +18,7 @@ const watchers = buildWatchers({
   sessions: providerMock<JwtAuthService>({}),
   notifications: providerMock<NotificationsService>({}),
   tickets: providerMock<TicketsService>({}),
+  activity: new PresenceActivityService(),
 });
 
 describe("websocket watchers", () => {
@@ -50,10 +52,11 @@ describe("websocket watchers", () => {
     }
   );
 
-  // A topic owning its authorization answers per row, so it is meaningless
-  // without the row id the subscriber asked for.
-  it.each(watchers.filter((w) => w.authorize).map((w) => [w.topic, w] as const))(
-    "%s authorizes its own parameterized topic",
+  // A parameterized topic that owns its authorization answers per row, so it is
+  // meaningless without the row id the subscriber asked for. A non-parameterized
+  // authorized topic (e.g. presence) authorizes globally and needs no param.
+  it.each(watchers.filter((w) => w.authorize && w.parameterized).map((w) => [w.topic, w] as const))(
+    "%s keeps its parameter for its own authorization",
     (_topic, watcher) => {
       expect(watcher.parameterized).toBe(true);
     }

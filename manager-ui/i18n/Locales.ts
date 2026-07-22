@@ -23,6 +23,10 @@ export interface Locales {
   // Sidebar nav destinations only -- one entry per actual link. Anything
   // that isn't a nav link (breadcrumb-only labels, the user dropdown,
   // theme toggle, badges, ...) lives in `layout` instead.
+  presence: {
+    online: string;
+    offline: string;
+  };
   nav: {
     dashboard: string;
     domains: string;
@@ -64,6 +68,7 @@ export interface Locales {
     table: {
       subject: string;
       status: string;
+      author: string;
       visibility: string;
       assignee: string;
       updated: string;
@@ -111,6 +116,10 @@ export interface Locales {
       authorCannotTake: string;
       changeStatus: string;
       authorCloseHint: string;
+      sent: string;
+      seen: string;
+      seenBy: string;
+      typing: string;
       closedNotice: string;
       loadOlder: string;
       noMessages: string;

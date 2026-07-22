@@ -2,6 +2,7 @@ import type { Locales } from "../Locales";
 import app from "./fr_FR/app";
 import apiErrors from "./fr_FR/apiErrors";
 import nav from "./fr_FR/nav";
+import presence from "./fr_FR/presence";
 import layout from "./fr_FR/layout";
 import common from "./fr_FR/common";
 import error from "./fr_FR/error";
@@ -32,6 +33,7 @@ export default {
   app,
   apiErrors,
   nav,
+  presence,
   layout,
   common,
   error,

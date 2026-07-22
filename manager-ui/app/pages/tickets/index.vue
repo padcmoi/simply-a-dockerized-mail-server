@@ -23,7 +23,7 @@ const columns = computed(() => [
   { accessorKey: "subject", header: header("subject", t("tickets.table.subject")) },
   { accessorKey: "domainName", header: t("common.domain") },
   { accessorKey: "status", header: header("status", t("tickets.table.status")) },
-  { accessorKey: "visibility", header: t("tickets.table.visibility") },
+  { accessorKey: "author", header: t("tickets.table.author") },
   { accessorKey: "assignee", header: t("tickets.table.assignee") },
   { accessorKey: "updatedAt", header: header("updatedAt", t("tickets.table.updated")) },
 ]);
@@ -78,9 +78,12 @@ function open(row: TicketRow) {
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
           <template #subject-cell="{ row }">
-            <button class="text-left font-medium text-primary hover:underline" @click="open(row.original)">
-              {{ row.original.subject }}
-            </button>
+            <span class="flex items-center gap-1.5">
+              <button class="text-left font-medium text-primary hover:underline" @click="open(row.original)">
+                {{ row.original.subject }}
+              </button>
+              <TicketVisibilityIcon :visibility="row.original.visibility" />
+            </span>
           </template>
           <template #domainName-cell="{ row }">
             <span class="text-muted">{{ row.original.domainName ?? "-" }}</span>
@@ -88,10 +91,17 @@ function open(row: TicketRow) {
           <template #status-cell="{ row }">
             <TicketStatusCell :ticket="row.original" @changed="load" />
           </template>
-          <template #visibility-cell="{ row }">
-            <UBadge :color="row.original.visibility === 'public' ? 'neutral' : 'warning'" variant="subtle">
-              {{ t(`tickets.visibility.${row.original.visibility}`) }}
-            </UBadge>
+          <template #author-cell="{ row }">
+            <span class="flex items-center gap-2">
+              <UAvatar
+                :src="row.original.creatorAvatarUrl ?? undefined"
+                :alt="row.original.creatorName ?? row.original.creatorEmail ?? '?'"
+                size="2xs"
+              />
+              <span class="truncate">{{
+                row.original.creatorName ?? row.original.creatorEmail ?? t("tickets.detail.unknown")
+              }}</span>
+            </span>
           </template>
           <template #assignee-cell="{ row }">
             <span v-if="row.original.assigneeName ?? row.original.assigneeEmail">{{
@@ -115,14 +125,18 @@ function open(row: TicketRow) {
           @click="open(item)"
         >
           <div class="flex items-start justify-between gap-2">
-            <span class="font-medium">{{ item.subject }}</span>
+            <span class="flex items-center gap-1.5 min-w-0">
+              <span class="font-medium truncate">{{ item.subject }}</span>
+              <TicketVisibilityIcon :visibility="item.visibility" />
+            </span>
             <TicketStatusCell :ticket="item" @changed="load" />
           </div>
           <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
             <span>{{ item.domainName ?? "-" }}</span>
-            <UBadge :color="item.visibility === 'public' ? 'neutral' : 'warning'" variant="subtle" size="xs">
-              {{ t(`tickets.visibility.${item.visibility}`) }}
-            </UBadge>
+            <span class="flex items-center gap-1.5">
+              <UAvatar :src="item.creatorAvatarUrl ?? undefined" :alt="item.creatorName ?? item.creatorEmail ?? '?'" size="3xs" />
+              {{ item.creatorName ?? item.creatorEmail ?? t("tickets.detail.unknown") }}
+            </span>
             <span>{{ formatDateTime(item.updatedAt) }}</span>
           </div>
         </UCard>

@@ -1,0 +1,17 @@
+<script setup lang="ts">
+// Rendered inside the layout's BreadcrumbProvider (error.vue wraps its content
+// in NuxtLayout), so it can feed the same breadcrumb bar the normal pages use.
+// It draws nothing itself: it only derives the current section from the nav so
+// an error page keeps a way back, rather than stranding the user with no trail.
+const route = useRoute();
+const { set } = useBreadcrumb();
+const { globalNavItems } = useNav(async () => {});
+
+const section = computed(() => navSectionFor(route.path, globalNavItems.value));
+
+watchEffect(() => set(section.value ? [section.value] : []));
+</script>
+
+<template>
+  <span class="hidden" />
+</template>

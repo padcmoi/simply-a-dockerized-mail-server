@@ -1,5 +1,30 @@
 const subscribers = reactive(new Map<string, Set<symbol>>());
 
+// The socket lives in the plugin; this is the one door it opens for client to
+// server signals. No socket, no signal: emitting is best effort by design.
+let sender: ((event: string, data: unknown) => void) | null = null;
+
+export function registerRealtimeSender(fn: (_event: string, _data: unknown) => void) {
+  sender = fn;
+}
+
+export function realtimeSend(event: string, data: unknown) {
+  sender?.(event, data);
+}
+
+// Anything that must re-announce itself after a (re)connection registers here;
+// the plugin fires these once the socket is authenticated and topics are synced.
+const openHandlers = new Set<() => void>();
+
+export function onRealtimeOpen(handler: () => void) {
+  openHandlers.add(handler);
+  return () => openHandlers.delete(handler);
+}
+
+export function emitRealtimeOpen() {
+  for (const handler of openHandlers) handler();
+}
+
 export function useRealtimeActiveTopics() {
   return computed(() => [...subscribers.entries()].filter(([, ids]) => ids.size > 0).map(([topic]) => topic));
 }

@@ -162,7 +162,7 @@ onMounted(load);
           class="py-3 flex items-center gap-3 cursor-pointer hover:bg-elevated/40 -mx-2 px-2 rounded-md transition-colors"
           @click="openActive(a)"
         >
-          <UAvatar :alt="accountLabel(a)" size="sm" class="shrink-0" />
+          <PresenceAvatar :alt="accountLabel(a)" :online="a.online" size="sm" class="shrink-0" />
           <div class="min-w-0 flex-1">
             <p class="font-medium truncate">{{ accountLabel(a) }}</p>
             <p v-if="a.displayName && a.email" class="text-xs text-muted truncate">{{ a.email }}</p>
@@ -245,7 +245,7 @@ onMounted(load);
             @click="openExpired(a)"
           >
             <div class="flex items-center gap-3">
-              <UAvatar :alt="accountLabel(a)" size="sm" class="shrink-0" />
+              <PresenceAvatar :alt="accountLabel(a)" :online="a.online" size="sm" class="shrink-0" />
               <div class="min-w-0 flex-1">
                 <p class="font-medium truncate">{{ accountLabel(a) }}</p>
                 <p v-if="a.displayName && a.email" class="text-xs text-muted truncate">{{ a.email }}</p>

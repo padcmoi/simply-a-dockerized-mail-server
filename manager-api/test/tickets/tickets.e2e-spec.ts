@@ -16,6 +16,7 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
     create: vi.fn(),
     get: vi.fn(),
     messagesPage: vi.fn(),
+    markRead: vi.fn(),
     reply: vi.fn(),
     take: vi.fn(),
     setStatus: vi.fn(),
@@ -47,6 +48,7 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
     { name: "GET :id", method: "get", path: `${base}/5` },
     { name: "GET :id/messages", method: "get", path: `${base}/5/messages` },
     { name: "POST :id/messages", method: "post", path: `${base}/5/messages` },
+    { name: "POST :id/read", method: "post", path: `${base}/5/read` },
     { name: "POST :id/take", method: "post", path: `${base}/5/take` },
     { name: "PATCH :id/status", method: "patch", path: `${base}/5/status` },
   ];

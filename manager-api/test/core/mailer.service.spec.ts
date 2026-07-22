@@ -56,4 +56,28 @@ describe("MailerService", () => {
     ).rejects.toThrow("smtp unreachable");
     expect(Logger.prototype.error).toHaveBeenCalled();
   });
+
+  describe("sendNotification", () => {
+    it("sends from the recipient's own domain when no override is set", async () => {
+      delete process.env.MANAGER_MAIL_DOMAIN;
+      await expect(svc.sendNotification({ to: "user@example.com", subject: "s", text: "line" })).resolves.toBeUndefined();
+      const msg = h.sendMail.mock.calls[0][0];
+      expect(msg.from).toBe("postmaster@example.com");
+      expect(msg.subject).toBe("s");
+      expect(msg.html).toContain("line");
+    });
+
+    it("uses MANAGER_MAIL_DOMAIN as the sending domain when set", async () => {
+      process.env.MANAGER_MAIL_DOMAIN = "mail.test";
+      await svc.sendNotification({ to: "user@example.com", subject: "s", text: "a\nb" });
+      expect(h.sendMail.mock.calls[0][0].from).toBe("postmaster@mail.test");
+      delete process.env.MANAGER_MAIL_DOMAIN;
+    });
+
+    it("logs and rethrows when the transport fails", async () => {
+      h.sendMail.mockRejectedValueOnce(new Error("down"));
+      await expect(svc.sendNotification({ to: "user@example.com", subject: "s", text: "t" })).rejects.toThrow("down");
+      expect(Logger.prototype.error).toHaveBeenCalled();
+    });
+  });
 });

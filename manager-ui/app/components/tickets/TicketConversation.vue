@@ -7,14 +7,20 @@ const props = defineProps<{
   hasOlder: boolean;
   loadingOlder: boolean;
   isMine: (_message: TicketMessage) => boolean;
+  seenBy: (_message: TicketMessage) => TicketReader[];
+  typingBy: { userId: string; who: string } | null;
 }>();
 
 const { t, locale } = useI18n();
+const { isOnline } = usePresence();
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
 const scroller = useTemplateRef<HTMLElement>("scroller");
 const stickToBottom = ref(true);
+// Height captured the instant an older page is asked for, so the scroll can be
+// put back on the same message once that page has actually rendered.
+const anchorHeight = ref<number | null>(null);
 
 const intlLocale = computed(() => locale.value.split("_")[0]);
 const dayFormat = computed(() => new Intl.DateTimeFormat(intlLocale.value, { dateStyle: "full" }));
@@ -29,6 +35,7 @@ interface Bubble {
   // the name, the followers stay bare so a burst reads as one block.
   leading: boolean;
   trailing: boolean;
+  seen: TicketReader[];
 }
 
 type Entry = { kind: "day"; key: string; label: string } | ({ kind: "bubble" } & Bubble);
@@ -65,11 +72,36 @@ const entries = computed<Entry[]>(() => {
       at: timeFormat.value.format(new Date(message.createdAt)),
       leading: !sameRun(previous),
       trailing: !sameRun(next),
+      seen: props.seenBy(message),
     });
   });
 
   return out;
 });
+
+// Prepending shifts the whole thread down under the reader, which would also
+// leave the view at the top and pull the next page straight away. Growing the
+// scroll by exactly what was inserted keeps the same message under the eye.
+watch(
+  () => props.messages[0]?.id,
+  async (first, previous) => {
+    const el = scroller.value;
+    const before = anchorHeight.value;
+    anchorHeight.value = null;
+    if (!el || before === null || previous === undefined || first === previous) return;
+    await nextTick();
+    el.scrollTop += el.scrollHeight - before;
+  }
+);
+
+// A request that brings nothing back would otherwise leave a stale anchor,
+// which the next incoming message would then wrongly apply.
+watch(
+  () => props.loadingOlder,
+  (loading) => {
+    if (!loading) anchorHeight.value = null;
+  }
+);
 
 // Follow the conversation only when already reading its end: pulling an older
 // page or scrolling up must not yank the view back down.
@@ -97,11 +129,18 @@ function onScroll() {
   if (!el) return;
   stickToBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
 }
+
+// The load is asynchronous, so the height is only recorded here; the watcher
+// above re-anchors once the older page has actually rendered.
+function requestOlder() {
+  anchorHeight.value = scroller.value?.scrollHeight ?? null;
+  emit("loadOlder");
+}
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-0 sm:p-0' }">
-    <div ref="scroller" class="max-h-[60vh] min-h-40 overflow-y-auto px-4 py-4 sm:px-6" @scroll="onScroll">
+  <UCard :ui="{ root: 'flex flex-col flex-1 min-h-0', body: 'flex flex-col flex-1 min-h-0 p-0 sm:p-0' }">
+    <div ref="scroller" class="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-6" @scroll="onScroll">
       <div v-if="hasOlder" class="flex justify-center pb-4">
         <UButton
           size="xs"
@@ -109,7 +148,7 @@ function onScroll() {
           variant="subtle"
           icon="i-lucide-chevron-up"
           :loading="loadingOlder"
-          @click="emit('loadOlder')"
+          @click="requestOlder"
         >
           {{ t("tickets.detail.loadOlder", { shown: messages.length, total }) }}
         </UButton>
@@ -124,15 +163,16 @@ function onScroll() {
 
         <div
           v-else
-          class="flex gap-2.5"
+          class="flex items-start gap-2.5"
           :class="[entry.mine ? 'flex-row-reverse' : 'flex-row', entry.trailing ? 'mb-3' : 'mb-0.5']"
         >
-          <UAvatar
+          <PresenceAvatar
             v-if="entry.leading"
-            :src="entry.message.authorAvatarUrl ?? undefined"
+            :src="entry.message.authorAvatarUrl"
             :alt="authorLabel(entry.message)"
+            :online="entry.message.authorId ? isOnline(entry.message.authorId) : undefined"
             size="sm"
-            class="shrink-0 mt-4"
+            class="shrink-0 -mt-0.5"
           />
           <div v-else class="w-8 shrink-0" />
 
@@ -153,10 +193,37 @@ function onScroll() {
               <MessageBody :text="entry.message.body" />
             </div>
 
-            <p v-if="entry.trailing" class="text-[11px] text-dimmed px-1 pt-1">{{ entry.at }}</p>
+            <p v-if="entry.trailing" class="flex items-center gap-1 text-[11px] text-dimmed px-1 pt-1">
+              <span>{{ entry.at }}</span>
+              <UIcon
+                v-if="entry.mine"
+                :name="entry.seen.length ? 'i-lucide-check-check' : 'i-lucide-check'"
+                :class="entry.seen.length ? 'text-success size-3.5' : 'size-3.5'"
+                :aria-label="entry.seen.length ? t('tickets.detail.seen') : t('tickets.detail.sent')"
+              />
+              <span v-if="entry.seen.length" class="sr-only">
+                {{ t("tickets.detail.seenBy", { who: entry.seen.map((r) => r.name).join(", ") }) }}
+              </span>
+            </p>
           </div>
         </div>
       </template>
+
+      <p v-if="typingBy" class="flex items-center gap-2 text-xs text-muted pt-2">
+        <span class="flex gap-0.5">
+          <span
+            v-for="dot in 3"
+            :key="dot"
+            class="size-1.5 rounded-full bg-muted animate-bounce"
+            :style="{ animationDelay: `${dot * 120}ms` }"
+          />
+        </span>
+        {{ t("tickets.detail.typing", { who: typingBy.who }) }}
+      </p>
+    </div>
+
+    <div v-if="$slots.composer" class="border-t border-default">
+      <slot name="composer" />
     </div>
   </UCard>
 </template>

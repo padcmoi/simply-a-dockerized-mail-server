@@ -7,6 +7,7 @@ import type { Account } from "../../src/core/entities/account.entity";
 import type { AccountProfile } from "../../src/core/entities/account-profile.entity";
 import type { SupportTicket } from "../../src/core/entities/support-ticket.entity";
 import type { SupportTicketMessage } from "../../src/core/entities/support-ticket-message.entity";
+import type { SupportTicketRead } from "../../src/core/entities/support-ticket-read.entity";
 import type { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import { cpgMock, entity, providerMock, qbMock, repoMock, type CpgMock, type Loose } from "../helpers/mocks";
 
@@ -19,6 +20,7 @@ const ROOT_ID = "root-id";
 describe("TicketsService (row-level visibility)", () => {
   let tickets: ReturnType<typeof repoMock<SupportTicket>>;
   let messages: ReturnType<typeof repoMock<SupportTicketMessage>>;
+  let reads: ReturnType<typeof repoMock<SupportTicketRead>>;
   let domains: ReturnType<typeof repoMock<VirtualDomain>>;
   let accounts: ReturnType<typeof repoMock<Account>>;
   let profiles: ReturnType<typeof repoMock<AccountProfile>>;
@@ -30,6 +32,9 @@ describe("TicketsService (row-level visibility)", () => {
   beforeEach(() => {
     tickets = repoMock<SupportTicket>();
     messages = repoMock<SupportTicketMessage>();
+    reads = repoMock<SupportTicketRead>();
+    reads.find.mockResolvedValue([]);
+    reads.findOne.mockResolvedValue(null);
     domains = repoMock<VirtualDomain>();
     accounts = repoMock<Account>();
     profiles = repoMock<AccountProfile>();
@@ -43,7 +48,7 @@ describe("TicketsService (row-level visibility)", () => {
     cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [{ domainId: DOMAIN_ID }] });
     notifications = providerMock<NotificationsService>({ dispatch: vi.fn().mockResolvedValue(undefined) });
     presence = new TopicPresenceService();
-    svc = new TicketsService(tickets, messages, domains, accounts, profiles, cpg, notifications, presence);
+    svc = new TicketsService(tickets, messages, reads, domains, accounts, profiles, cpg, notifications, presence);
   });
 
   const caller = (userId: string, isRoot = false): TicketCaller => ({ userId, isRoot });
@@ -131,6 +136,20 @@ describe("TicketsService (row-level visibility)", () => {
     it("404s when the domain does not exist", async () => {
       domains.findOne.mockResolvedValue(null);
       await expect(svc.create({ domainId: 999, subject: "a", body: "b" }, caller(CREATOR))).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe("list rows", () => {
+    it("carries the author identity next to the assignee", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([ticketRow({ createdBy: CREATOR, assignedTo: SUPPORT })]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      accounts.find.mockResolvedValue([
+        entity<Account>({ id: CREATOR, email: "creator@example.com" }),
+        entity<Account>({ id: SUPPORT, email: "support@example.com" }),
+      ]);
+      const rows = (await svc.list({ offset: 0, sortDir: "desc" }, caller(CREATOR, true))) as { creatorName: string }[];
+      expect(rows[0]).toMatchObject({ creatorName: "creator@example.com", assigneeName: "support@example.com" });
     });
   });
 
@@ -448,6 +467,81 @@ describe("TicketsService (row-level visibility)", () => {
       await expect(svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR))).resolves.toMatchObject({
         id: 5,
       });
+    });
+  });
+
+  describe("thread and canWatch (realtime)", () => {
+    beforeEach(() => messages.findAndCount.mockResolvedValue([[], 0]));
+
+    it("thread returns the detail of an existing ticket", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.thread(5)).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("thread returns null for a missing ticket", async () => {
+      tickets.findOne.mockResolvedValue(null);
+      await expect(svc.thread(404)).resolves.toBeNull();
+    });
+
+    it("canWatch allows a caller who may see the ticket", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.canWatch(5, caller(CREATOR))).resolves.toBe(true);
+    });
+
+    it("canWatch refuses a caller lacking the view action", async () => {
+      cpg.guard.assertOne.global.mockRejectedValue(new Error("denied"));
+      await expect(svc.canWatch(5, caller(STRANGER))).resolves.toBe(false);
+    });
+
+    it("canWatch refuses a caller who cannot see the row", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      await expect(svc.canWatch(5, caller(STRANGER))).resolves.toBe(false);
+    });
+
+    it("canWatch lets root through without the action check", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      await expect(svc.canWatch(5, caller(ROOT_ID, true))).resolves.toBe(true);
+    });
+  });
+
+  describe("read receipts", () => {
+    beforeEach(() => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      messages.findAndCount.mockResolvedValue([[], 0]);
+      reads.create.mockImplementation((r: Partial<SupportTicketRead>) => entity<SupportTicketRead>(r));
+    });
+
+    it("records the newest message as read for the caller", async () => {
+      messages.find.mockResolvedValue([entity<SupportTicketMessage>({ id: 42 })]);
+      await expect(svc.markRead(5, caller(CREATOR))).resolves.toEqual({ lastReadMessageId: 42 });
+      expect(reads.create).toHaveBeenCalledWith({ ticketId: 5, accountId: CREATOR, lastReadMessageId: 42 });
+    });
+
+    it("records zero on a thread with no message yet", async () => {
+      messages.find.mockResolvedValue([]);
+      await expect(svc.markRead(5, caller(CREATOR))).resolves.toEqual({ lastReadMessageId: 0 });
+    });
+
+    // Coming back to an older page must not un-read what was already seen.
+    it("never moves a receipt backwards", async () => {
+      messages.find.mockResolvedValue([entity<SupportTicketMessage>({ id: 10 })]);
+      reads.findOne.mockResolvedValue(entity<SupportTicketRead>({ lastReadMessageId: 40 }));
+      await svc.markRead(5, caller(CREATOR));
+      expect(reads.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses to mark a ticket the caller cannot see", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      await expect(svc.markRead(5, caller(STRANGER))).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("exposes each reader and how far they read on the thread", async () => {
+      reads.find.mockResolvedValue([entity<SupportTicketRead>({ accountId: CREATOR, lastReadMessageId: 7 })]);
+      accounts.find.mockResolvedValue([entity<Account>({ id: CREATOR, email: "creator@example.com" })]);
+      const detail = await svc.get(5, caller(CREATOR));
+      expect(detail.readers).toEqual([
+        expect.objectContaining({ accountId: CREATOR, lastReadMessageId: 7, name: "creator@example.com" }),
+      ]);
     });
   });
 

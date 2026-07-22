@@ -5,6 +5,7 @@ import { Account } from "../../core/entities/account.entity";
 import { AccountProfile } from "../../core/entities/account-profile.entity";
 import { SupportTicket } from "../../core/entities/support-ticket.entity";
 import { SupportTicketMessage } from "../../core/entities/support-ticket-message.entity";
+import { SupportTicketRead } from "../../core/entities/support-ticket-read.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { NotificationsModule } from "../../core/notifications/notifications.module";
 import { TopicPresenceModule } from "../../core/websocket/presence.module";
@@ -13,7 +14,7 @@ import { TicketsService } from "./tickets.service";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SupportTicket, SupportTicketMessage, VirtualDomain, Account, AccountProfile]),
+    TypeOrmModule.forFeature([SupportTicket, SupportTicketMessage, SupportTicketRead, VirtualDomain, Account, AccountProfile]),
     CustomPermissionGuardModule,
     NotificationsModule,
     TopicPresenceModule,

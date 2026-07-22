@@ -7,6 +7,7 @@ import { Account } from "../../core/entities/account.entity";
 import { AccountProfile } from "../../core/entities/account-profile.entity";
 import { SupportTicket } from "../../core/entities/support-ticket.entity";
 import { SupportTicketMessage } from "../../core/entities/support-ticket-message.entity";
+import { SupportTicketRead } from "../../core/entities/support-ticket-read.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { NotificationsService } from "../../core/notifications/notifications.service";
 import { TopicPresenceService } from "../../core/websocket/presence.service";
@@ -16,7 +17,7 @@ export const TICKET_SORTABLE_COLUMNS = ["subject", "status", "createdAt", "updat
 
 // How many messages the thread carries by default, newest ones. Older pages are
 // fetched on demand so a long ticket never ships whole, over REST or websocket.
-export const MESSAGE_PAGE = 20;
+export const MESSAGE_PAGE = 10;
 
 interface TicketAuthor {
   email: string;
@@ -50,6 +51,7 @@ export class TicketsService {
   constructor(
     @InjectRepository(SupportTicket) private readonly tickets: Repository<SupportTicket>,
     @InjectRepository(SupportTicketMessage) private readonly messages: Repository<SupportTicketMessage>,
+    @InjectRepository(SupportTicketRead) private readonly reads: Repository<SupportTicketRead>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(AccountProfile) private readonly profiles: Repository<AccountProfile>,
@@ -210,14 +212,18 @@ export class TicketsService {
   }
 
   private async enrich(rows: SupportTicket[]) {
-    const authorById = await this.authorsFor(rows.map((r) => r.assignedTo));
+    const authorById = await this.authorsFor([...rows.map((r) => r.assignedTo), ...rows.map((r) => r.createdBy)]);
     const domainById = await this.domainNamesFor(rows.map((r) => r.domainId));
     return rows.map((r) => {
       const assignee = r.assignedTo ? authorById.get(r.assignedTo) : undefined;
+      const creator = r.createdBy ? authorById.get(r.createdBy) : undefined;
       return {
         ...r,
         assigneeEmail: assignee?.email ?? null,
         assigneeName: assignee?.name ?? null,
+        creatorEmail: creator?.email ?? null,
+        creatorName: creator?.name ?? null,
+        creatorAvatarUrl: creator?.avatarUrl ?? null,
         domainName: domainById.get(r.domainId) ?? null,
       };
     });
@@ -246,6 +252,31 @@ export class TicketsService {
   async thread(id: number) {
     const ticket = await this.tickets.findOne({ where: { id } });
     return ticket ? this.detail(ticket) : null;
+  }
+
+  // Read receipts are per account and cumulative: only the id of the newest
+  // message seen is kept, so a reader coming back never un-reads what they had
+  // already seen.
+  async markRead(id: number, caller: TicketCaller) {
+    await this.visibleTicket(id, caller);
+    const [newest] = await this.messages.find({ where: { ticketId: id }, order: { id: "DESC" }, take: 1 });
+    const lastReadMessageId = newest?.id ?? 0;
+    const existing = await this.reads.findOne({ where: { ticketId: id, accountId: caller.userId } });
+    if (existing && existing.lastReadMessageId >= lastReadMessageId) return { lastReadMessageId };
+    await this.reads.save(this.reads.create({ ticketId: id, accountId: caller.userId, lastReadMessageId }));
+    return { lastReadMessageId };
+  }
+
+  private async readersOf(ticketId: number) {
+    const rows = await this.reads.find({ where: { ticketId } });
+    const authorById = await this.authorsFor(rows.map((r) => r.accountId));
+    return rows.map((r) => ({
+      accountId: r.accountId,
+      name: authorById.get(r.accountId)?.name ?? null,
+      avatarUrl: authorById.get(r.accountId)?.avatarUrl ?? null,
+      lastReadMessageId: r.lastReadMessageId,
+      readAt: r.readAt,
+    }));
   }
 
   async canWatch(id: number, caller: TicketCaller): Promise<boolean> {
@@ -278,6 +309,7 @@ export class TicketsService {
       assigneeAvatarUrl: assignee?.avatarUrl ?? null,
       messages: items,
       messagesTotal: total,
+      readers: await this.readersOf(id),
     };
   }
 

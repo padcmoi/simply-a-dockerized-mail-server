@@ -29,6 +29,9 @@ const {
   isClosed,
   isAuthor,
   isMine,
+  seenBy,
+  typingBy,
+  notifyTyping,
   loadOlder,
   send,
   take,
@@ -45,7 +48,7 @@ async function onSend(body: string) {
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
+  <div class="flex flex-col flex-1 min-h-0 gap-4 p-4 sm:p-6 xl:p-8 min-w-0">
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/tickets" size="sm">
       {{ t("tickets.detail.backToList") }}
     </UButton>
@@ -72,17 +75,18 @@ async function onSend(body: string) {
         :has-older="hasOlder"
         :loading-older="loadingOlder"
         :is-mine="isMine"
+        :seen-by="seenBy"
+        :typing-by="typingBy"
         @load-older="loadOlder"
-      />
-
-      <UAlert
-        v-if="isClosed"
-        icon="i-lucide-lock"
-        color="neutral"
-        variant="subtle"
-        :description="t('tickets.detail.closedNotice')"
-      />
-      <TicketReplyEditor v-else-if="canReply" ref="editor" :sending="sending" @send="onSend" />
+      >
+        <template v-if="isClosed || canReply" #composer>
+          <p v-if="isClosed" class="flex items-center gap-2 text-sm text-muted px-4 py-4 sm:px-6">
+            <UIcon name="i-lucide-lock" class="size-4 shrink-0" />
+            {{ t("tickets.detail.closedNotice") }}
+          </p>
+          <TicketReplyEditor v-else ref="editor" :sending="sending" @send="onSend" @typing="notifyTyping" />
+        </template>
+      </TicketConversation>
     </template>
   </div>
 </template>

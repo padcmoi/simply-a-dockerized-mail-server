@@ -9,6 +9,9 @@ export interface TicketRow {
   assignedTo: string | null;
   assigneeEmail: string | null;
   assigneeName: string | null;
+  creatorEmail: string | null;
+  creatorName: string | null;
+  creatorAvatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,14 +26,19 @@ export interface TicketMessage {
   createdAt: string;
 }
 
+export interface TicketReader {
+  accountId: string;
+  name: string | null;
+  avatarUrl: string | null;
+  lastReadMessageId: number;
+  readAt: string;
+}
+
 export interface TicketDetail extends TicketRow {
-  createdBy: string | null;
-  creatorEmail: string | null;
-  creatorName: string | null;
-  creatorAvatarUrl: string | null;
   assigneeAvatarUrl: string | null;
   messages: TicketMessage[];
   messagesTotal: number;
+  readers: TicketReader[];
 }
 
 export const TICKET_STATUSES = ["open", "in_progress", "resolved", "closed"] as const;

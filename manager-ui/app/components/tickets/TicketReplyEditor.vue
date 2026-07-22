@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const emit = defineEmits<{ send: [body: string] }>();
+const emit = defineEmits<{ send: [body: string]; typing: [] }>();
 
 defineProps<{ sending: boolean }>();
 
@@ -47,31 +47,26 @@ defineExpose({
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-0 sm:p-0' }">
-    <template #header>
-      <h2 class="font-semibold">{{ t("tickets.detail.reply") }}</h2>
-    </template>
-
+  <div>
     <UEditor
       v-model="body"
       content-type="markdown"
       :placeholder="t('tickets.detail.replyPlaceholder')"
       :image="false"
       :mention="false"
-      :ui="{ content: 'min-h-40 px-4 py-3 sm:px-6 focus:outline-none' }"
+      :ui="{ content: 'max-h-60 overflow-y-auto px-4 py-2.5 sm:px-6 focus:outline-none' }"
       class="w-full divide-y divide-default"
+      @update:model-value="emit('typing')"
     >
       <template #default="{ editor }">
         <UEditorToolbar :editor="editor" :items="toolbar" class="px-3 py-1.5 sm:px-5 bg-elevated/50" />
       </template>
     </UEditor>
 
-    <template #footer>
-      <div class="flex justify-end">
-        <UButton icon="i-lucide-send" :disabled="empty" :loading="sending" @click="submit">
-          {{ t("tickets.detail.send") }}
-        </UButton>
-      </div>
-    </template>
-  </UCard>
+    <div class="flex justify-end px-4 py-2 sm:px-6 border-t border-default">
+      <UButton icon="i-lucide-send" :disabled="empty" :loading="sending" @click="submit">
+        {{ t("tickets.detail.send") }}
+      </UButton>
+    </div>
+  </div>
 </template>

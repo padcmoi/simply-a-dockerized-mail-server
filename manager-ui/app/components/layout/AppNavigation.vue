@@ -7,6 +7,7 @@ const { globalNavItems, domainNavItems, userItems } = useNav(onSignOut);
 
 const domainStore = useDomainStore();
 const auth = useAuthStore();
+const { isOnline } = usePresence();
 const route = useRoute();
 const { t } = useI18n();
 const isMobile = useMediaQuery("(max-width: 1023px)");
@@ -16,6 +17,14 @@ const userAvatar = computed(() => {
   if (url) return { src: url, alt: auth.session?.displayName ?? auth.session?.email ?? "user" };
   return { alt: auth.session?.displayName ?? auth.session?.email ?? "?" };
 });
+
+// The footer avatar is the signed-in account, so it shows the same live
+// presence dot as everywhere else. Root is still marked, but by the name badge
+// on /profile, not by hijacking this one chip slot.
+const presenceChip = computed(() => ({
+  color: isOnline(auth.session?.accountId) ? ("success" as const) : ("error" as const),
+  position: "bottom-right" as const,
+}));
 
 // USidebar switches to a mobile slideover under 1024px (same breakpoint it uses
 // internally); clicking a nav link navigates but doesn't close it, so close it
@@ -117,14 +126,14 @@ function closeDomain() {
               :name="auth.session?.displayName ?? auth.session?.email ?? 'Account'"
               :description="auth.session?.displayName ? (auth.session?.email ?? undefined) : undefined"
               :avatar="userAvatar"
-              :chip="auth.session?.isRoot ? { color: 'warning' } : undefined"
+              :chip="presenceChip"
               size="md"
               class="min-w-0 flex-1"
               :ui="{ root: 'min-w-0', wrapper: 'min-w-0 flex-1 overflow-hidden', name: 'truncate', description: 'truncate' }"
             />
             <UIcon name="i-lucide-chevrons-up-down" class="text-dimmed shrink-0 size-4" />
           </template>
-          <UAvatar v-else v-bind="userAvatar" size="md" class="mx-auto" />
+          <UAvatar v-else v-bind="userAvatar" :chip="presenceChip" size="md" class="mx-auto" />
         </button>
       </UDropdownMenu>
     </template>

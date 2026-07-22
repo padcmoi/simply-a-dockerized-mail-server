@@ -8,6 +8,7 @@ import {
   CreateTicketDocs,
   GetTicketDocs,
   ListTicketMessagesDocs,
+  MarkTicketReadDocs,
   ListTicketsDocs,
   ReplyTicketDocs,
   TakeTicketDocs,
@@ -81,6 +82,13 @@ export class TicketsController {
     @Body(new ZodValidationPipe(replyTicketSchema)) body: ReplyTicketDto
   ) {
     return this.svc.reply(id, body, caller(req));
+  }
+
+  @Post(":id/read")
+  @RequireGlobalPermissions([{ resource: "tickets", actions: ["access", "view-ticket"] }])
+  @MarkTicketReadDocs()
+  markRead(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
+    return this.svc.markRead(id, caller(req));
   }
 
   @Post(":id/take")

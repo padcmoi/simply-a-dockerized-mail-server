@@ -96,6 +96,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "POST /api/v1/sieve/reject-senders  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:sieve[access,create-reject-sender]",
   "POST /api/v1/tickets  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,create-ticket]",
   "POST /api/v1/tickets/:id/messages  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,view-ticket]",
+  "POST /api/v1/tickets/:id/read  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,view-ticket]",
   "POST /api/v1/tickets/:id/take  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,handle-ticket]",
   "PUT /api/v1/groups/:id/domain-permissions  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:groups[access,edit-group-domain-permissions]",
   "PUT /api/v1/groups/:id/global-permissions  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:groups[access,edit-group-global-permissions]",

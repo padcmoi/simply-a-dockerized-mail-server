@@ -8,6 +8,7 @@ export default {
   table: {
     subject: "Sujet",
     status: "Statut",
+    author: "Auteur",
     visibility: "Visibilité",
     assignee: "Pris en charge par",
     updated: "Dernière mise à jour",
@@ -56,6 +57,10 @@ export default {
     changeStatus: "Changer le statut",
     loadOlder: "Charger les messages précédents ({shown}/{total})",
     authorCloseHint: "Vous avez ouvert ce ticket, vous pouvez le fermer à tout moment.",
+    sent: "Envoyé",
+    seen: "Lu",
+    seenBy: "Lu par {who}",
+    typing: "{who} est en train d'écrire",
     closedNotice: "Ce ticket est fermé, il n'accepte plus de message.",
     noMessages: "Aucun message pour l'instant.",
     you: "Vous",

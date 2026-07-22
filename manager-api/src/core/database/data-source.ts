@@ -13,6 +13,7 @@ import { Notification } from "../entities/notification.entity";
 import { NotificationPreference } from "../entities/notification-preference.entity";
 import { SupportTicket } from "../entities/support-ticket.entity";
 import { SupportTicketMessage } from "../entities/support-ticket-message.entity";
+import { SupportTicketRead } from "../entities/support-ticket-read.entity";
 
 // Stand-alone DataSource used exclusively by the TypeORM CLI (migration:generate,
 // migration:run, migration:revert, migration:show). The Nest runtime keeps its
@@ -42,6 +43,7 @@ export default new DataSource({
     SieveRejectSender,
     SupportTicket,
     SupportTicketMessage,
+    SupportTicketRead,
     Notification,
     NotificationPreference,
   ],

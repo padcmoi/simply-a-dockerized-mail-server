@@ -26,6 +26,9 @@ export const ListTicketMessagesDocs = () =>
 
 export const ReplyTicketDocs = () => applyDecorators(idParam(), ApiOperation({ summary: "Post a message on a ticket" }));
 
+export const MarkTicketReadDocs = () =>
+  applyDecorators(idParam(), ApiOperation({ summary: "Mark the thread read up to its newest message for the caller" }));
+
 export const TakeTicketDocs = () =>
   applyDecorators(idParam(), ApiOperation({ summary: "Take charge of a ticket, refused on a ticket the caller opened" }));
 
