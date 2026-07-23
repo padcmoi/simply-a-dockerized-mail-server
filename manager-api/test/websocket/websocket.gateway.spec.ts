@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ForbiddenException, Logger } from "@nestjs/common";
 import type { JwtService } from "@nestjs/jwt";
 import type { WebSocket } from "ws";
+import { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
 import { PresenceActivityService } from "../../src/core/websocket/presence-activity.service";
 import { TopicPresenceService } from "../../src/core/websocket/presence.service";
 import { WebsocketGateway } from "../../src/core/websocket/websocket.gateway";
@@ -72,6 +73,7 @@ describe("WebsocketGateway", () => {
   let domains: ReturnType<typeof repoMock<VirtualDomain>>;
   let presence: TopicPresenceService;
   let activity: PresenceActivityService;
+  let accountPresence: Loose<AccountPresenceService>;
   let gateway: WebsocketGateway;
 
   beforeEach(() => {
@@ -81,7 +83,8 @@ describe("WebsocketGateway", () => {
     domains = repoMock<VirtualDomain>();
     presence = new TopicPresenceService();
     activity = new PresenceActivityService();
-    gateway = new WebsocketGateway(jwt, cpg, refreshTokens, domains, presence, activity);
+    accountPresence = providerMock<AccountPresenceService>({ setStatus: vi.fn().mockResolvedValue(undefined) });
+    gateway = new WebsocketGateway(jwt, cpg, refreshTokens, domains, presence, activity, accountPresence);
     gateway.registerTopic("rspamd-stats", { permissions: RSPAMD_STATS, scope: "global", parameterized: false });
   });
 
@@ -458,6 +461,43 @@ describe("WebsocketGateway", () => {
     it("registers a fresh socket as active", async () => {
       await authed("u1");
       expect(activity.awayUserIds().has("u1")).toBe(false);
+    });
+
+    // The table is the single source every consumer reads, so each socket event
+    // must land in it, not just in memory.
+    it("writes the account online in the presence table on authentication", async () => {
+      await authed("u1");
+      expect(accountPresence.setStatus).toHaveBeenCalledWith("u1", true);
+    });
+
+    it("writes it offline when it goes idle", async () => {
+      const a = await authed("u1");
+      accountPresence.setStatus.mockClear();
+      await gateway.onActivity(a, { idle: true });
+      expect(accountPresence.setStatus).toHaveBeenCalledWith("u1", false);
+    });
+
+    it("writes it back online when activity resumes", async () => {
+      const a = await authed("u1");
+      await gateway.onActivity(a, { idle: true });
+      accountPresence.setStatus.mockClear();
+      await gateway.onActivity(a, { idle: false });
+      expect(accountPresence.setStatus).toHaveBeenCalledWith("u1", true);
+    });
+
+    it("writes it offline when its last socket drops", async () => {
+      const a = await authed("u1");
+      accountPresence.setStatus.mockClear();
+      gateway.handleDisconnect(a);
+      expect(accountPresence.setStatus).toHaveBeenCalledWith("u1", false);
+    });
+
+    it("keeps it online while another socket remains", async () => {
+      const a = await authed("u1");
+      await authed("u1");
+      accountPresence.setStatus.mockClear();
+      gateway.handleDisconnect(a);
+      expect(accountPresence.setStatus).toHaveBeenCalledWith("u1", true);
     });
 
     it("marks the account away once its only socket goes idle", async () => {

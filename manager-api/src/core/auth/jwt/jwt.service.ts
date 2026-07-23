@@ -202,21 +202,6 @@ export class JwtAuthService {
   // (an active session seen within the last minute). Feeds the grouped-by-account
   // sessions page; drilling into an account uses listActiveSessions /
   // listSessionHistory below, which are already scoped by accountId.
-  // Account ids seen on a live session within the online window. This is the
-  // one presence source every account may read (support avatars, session
-  // dots): it exposes identity only, never a session, an ip or an agent.
-  async onlineAccountIds(): Promise<string[]> {
-    const since = new Date(Date.now() - 60_000);
-    const rows = await this.refreshTokens
-      .createQueryBuilder("t")
-      .select("DISTINCT t.account_id", "accountId")
-      .where("t.revoked_at IS NULL")
-      .andWhere("t.expires_at > :now", { now: new Date() })
-      .andWhere("t.last_seen_at > :since", { since })
-      .getRawMany<{ accountId: string }>();
-    return rows.map((r) => r.accountId);
-  }
-
   async listSessionsOverview() {
     const now = new Date();
     const raw = await this.refreshTokens

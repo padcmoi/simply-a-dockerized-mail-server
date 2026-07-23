@@ -25,11 +25,15 @@ export const LIST_LIMIT_STORAGE_KEY = "manager-list-limit";
 // Router reuses the page instance across a `:domain` param-only navigation
 // (no remount), so without this an edited URL/back-forward between two
 // domains would silently keep showing the previous one's data.
+// `extraParams` adds page-specific filters to the query. A caller must never
+// append them to the path itself: the path is concatenated with "?" here, so a
+// path already carrying one would build an invalid URL.
 export function usePaginatedList<T>(
   key: string,
   pathOrFn: string | (() => string | null),
   defaultSortBy: string,
-  extraWatch: Ref<unknown>[] = []
+  extraWatch: Ref<unknown>[] = [],
+  extraParams: () => Record<string, string> = () => ({})
 ) {
   const { call } = useApi();
   const { t } = useI18n();
@@ -68,6 +72,7 @@ export function usePaginatedList<T>(
         sortBy: sortBy.value,
       });
       if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
+      for (const [name, value] of Object.entries(extraParams())) qs.set(name, value);
       try {
         return await call<PaginatedResponse<T>>(`${path}?${qs.toString()}`);
       } catch (err) {

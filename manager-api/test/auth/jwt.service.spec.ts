@@ -58,24 +58,6 @@ describe("JwtAuthService", () => {
     svc = new JwtAuthService(m.jwt, m.accounts, m.profiles, m.groups, m.groupMembers, m.refreshTokens, m.geocoding);
   });
 
-  describe("onlineAccountIds", () => {
-    it("returns the account ids seen on a live session within the window", async () => {
-      const qb = qbMock<RefreshToken>();
-      qb.getRawMany.mockResolvedValue([{ accountId: "a" }, { accountId: "b" }]);
-      m.refreshTokens.createQueryBuilder.mockReturnValue(qb);
-      await expect(svc.onlineAccountIds()).resolves.toEqual(["a", "b"]);
-      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
-      expect(clauses.some((c) => c.includes("last_seen_at"))).toBe(true);
-    });
-
-    it("returns an empty list when nobody is online", async () => {
-      const qb = qbMock<RefreshToken>();
-      qb.getRawMany.mockResolvedValue([]);
-      m.refreshTokens.createQueryBuilder.mockReturnValue(qb);
-      await expect(svc.onlineAccountIds()).resolves.toEqual([]);
-    });
-  });
-
   describe("login", () => {
     it("401 when no account matches", async () => {
       m.accounts.findOne.mockResolvedValueOnce(null);

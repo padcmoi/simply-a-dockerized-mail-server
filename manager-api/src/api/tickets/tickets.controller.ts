@@ -19,8 +19,10 @@ import { TicketCaller, TicketsService } from "./tickets.service";
 import {
   CreateTicketDto,
   ReplyTicketDto,
+  TicketListQuery,
   UpdateStatusDto,
   createTicketSchema,
+  ticketListQuerySchema,
   replyTicketSchema,
   updateStatusSchema,
 } from "./tickets.validation";
@@ -42,7 +44,7 @@ export class TicketsController {
   @Get()
   @RequireGlobalPermissions([{ resource: "tickets", actions: ["access", "list-tickets"] }])
   @ListTicketsDocs()
-  list(@Req() req: AuthedRequest, @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
+  list(@Req() req: AuthedRequest, @Query(new ZodValidationPipe(ticketListQuerySchema)) query: TicketListQuery) {
     return this.svc.list(query, caller(req));
   }
 

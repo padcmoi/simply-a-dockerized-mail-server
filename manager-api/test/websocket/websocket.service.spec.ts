@@ -5,7 +5,7 @@ import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
 import type { PostfixService } from "../../src/core/postfix/postfix.service";
 import type { NotificationsService } from "../../src/core/notifications/notifications.service";
 import type { TicketsService } from "../../src/api/tickets/tickets.service";
-import { PresenceActivityService } from "../../src/core/websocket/presence-activity.service";
+import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
 import type { Watcher } from "../../src/core/websocket/watcher.type";
 import type { WebsocketGateway } from "../../src/core/websocket/websocket.gateway";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
@@ -46,7 +46,7 @@ describe("WebsocketService", () => {
       providerMock<JwtAuthService>({}),
       providerMock<NotificationsService>({}),
       providerMock<TicketsService>({}),
-      new PresenceActivityService()
+      providerMock<AccountPresenceService>({})
     );
     service.onModuleInit();
   }
@@ -72,7 +72,7 @@ describe("WebsocketService", () => {
       providerMock<JwtAuthService>({}),
       providerMock<NotificationsService>({}),
       providerMock<TicketsService>({}),
-      new PresenceActivityService()
+      providerMock<AccountPresenceService>({})
     );
     const handlers = { start: (_f: string, _b: string, _p: string) => undefined, stop: (_f: string) => undefined };
     gateway.setDynamicHandlers.mockImplementation((h: typeof handlers) => Object.assign(handlers, h));

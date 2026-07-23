@@ -15,6 +15,7 @@ import type { JwtPayload } from "../auth/jwt/jwt.strategy";
 import { CustomPermissionGuardService } from "../custom-permission-guard/custom-permission-guard.service";
 import { RefreshToken } from "../entities/refresh-token.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
+import { AccountPresenceService } from "./account-presence.service";
 import { PresenceActivityService } from "./presence-activity.service";
 import { TopicPresenceService } from "./presence.service";
 import type { TopicCaller, TopicPermission, TopicScope } from "./watcher.type";
@@ -56,8 +57,16 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     @InjectRepository(RefreshToken) private readonly refreshTokens: Repository<RefreshToken>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     private readonly presence: TopicPresenceService,
-    private readonly activity: PresenceActivityService
+    private readonly activity: PresenceActivityService,
+    private readonly accountPresence: AccountPresenceService
   ) {}
+
+  // Every socket event ends here: the in-memory view of an account's sockets is
+  // reduced to a single online flag and written to the presence table, which is
+  // what every consumer reads.
+  private syncPresence(userId: string) {
+    void this.accountPresence.setStatus(userId, this.activity.isActive(userId)).catch(() => undefined);
+  }
 
   private get logsConsumers() {
     return process.env.MANAGER_WS_LOG === "true";
@@ -88,7 +97,10 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
       if (client.userId) this.presence.leave(client.userId, fullTopic);
       this.onTopicLeft(fullTopic);
     }
-    if (client.userId) this.activity.leave(client.userId, client);
+    if (client.userId) {
+      this.activity.leave(client.userId, client);
+      this.syncPresence(client.userId);
+    }
     if (this.logsConsumers && dropped.length) {
       this.log.log(`- ${client.who} disconnected, stopped consuming [${dropped.join(", ")}]`);
     }
@@ -114,6 +126,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     client.isRoot = payload.isRoot === true;
     client.who = payload.email ?? payload.sub;
     this.activity.join(client.userId, client);
+    this.syncPresence(client.userId);
     return true;
   }
 
@@ -131,6 +144,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   async onActivity(@ConnectedSocket() client: AuthSocket, @MessageBody() data: { idle?: boolean }) {
     if (!(await client.auth) || !client.userId) return;
     this.activity.setActive(client.userId, client, data?.idle !== true);
+    this.syncPresence(client.userId);
   }
 
   @SubscribeMessage("subscribe")

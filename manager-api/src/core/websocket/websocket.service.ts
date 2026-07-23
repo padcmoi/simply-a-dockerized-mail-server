@@ -6,7 +6,7 @@ import { TicketsService } from "../../api/tickets/tickets.service";
 import { JwtAuthService } from "../auth/jwt/jwt.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PostfixService } from "../postfix/postfix.service";
-import { PresenceActivityService } from "./presence-activity.service";
+import { AccountPresenceService } from "./account-presence.service";
 import { WebsocketGateway } from "./websocket.gateway";
 import { buildWatchers, MIN_INTERVAL_MS } from "./watchers";
 import { Watcher } from "./watcher.type";
@@ -30,7 +30,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     private readonly sessions: JwtAuthService,
     private readonly notifications: NotificationsService,
     private readonly tickets: TicketsService,
-    private readonly activity: PresenceActivityService
+    private readonly presence: AccountPresenceService
   ) {}
 
   onModuleInit() {
@@ -49,7 +49,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
       sessions: this.sessions,
       notifications: this.notifications,
       tickets: this.tickets,
-      activity: this.activity,
+      presence: this.presence,
     };
     for (const watcher of buildWatchers(deps)) {
       this.gateway.registerTopic(watcher.topic, {

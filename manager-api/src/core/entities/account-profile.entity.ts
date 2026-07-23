@@ -14,6 +14,17 @@ export class AccountProfile {
   @JoinColumn({ name: "account_id" })
   account!: Account;
 
+  // Whether someone is behind the screen right now. Deliberately not derived
+  // from sessions: a session grants access, presence says a person is there.
+  // Written by the websocket gateway, read by every presence consumer.
+  @Column({ name: "presence", type: "tinyint", width: 1, default: 0 })
+  presence!: number;
+
+  // When presence last flipped. On an offline account that is the moment they
+  // left, which is what "last seen" means to a reader.
+  @Column({ name: "presence_at", type: "datetime", nullable: true })
+  presenceAt!: Date | null;
+
   @Column({ name: "display_name", type: "varchar", length: 255, nullable: true })
   displayName!: string | null;
 

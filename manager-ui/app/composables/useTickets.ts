@@ -12,6 +12,7 @@ export interface TicketRow {
   creatorEmail: string | null;
   creatorName: string | null;
   creatorAvatarUrl: string | null;
+  awaitingMyReply: boolean;
   createdAt: string;
   updatedAt: string;
 }

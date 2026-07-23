@@ -26,6 +26,13 @@ export class PresenceActivityService {
     if (!sockets.size) this.byUser.delete(userId);
   }
 
+  // Someone is present when they hold a socket that is not idle. No socket at
+  // all means gone, which is the same thing to a reader.
+  isActive(userId: string): boolean {
+    const sockets = this.byUser.get(userId);
+    return !!sockets && [...sockets.values()].some(Boolean);
+  }
+
   // Accounts that hold at least one socket, none of them active: present on the
   // wire but idle in front of the screen, so shown as offline.
   awayUserIds(): Set<string> {

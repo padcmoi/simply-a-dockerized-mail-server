@@ -3,7 +3,7 @@ import { DomainsService } from "../../../api/domains/domains.service";
 import { TicketsService } from "../../../api/tickets/tickets.service";
 import { JwtAuthService } from "../../auth/jwt/jwt.service";
 import { NotificationsService } from "../../notifications/notifications.service";
-import { PresenceActivityService } from "../presence-activity.service";
+import { AccountPresenceService } from "../account-presence.service";
 import { PostfixService } from "../../postfix/postfix.service";
 import { dashboardWatcher } from "./dashboard.watcher";
 import { diskWatcher } from "./disk.watcher";
@@ -29,7 +29,7 @@ export interface WatcherDeps {
   sessions: JwtAuthService;
   notifications: NotificationsService;
   tickets: TicketsService;
-  activity: PresenceActivityService;
+  presence: AccountPresenceService;
 }
 
 export function buildWatchers(deps: WatcherDeps): Watcher[] {
@@ -47,6 +47,6 @@ export function buildWatchers(deps: WatcherDeps): Watcher[] {
     domainPostfixWatcher(dataSource, deps.postfix),
     notificationsWatcher(deps.notifications),
     ticketThreadWatcher(deps.tickets),
-    presenceWatcher(deps.sessions, deps.activity),
+    presenceWatcher(deps.presence),
   ];
 }

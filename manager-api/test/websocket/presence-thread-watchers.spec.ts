@@ -1,26 +1,23 @@
 import { describe, it, expect, vi } from "vitest";
 import { presenceWatcher } from "../../src/core/websocket/watchers/presence.watcher";
 import { ticketThreadWatcher } from "../../src/core/websocket/watchers/ticket-thread.watcher";
-import { PresenceActivityService } from "../../src/core/websocket/presence-activity.service";
-import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
+import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
 import type { TicketsService } from "../../src/api/tickets/tickets.service";
 import { providerMock } from "../helpers/mocks";
 
 describe("presenceWatcher", () => {
-  it("drops the accounts reported away from the online list", async () => {
-    const sessions = providerMock<JwtAuthService>({ onlineAccountIds: vi.fn().mockResolvedValue(["a", "b", "c"]) });
-    const activity = new PresenceActivityService();
-    const socket = {};
-    activity.join("b", socket);
-    activity.setActive("b", socket, false);
-    const w = presenceWatcher(sessions, activity);
-    await expect(w.fn()).resolves.toEqual(["a", "c"]);
+  // Presence has one source now: the account_presence table. The watcher only
+  // relays it, it derives nothing of its own.
+  it("serves exactly what the presence source reports", async () => {
+    const state = { online: ["a", "c"], lastSeen: { b: "2026-07-23T08:00:00.000Z" } };
+    const presence = providerMock<AccountPresenceService>({ presenceState: vi.fn().mockResolvedValue(state) });
+    await expect(presenceWatcher(presence).fn()).resolves.toEqual(state);
   });
 
-  it("keeps everyone when nobody is away", async () => {
-    const sessions = providerMock<JwtAuthService>({ onlineAccountIds: vi.fn().mockResolvedValue(["a"]) });
-    const w = presenceWatcher(sessions, new PresenceActivityService());
-    await expect(w.fn()).resolves.toEqual(["a"]);
+  it("serves an empty state when nobody is online", async () => {
+    const empty = { online: [], lastSeen: {} };
+    const presence = providerMock<AccountPresenceService>({ presenceState: vi.fn().mockResolvedValue(empty) });
+    await expect(presenceWatcher(presence).fn()).resolves.toEqual(empty);
   });
 });
 

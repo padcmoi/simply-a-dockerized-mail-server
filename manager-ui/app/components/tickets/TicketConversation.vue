@@ -12,7 +12,7 @@ const props = defineProps<{
 }>();
 
 const { t, locale } = useI18n();
-const { isOnline } = usePresence();
+const { isOnline, lastSeenAt } = usePresence();
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
 
@@ -21,6 +21,10 @@ const stickToBottom = ref(true);
 // Height captured the instant an older page is asked for, so the scroll can be
 // put back on the same message once that page has actually rendered.
 const anchorHeight = ref<number | null>(null);
+// Tapping the ticks or an avatar opens the detail: a phone has no hover, so a
+// tooltip alone would keep this information out of reach there.
+const seenReaders = ref<TicketReader[] | null>(null);
+const presenceTarget = ref<{ name: string; avatarUrl: string | null; online?: boolean; lastSeenAt: string | null } | null>(null);
 
 const intlLocale = computed(() => locale.value.split("_")[0]);
 const dayFormat = computed(() => new Intl.DateTimeFormat(intlLocale.value, { dateStyle: "full" }));
@@ -124,6 +128,19 @@ function authorLabel(message: TicketMessage) {
   return message.authorName ?? message.authorEmail ?? t("tickets.detail.unknown");
 }
 
+function openSeen(readers: TicketReader[]) {
+  seenReaders.value = readers;
+}
+
+function openPresence(message: TicketMessage) {
+  presenceTarget.value = {
+    name: authorLabel(message),
+    avatarUrl: message.authorAvatarUrl,
+    online: message.authorId ? isOnline(message.authorId) : undefined,
+    lastSeenAt: lastSeenAt(message.authorId),
+  };
+}
+
 function onScroll() {
   const el = scroller.value;
   if (!el) return;
@@ -166,14 +183,21 @@ function requestOlder() {
           class="flex items-start gap-2.5"
           :class="[entry.mine ? 'flex-row-reverse' : 'flex-row', entry.trailing ? 'mb-3' : 'mb-0.5']"
         >
-          <PresenceAvatar
+          <button
             v-if="entry.leading"
-            :src="entry.message.authorAvatarUrl"
-            :alt="authorLabel(entry.message)"
-            :online="entry.message.authorId ? isOnline(entry.message.authorId) : undefined"
-            size="sm"
-            class="shrink-0 -mt-0.5"
-          />
+            type="button"
+            class="shrink-0 -mt-0.5 rounded-full cursor-pointer"
+            :aria-label="authorLabel(entry.message)"
+            @click="openPresence(entry.message)"
+          >
+            <PresenceAvatar
+              :src="entry.message.authorAvatarUrl"
+              :alt="authorLabel(entry.message)"
+              :online="entry.message.authorId ? isOnline(entry.message.authorId) : undefined"
+              :last-seen-at="lastSeenAt(entry.message.authorId)"
+              size="sm"
+            />
+          </button>
           <div v-else class="w-8 shrink-0" />
 
           <div class="flex flex-col min-w-[50%] max-w-[75%]" :class="entry.mine ? 'items-end' : 'items-start'">
@@ -195,19 +219,33 @@ function requestOlder() {
 
             <p v-if="entry.trailing" class="flex items-center gap-1 text-[11px] text-dimmed px-1 pt-1">
               <span>{{ entry.at }}</span>
-              <UIcon
+              <button
                 v-if="entry.mine"
-                :name="entry.seen.length ? 'i-lucide-check-check' : 'i-lucide-check'"
-                :class="entry.seen.length ? 'text-success size-3.5' : 'size-3.5'"
+                type="button"
+                class="inline-flex cursor-pointer"
                 :aria-label="entry.seen.length ? t('tickets.detail.seen') : t('tickets.detail.sent')"
-              />
-              <span v-if="entry.seen.length" class="sr-only">
-                {{ t("tickets.detail.seenBy", { who: entry.seen.map((r) => r.name).join(", ") }) }}
-              </span>
+                @click="openSeen(entry.seen)"
+              >
+                <UIcon
+                  :name="entry.seen.length ? 'i-lucide-check-check' : 'i-lucide-check'"
+                  :class="entry.seen.length ? 'text-success size-3.5' : 'size-3.5'"
+                />
+              </button>
             </p>
           </div>
         </div>
       </template>
+
+      <TicketSeenModal :open="seenReaders !== null" :readers="seenReaders ?? []" @close="seenReaders = null" />
+      <PresenceModal
+        v-if="presenceTarget"
+        :open="true"
+        :name="presenceTarget.name"
+        :avatar-url="presenceTarget.avatarUrl"
+        :online="presenceTarget.online"
+        :last-seen-at="presenceTarget.lastSeenAt"
+        @close="presenceTarget = null"
+      />
 
       <p v-if="typingBy" class="flex items-center gap-2 text-xs text-muted pt-2">
         <span class="flex gap-0.5">

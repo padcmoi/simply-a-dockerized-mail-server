@@ -40,6 +40,10 @@ describe("TicketsService (row-level visibility)", () => {
     profiles = repoMock<AccountProfile>();
     profiles.find.mockResolvedValue([]);
     messages.findAndCount.mockResolvedValue([[], 0]);
+    // enrich() asks which tickets the caller already answered on every list.
+    const repliedQb = qbMock<SupportTicketMessage>();
+    repliedQb.getRawMany.mockResolvedValue([]);
+    messages.createQueryBuilder.mockReturnValue(repliedQb);
     accounts.find.mockResolvedValue([]);
     domains.find.mockResolvedValue([]);
     domains.findOne.mockResolvedValue(entity<VirtualDomain>({ id: DOMAIN_ID, domain: "example.com" }));
@@ -140,6 +144,49 @@ describe("TicketsService (row-level visibility)", () => {
   });
 
   describe("list rows", () => {
+    it("narrows to the tickets the caller took in charge when asked", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      await svc.list({ offset: 0, sortDir: "desc", mine: "true" }, caller(SUPPORT, true));
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c) => c.includes("assignedTo"))).toBe(true);
+    });
+
+    it("keeps the whole list when the filter is off", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      await svc.list({ offset: 0, sortDir: "desc" }, caller(SUPPORT, true));
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c) => c.includes("assignedTo"))).toBe(false);
+    });
+
+    // What matters is who spoke last, not whether the caller ever wrote: a
+    // ticket they answered long ago is waiting again as soon as the other side
+    // replies.
+    it("flags a ticket whose last message comes from someone else", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([ticketRow({ id: 5 }), ticketRow({ id: 6 })]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      const messagesQb = qbMock<SupportTicketMessage>();
+      messagesQb.getRawMany.mockResolvedValue([
+        { ticketId: 5, authorId: STRANGER },
+        { ticketId: 6, authorId: CREATOR },
+      ]);
+      messages.createQueryBuilder.mockReturnValue(messagesQb);
+      const rows = await svc.list({ offset: 0, sortDir: "desc" }, caller(CREATOR, true));
+      expect(Array.isArray(rows) ? rows.map((r) => r.awaitingMyReply) : []).toEqual([true, false]);
+    });
+
+    it("does not flag a ticket with no message at all", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([ticketRow({ id: 5 })]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      const rows = await svc.list({ offset: 0, sortDir: "desc" }, caller(CREATOR, true));
+      expect(Array.isArray(rows) && rows[0]?.awaitingMyReply).toBe(false);
+    });
+
     it("carries the author identity next to the assignee", async () => {
       const qb = qbMock<SupportTicket>();
       qb.getMany.mockResolvedValue([ticketRow({ createdBy: CREATOR, assignedTo: SUPPORT })]);

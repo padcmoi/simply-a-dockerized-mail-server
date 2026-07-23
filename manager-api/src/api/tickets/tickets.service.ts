@@ -11,7 +11,7 @@ import { SupportTicketRead } from "../../core/entities/support-ticket-read.entit
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { NotificationsService } from "../../core/notifications/notifications.service";
 import { TopicPresenceService } from "../../core/websocket/presence.service";
-import { CreateTicketDto, ReplyTicketDto } from "./tickets.validation";
+import { CreateTicketDto, ReplyTicketDto, TicketListQuery } from "./tickets.validation";
 
 export const TICKET_SORTABLE_COLUMNS = ["subject", "status", "createdAt", "updatedAt"] as const;
 
@@ -189,7 +189,7 @@ export class TicketsService {
     }
   }
 
-  async list(query: PaginationQuery, caller: TicketCaller) {
+  async list(query: TicketListQuery, caller: TicketCaller) {
     const support = await this.isSupport(caller);
     const domainIds = await this.visibleDomainIds(caller);
     if (domainIds?.length === 0) {
@@ -201,19 +201,38 @@ export class TicketsService {
     if (!support) {
       qb.andWhere("(t.visibility = :public OR t.createdBy = :uid)", { public: "public", uid: caller.userId });
     }
+    if (query.mine === "true") qb.andWhere("t.assignedTo = :me", { me: caller.userId });
     if (query.search) qb.andWhere("t.subject LIKE :search", { search: `%${query.search}%` });
     const sortBy = resolveSortColumn(query.sortBy, TICKET_SORTABLE_COLUMNS, "createdAt");
     qb.orderBy(`t.${sortBy}`, query.sortDir === "asc" ? "ASC" : "DESC");
 
-    if (query.limit === undefined) return this.enrich(await qb.getMany());
+    if (query.limit === undefined) return this.enrich(await qb.getMany(), caller.userId);
     const total = await qb.getCount();
     const items = await qb.skip(query.offset).take(query.limit).getMany();
-    return { items: await this.enrich(items), total } satisfies PaginatedResult<unknown>;
+    return { items: await this.enrich(items, caller.userId), total } satisfies PaginatedResult<unknown>;
   }
 
-  private async enrich(rows: SupportTicket[]) {
+  // Author of the newest message of each ticket. Having written at some point
+  // is not the question: what marks a ticket as waiting is that the last word
+  // belongs to someone else.
+  private async lastAuthorByTicket(ticketIds: number[]): Promise<Map<number, string | null>> {
+    if (!ticketIds.length) return new Map();
+    const rows = await this.messages
+      .createQueryBuilder("m")
+      .select("m.ticket_id", "ticketId")
+      .addSelect("m.author_id", "authorId")
+      .where(
+        "m.id IN (SELECT MAX(x.id) FROM support_ticket_messages x WHERE x.ticket_id IN (:...ticketIds) GROUP BY x.ticket_id)",
+        { ticketIds }
+      )
+      .getRawMany<{ ticketId: number | string; authorId: string | null }>();
+    return new Map(rows.map((r) => [Number(r.ticketId), r.authorId]));
+  }
+
+  private async enrich(rows: SupportTicket[], callerId: string) {
     const authorById = await this.authorsFor([...rows.map((r) => r.assignedTo), ...rows.map((r) => r.createdBy)]);
     const domainById = await this.domainNamesFor(rows.map((r) => r.domainId));
+    const lastAuthor = await this.lastAuthorByTicket(rows.map((r) => r.id));
     return rows.map((r) => {
       const assignee = r.assignedTo ? authorById.get(r.assignedTo) : undefined;
       const creator = r.createdBy ? authorById.get(r.createdBy) : undefined;
@@ -225,6 +244,7 @@ export class TicketsService {
         creatorName: creator?.name ?? null,
         creatorAvatarUrl: creator?.avatarUrl ?? null,
         domainName: domainById.get(r.domainId) ?? null,
+        awaitingMyReply: lastAuthor.has(r.id) && lastAuthor.get(r.id) !== callerId,
       };
     });
   }

@@ -24,6 +24,7 @@ interface AccountSessionSummary {
 const { t } = useI18n();
 const { call } = useApi();
 const { timeAgo } = useDateTime();
+const { isOnline, lastSeenAt } = usePresence();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: t("accounts.allSessions.label") }]);
@@ -162,7 +163,13 @@ onMounted(load);
           class="py-3 flex items-center gap-3 cursor-pointer hover:bg-elevated/40 -mx-2 px-2 rounded-md transition-colors"
           @click="openActive(a)"
         >
-          <PresenceAvatar :alt="accountLabel(a)" :online="a.online" size="sm" class="shrink-0" />
+          <PresenceAvatar
+            :alt="accountLabel(a)"
+            :online="isOnline(a.accountId)"
+            :last-seen-at="lastSeenAt(a.accountId)"
+            size="sm"
+            class="shrink-0"
+          />
           <div class="min-w-0 flex-1">
             <p class="font-medium truncate">{{ accountLabel(a) }}</p>
             <p v-if="a.displayName && a.email" class="text-xs text-muted truncate">{{ a.email }}</p>
@@ -245,7 +252,13 @@ onMounted(load);
             @click="openExpired(a)"
           >
             <div class="flex items-center gap-3">
-              <PresenceAvatar :alt="accountLabel(a)" :online="a.online" size="sm" class="shrink-0" />
+              <PresenceAvatar
+                :alt="accountLabel(a)"
+                :online="isOnline(a.accountId)"
+                :last-seen-at="lastSeenAt(a.accountId)"
+                size="sm"
+                class="shrink-0"
+              />
               <div class="min-w-0 flex-1">
                 <p class="font-medium truncate">{{ accountLabel(a) }}</p>
                 <p v-if="a.displayName && a.email" class="text-xs text-muted truncate">{{ a.email }}</p>

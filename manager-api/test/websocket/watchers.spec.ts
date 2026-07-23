@@ -5,7 +5,7 @@ import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
 import type { PostfixService } from "../../src/core/postfix/postfix.service";
 import type { NotificationsService } from "../../src/core/notifications/notifications.service";
 import type { TicketsService } from "../../src/api/tickets/tickets.service";
-import { PresenceActivityService } from "../../src/core/websocket/presence-activity.service";
+import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
 import { buildWatchers } from "../../src/core/websocket/watchers";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
 import { DOMAIN_ACTIONS, GLOBAL_ACTIONS } from "../../src/core/custom-permission-guard/permission-catalog";
@@ -18,7 +18,7 @@ const watchers = buildWatchers({
   sessions: providerMock<JwtAuthService>({}),
   notifications: providerMock<NotificationsService>({}),
   tickets: providerMock<TicketsService>({}),
-  activity: new PresenceActivityService(),
+  presence: providerMock<AccountPresenceService>({}),
 });
 
 describe("websocket watchers", () => {

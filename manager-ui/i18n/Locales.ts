@@ -25,6 +25,7 @@ export interface Locales {
   // theme toggle, badges, ...) lives in `layout` instead.
   presence: {
     online: string;
+    lastSeen: string;
     offline: string;
   };
   nav: {
@@ -68,6 +69,7 @@ export interface Locales {
     table: {
       subject: string;
       status: string;
+      onlyMine: string;
       author: string;
       visibility: string;
       assignee: string;
@@ -118,6 +120,8 @@ export interface Locales {
       authorCloseHint: string;
       sent: string;
       seen: string;
+      seenTitle: string;
+      notSeenYet: string;
       seenBy: string;
       typing: string;
       closedNotice: string;

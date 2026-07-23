@@ -8,6 +8,7 @@ export default {
   table: {
     subject: "Sujet",
     status: "Statut",
+    onlyMine: "Pris en charge par moi",
     author: "Auteur",
     visibility: "Visibilité",
     assignee: "Pris en charge par",
@@ -59,6 +60,8 @@ export default {
     authorCloseHint: "Vous avez ouvert ce ticket, vous pouvez le fermer à tout moment.",
     sent: "Envoyé",
     seen: "Lu",
+    seenTitle: "Lu par",
+    notSeenYet: "Pas encore lu",
     seenBy: "Lu par {who}",
     typing: "{who} est en train d'écrire",
     closedNotice: "Ce ticket est fermé, il n'accepte plus de message.",

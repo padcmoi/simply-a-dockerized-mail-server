@@ -9,8 +9,19 @@ definePageMeta({
 const { t } = useI18n();
 const { formatDateTime } = useDateTime();
 const { isRoot, hasGlobal } = usePermissions();
+const { isOnline } = usePresence();
 const { set: setBreadcrumb } = useBreadcrumb();
 
+// Only meaningful for someone who can take a ticket in charge; anyone else has
+// nothing assigned, so the filter would just hide their whole list.
+const onlyMine = ref(true);
+// A ticket whose last message is not the account's own reads like an unread
+// message: the row is tinted rather than carrying yet another icon.
+const tableMeta = {
+  class: { tr: (row: { original: TicketRow }) => (row.original.awaitingMyReply ? "bg-elevated/60" : "") },
+};
+
+const canHandle = computed(() => isRoot.value || hasGlobal("tickets", "handle-ticket"));
 const canCreate = computed(() => isRoot.value || (hasGlobal("tickets", "access") && hasGlobal("tickets", "create-ticket")));
 
 const SORTABLE_COLUMNS = computed(() => [
@@ -23,7 +34,11 @@ const columns = computed(() => [
   { accessorKey: "subject", header: header("subject", t("tickets.table.subject")) },
   { accessorKey: "domainName", header: t("common.domain") },
   { accessorKey: "status", header: header("status", t("tickets.table.status")) },
-  { accessorKey: "author", header: t("tickets.table.author") },
+  {
+    accessorKey: "author",
+    header: t("tickets.table.author"),
+    meta: { class: { td: "max-w-48 truncate", th: "max-w-48" } },
+  },
   { accessorKey: "assignee", header: t("tickets.table.assignee") },
   { accessorKey: "updatedAt", header: header("updatedAt", t("tickets.table.updated")) },
 ]);
@@ -33,7 +48,9 @@ setBreadcrumb([{ label: t("nav.tickets") }]);
 const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<TicketRow>(
   "tickets-list",
   "/tickets",
-  "createdAt"
+  "createdAt",
+  [onlyMine],
+  () => ({ mine: canHandle.value && onlyMine.value ? "true" : "false" })
 );
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
@@ -70,13 +87,25 @@ function open(row: TicketRow) {
       v-model:sort-dir="sortDir"
       :total="total"
       :sortable-columns="SORTABLE_COLUMNS"
-    />
+    >
+      <template v-if="canHandle" #filters>
+        <UButton
+          :color="onlyMine ? 'primary' : 'neutral'"
+          :variant="onlyMine ? 'subtle' : 'ghost'"
+          icon="i-lucide-user-check"
+          :title="t('tickets.table.onlyMine')"
+          @click="onlyMine = !onlyMine"
+        >
+          {{ t("tickets.table.onlyMine") }}
+        </UButton>
+      </template>
+    </ListToolbar>
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="6" />
 
     <template v-else>
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-        <UTable :columns="columns" :data="items" :loading="loading" sticky>
+        <UTable :columns="columns" :data="items" :loading="loading" sticky :meta="tableMeta">
           <template #subject-cell="{ row }">
             <span class="flex items-center gap-1.5">
               <button class="text-left font-medium text-primary hover:underline" @click="open(row.original)">
@@ -92,15 +121,8 @@ function open(row: TicketRow) {
             <TicketStatusCell :ticket="row.original" @changed="load" />
           </template>
           <template #author-cell="{ row }">
-            <span class="flex items-center gap-2">
-              <UAvatar
-                :src="row.original.creatorAvatarUrl ?? undefined"
-                :alt="row.original.creatorName ?? row.original.creatorEmail ?? '?'"
-                size="2xs"
-              />
-              <span class="truncate">{{
-                row.original.creatorName ?? row.original.creatorEmail ?? t("tickets.detail.unknown")
-              }}</span>
+            <span class="block truncate" :class="{ 'text-success': isOnline(row.original.createdBy) }">
+              {{ row.original.creatorName ?? row.original.creatorEmail ?? t("tickets.detail.unknown") }}
             </span>
           </template>
           <template #assignee-cell="{ row }">
@@ -121,7 +143,7 @@ function open(row: TicketRow) {
           v-for="item in items"
           v-else
           :key="item.id"
-          :ui="{ root: 'transition hover:shadow-md cursor-pointer' }"
+          :ui="{ root: `transition hover:shadow-md cursor-pointer${item.awaitingMyReply ? ' bg-elevated/60' : ''}` }"
           @click="open(item)"
         >
           <div class="flex items-start justify-between gap-2">
@@ -133,8 +155,7 @@ function open(row: TicketRow) {
           </div>
           <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
             <span>{{ item.domainName ?? "-" }}</span>
-            <span class="flex items-center gap-1.5">
-              <UAvatar :src="item.creatorAvatarUrl ?? undefined" :alt="item.creatorName ?? item.creatorEmail ?? '?'" size="3xs" />
+            <span class="truncate max-w-40" :class="{ 'text-success': isOnline(item.createdBy) }">
               {{ item.creatorName ?? item.creatorEmail ?? t("tickets.detail.unknown") }}
             </span>
             <span>{{ formatDateTime(item.updatedAt) }}</span>
