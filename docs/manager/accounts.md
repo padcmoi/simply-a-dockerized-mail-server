@@ -1,0 +1,121 @@
+# Manager accounts
+
+Accounts that sign in to this console. Not mailboxes: a manager account has an
+email as its login identity but no maildir, no quota and no postfix row. Rights
+come from the groups it belongs to, or from the root flag, which bypasses the
+ACL entirely.
+
+## The list
+
+[`/accounts`](../../manager-ui/app/pages/accounts/index.vue), requiring
+`accounts:access` + `list-accounts`.
+
+Columns: email, display name, groups, status, and a row actions cell. Email,
+name and status are sortable. Groups is not: it is computed after the query
+rather than being a real column, so there is nothing to sort on server-side.
+
+Row actions, each gated:
+
+- **Edit account** and **Manage groups** (`view-account`), hidden on root rows.
+- **Revoke** (`revoke-account`), hidden on root rows and on already-disabled
+  accounts, behind a confirmation.
+
+Above the table: a **Session management** shortcut (`view-account-sessions`)
+and an **Invite user** dropdown (`invite-account`) offering by email or by
+token.
+
+## Inviting
+
+### By email
+
+[`/accounts/create/email`](../../manager-ui/app/pages/accounts/create/email.vue).
+The invitation is sent from `postmaster@<chosen domain>` rather than a generic
+sender, so it is not filed as spam.
+
+- **Email address** of the invitee.
+- **Domain**, which decides the sending address.
+- **Groups**, optional and multi-select. The default group is not listed: it is
+  assigned automatically.
+- **Domain ownership** -- a switch making the invitee the owner of the chosen
+  domain. It shows the current owner and warns that a domain has one owner, so
+  any existing one is replaced. It applies only when the invitation is accepted,
+  which is why turning it on asks for confirmation. Without
+  `accounts:set-domain-owner` the switch stays visible but locked, with the
+  reason stated.
+- **Dedicated domain group** -- a switch that creates (or reuses) a group
+  dedicated to this domain and grants it a set of domain permissions picked
+  right there in the form, and nothing else: no global permissions. The group's
+  name is imposed rather than chosen, and the block says whether it already
+  exists or will be created. Managing it needs the `groups` resource with all
+  its actions, or root; otherwise the block explains why it is unavailable.
+
+### By token
+
+[`/accounts/create/token`](../../manager-ui/app/pages/accounts/create/token.vue)
+is a placeholder. It states that token invitations are not available yet rather
+than offering a broken form.
+
+## Account detail
+
+[`/accounts/:id`](../../manager-ui/app/pages/accounts/[id]/index.vue), reading
+`GET /accounts/:id/overview`. Everything this account owns across the mail
+stack:
+
+- identity card (avatar, display name, email, root badge),
+- stat tiles including group memberships,
+- **owned domains** and **owned recipients**, each with active counts and
+  quotas, or an explicit "this account owns no domain" when there are none,
+- buttons through to Edit and Manage groups, shown only with the matching
+  action.
+
+### Edit
+
+[`/accounts/:id/edit`](../../manager-ui/app/pages/accounts/[id]/edit.vue).
+Email, display name, avatar URL, phone, address, and an **Account enabled**
+switch whose hint says plainly that disabling blocks sign-in immediately.
+
+### Groups
+
+[`/accounts/:id/groups`](../../manager-ui/app/pages/accounts/[id]/groups.vue).
+Add a group from a picker, remove one from the list. An account can belong to
+zero, one or several groups, and permissions take effect immediately: the target
+account's next navigation re-fetches them.
+
+## Sessions
+
+Three pages, all requiring `accounts:view-account-sessions`.
+
+### Overview
+
+[`/accounts/sessions`](../../manager-ui/app/pages/accounts/sessions/index.vue),
+reading `GET /accounts/sessions/overview`. Every account's sessions across the
+stack, grouped by account, split into two blocks:
+
+- **Active sessions** -- accounts with at least one live session, each showing
+  its live online state and a count.
+- **Expired sessions** -- a searchable, sortable, paginated table of accounts
+  with history, showing the expired count and when they were last seen.
+
+Filtering, sorting and pagination for the expired block are computed client-side
+over the single overview payload, since the whole set arrives at once.
+
+### Per account
+
+[`.../sessions/:userId/active`](../../manager-ui/app/pages/accounts/sessions/[userId]/active.vue)
+lists one account's live sessions: device parsed from the user agent with a
+matching icon, IP, signed-in time, and a revoke button per row plus a **Revoke
+all**. Needs `revoke-account-sessions`.
+
+[`.../sessions/:userId/expired`](../../manager-ui/app/pages/accounts/sessions/[userId]/expired.vue)
+lists the history, each row marked Expired or Revoked, with a **Purge history**
+button behind a confirmation stating that live sessions are untouched. Needs
+`purge-account-sessions`.
+
+The device label comes from
+[`parseUserAgent`](../../manager-ui/app/utils/userAgent.ts), which extracts
+browser and OS and picks an icon, falling back to "Unknown device" rather than
+printing a raw user-agent string.
+
+Online state on these pages is the presence system described in
+[realtime.md](realtime.md), which is a separate concept from having an active
+session: a session can be live while its owner is away from the keyboard.
