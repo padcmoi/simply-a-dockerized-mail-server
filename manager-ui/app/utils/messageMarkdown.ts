@@ -47,8 +47,13 @@ export function safeHref(raw: string) {
   return SAFE_SCHEME.test(href) ? href : null;
 }
 
+// Order matters: the longest delimiter wins first. Bold+italic is written
+// ***text***, whose fences overlap the bold ones, so testing ** first would
+// eat two of the three stars and leave a stray one in the text.
 const INLINE = [
   { type: "code", re: /^`([^`]+)`/ },
+  { type: "strongEm", re: /^\*\*\*([\s\S]+?)\*\*\*/ },
+  { type: "strongEm", re: /^___([\s\S]+?)___/ },
   { type: "strong", re: /^\*\*([\s\S]+?)\*\*/ },
   { type: "strong", re: /^__([\s\S]+?)__/ },
   { type: "strike", re: /^~~([\s\S]+?)~~/ },
@@ -92,6 +97,9 @@ export function parseInline(source: string) {
       } else if (rule.type === "code") {
         flush();
         out.push({ type: "code", value: m[1] ?? "" });
+      } else if (rule.type === "strongEm") {
+        flush();
+        out.push({ type: "strong", children: [{ type: "em", children: parseInline(m[1] ?? "") }] });
       } else {
         flush();
         out.push({ type: rule.type, children: parseInline(m[1] ?? "") });

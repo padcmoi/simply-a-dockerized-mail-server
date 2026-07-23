@@ -60,6 +60,7 @@ export default {
     authorCloseHint: "Vous avez ouvert ce ticket, vous pouvez le fermer à tout moment.",
     sent: "Envoyé",
     seen: "Lu",
+    quoteHint: "Répondre à ce message",
     seenTitle: "Lu par",
     notSeenYet: "Pas encore lu",
     seenBy: "Lu par {who}",

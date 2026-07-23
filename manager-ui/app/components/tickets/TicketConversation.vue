@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const emit = defineEmits<{ loadOlder: [] }>();
+const emit = defineEmits<{ loadOlder: []; quote: [author: string, body: string] }>();
 
 const props = defineProps<{
   messages: TicketMessage[];
@@ -128,6 +128,14 @@ function authorLabel(message: TicketMessage) {
   return message.authorName ?? message.authorEmail ?? t("tickets.detail.unknown");
 }
 
+// A plain click quotes the message; a click that ends a text selection, or one
+// landing on a link, must not.
+function requestQuote(message: TicketMessage, event: MouseEvent) {
+  if ((event.target as HTMLElement).closest("a")) return;
+  if (window.getSelection()?.toString()) return;
+  emit("quote", authorLabel(message), message.body);
+}
+
 function openSeen(readers: TicketReader[]) {
   seenReaders.value = readers;
 }
@@ -207,12 +215,15 @@ function requestOlder() {
 
             <div
               class="w-full px-3.5 py-2 text-sm rounded-2xl"
+              :title="entry.mine ? undefined : t('tickets.detail.quoteHint')"
               :class="[
+                entry.mine ? '' : 'cursor-pointer',
                 entry.mine
                   ? 'bg-primary/10 text-default ring ring-inset ring-primary/25'
                   : 'bg-elevated text-default ring ring-inset ring-default',
                 entry.leading && (entry.mine ? 'rounded-tr-md' : 'rounded-tl-md'),
               ]"
+              @click="entry.mine ? undefined : requestQuote(entry.message, $event)"
             >
               <MessageBody :text="entry.message.body" />
             </div>

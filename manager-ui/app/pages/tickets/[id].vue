@@ -10,7 +10,7 @@ const route = useRoute();
 const { t } = useI18n();
 const { set: setBreadcrumb } = useBreadcrumb();
 
-const editor = useTemplateRef<{ clear: () => void }>("editor");
+const editor = useTemplateRef<{ clear: () => void; quote: (_a: string, _b: string) => void }>("editor");
 
 const ticketId = computed(() => Number(route.params.id));
 
@@ -78,6 +78,7 @@ async function onSend(body: string) {
         :seen-by="seenBy"
         :typing-by="typingBy"
         @load-older="loadOlder"
+        @quote="(author, body) => editor?.quote(author, body)"
       >
         <template v-if="isClosed || canReply" #composer>
           <p v-if="isClosed" class="flex items-center gap-2 text-sm text-muted px-4 py-4 sm:px-6">

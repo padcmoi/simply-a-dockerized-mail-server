@@ -6,6 +6,11 @@ defineProps<{ sending: boolean }>();
 const { t } = useI18n();
 
 const body = ref("");
+// Kept so a quote can move the caret under the inserted block; TipTap owns the
+// selection, setting the model alone would leave the cursor wherever it was.
+// Only the slice of the TipTap editor this component drives; the package is a
+// transitive dependency of @nuxt/ui, not a direct one to import types from.
+const editor = shallowRef<{ commands: { focus: (_at: "end") => boolean } } | null>(null);
 
 const empty = computed(() => body.value.trim().length === 0);
 
@@ -43,6 +48,11 @@ defineExpose({
   clear: () => {
     body.value = "";
   },
+  quote: async (author: string, text: string) => {
+    body.value = `${buildQuote(author, text)}${body.value}`;
+    await nextTick();
+    editor.value?.commands.focus("end");
+  },
 });
 </script>
 
@@ -56,10 +66,11 @@ defineExpose({
       :mention="false"
       :ui="{ content: 'max-h-60 overflow-y-auto px-4 py-2.5 sm:px-6 focus:outline-none' }"
       class="w-full divide-y divide-default"
+      @create="({ editor: created }) => (editor = created)"
       @update:model-value="emit('typing')"
     >
-      <template #default="{ editor }">
-        <UEditorToolbar :editor="editor" :items="toolbar" class="px-3 py-1.5 sm:px-5 bg-elevated/50" />
+      <template #default="{ editor: current }">
+        <UEditorToolbar :editor="current" :items="toolbar" class="px-3 py-1.5 sm:px-5 bg-elevated/50" />
       </template>
     </UEditor>
 

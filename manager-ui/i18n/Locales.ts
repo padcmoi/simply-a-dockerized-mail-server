@@ -120,6 +120,7 @@ export interface Locales {
       authorCloseHint: string;
       sent: string;
       seen: string;
+      quoteHint: string;
       seenTitle: string;
       notSeenYet: string;
       seenBy: string;
