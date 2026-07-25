@@ -149,7 +149,7 @@ async function save() {
       {{ t("aliases.backToList") }}
     </UButton>
 
-    <UCard class="max-w-3xl">
+    <UCard>
       <template #header>
         <h2 class="font-semibold truncate">
           {{ alias ? t("aliases.editPage.title", { source: alias.source }) : t("aliases.editPage.button") }}

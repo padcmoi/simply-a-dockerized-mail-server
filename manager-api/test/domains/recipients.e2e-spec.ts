@@ -17,6 +17,7 @@ describe("RecipientsController (e2e: auth + ACL + behavior)", () => {
     list: vi.fn(),
     headroom: vi.fn(),
     get: vi.fn(),
+    getWithUsage: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     remove: vi.fn(),
@@ -136,15 +137,15 @@ describe("RecipientsController (e2e: auth + ACL + behavior)", () => {
   describe("GET /:id", () => {
     it("200 for ROOT, forwards id + domain to the service", async () => {
       svc.resolveDomain.mockResolvedValueOnce(FQDN);
-      svc.get.mockResolvedValueOnce({ id: 5, email: "jdoe@example.com" });
+      svc.getWithUsage.mockResolvedValueOnce({ id: 5, email: "jdoe@example.com", usedBytes: "0" });
       const res = await api().get(`${base}/5`).set("Authorization", root()).expect(200);
-      expect(res.body).toMatchObject({ id: 5 });
-      expect(svc.get).toHaveBeenCalledWith(5, FQDN);
+      expect(res.body).toMatchObject({ id: 5, usedBytes: "0" });
+      expect(svc.getWithUsage).toHaveBeenCalledWith(5, FQDN);
     });
 
     it("400 when :id is not an integer", async () => {
       await api().get(`${base}/abc`).set("Authorization", root()).expect(400);
-      expect(svc.get).not.toHaveBeenCalled();
+      expect(svc.getWithUsage).not.toHaveBeenCalled();
     });
   });
 

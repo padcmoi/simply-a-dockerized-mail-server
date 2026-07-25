@@ -17,9 +17,6 @@ interface Recipient {
   lastActivity: string | null;
 }
 
-const MB = 1024 * 1024;
-const MIN_QUOTA_MB = 1;
-
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
@@ -53,14 +50,14 @@ const canCreateRecipients = computed(() => {
   );
 });
 
-// Lazily evaluated, so reading `editModalItem` (declared further down, with
-// the rest of useRecipientEdit) is safe. Resizing frees the recipient's own
-// reservation first, so its ceiling is the domain's remaining space plus what
-// it already holds.
-const editMaxQuotaMb = computed(() => {
-  if (!editModalItem.value) return availableMb.value;
-  const currentMb = Math.floor(Number(editModalItem.value.quota) / MB);
-  return Math.max(MIN_QUOTA_MB, availableMb.value + currentMb);
+// Editing lives on its own page now; the list only decides whether to offer
+// the link. Same gate the edit page's route meta enforces.
+const canEditRecipients = computed(() => {
+  if (!domainId.value) return false;
+  return (
+    isRoot.value ||
+    (hasDomain(domainId.value, "recipients", "access") && hasDomain(domainId.value, "recipients", "edit-recipient"))
+  );
 });
 
 const { t } = useI18n();
@@ -69,7 +66,6 @@ const { formatDateTime } = useDateTime();
 const { isRoot, hasDomain } = usePermissions();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
-const { availableMb, loadHeadroom } = useRecipientHeadroom(domainId);
 
 // Below the composables it reads, unlike the computed above it: watchEffect
 // runs its callback straight away, so `setBreadcrumb` must already be bound.
@@ -89,19 +85,13 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
 );
 const UButton = resolveComponent("UButton");
 const { header } = useSortableColumns(sortBy, sortDir, UButton);
-const { editModalOpen, editModalItem, editSaving, canEditRecipients, openEditModal, saveEdit } = useRecipientEdit(
-  domainId,
-  refreshAll
-);
-
-// Every mutation shifts what the domain has left, so the two always reload
-// together.
-async function refreshAll() {
-  await Promise.all([load(), loadHeadroom()]);
-}
 
 function isPostmaster(item: Recipient) {
   return item.email.toLowerCase().startsWith("postmaster@");
+}
+
+function editTo(item: Recipient) {
+  return `/domains/${domainFqdn.value}/recipients/${item.id}/edit`;
 }
 
 function occupancy(r: Recipient) {
@@ -113,7 +103,7 @@ async function remove(row: Recipient) {
   await call(`/domains/${domainId.value}/recipients/${row.id}`, {
     method: "DELETE",
   });
-  await refreshAll();
+  await load();
 }
 
 function requestDelete(fn: () => Promise<void>) {
@@ -168,7 +158,14 @@ async function onDeleteConfirmed() {
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
           <template #email-cell="{ row }">
             <div class="flex items-center gap-2">
-              <span>{{ row.original.email }}</span>
+              <NuxtLink
+                v-if="canEditRecipients && !isPostmaster(row.original)"
+                :to="editTo(row.original)"
+                class="font-medium text-primary hover:underline"
+              >
+                {{ row.original.email }}
+              </NuxtLink>
+              <span v-else>{{ row.original.email }}</span>
               <UBadge v-if="isPostmaster(row.original)" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock">
                 {{ t("recipients.postmaster.badge") }}
               </UBadge>
@@ -200,12 +197,12 @@ async function onDeleteConfirmed() {
             <div v-if="!isPostmaster(row.original)" class="flex justify-end gap-2">
               <UButton
                 v-if="canEditRecipients"
+                :to="editTo(row.original)"
                 icon="i-lucide-pencil"
                 color="primary"
                 variant="ghost"
                 size="xs"
                 square
-                @click="openEditModal(row.original)"
               />
               <UButton
                 icon="i-lucide-trash-2"
@@ -232,8 +229,8 @@ async function onDeleteConfirmed() {
           :item="item"
           :is-postmaster="isPostmaster(item)"
           :can-edit="canEditRecipients"
+          :edit-to="editTo(item)"
           @delete="requestDelete(() => remove(item))"
-          @edit="openEditModal(item)"
         />
       </div>
 
@@ -241,15 +238,5 @@ async function onDeleteConfirmed() {
     </template>
 
     <ConfirmModal v-model:open="confirmOpen" :description="t('recipients.confirmDeleteDesc')" @confirm="onDeleteConfirmed" />
-
-    <RecipientEditModal
-      v-if="editModalItem"
-      v-model:open="editModalOpen"
-      :item="editModalItem"
-      :saving="editSaving"
-      :min-quota-mb="MIN_QUOTA_MB"
-      :max-quota-mb="editMaxQuotaMb"
-      @save="saveEdit"
-    />
   </div>
 </template>

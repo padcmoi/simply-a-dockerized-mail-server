@@ -1,14 +1,17 @@
 <script setup lang="ts">
-const emit = defineEmits<{ delete: []; edit: [] }>();
+const emit = defineEmits<{ delete: [] }>();
 
 const props = withDefaults(
   defineProps<{
     item: { id: number; email: string; quota: string; usedBytes: string; active: number; lastActivity: string | null };
     isPostmaster?: boolean;
     canEdit?: boolean;
+    editTo?: string | null;
   }>(),
-  { isPostmaster: false, canEdit: false }
+  { isPostmaster: false, canEdit: false, editTo: null }
 );
+
+const editable = computed(() => props.canEdit && !props.isPostmaster && !!props.editTo);
 
 const percent = computed(() => occupancyPercent(Number(props.item.quota), Number(props.item.usedBytes)));
 const color = computed(() => occupancyColor(percent.value));
@@ -21,7 +24,10 @@ const { formatDateTime } = useDateTime();
   <UCard>
     <div class="flex items-start justify-between gap-2">
       <div class="flex items-center gap-2 min-w-0">
-        <span class="font-semibold break-all">{{ item.email }}</span>
+        <NuxtLink v-if="editable" :to="editTo!" class="font-semibold break-all text-primary hover:underline">
+          {{ item.email }}
+        </NuxtLink>
+        <span v-else class="font-semibold break-all">{{ item.email }}</span>
         <UBadge v-if="isPostmaster" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock" class="shrink-0">
           {{ t("recipients.postmaster.badge") }}
         </UBadge>
@@ -47,8 +53,8 @@ const { formatDateTime } = useDateTime();
     </div>
     <div class="mt-3 pt-3 border-t border-default flex justify-end gap-2">
       <template v-if="!isPostmaster">
-        <UButton v-if="canEdit" icon="i-lucide-pencil" size="sm" color="primary" variant="outline" @click="emit('edit')">
-          {{ t("recipients.editModal.button") }}
+        <UButton v-if="editable" :to="editTo!" icon="i-lucide-pencil" size="sm" color="primary" variant="outline">
+          {{ t("recipients.editPage.button") }}
         </UButton>
         <UButton icon="i-lucide-trash-2" size="sm" color="error" variant="outline" @click="emit('delete')">
           {{ t("common.delete") }}

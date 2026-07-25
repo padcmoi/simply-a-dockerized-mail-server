@@ -40,10 +40,11 @@ export default {
     badge: "System",
     locked: "The postmaster mailbox is managed automatically and cannot be edited, activated or deleted",
   },
-  editModal: {
+  editPage: {
     button: "Edit",
     title: "Edit {email}",
     saved: "Recipient updated",
     saveFailed: "Update failed",
+    loadFailed: "Could not load this recipient",
   },
 } satisfies Locales["recipients"];

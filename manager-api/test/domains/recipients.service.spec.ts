@@ -151,6 +151,18 @@ describe("RecipientsService", () => {
       expect(recipients.findOne).toHaveBeenCalledWith({ where: { id: 5, domain: FQDN } });
     });
 
+    it("getWithUsage attaches dovecot's usedBytes to the entity", async () => {
+      recipients.findOne.mockResolvedValue({ id: 5, email: "jdoe@example.com" });
+      recipientQuotas.find.mockResolvedValue([{ email: "jdoe@example.com", bytes: "42" }]);
+      await expect(svc.getWithUsage(5, FQDN)).resolves.toMatchObject({ id: 5, usedBytes: "42" });
+    });
+
+    it("getWithUsage back-fills usedBytes '0' when the mailbox has no quota row", async () => {
+      recipients.findOne.mockResolvedValue({ id: 6, email: "new@example.com" });
+      recipientQuotas.find.mockResolvedValue([]);
+      await expect(svc.getWithUsage(6, FQDN)).resolves.toMatchObject({ id: 6, usedBytes: "0" });
+    });
+
     it("404s (ApiError recipients.notFound) when absent from the domain", async () => {
       recipients.findOne.mockResolvedValue(null);
       const e = await rejection(svc.get(5, FQDN));

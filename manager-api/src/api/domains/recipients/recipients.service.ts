@@ -113,6 +113,15 @@ export class RecipientsService {
     return found;
   }
 
+  // The HTTP read wants usedBytes (dovecot's live counter, not a recipient
+  // column) so the edit page can block a resize below current usage in the UI
+  // itself, not only on save. The internal callers (update, remove) work off
+  // the entity alone, so get() stays lean and this enrichment is opt-in.
+  async getWithUsage(id: number, domain: string) {
+    const found = await this.get(id, domain);
+    return (await this.attachUsage([found]))[0];
+  }
+
   // The domain's own quota is the hard ceiling on what its recipients may
   // reserve between them -- the same rule DomainsService applies one level up,
   // where a domain can't claim more than the mail volume still has assignable.

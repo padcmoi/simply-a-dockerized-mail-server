@@ -361,11 +361,12 @@ export interface Locales {
       badge: string;
       locked: string;
     };
-    editModal: {
+    editPage: {
       button: string;
       title: string;
       saved: string;
       saveFailed: string;
+      loadFailed: string;
     };
   };
   aliases: {

@@ -48,7 +48,7 @@ export class RecipientsController {
   @GetRecipientDocs()
   async get(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
-    return this.svc.get(id, domain);
+    return this.svc.getWithUsage(id, domain);
   }
 
   @Post()

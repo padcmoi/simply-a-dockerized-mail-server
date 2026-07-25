@@ -110,7 +110,7 @@ async function create() {
       {{ t("aliases.backToList") }}
     </UButton>
 
-    <UCard class="max-w-3xl">
+    <UCard>
       <template #header>
         <h2 class="font-semibold">{{ t("aliases.form.title") }}</h2>
       </template>
