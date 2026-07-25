@@ -9,6 +9,7 @@ import { SupportTicket } from "../../core/entities/support-ticket.entity";
 import { SupportTicketMessage } from "../../core/entities/support-ticket-message.entity";
 import { SupportTicketRead } from "../../core/entities/support-ticket-read.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
+import { supportNotificationEmail } from "../../core/mailer/templates";
 import { NotificationsService } from "../../core/notifications/notifications.service";
 import { TopicPresenceService } from "../../core/websocket/presence.service";
 import { CreateTicketDto, ReplyTicketDto, TicketListQuery } from "./tickets.validation";
@@ -28,20 +29,6 @@ interface TicketAuthor {
 export interface TicketCaller {
   userId: string;
   isRoot: boolean;
-}
-
-function emailBody(type: string, p: { subject: string; domainName: string | null; actor: string | null; status?: unknown }) {
-  const on = p.domainName ? ` on ${p.domainName}` : "";
-  switch (type) {
-    case "ticket-created":
-      return `${p.actor ?? "Someone"} opened the support ticket "${p.subject}"${on}.`;
-    case "ticket-replied":
-      return `${p.actor ?? "Someone"} replied to the support ticket "${p.subject}"${on}.`;
-    case "ticket-taken":
-      return `${p.actor ?? "Someone"} took charge of the support ticket "${p.subject}"${on}.`;
-    default:
-      return `The support ticket "${p.subject}"${on} is now "${String(p.status)}".`;
-  }
 }
 
 @Injectable()
@@ -173,16 +160,21 @@ export class TicketsService {
       const payload = { ticketId: ticket.id, subject: ticket.subject, domainName, actor, ...extra };
       const base = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") ?? "";
       const link = `/tickets/${ticket.id}`;
+      const mail = supportNotificationEmail({
+        type,
+        subject: ticket.subject,
+        domainName,
+        actor,
+        status: extra.status,
+        ticketUrl: `${base}${link}`,
+      });
       await this.notifications.dispatch({
         accountIds,
         source: "support",
         type,
         payload,
         link,
-        email: {
-          subject: `[Support] ${ticket.subject}`,
-          text: [emailBody(type, payload), "", `Ticket: ${base}${link}`].join("\n"),
-        },
+        email: { subject: mail.subject, text: mail.text },
       });
     } catch (e) {
       this.log.warn(`Ticket #${ticket.id} notification failed: ${(e as Error).message}`);
