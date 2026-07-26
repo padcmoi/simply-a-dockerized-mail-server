@@ -295,6 +295,17 @@ describe("JwtAuthService", () => {
       expect(m.geocoding.geocodeCity).not.toHaveBeenCalled();
     });
 
+    it("saves the interface locale on the profile", async () => {
+      const account = { id: "a1", email: "a@b.com", isRoot: 0 };
+      const profile = { accountId: "a1", locale: null };
+      m.accounts.findOne.mockResolvedValueOnce(account);
+      m.profiles.findOne.mockResolvedValueOnce(profile).mockResolvedValueOnce({ ...profile, locale: "fr_FR" });
+      const res = await svc.updateProfile("a1", { locale: "fr_FR" });
+      expect(profile.locale).toBe("fr_FR");
+      expect(m.profiles.save).toHaveBeenCalledWith(profile);
+      expect(res.locale).toBe("fr_FR");
+    });
+
     it("geocodes a set city into coordinates", async () => {
       const account = { id: "a1", email: "a@b.com", isRoot: 0 };
       const profile = { accountId: "a1", city: null, country: null, latitude: null, longitude: null };

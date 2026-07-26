@@ -1,3 +1,5 @@
+import { useAuthStore } from "~/stores/auth";
+
 // Tri-state language preference that mirrors the theme's light/dark/system
 // model: "system" follows the browser, an explicit locale code pins the choice.
 // Device-scoped via localStorage (like the theme quick-toggle and the default
@@ -28,6 +30,8 @@ export function useLocalePreference() {
   // outside a component setup. nuxtApp.$i18n works in a plugin and a component
   // alike, and it is the app-wide locale we want to read and switch anyway.
   const { locale, locales, setLocale } = useNuxtApp().$i18n;
+  const { call } = useApi();
+  const auth = useAuthStore();
 
   const preference = useLocalStorage<string>(LOCALE_PREFERENCE_KEY, "system");
 
@@ -78,10 +82,25 @@ export function useLocalePreference() {
     if (locale.value !== resolved.value) await setLocale(resolved.value as typeof locale.value);
   }
 
+  // Persist the concrete locale in use to the account profile
+  // (`account_profiles.locale`), so it survives a device change. Best effort and
+  // client + authenticated only: a failed save must never block the UI, and on
+  // the login screen there is no account yet (the login page calls it once the
+  // session exists).
+  async function persist() {
+    if (!import.meta.client || !auth.session) return;
+    try {
+      await call("/auth/jwt/me", { method: "PATCH", body: { locale: resolved.value } });
+    } catch {
+      // best effort
+    }
+  }
+
   async function setPreference(value: string) {
     preference.value = value;
     await apply();
+    await persist();
   }
 
-  return { preference, resolved, detected, options, availableCodes, flagFor, detectBrowserLocale, apply, setPreference };
+  return { preference, resolved, detected, options, availableCodes, flagFor, detectBrowserLocale, apply, setPreference, persist };
 }

@@ -27,6 +27,7 @@ export type ProfileResponse = {
   id: string;
   email: string;
   displayName: string | null;
+  locale: string | null;
   avatarUrl: string | null;
   phone: string | null;
   addressLine: string | null;
@@ -296,6 +297,7 @@ export class JwtAuthService {
 
     const profile = (await this.profiles.findOne({ where: { accountId } })) ?? this.profiles.create({ accountId });
     if (input.displayName !== undefined) profile.displayName = input.displayName;
+    if (input.locale !== undefined) profile.locale = input.locale;
     if (input.avatarUrl !== undefined) profile.avatarUrl = input.avatarUrl;
     if (input.phone !== undefined) profile.phone = input.phone;
     if (input.addressLine !== undefined) profile.addressLine = input.addressLine;
@@ -334,6 +336,7 @@ export class JwtAuthService {
       id: account.id,
       email: account.email,
       displayName: profile?.displayName ?? null,
+      locale: profile?.locale ?? null,
       avatarUrl: profile?.avatarUrl ?? null,
       phone: profile?.phone ?? null,
       addressLine: profile?.addressLine ?? null,

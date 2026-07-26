@@ -11,6 +11,7 @@ const { t } = useI18n();
 const auth = useAuthStore();
 const toast = useToast();
 const { resolve: resolveLastRoute } = useLastRoute();
+const { persist: persistLocale } = useLocalePreference();
 
 const schema = z.object({
   email: z.string().email(t("login.emailInvalid")),
@@ -21,6 +22,9 @@ async function onSubmit() {
   loading.value = true;
   try {
     await auth.login(state.email, state.password);
+    // Record the interface language in use right after login, so the account
+    // profile carries its selected language from the first session.
+    await persistLocale();
     // Back to wherever the user was before the session dropped (or they logged
     // out); dashboard only if there is no remembered route.
     await navigateTo(resolveLastRoute());

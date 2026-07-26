@@ -25,6 +25,11 @@ export class AccountProfile {
   @Column({ name: "presence_at", type: "datetime", nullable: true })
   presenceAt!: Date | null;
 
+  // The account's last-used interface language (a concrete locale code such as
+  // "fr_FR" or "en_EN"), saved on login and on every language change.
+  @Column({ name: "locale", type: "varchar", length: 10, nullable: true })
+  locale!: string | null;
+
   @Column({ name: "offline_notified_at", type: "datetime", nullable: true })
   offlineNotifiedAt!: Date | null;
 

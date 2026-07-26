@@ -22,6 +22,12 @@ export const updateProfileSchema = z.object({
   city: z.string().max(255).nullable().optional(),
   postalCode: z.string().max(32).nullable().optional(),
   country: z.string().max(255).nullable().optional(),
+  // A concrete interface locale code (e.g. "fr_FR", "en_EN"), or null to clear.
+  locale: z
+    .string()
+    .regex(/^[a-z]{2}_[A-Z]{2}$/)
+    .nullable()
+    .optional(),
 });
 
 export type LoginDto = z.infer<typeof loginSchema>;
