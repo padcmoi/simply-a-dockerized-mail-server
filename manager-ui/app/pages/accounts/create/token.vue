@@ -12,7 +12,7 @@ setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: t("accoun
 </script>
 
 <template>
-  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0 max-w-2xl">
+  <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <UAlert
       icon="i-lucide-key-round"
       :title="t('accounts.invite.tokenAlertTitle')"
