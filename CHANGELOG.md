@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- docs(manager): update `accounts.md` for the account-deletion action (permanent delete with cascade and SET NULL) and note that the invitation link is built from the configured interface address (26-07-2026)
 - fix(accounts): the invitation email link is built from the configured interface address (`config/general`, `manager_url`) instead of the request host, which behind the reverse proxy fell back to a placeholder and produced an unreachable link; the request host is kept only as a fallback when no address is configured (26-07-2026)
 - feat(accounts): the account list's red action permanently deletes the account instead of only disabling it (root accounts still refused). Rows that belong to it cascade away (profile, presence, sessions, group memberships, notifications, preferences, API tokens); references that outlive it are set to null (owned domains and recipients, authored tickets and messages, group ownership, audit entries, invitations sent), and a migration adds the missing `virtual_users.owner_id` foreign key with ON DELETE SET NULL so a deleted owner releases its recipients rather than orphaning them (26-07-2026)
 - docs(manager): document the root-only Configuration area (mail provider, email cadence, interface address) in a new `docs/manager/configuration.md`, add it to the manager docs index, and refresh the notification-mail section to the offline-summary and per-recipient spool model (26-07-2026)

@@ -17,8 +17,14 @@ rather than being a real column, so there is nothing to sort on server-side.
 Row actions, each gated:
 
 - **Edit account** and **Manage groups** (`view-account`), hidden on root rows.
-- **Revoke** (`revoke-account`), hidden on root rows and on already-disabled
-  accounts, behind a confirmation.
+- **Delete** (`revoke-account`), hidden on root rows, behind a confirmation that
+  warns it is permanent. It removes the account row for good: what belongs to it
+  cascades away (profile, presence, sessions, group memberships, notifications,
+  preferences, API tokens), while what outlives it is set to null (owned domains
+  and recipients, authored tickets and messages, group ownership, audit entries,
+  invitations sent), so those records survive ownerless rather than being taken
+  down with the account. A root account is never deletable. Available whether the
+  account is enabled or already disabled.
 
 Above the table: a **Session management** shortcut (`view-account-sessions`)
 and an **Invite user** dropdown (`invite-account`) offering by email or by
@@ -30,7 +36,10 @@ token.
 
 [`/accounts/create/email`](../../manager-ui/app/pages/accounts/create/email.vue).
 The invitation is sent from `postmaster@<chosen domain>` rather than a generic
-sender, so it is not filed as spam.
+sender, so it is not filed as spam. Its link points at the configured interface
+address (Configuration > General, `manager_url`); the request host is only a
+fallback for when no address has been set, which otherwise produced an
+unreachable link behind the reverse proxy.
 
 - **Email address** of the invitee.
 - **Domain**, which decides the sending address.
