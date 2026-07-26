@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- fix(ui): long group names in the accounts list are truncated with an ellipsis (the full name on hover) instead of overflowing their column, in both the table and the mobile card (26-07-2026)
 - fix(ui): the invite-by-token page spans the full browser width like every other page instead of a narrow max-w card (26-07-2026)
 - feat(tickets): the author of a message can edit it for one hour after posting, in the same rich editor used to compose (extracted into a reusable `MessageEditor`). `support_ticket_messages` gains `updated_at` and `edit_count`; the thread marks an edited message next to its time and, while editing, shows a live countdown of the remaining window. Clicking one's own recent bubble opens the editor; the one-hour window and author-only rule are enforced by the API (26-07-2026)
 - docs(manager): update `accounts.md` for the account-deletion action (permanent delete with cascade and SET NULL) and note that the invitation link is built from the configured interface address (26-07-2026)

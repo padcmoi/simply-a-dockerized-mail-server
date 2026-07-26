@@ -43,7 +43,17 @@ const { t } = useI18n();
         <span class="text-muted w-20 shrink-0">{{ t("accounts.table.group") }}</span>
         <span v-if="account.isRoot" class="italic text-muted text-xs">{{ t("accounts.table.rootAccess") }}</span>
         <div v-else-if="account.groups.length" class="flex flex-wrap gap-1">
-          <UBadge v-for="g in account.groups" :key="g.id" color="neutral" variant="subtle" size="xs">{{ g.name }}</UBadge>
+          <UBadge
+            v-for="g in account.groups"
+            :key="g.id"
+            color="neutral"
+            variant="subtle"
+            size="xs"
+            class="max-w-40"
+            :title="g.name"
+          >
+            <span class="truncate min-w-0">{{ g.name }}</span>
+          </UBadge>
         </div>
         <span v-else class="text-dimmed text-xs">{{ t("accounts.table.noGroup") }}</span>
       </div>

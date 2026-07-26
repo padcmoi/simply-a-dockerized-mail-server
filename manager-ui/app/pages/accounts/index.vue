@@ -158,9 +158,17 @@ async function onDeleteConfirmed() {
               {{ t("accounts.table.rootAccess") }}
             </div>
             <div v-else-if="row.original.groups.length" class="flex flex-wrap gap-1">
-              <UBadge v-for="g in row.original.groups" :key="g.id" color="neutral" variant="subtle" size="xs">{{
-                g.name
-              }}</UBadge>
+              <UBadge
+                v-for="g in row.original.groups"
+                :key="g.id"
+                color="neutral"
+                variant="subtle"
+                size="xs"
+                class="max-w-40"
+                :title="g.name"
+              >
+                <span class="truncate min-w-0">{{ g.name }}</span>
+              </UBadge>
             </div>
             <span v-else class="text-xs text-dimmed">{{ t("accounts.table.noGroup") }}</span>
           </template>
