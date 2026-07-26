@@ -17,11 +17,18 @@ export default {
     localPartInvalid: "Letters, digits and . _ + - only",
     password: "Password",
     passwordMin: "Minimum {value} characters",
+    newPassword: "New password",
+    newPasswordPlaceholder: "At least 8 characters",
+    passwordKeepHint: "Set a new mailbox password without the old one. Minimum 8 characters.",
+    changePassword: "Change the password",
     quotaMb: "Quota (MB)",
     quotaMin: "Minimum {value} MB",
     quotaMax: "Maximum {value} MB left on the domain",
     quotaRange: "{min}–{max} MB",
     submit: "Create",
+  },
+  passwordCard: {
+    title: "Change the password",
   },
   table: {
     address: "Address",
@@ -45,6 +52,8 @@ export default {
     title: "Edit {email}",
     saved: "Recipient updated",
     saveFailed: "Update failed",
+    passwordChanged: "Password changed",
+    passwordFailed: "Could not change the password",
     loadFailed: "Could not load this recipient",
   },
 } satisfies Locales["recipients"];

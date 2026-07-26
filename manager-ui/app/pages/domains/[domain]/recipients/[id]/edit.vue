@@ -21,8 +21,10 @@ const MIN_QUOTA_MB = 1;
 const recipient = ref<Recipient | null>(null);
 const loading = ref(true);
 const saving = ref(false);
+const changingPassword = ref(false);
 
-const form = reactive({ active: true, quotaMb: MIN_QUOTA_MB });
+const PASSWORD_MIN = 8;
+const form = reactive({ active: true, quotaMb: MIN_QUOTA_MB, password: "" });
 
 const route = useRoute();
 const { t } = useI18n();
@@ -68,6 +70,11 @@ const sliderMax = computed(() => Math.max(floorMb.value, maxQuotaMb.value));
 
 const quotaUnderLimit = computed(() => form.quotaMb < floorMb.value);
 const quotaOverLimit = computed(() => form.quotaMb > maxQuotaMb.value);
+
+// The password lives in its own card (admin reset, no old password required),
+// saved on its own button, so it stays out of the main form's dirty/save.
+const passwordTooShort = computed(() => form.password.length > 0 && form.password.length < PASSWORD_MIN);
+const canChangePassword = computed(() => form.password.length >= PASSWORD_MIN);
 
 // Nothing to save until something actually differs from what was loaded.
 const dirty = computed(
@@ -128,6 +135,25 @@ async function save() {
     toast.add({ title: t("recipients.editPage.saveFailed"), description: apiErrorMessage(err), color: "error" });
   } finally {
     saving.value = false;
+  }
+}
+
+// Reset the mailbox password on its own, independent of the main form (no old
+// password required). Stays on the page and clears the field on success.
+async function changePassword() {
+  if (!domainId.value || !canChangePassword.value) return;
+  changingPassword.value = true;
+  try {
+    await call(`/domains/${domainId.value}/recipients/${recipientId.value}`, {
+      method: "PATCH",
+      body: { password: form.password },
+    });
+    form.password = "";
+    toast.add({ title: t("recipients.editPage.passwordChanged"), color: "success" });
+  } catch (err) {
+    toast.add({ title: t("recipients.editPage.passwordFailed"), description: apiErrorMessage(err), color: "error" });
+  } finally {
+    changingPassword.value = false;
   }
 }
 </script>
@@ -206,6 +232,37 @@ async function save() {
           </UButton>
         </div>
       </template>
+    </UCard>
+
+    <UCard v-if="recipient && !isPostmaster">
+      <template #header>
+        <h2 class="font-semibold flex items-center gap-1.5">
+          <UIcon name="i-lucide-key-round" class="size-4 text-muted" />
+          {{ t("recipients.passwordCard.title") }}
+        </h2>
+      </template>
+
+      <div class="space-y-3">
+        <p class="text-sm text-muted">{{ t("recipients.form.passwordKeepHint") }}</p>
+        <div class="flex items-end gap-2">
+          <UFormField
+            :label="t('recipients.form.newPassword')"
+            :error="passwordTooShort ? t('recipients.form.passwordMin', { value: PASSWORD_MIN }) : undefined"
+            class="flex-1 sm:max-w-sm"
+          >
+            <UInput
+              v-model="form.password"
+              type="password"
+              autocomplete="new-password"
+              :placeholder="t('recipients.form.newPasswordPlaceholder')"
+              class="w-full"
+            />
+          </UFormField>
+          <UButton icon="i-lucide-key-round" :disabled="!canChangePassword" :loading="changingPassword" @click="changePassword">
+            {{ t("recipients.form.changePassword") }}
+          </UButton>
+        </div>
+      </div>
     </UCard>
   </div>
 </template>

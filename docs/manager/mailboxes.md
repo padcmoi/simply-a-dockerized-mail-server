@@ -18,11 +18,14 @@ All sortable, searchable, paginated.
 
 Row actions, each behind its own action:
 
-- **Edit** (`edit-recipient`) opens
-  [`RecipientEditModal`](../../manager-ui/app/components/domains/RecipientEditModal.vue):
-  quota, active state and password. The resize ceiling is the domain's remaining
-  space **plus what this recipient already reserves**, since editing frees its
-  own allocation first.
+- **Edit** (`edit-recipient`) opens a dedicated page
+  [`recipients/:id/edit`](../../manager-ui/app/pages/domains/[domain]/recipients/[id]/edit.vue):
+  active state and quota, saved together. The resize ceiling is the domain's
+  remaining space **plus what this recipient already reserves**, since editing
+  frees its own allocation first. A separate card at the bottom of the page
+  changes the mailbox password (an admin reset, no old password required,
+  minimum 8 characters, hashed SHA512-CRYPT) with its own button, and another
+  card carries the owner-account field (see Owner account).
 - **Delete** (`delete-recipient`) confirms first, and the confirmation says what
   actually happens: the maildir is erased from disk and the quota returns to the
   domain.

@@ -450,11 +450,18 @@ export interface Locales {
       localPartInvalid: string;
       password: string;
       passwordMin: string;
+      newPassword: string;
+      newPasswordPlaceholder: string;
+      passwordKeepHint: string;
+      changePassword: string;
       quotaMb: string;
       quotaMin: string;
       quotaMax: string;
       quotaRange: string;
       submit: string;
+    };
+    passwordCard: {
+      title: string;
     };
     table: {
       address: string;
@@ -478,6 +485,8 @@ export interface Locales {
       title: string;
       saved: string;
       saveFailed: string;
+      passwordChanged: string;
+      passwordFailed: string;
       loadFailed: string;
     };
   };

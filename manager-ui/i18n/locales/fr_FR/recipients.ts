@@ -17,11 +17,18 @@ export default {
     localPartInvalid: "Lettres, chiffres et . _ + - uniquement",
     password: "Mot de passe",
     passwordMin: "Minimum {value} caractères",
+    newPassword: "Nouveau mot de passe",
+    newPasswordPlaceholder: "Au moins 8 caractères",
+    passwordKeepHint: "Définir un nouveau mot de passe de la boîte sans fournir l'ancien. Minimum 8 caractères.",
+    changePassword: "Changer le mot de passe",
     quotaMb: "Quota (Mo)",
     quotaMin: "Minimum {value} Mo",
     quotaMax: "Maximum {value} Mo restant sur le domaine",
     quotaRange: "{min}–{max} Mo",
     submit: "Créer",
+  },
+  passwordCard: {
+    title: "Changer le mot de passe",
   },
   table: {
     address: "Adresse",
@@ -45,6 +52,8 @@ export default {
     title: "Modifier {email}",
     saved: "Destinataire mis à jour",
     saveFailed: "Échec de la mise à jour",
+    passwordChanged: "Mot de passe changé",
+    passwordFailed: "Impossible de changer le mot de passe",
     loadFailed: "Impossible de charger ce destinataire",
   },
 } satisfies Locales["recipients"];
