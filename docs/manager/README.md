@@ -31,9 +31,11 @@ this app is down. Nothing here is in the delivery path.
    notification system built on top of them.
 9. [server-tools.md](server-tools.md) -- the server-wide pages: Rspamd,
    Postfix queue, Sieve blocklist, API tokens.
-10. [profile.md](profile.md) -- your own account: profile, owned resources,
+10. [configuration.md](configuration.md) -- the root-only Configuration area:
+    outbound mail provider, email cadence, and the public interface address.
+11. [profile.md](profile.md) -- your own account: profile, owned resources,
     sessions, notification channels, device preferences.
-11. [realtime.md](realtime.md) -- the WebSocket layer underneath all of it:
+12. [realtime.md](realtime.md) -- the WebSocket layer underneath all of it:
     topics, presence, typing, read receipts, reconnection.
 
 ## Where the code lives

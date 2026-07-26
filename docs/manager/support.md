@@ -197,10 +197,31 @@ lists one row per source, currently Support, with two checkboxes: **Notification
 from reaching you entirely. Each toggle saves immediately and confirms with a
 toast.
 
-### Mail is rate-limited
+### Mail is a single offline summary, not a stream
 
-A busy exchange must not turn into a burst of mail: it would flood the recipient
-and risk getting the server flagged as a spammer. Mail is capped at **one per 30
-seconds per recipient** (`MANAGER_NOTIFICATION_EMAIL_INTERVAL_MS`). Only mail is
-dropped. The in-app notification is never throttled, so nothing is missing from
-the bell.
+Notifying by mail on every event would flood the recipient and risk getting the
+server flagged as a spammer, so `dispatch()` writes only the in-app row and sends
+no mail in the moment. Mail is delegated to a background sweep
+([`OfflineNotificationsService`](../../manager-api/src/core/notifications/offline-notifications.service.ts)):
+
+- A member is mailed **once** they have been offline for the configured delay,
+  and only a single generic summary, "You have one or more notifications
+  waiting", never one mail per message. It carries an **Open the manager** button
+  pointing at the configured interface address
+  ([configuration.md](configuration.md)).
+- The summary goes out only when an unread notification is **newer** than the
+  last one sent. The lock is a timestamp
+  (`account_profiles.offline_notified_at`) that a reconnection never resets, so
+  the same notification is never mailed twice. A reconnection followed by a
+  genuinely new notification can trigger one more, once the member has been
+  offline long enough again.
+- A member whose email channel is off for every unread source is skipped, and the
+  in-app bell keeps everything regardless: it is never throttled.
+
+Independently of that, `MailerService` keeps a **per-recipient spool**: at most
+one email per recipient per anti-spam window, dropping (never queuing) any send
+inside it, whatever the caller (summaries, invitations, verification codes), so
+no code path can turn the manager into a spam source.
+
+The delay, the sweep frequency and the spool window are all set in
+[`/config/mail-cadence`](configuration.md), not in the environment.
