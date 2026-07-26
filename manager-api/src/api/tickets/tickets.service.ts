@@ -9,7 +9,6 @@ import { SupportTicket } from "../../core/entities/support-ticket.entity";
 import { SupportTicketMessage } from "../../core/entities/support-ticket-message.entity";
 import { SupportTicketRead } from "../../core/entities/support-ticket-read.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
-import { supportNotificationEmail } from "../../core/mailer/templates";
 import { NotificationsService } from "../../core/notifications/notifications.service";
 import { TopicPresenceService } from "../../core/websocket/presence.service";
 import { CreateTicketDto, ReplyTicketDto, TicketListQuery } from "./tickets.validation";
@@ -158,23 +157,13 @@ export class TicketsService {
       const domainName = (await this.domainNamesFor([ticket.domainId])).get(ticket.domainId) ?? null;
       const actor = (await this.authorsFor([actorId])).get(actorId)?.name ?? null;
       const payload = { ticketId: ticket.id, subject: ticket.subject, domainName, actor, ...extra };
-      const base = process.env.MANAGER_PUBLIC_URL?.replace(/\/+$/, "") ?? "";
       const link = `/tickets/${ticket.id}`;
-      const mail = supportNotificationEmail({
-        type,
-        subject: ticket.subject,
-        domainName,
-        actor,
-        status: extra.status,
-        ticketUrl: `${base}${link}`,
-      });
       await this.notifications.dispatch({
         accountIds,
         source: "support",
         type,
         payload,
         link,
-        email: { subject: mail.subject, text: mail.text },
       });
     } catch (e) {
       this.log.warn(`Ticket #${ticket.id} notification failed: ${(e as Error).message}`);

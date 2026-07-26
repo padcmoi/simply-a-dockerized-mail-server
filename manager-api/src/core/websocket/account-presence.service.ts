@@ -13,7 +13,7 @@ export class AccountPresenceService implements OnModuleInit {
   // Sockets do not survive a restart, so nobody is online at boot: leaving the
   // previous run's rows behind would show ghosts as connected forever.
   async onModuleInit() {
-    await this.profiles.update({ presence: 1 }, { presence: 0 }).catch(() => undefined);
+    await this.profiles.update({ presence: 1 }, { presence: 0, offlineNotifiedAt: new Date() }).catch(() => undefined);
   }
 
   // Upsert rather than update: an account whose profile row was never created

@@ -1,11 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { IsNull } from "typeorm";
 import { NotificationsService } from "../../src/core/notifications/notifications.service";
-import type { MailerService } from "../../src/core/mailer/mailer.service";
 import type { Account } from "../../src/core/entities/account.entity";
 import type { Notification } from "../../src/core/entities/notification.entity";
 import type { NotificationPreference } from "../../src/core/entities/notification-preference.entity";
-import { entity, providerMock, repoMock, type Loose } from "../helpers/mocks";
+import { entity, repoMock } from "../helpers/mocks";
 
 const ALICE = "alice-id";
 const BOB = "bob-id";
@@ -14,7 +13,6 @@ describe("NotificationsService", () => {
   let notifications: ReturnType<typeof repoMock<Notification>>;
   let preferences: ReturnType<typeof repoMock<NotificationPreference>>;
   let accounts: ReturnType<typeof repoMock<Account>>;
-  let mailer: Loose<MailerService>;
   let svc: NotificationsService;
 
   beforeEach(() => {
@@ -30,8 +28,7 @@ describe("NotificationsService", () => {
       entity<Account>({ id: ALICE, email: "alice@example.com", enabled: 1 }),
       entity<Account>({ id: BOB, email: "bob@example.com", enabled: 1 }),
     ]);
-    mailer = providerMock<MailerService>({ sendNotification: vi.fn().mockResolvedValue(undefined) });
-    svc = new NotificationsService(notifications, preferences, accounts, mailer);
+    svc = new NotificationsService(notifications, preferences, accounts);
   });
 
   const input = (accountIds: string[]) => ({
@@ -40,7 +37,6 @@ describe("NotificationsService", () => {
     type: "ticket-created",
     payload: { ticketId: 5 },
     link: "/tickets/5",
-    email: { subject: "s", text: "t" },
   });
 
   describe("channel defaults", () => {
@@ -64,102 +60,39 @@ describe("NotificationsService", () => {
     });
   });
 
-  describe("dispatch", () => {
-    it("writes one row per recipient and mails each of them", async () => {
+  describe("dispatch (in-app rows only; mail is handled by the offline sweep)", () => {
+    it("writes one in-app row per recipient", async () => {
       await svc.dispatch(input([ALICE, BOB]));
       expect(notifications.create).toHaveBeenCalledTimes(2);
-      expect(mailer.sendNotification).toHaveBeenCalledTimes(2);
+      expect(notifications.save).toHaveBeenCalled();
     });
 
     it("deduplicates a recipient listed twice", async () => {
       await svc.dispatch(input([ALICE, ALICE]));
       expect(notifications.create).toHaveBeenCalledTimes(1);
-      expect(mailer.sendNotification).toHaveBeenCalledTimes(1);
     });
 
     it("writes nothing at all when the recipient list is empty", async () => {
       await svc.dispatch(input([]));
       expect(notifications.save).not.toHaveBeenCalled();
-      expect(mailer.sendNotification).not.toHaveBeenCalled();
+    });
+
+    it("still writes the in-app row when only the email channel is off", async () => {
+      preferences.findOne.mockResolvedValue(entity<NotificationPreference>({ inApp: 1, email: 0 }));
+      await svc.dispatch(input([ALICE]));
+      expect(notifications.create).toHaveBeenCalledTimes(1);
     });
 
     it("skips the in-app row when the account disabled that channel", async () => {
       preferences.findOne.mockResolvedValue(entity<NotificationPreference>({ inApp: 0, email: 1 }));
       await svc.dispatch(input([ALICE]));
       expect(notifications.save).not.toHaveBeenCalled();
-      expect(mailer.sendNotification).toHaveBeenCalledTimes(1);
-    });
-
-    it("skips the mail when the account disabled that channel", async () => {
-      preferences.findOne.mockResolvedValue(entity<NotificationPreference>({ inApp: 1, email: 0 }));
-      await svc.dispatch(input([ALICE]));
-      expect(notifications.create).toHaveBeenCalledTimes(1);
-      expect(mailer.sendNotification).not.toHaveBeenCalled();
-    });
-
-    it("reaches neither channel when the account turned both off", async () => {
-      preferences.findOne.mockResolvedValue(entity<NotificationPreference>({ inApp: 0, email: 0 }));
-      await svc.dispatch(input([ALICE]));
-      expect(notifications.save).not.toHaveBeenCalled();
-      expect(mailer.sendNotification).not.toHaveBeenCalled();
     });
 
     it("ignores a disabled account", async () => {
       accounts.find.mockResolvedValue([entity<Account>({ id: ALICE, email: "alice@example.com", enabled: 0 })]);
       await svc.dispatch(input([ALICE]));
       expect(notifications.save).not.toHaveBeenCalled();
-      expect(mailer.sendNotification).not.toHaveBeenCalled();
-    });
-
-    it("still stores the in-app rows when the mail transport fails", async () => {
-      mailer.sendNotification.mockRejectedValue(new Error("smtp down"));
-      await expect(svc.dispatch(input([ALICE]))).resolves.toBeUndefined();
-      expect(notifications.save).toHaveBeenCalled();
-    });
-  });
-
-  // A busy thread must not turn into a burst of mail: the server would look
-  // like a spammer. Only the mail is throttled, the in-app row always lands.
-  describe("email throttling", () => {
-    beforeEach(() => vi.useFakeTimers());
-    afterEach(() => vi.useRealTimers());
-
-    it("drops a second mail to the same account inside the window", async () => {
-      await svc.dispatch(input([ALICE]));
-      await svc.dispatch(input([ALICE]));
-      expect(mailer.sendNotification).toHaveBeenCalledTimes(1);
-    });
-
-    it("still writes every in-app row while the mail is throttled", async () => {
-      await svc.dispatch(input([ALICE]));
-      notifications.create.mockClear();
-      await svc.dispatch(input([ALICE]));
-      expect(notifications.create).toHaveBeenCalledTimes(1);
-    });
-
-    it("survives a burst without mailing more than once", async () => {
-      for (let i = 0; i < 25; i++) await svc.dispatch(input([ALICE]));
-      expect(mailer.sendNotification).toHaveBeenCalledTimes(1);
-    });
-
-    it("throttles each account on its own clock", async () => {
-      await svc.dispatch(input([ALICE]));
-      await svc.dispatch(input([BOB]));
-      expect(mailer.sendNotification).toHaveBeenCalledTimes(2);
-    });
-
-    it("mails again once the window elapsed", async () => {
-      await svc.dispatch(input([ALICE]));
-      vi.advanceTimersByTime(30_000);
-      await svc.dispatch(input([ALICE]));
-      expect(mailer.sendNotification).toHaveBeenCalledTimes(2);
-    });
-
-    it("still holds the mail one millisecond before the window closes", async () => {
-      await svc.dispatch(input([ALICE]));
-      vi.advanceTimersByTime(29_999);
-      await svc.dispatch(input([ALICE]));
-      expect(mailer.sendNotification).toHaveBeenCalledTimes(1);
     });
   });
 

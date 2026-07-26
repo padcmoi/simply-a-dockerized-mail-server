@@ -25,6 +25,9 @@ export class AccountProfile {
   @Column({ name: "presence_at", type: "datetime", nullable: true })
   presenceAt!: Date | null;
 
+  @Column({ name: "offline_notified_at", type: "datetime", nullable: true })
+  offlineNotifiedAt!: Date | null;
+
   @Column({ name: "display_name", type: "varchar", length: 255, nullable: true })
   displayName!: string | null;
 

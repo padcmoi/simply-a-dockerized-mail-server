@@ -71,6 +71,6 @@ describe("AccountPresenceService", () => {
   // for as long as nobody reconnects.
   it("clears every online row at boot", async () => {
     await svc.onModuleInit();
-    expect(repo.update).toHaveBeenCalledWith({ presence: 1 }, { presence: 0 });
+    expect(repo.update).toHaveBeenCalledWith({ presence: 1 }, { presence: 0, offlineNotifiedAt: expect.any(Date) });
   });
 });
