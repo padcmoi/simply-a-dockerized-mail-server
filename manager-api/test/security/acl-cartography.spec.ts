@@ -26,8 +26,10 @@ const EXPECTED_PUBLIC = [
 ].sort();
 
 // Authenticated but intentionally carrying NO ACL requirement: the self-scoped
-// "my own ..." routes, and the two bulk-membership routes whose root-only rule
-// is enforced inside GroupsService (empty @RequireGlobalPermissions on purpose).
+// "my own ..." routes, the two bulk-membership routes whose root-only rule is
+// enforced inside GroupsService (empty @RequireGlobalPermissions on purpose),
+// and the root-only /config/* routes guarded by RootGuard (a hard isRoot check,
+// not an ACL permission).
 // Every other authenticated route MUST declare a permission requirement.
 const EXPECTED_NO_ACL_AUTHED = [
   "DELETE /api/v1/auth/jwt/me/sessions/:id",
@@ -39,13 +41,24 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/auth/jwt/me/permissions",
   "GET /api/v1/auth/jwt/me/sessions",
   "GET /api/v1/auth/jwt/me/sessions/history",
+  "GET /api/v1/config/general",
+  "GET /api/v1/config/general/tlds",
+  "GET /api/v1/config/mail",
+  "GET /api/v1/config/mail-cadence",
   "GET /api/v1/notifications",
   "GET /api/v1/notifications/feed",
   "GET /api/v1/notifications/preferences",
   "PATCH /api/v1/auth/jwt/me",
+  "POST /api/v1/config/mail/disable",
+  "POST /api/v1/config/mail/select",
+  "POST /api/v1/config/mail/test",
+  "POST /api/v1/config/mail/verify",
   "POST /api/v1/groups/:id/members/all",
   "POST /api/v1/notifications/:id/read",
   "POST /api/v1/notifications/read-all",
+  "PUT /api/v1/config/general",
+  "PUT /api/v1/config/mail",
+  "PUT /api/v1/config/mail-cadence",
   "PUT /api/v1/notifications/preferences",
 ].sort();
 

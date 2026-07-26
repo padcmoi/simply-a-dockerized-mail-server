@@ -14,6 +14,8 @@ import { NotificationPreference } from "../entities/notification-preference.enti
 import { SupportTicket } from "../entities/support-ticket.entity";
 import { SupportTicketMessage } from "../entities/support-ticket-message.entity";
 import { SupportTicketRead } from "../entities/support-ticket-read.entity";
+import { MailSetting } from "../entities/mail-setting.entity";
+import { AppSetting } from "../entities/app-setting.entity";
 
 // Stand-alone DataSource used exclusively by the TypeORM CLI (migration:generate,
 // migration:run, migration:revert, migration:show). The Nest runtime keeps its
@@ -46,6 +48,8 @@ export default new DataSource({
     SupportTicketRead,
     Notification,
     NotificationPreference,
+    MailSetting,
+    AppSetting,
   ],
   migrations: ["src/core/database/migrations/*.ts"],
   migrationsTableName: "migrations",

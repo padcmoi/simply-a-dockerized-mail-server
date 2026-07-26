@@ -4,6 +4,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AccountsModule } from "./api/accounts/accounts.module";
+import { ConfigApiModule } from "./api/config/config.module";
 import { DomainsModule } from "./api/domains/domains.module";
 import { GroupsModule } from "./api/groups/groups.module";
 import { HealthModule } from "./api/health/health.module";
@@ -50,6 +51,7 @@ import { WebsocketModule } from "./core/websocket/websocket.module";
     PostfixModule,
     TicketsModule,
     NotificationsApiModule,
+    ConfigApiModule,
     WebsocketModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: CombinedAuthGuard }],
