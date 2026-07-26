@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { invitationEmail } from "../../src/core/mailer/templates/invitation.template";
 import { notificationHtml } from "../../src/core/mailer/templates/notification-layout.template";
-import { supportNotificationEmail } from "../../src/core/mailer/templates/support-notification.template";
+import { pendingNotificationsEmail } from "../../src/core/mailer/templates/pending-notifications.template";
 
 describe("invitationEmail", () => {
   it("names the groups in both the text and the HTML", () => {
@@ -26,30 +26,41 @@ describe("notificationHtml", () => {
   });
 });
 
-describe("supportNotificationEmail", () => {
-  const base = { subject: "Broken login", domainName: "example.com", actor: "Alice", ticketUrl: "https://host/tickets/7" };
-
-  it("prefixes the subject and appends the ticket link", () => {
-    const mail = supportNotificationEmail({ type: "ticket-created", ...base });
-    expect(mail.subject).toBe("[Support] Broken login");
-    expect(mail.text).toContain("Ticket: https://host/tickets/7");
-    expect(mail.html).toBe(notificationHtml(mail.text));
+describe("pendingNotificationsEmail", () => {
+  it("is a generic, content-free pending-notifications summary", () => {
+    const mail = pendingNotificationsEmail();
+    expect(mail.subject).toBe("You have pending notifications");
+    expect(mail.text).toContain("one or more notifications");
   });
 
-  it("phrases each event type", () => {
-    expect(supportNotificationEmail({ type: "ticket-created", ...base }).text).toContain(
-      'Alice opened the support ticket "Broken login" on example.com.'
-    );
-    expect(supportNotificationEmail({ type: "ticket-replied", ...base }).text).toContain("Alice replied to the support ticket");
-    expect(supportNotificationEmail({ type: "ticket-taken", ...base }).text).toContain("Alice took charge of the support ticket");
-    expect(supportNotificationEmail({ type: "ticket-status", ...base, status: "resolved" }).text).toContain(
-      'The support ticket "Broken login" on example.com is now "resolved".'
-    );
+  it("adds a button linking to the manager when a URL is passed", () => {
+    const mail = pendingNotificationsEmail("https://mgr.test/");
+    expect(mail.html).toContain('href="https://mgr.test"');
+    expect(mail.html).toContain("Open the manager");
+    expect(mail.text).toContain("https://mgr.test");
   });
 
-  it("falls back to 'Someone' and drops the domain clause when absent", () => {
-    const mail = supportNotificationEmail({ type: "ticket-created", subject: "S", domainName: null, actor: null, ticketUrl: "u" });
-    expect(mail.text).toContain('Someone opened the support ticket "S".');
-    expect(mail.text).not.toContain(" on ");
+  it("has no button when neither a URL nor MANAGER_UI_URL is set", () => {
+    const prev = process.env.MANAGER_UI_URL;
+    delete process.env.MANAGER_UI_URL;
+    try {
+      const mail = pendingNotificationsEmail();
+      expect(mail.html).not.toContain("Open the manager");
+    } finally {
+      if (prev !== undefined) process.env.MANAGER_UI_URL = prev;
+    }
+  });
+
+  it("adds a button linking to the manager when MANAGER_UI_URL is set", () => {
+    const prev = process.env.MANAGER_UI_URL;
+    process.env.MANAGER_UI_URL = "https://manager.test/";
+    try {
+      const mail = pendingNotificationsEmail();
+      expect(mail.html).toContain('href="https://manager.test"');
+      expect(mail.html).toContain("Open the manager");
+    } finally {
+      if (prev === undefined) delete process.env.MANAGER_UI_URL;
+      else process.env.MANAGER_UI_URL = prev;
+    }
   });
 });

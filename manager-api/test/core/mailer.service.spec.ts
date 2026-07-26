@@ -1,83 +1,124 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { Logger } from "@nestjs/common";
+import { HttpStatus, Logger } from "@nestjs/common";
+import type { MailConfig } from "../../src/core/mailer/providers";
+import type { MailSettingsService } from "../../src/core/mailer/mail-settings.service";
+import type { AppSettingsService } from "../../src/core/settings/app-settings.service";
+import { ApiError } from "../../src/core/common/api-error";
+import { providerMock, type Loose } from "../helpers/mocks";
 
-// The transport is built in the constructor, so nodemailer must be mocked
-// before the service is instantiated. A single shared sendMail spy lets each
-// test drive success/failure.
-const h = vi.hoisted(() => {
-  const sendMail = vi.fn();
-  return { sendMail, createTransport: vi.fn(() => ({ sendMail })) };
+const appSettings = providerMock<AppSettingsService>({
+  get: vi.fn().mockReturnValue({ offlineNotifyAfterMs: 300000, offlineSweepIntervalMs: 20000, mailMinIntervalMs: 30000 }),
 });
 
-vi.mock("nodemailer", () => ({ createTransport: h.createTransport, default: { createTransport: h.createTransport } }));
+const { sendMail, createTransport } = vi.hoisted(() => {
+  const sendMail = vi.fn();
+  const createTransport = vi.fn((_opts?: unknown) => ({ sendMail }));
+  return { sendMail, createTransport };
+});
+vi.mock("nodemailer", () => ({ createTransport, default: { createTransport } }));
 
 import { MailerService } from "../../src/core/mailer/mailer.service";
 
 vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
 
+const OFF: MailConfig = { enabled: false, provider: null, host: "", port: 587, secure: false };
+const SMTP: MailConfig = { enabled: true, provider: "smtp", host: "mail-postfix", port: 25, secure: false };
+const BREVO: MailConfig = {
+  enabled: true,
+  provider: "brevo",
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false,
+  auth: { user: "u", pass: "k" },
+  from: "s@d.test",
+};
+
 describe("MailerService", () => {
+  let settings: Loose<MailSettingsService>;
   let svc: MailerService;
 
   beforeEach(() => {
-    h.sendMail.mockReset();
-    h.sendMail.mockResolvedValue({ messageId: "id" });
-    svc = new MailerService();
+    sendMail.mockReset().mockResolvedValue({ messageId: "id" });
+    createTransport.mockClear();
+    settings = providerMock<MailSettingsService>({ toConfig: vi.fn().mockResolvedValue(SMTP), isEnabled: vi.fn() });
+    svc = new MailerService(settings, appSettings);
   });
 
-  it("sends from postmaster@<domain> and names the target groups", async () => {
-    await expect(
-      svc.sendInvitation({
-        to: "to@x.test",
-        link: "https://link",
-        fromDomain: "example.com",
-        groupNames: ["Admins", "Support"],
-      })
-    ).resolves.toBeUndefined();
-    const msg = h.sendMail.mock.calls[0][0];
-    expect(msg.from).toBe("postmaster@example.com");
-    expect(msg.to).toBe("to@x.test");
-    expect(msg.subject).toBe("Invitation to manage the mail server");
-    expect(msg.text).toContain("groups: Admins, Support");
-    expect(msg.text).toContain("https://link");
-    expect(msg.html).toContain("<code>Admins, Support</code>");
+  it("isEnabled delegates to the settings service", async () => {
+    settings.isEnabled.mockResolvedValue(true);
+    expect(await svc.isEnabled()).toBe(true);
   });
 
-  it("uses the no-group wording when groupNames is empty", async () => {
-    await svc.sendInvitation({ to: "to@x.test", link: "https://link", fromDomain: "example.com", groupNames: [] });
-    const msg = h.sendMail.mock.calls[0][0];
-    expect(msg.text).toContain("no group (no permissions until assigned)");
-    expect(msg.html).toContain("no group (no permissions until assigned)");
+  describe("sendWith (explicit config -- used to validate a not-yet-active provider)", () => {
+    it("refuses a disabled config: 503 mail.notConfigured, nothing transported", async () => {
+      const err = await svc.sendWith(OFF, { to: "x@y.test", subject: "s", text: "t" }).catch((e) => e);
+      expect(err).toBeInstanceOf(ApiError);
+      expect((err as ApiError).getStatus()).toBe(HttpStatus.SERVICE_UNAVAILABLE);
+      expect(createTransport).not.toHaveBeenCalled();
+    });
+
+    it("smtp builds an auth-less transport (ignoreTLS on)", async () => {
+      await svc.sendWith(SMTP, { to: "x@y.test", subject: "s", text: "t" });
+      expect(createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({ host: "mail-postfix", port: 25, ignoreTLS: true, auth: undefined })
+      );
+      expect(sendMail).toHaveBeenCalledTimes(1);
+    });
+
+    it("brevo uses its relay, credentials and verified sender as from", async () => {
+      await svc.sendWith(BREVO, { to: "x@y.test", subject: "s", text: "t" });
+      expect(createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({ host: "smtp-relay.brevo.com", ignoreTLS: false, auth: { user: "u", pass: "k" } })
+      );
+      expect(sendMail.mock.calls[0][0]).toMatchObject({ from: "s@d.test", to: "x@y.test" });
+    });
+
+    it("falls back to postmaster@<fromDomain> when the config has no verified sender", async () => {
+      await svc.sendWith(SMTP, { to: "x@y.test", subject: "s", text: "t", fromDomain: "energie90.fr" });
+      expect(sendMail.mock.calls[0][0]).toMatchObject({ from: "postmaster@energie90.fr" });
+    });
+
+    it("spools per recipient: a second send within the window to the same address is dropped, others still go", async () => {
+      await svc.sendWith(SMTP, { to: "dup@y.test", subject: "s", text: "t" });
+      await svc.sendWith(SMTP, { to: "dup@y.test", subject: "s", text: "t" });
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      await svc.sendWith(SMTP, { to: "other@y.test", subject: "s", text: "t" });
+      expect(sendMail).toHaveBeenCalledTimes(2);
+    });
   });
 
-  it("logs and rethrows when the transport fails", async () => {
-    h.sendMail.mockRejectedValueOnce(new Error("smtp unreachable"));
-    await expect(
-      svc.sendInvitation({ to: "to@x.test", link: "https://link", fromDomain: "example.com", groupNames: ["Admins"] })
-    ).rejects.toThrow("smtp unreachable");
-    expect(Logger.prototype.error).toHaveBeenCalled();
-  });
+  describe("notifications and invitations go through the selected config", () => {
+    it("sendNotification reads the selected config and sends", async () => {
+      settings.toConfig.mockResolvedValue(BREVO);
+      await svc.sendNotification({ to: "x@y.test", subject: "s", text: "line" });
+      expect(settings.toConfig).toHaveBeenCalled();
+      expect(sendMail.mock.calls[0][0]).toMatchObject({ from: "s@d.test", subject: "s" });
+      expect(sendMail.mock.calls[0][0].html).toContain("line");
+    });
 
-  describe("sendNotification", () => {
-    it("sends from the recipient's own domain when no override is set", async () => {
-      delete process.env.MANAGER_MAIL_DOMAIN;
-      await expect(svc.sendNotification({ to: "user@example.com", subject: "s", text: "line" })).resolves.toBeUndefined();
-      const msg = h.sendMail.mock.calls[0][0];
+    it("sendInvitation names the target groups and sends from postmaster@<fromDomain>", async () => {
+      settings.toConfig.mockResolvedValue(SMTP);
+      await svc.sendInvitation({ to: "to@x.test", link: "https://link", fromDomain: "example.com", groupNames: ["Admins", "Support"] });
+      const msg = sendMail.mock.calls[0][0];
       expect(msg.from).toBe("postmaster@example.com");
-      expect(msg.subject).toBe("s");
-      expect(msg.html).toContain("line");
+      expect(msg.subject).toBe("Invitation to manage the mail server");
+      expect(msg.text).toContain("groups: Admins, Support");
+      expect(msg.html).toContain("<code>Admins, Support</code>");
     });
 
-    it("uses MANAGER_MAIL_DOMAIN as the sending domain when set", async () => {
-      process.env.MANAGER_MAIL_DOMAIN = "mail.test";
-      await svc.sendNotification({ to: "user@example.com", subject: "s", text: "a\nb" });
-      expect(h.sendMail.mock.calls[0][0].from).toBe("postmaster@mail.test");
-      delete process.env.MANAGER_MAIL_DOMAIN;
+    it("refuses to notify when nothing is selected (off)", async () => {
+      settings.toConfig.mockResolvedValue(OFF);
+      const err = await svc.sendNotification({ to: "x@y.test", subject: "s", text: "t" }).catch((e) => e);
+      expect(err).toBeInstanceOf(ApiError);
+      expect((err as ApiError).getStatus()).toBe(HttpStatus.SERVICE_UNAVAILABLE);
     });
+  });
 
-    it("logs and rethrows when the transport fails", async () => {
-      h.sendMail.mockRejectedValueOnce(new Error("down"));
-      await expect(svc.sendNotification({ to: "user@example.com", subject: "s", text: "t" })).rejects.toThrow("down");
-      expect(Logger.prototype.error).toHaveBeenCalled();
-    });
+  it("wraps a transport failure in a typed 502 mail.sendFailed, never a raw 500", async () => {
+    sendMail.mockRejectedValueOnce(new Error("Invalid login: 535 5.7.8 Authentication failed"));
+    const err = await svc.sendWith(SMTP, { to: "to@x.test", subject: "s", text: "t" }).catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).getStatus()).toBe(HttpStatus.BAD_GATEWAY);
+    expect(Logger.prototype.error).toHaveBeenCalled();
   });
 });
