@@ -6,6 +6,7 @@ import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global
 import { RequireGlobalPermissions } from "../../core/custom-permission-guard/require-permissions.decorator";
 import {
   CreateTicketDocs,
+  EditMessageDocs,
   GetTicketDocs,
   ListTicketMessagesDocs,
   MarkTicketReadDocs,
@@ -18,10 +19,12 @@ import {
 import { TicketCaller, TicketsService } from "./tickets.service";
 import {
   CreateTicketDto,
+  EditMessageDto,
   ReplyTicketDto,
   TicketListQuery,
   UpdateStatusDto,
   createTicketSchema,
+  editMessageSchema,
   ticketListQuerySchema,
   replyTicketSchema,
   updateStatusSchema,
@@ -84,6 +87,20 @@ export class TicketsController {
     @Body(new ZodValidationPipe(replyTicketSchema)) body: ReplyTicketDto
   ) {
     return this.svc.reply(id, body, caller(req));
+  }
+
+  // Only `view-ticket`: TicketsService restricts the edit to the message's own
+  // author and to the one-hour window.
+  @Patch(":id/messages/:messageId")
+  @RequireGlobalPermissions([{ resource: "tickets", actions: ["access", "view-ticket"] }])
+  @EditMessageDocs()
+  editMessage(
+    @Req() req: AuthedRequest,
+    @Param("id", ParseIntPipe) id: number,
+    @Param("messageId", ParseIntPipe) messageId: number,
+    @Body(new ZodValidationPipe(editMessageSchema)) body: EditMessageDto
+  ) {
+    return this.svc.editMessage(id, messageId, body.body, caller(req));
   }
 
   @Post(":id/read")

@@ -27,4 +27,12 @@ export class SupportTicketMessage {
 
   @Column({ name: "created_at", type: "datetime", default: () => "CURRENT_TIMESTAMP" })
   createdAt!: Date;
+
+  // Null until the author edits the message; set to the edit time on every edit.
+  @Column({ name: "updated_at", type: "datetime", nullable: true })
+  updatedAt!: Date | null;
+
+  // How many times the author has edited it, 0 for an untouched message.
+  @Column({ name: "edit_count", type: "int", unsigned: true, default: 0 })
+  editCount!: number;
 }

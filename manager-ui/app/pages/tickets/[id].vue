@@ -29,6 +29,8 @@ const {
   isClosed,
   isAuthor,
   isMine,
+  canEditMessage,
+  editMessage,
   seenBy,
   typingBy,
   notifyTyping,
@@ -75,6 +77,8 @@ async function onSend(body: string) {
         :has-older="hasOlder"
         :loading-older="loadingOlder"
         :is-mine="isMine"
+        :can-edit="canEditMessage"
+        :edit-message="editMessage"
         :seen-by="seenBy"
         :typing-by="typingBy"
         @load-older="loadOlder"

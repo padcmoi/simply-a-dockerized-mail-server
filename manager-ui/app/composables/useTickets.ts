@@ -25,6 +25,8 @@ export interface TicketMessage {
   authorAvatarUrl: string | null;
   body: string;
   createdAt: string;
+  updatedAt: string | null;
+  editCount: number;
 }
 
 export interface TicketReader {

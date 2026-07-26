@@ -18,6 +18,7 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
     messagesPage: vi.fn(),
     markRead: vi.fn(),
     reply: vi.fn(),
+    editMessage: vi.fn(),
     take: vi.fn(),
     setStatus: vi.fn(),
   };
@@ -48,6 +49,7 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
     { name: "GET :id", method: "get", path: `${base}/5` },
     { name: "GET :id/messages", method: "get", path: `${base}/5/messages` },
     { name: "POST :id/messages", method: "post", path: `${base}/5/messages` },
+    { name: "PATCH :id/messages/:messageId", method: "patch", path: `${base}/5/messages/9` },
     { name: "POST :id/read", method: "post", path: `${base}/5/read` },
     { name: "POST :id/take", method: "post", path: `${base}/5/take` },
     { name: "PATCH :id/status", method: "patch", path: `${base}/5/status` },
@@ -167,6 +169,23 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
 
     it("400 on empty body", async () => {
       await api().post(`${base}/5/messages`).set("Authorization", root()).send({ body: "" }).expect(400);
+    });
+  });
+
+  describe("PATCH /:id/messages/:messageId (edit)", () => {
+    it("200 for ROOT, forwards ids + body + caller", async () => {
+      svc.editMessage.mockResolvedValueOnce({ id: 9, body: "new", editCount: 1 });
+      const res = await api().patch(`${base}/5/messages/9`).set("Authorization", root()).send({ body: "new" }).expect(200);
+      expect(res.body).toMatchObject({ id: 9, editCount: 1 });
+      expect(svc.editMessage).toHaveBeenCalledWith(5, 9, "new", { userId: ROOT.id, isRoot: true });
+    });
+
+    it("400 on empty body", async () => {
+      await api().patch(`${base}/5/messages/9`).set("Authorization", root()).send({ body: "" }).expect(400);
+    });
+
+    it("400 when :messageId is not an integer", async () => {
+      await api().patch(`${base}/5/messages/nope`).set("Authorization", root()).send({ body: "x" }).expect(400);
     });
   });
 

@@ -26,6 +26,9 @@ export const ListTicketMessagesDocs = () =>
 
 export const ReplyTicketDocs = () => applyDecorators(idParam(), ApiOperation({ summary: "Post a message on a ticket" }));
 
+export const EditMessageDocs = () =>
+  applyDecorators(idParam(), ApiOperation({ summary: "Edit one's own message, allowed only within an hour of writing it" }));
+
 export const MarkTicketReadDocs = () =>
   applyDecorators(idParam(), ApiOperation({ summary: "Mark the thread read up to its newest message for the caller" }));
 

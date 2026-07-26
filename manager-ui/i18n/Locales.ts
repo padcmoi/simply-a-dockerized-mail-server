@@ -232,12 +232,22 @@ export interface Locales {
       noMessages: string;
       you: string;
       unknown: string;
+      editMessage: string;
+      editHint: string;
+      edited: string;
+      editedTimes: string;
+      editedAt: string;
+      saveEdit: string;
+      cancelEdit: string;
+      editableFor: string;
+      editExpired: string;
     };
     toast: {
       created: string;
       createFailed: string;
       replied: string;
       replyFailed: string;
+      edited: string;
       taken: string;
       takeFailed: string;
       statusChanged: string;

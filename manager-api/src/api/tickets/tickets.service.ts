@@ -19,6 +19,9 @@ export const TICKET_SORTABLE_COLUMNS = ["subject", "status", "createdAt", "updat
 // fetched on demand so a long ticket never ships whole, over REST or websocket.
 export const MESSAGE_PAGE = 10;
 
+// The author may edit a message for one hour after writing it, then it is fixed.
+export const TICKET_MESSAGE_EDIT_WINDOW_MS = 60 * 60 * 1000;
+
 interface TicketAuthor {
   email: string;
   name: string;
@@ -357,6 +360,29 @@ export class TicketsService {
       .execute();
     await this.notify(ticket, "ticket-replied", caller.userId);
     return message;
+  }
+
+  // A message may be reworded by its own author, and only within an hour of
+  // writing it: past that it is part of the record. Root is not the author, so
+  // it does not get to edit someone else's words. Each edit bumps edit_count and
+  // stamps updated_at, which the thread surfaces as an "edited" mark.
+  async editMessage(ticketId: number, messageId: number, body: string, caller: TicketCaller) {
+    const ticket = await this.visibleTicket(ticketId, caller);
+    if (ticket.status === "closed") {
+      throw new ForbiddenException("This ticket is closed and its messages can no longer be edited");
+    }
+    const message = await this.messages.findOne({ where: { id: messageId, ticketId } });
+    if (!message) throw new NotFoundException(`Message #${messageId} not found`);
+    if (message.authorId !== caller.userId) {
+      throw new ForbiddenException("You may only edit your own message");
+    }
+    if (Date.now() - message.createdAt.getTime() > TICKET_MESSAGE_EDIT_WINDOW_MS) {
+      throw new ForbiddenException("This message is older than an hour and can no longer be edited");
+    }
+    message.body = body;
+    message.updatedAt = new Date();
+    message.editCount += 1;
+    return this.messages.save(message);
   }
 
   async take(id: number, caller: TicketCaller) {

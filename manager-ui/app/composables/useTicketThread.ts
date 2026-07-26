@@ -75,6 +75,27 @@ export function useTicketThread(ticketId: Ref<number>) {
     return !!auth.session?.accountId && message.authorId === auth.session.accountId;
   }
 
+  // The author may rework their own message for an hour after writing it; the API
+  // enforces the same window, this only decides whether to offer the pencil.
+  const EDIT_WINDOW_MS = 60 * 60 * 1000;
+  function canEditMessage(message: TicketMessage) {
+    return isMine(message) && !isClosed.value && Date.now() - new Date(message.createdAt).getTime() < EDIT_WINDOW_MS;
+  }
+
+  async function editMessage(messageId: number, body: string) {
+    const text = body.trim();
+    if (!text) return false;
+    try {
+      await call(`/tickets/${ticketId.value}/messages/${messageId}`, { method: "PATCH", body: { body: text } });
+      await refresh();
+      toast.add({ title: t("tickets.toast.edited"), color: "success", icon: "i-lucide-check" });
+      return true;
+    } catch (e) {
+      toast.add({ title: apiErrorMessage(e), color: "error", icon: "i-lucide-triangle-alert" });
+      return false;
+    }
+  }
+
   async function loadOlder() {
     if (loadingOlder.value || !hasOlder.value) return;
     loadingOlder.value = true;
@@ -181,6 +202,8 @@ export function useTicketThread(ticketId: Ref<number>) {
     isClosed,
     isAuthor,
     isMine,
+    canEditMessage,
+    editMessage,
     seenBy,
     typingBy,
     notifyTyping,

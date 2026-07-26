@@ -7,6 +7,8 @@ const props = defineProps<{
   hasOlder: boolean;
   loadingOlder: boolean;
   isMine: (_message: TicketMessage) => boolean;
+  canEdit: (_message: TicketMessage) => boolean;
+  editMessage: (_id: number, _body: string) => Promise<boolean>;
   seenBy: (_message: TicketMessage) => TicketReader[];
   typingBy: { userId: string; who: string } | null;
 }>();
@@ -25,10 +27,14 @@ const anchorHeight = ref<number | null>(null);
 // tooltip alone would keep this information out of reach there.
 const seenReaders = ref<TicketReader[] | null>(null);
 const presenceTarget = ref<{ name: string; avatarUrl: string | null; online?: boolean; lastSeenAt: string | null } | null>(null);
+const { editingId, editDraft, savingEdit, remainingLabel, expired, startEdit, cancelEdit, saveEdit } = useTicketMessageEdit(
+  props.editMessage
+);
 
 const intlLocale = computed(() => locale.value.split("_")[0]);
 const dayFormat = computed(() => new Intl.DateTimeFormat(intlLocale.value, { dateStyle: "full" }));
 const timeFormat = computed(() => new Intl.DateTimeFormat(intlLocale.value, { timeStyle: "short" }));
+const editedAtFormat = computed(() => new Intl.DateTimeFormat(intlLocale.value, { dateStyle: "medium", timeStyle: "short" }));
 
 interface Bubble {
   key: string;
@@ -128,12 +134,33 @@ function authorLabel(message: TicketMessage) {
   return message.authorName ?? message.authorEmail ?? t("tickets.detail.unknown");
 }
 
-// A plain click quotes the message; a click that ends a text selection, or one
-// landing on a link, must not.
-function requestQuote(message: TicketMessage, event: MouseEvent) {
+function editedLabel(message: TicketMessage) {
+  return message.editCount > 1 ? t("tickets.detail.editedTimes", { count: message.editCount }) : t("tickets.detail.edited");
+}
+
+function editedTitle(message: TicketMessage) {
+  return message.updatedAt
+    ? t("tickets.detail.editedAt", { at: editedAtFormat.value.format(new Date(message.updatedAt)) })
+    : undefined;
+}
+
+// A plain click on someone else's message quotes it; on one's own it opens the
+// editor while still within the edit window. A click that ends a text selection,
+// or one landing on a link, does neither, so copying an excerpt still works.
+function onBubbleClick(message: TicketMessage, event: MouseEvent) {
+  if (editingId.value === message.id) return;
   if ((event.target as HTMLElement).closest("a")) return;
   if (window.getSelection()?.toString()) return;
+  if (props.isMine(message)) {
+    if (props.canEdit(message)) startEdit(message);
+    return;
+  }
   emit("quote", authorLabel(message), message.body);
+}
+
+function bubbleClickable(message: TicketMessage) {
+  if (editingId.value === message.id) return false;
+  return props.isMine(message) ? props.canEdit(message) : true;
 }
 
 function openSeen(readers: TicketReader[]) {
@@ -208,28 +235,59 @@ function requestOlder() {
           </button>
           <div v-else class="w-8 shrink-0" />
 
-          <div class="flex flex-col min-w-[50%] max-w-[75%]" :class="entry.mine ? 'items-end' : 'items-start'">
+          <div
+            class="flex flex-col min-w-[50%]"
+            :class="[
+              entry.mine ? 'items-end' : 'items-start',
+              editingId === entry.message.id ? 'max-w-full w-full' : 'max-w-[75%]',
+            ]"
+          >
             <p v-if="entry.leading" class="text-xs text-muted px-1 pb-1 truncate max-w-full">
               {{ entry.mine ? t("tickets.detail.you") : authorLabel(entry.message) }}
             </p>
 
+            <TicketMessageEditBox
+              v-if="editingId === entry.message.id"
+              v-model="editDraft"
+              :expired="expired"
+              :remaining-label="remainingLabel"
+              :saving="savingEdit"
+              @cancel="cancelEdit"
+              @save="saveEdit(entry.message.id)"
+            />
             <div
+              v-else
               class="w-full px-3.5 py-2 text-sm rounded-2xl"
-              :title="entry.mine ? undefined : t('tickets.detail.quoteHint')"
+              :title="
+                entry.mine ? (canEdit(entry.message) ? t('tickets.detail.editHint') : undefined) : t('tickets.detail.quoteHint')
+              "
               :class="[
-                entry.mine ? '' : 'cursor-pointer',
+                bubbleClickable(entry.message) ? 'cursor-pointer' : '',
                 entry.mine
                   ? 'bg-primary/10 text-default ring ring-inset ring-primary/25'
                   : 'bg-elevated text-default ring ring-inset ring-default',
                 entry.leading && (entry.mine ? 'rounded-tr-md' : 'rounded-tl-md'),
               ]"
-              @click="entry.mine ? undefined : requestQuote(entry.message, $event)"
+              @click="onBubbleClick(entry.message, $event)"
             >
               <MessageBody :text="entry.message.body" />
             </div>
 
             <p v-if="entry.trailing" class="flex items-center gap-1 text-[11px] text-dimmed px-1 pt-1">
+              <span v-if="entry.message.editCount > 0" class="italic" :title="editedTitle(entry.message)">
+                {{ editedLabel(entry.message) }}
+              </span>
+              <span v-if="entry.message.editCount > 0" aria-hidden="true">·</span>
               <span>{{ entry.at }}</span>
+              <button
+                v-if="entry.mine && canEdit(entry.message) && editingId !== entry.message.id"
+                type="button"
+                class="inline-flex cursor-pointer hover:text-default"
+                :aria-label="t('tickets.detail.editMessage')"
+                @click="startEdit(entry.message)"
+              >
+                <UIcon name="i-lucide-pencil" class="size-3" />
+              </button>
               <button
                 v-if="entry.mine"
                 type="button"

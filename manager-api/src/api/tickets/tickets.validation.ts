@@ -28,6 +28,12 @@ export const replyTicketSchema = z
   })
   .strict();
 
+export const editMessageSchema = z
+  .object({
+    body: z.string().trim().min(1).max(10_000),
+  })
+  .strict();
+
 export const updateStatusSchema = z
   .object({
     status: z.enum(TICKET_STATUSES),
@@ -36,4 +42,5 @@ export const updateStatusSchema = z
 
 export type CreateTicketDto = z.infer<typeof createTicketSchema>;
 export type ReplyTicketDto = z.infer<typeof replyTicketSchema>;
+export type EditMessageDto = z.infer<typeof editMessageSchema>;
 export type UpdateStatusDto = z.infer<typeof updateStatusSchema>;

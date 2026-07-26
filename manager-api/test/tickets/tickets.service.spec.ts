@@ -252,6 +252,50 @@ describe("TicketsService (row-level visibility)", () => {
     });
   });
 
+  describe("editMessage", () => {
+    const recent = () =>
+      entity<SupportTicketMessage>({ id: 9, ticketId: 5, authorId: CREATOR, body: "old", createdAt: new Date(Date.now() - 60_000), editCount: 0 });
+
+    beforeEach(() => messages.save.mockImplementation((m) => Promise.resolve(m)));
+
+    it("lets the author reword a recent message, stamping updated_at and bumping edit_count", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ status: "open", createdBy: CREATOR }));
+      messages.findOne.mockResolvedValue(recent());
+      const saved = await svc.editMessage(5, 9, "reworded", caller(CREATOR));
+      expect(saved.body).toBe("reworded");
+      expect(saved.editCount).toBe(1);
+      expect(saved.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it("refuses to edit someone else's message", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ status: "open", createdBy: CREATOR }));
+      messages.findOne.mockResolvedValue(entity<SupportTicketMessage>({ id: 9, ticketId: 5, authorId: STRANGER, createdAt: new Date(), editCount: 0 }));
+      await expect(svc.editMessage(5, 9, "x", caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
+      expect(messages.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses to edit a message older than an hour", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ status: "open", createdBy: CREATOR }));
+      messages.findOne.mockResolvedValue(
+        entity<SupportTicketMessage>({ id: 9, ticketId: 5, authorId: CREATOR, createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), editCount: 0 })
+      );
+      await expect(svc.editMessage(5, 9, "x", caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
+      expect(messages.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses to edit in a closed ticket", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ status: "closed", createdBy: CREATOR }));
+      messages.findOne.mockResolvedValue(recent());
+      await expect(svc.editMessage(5, 9, "x", caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it("404s when the message does not exist", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ status: "open", createdBy: CREATOR }));
+      messages.findOne.mockResolvedValue(null);
+      await expect(svc.editMessage(5, 9, "x", caller(CREATOR))).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
   describe("domain access", () => {
     beforeEach(() => messages.findAndCount.mockResolvedValue([[], 0]));
 

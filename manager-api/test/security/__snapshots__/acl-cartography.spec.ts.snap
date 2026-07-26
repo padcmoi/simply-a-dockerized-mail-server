@@ -78,6 +78,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "PATCH /api/v1/groups/:id/owner  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] svc:groups[access,transfer-group-ownership]",
   "PATCH /api/v1/rspamd/actions  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:rspamd[access,edit-rspamd-thresholds]",
   "PATCH /api/v1/sieve/reject-senders/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:sieve[access,edit-reject-sender]",
+  "PATCH /api/v1/tickets/:id/messages/:messageId  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,view-ticket]",
   "PATCH /api/v1/tickets/:id/status  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,view-ticket]",
   "POST /api/v1/accounts/invite  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,invite-account]",
   "POST /api/v1/accounts/invite/:token/accept  ::  auth=PUBLIC guards=[GlobalPermissionGuard]",
