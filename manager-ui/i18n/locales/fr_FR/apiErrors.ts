@@ -16,4 +16,9 @@ export default {
     quotaExceedsDomain:
       "Il ne reste que {availableMb} Mo sur {domain} : son quota est de {domainQuotaMb} Mo, dont {allocatedMb} Mo déjà attribués à ses autres destinataires",
   },
+  mail: {
+    notConfigured: "Le serveur de mail sortant n'est pas configuré, aucun envoi n'est possible",
+    otpInvalid: "Code de vérification invalide ou expiré",
+    sendFailed: "Échec de l'envoi : {detail}",
+  },
 } satisfies Locales["apiErrors"];

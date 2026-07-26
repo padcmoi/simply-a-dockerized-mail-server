@@ -16,4 +16,9 @@ export default {
     quotaExceedsDomain:
       "Only {availableMb} MB left on {domain}: its quota is {domainQuotaMb} MB, of which {allocatedMb} MB are already allocated to its other recipients",
   },
+  mail: {
+    notConfigured: "Outbound mail is not configured, so nothing can be sent",
+    otpInvalid: "Invalid or expired verification code",
+    sendFailed: "Sending failed: {detail}",
+  },
 } satisfies Locales["apiErrors"];

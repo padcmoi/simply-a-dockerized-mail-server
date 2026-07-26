@@ -8,6 +8,7 @@ import { Group } from "../../src/core/entities/group.entity";
 import { GroupMember } from "../../src/core/entities/group-member.entity";
 import { RefreshToken } from "../../src/core/entities/refresh-token.entity";
 import type { GeocodingService } from "../../src/core/geocoding/geocoding.service";
+import type { MailSettingsService } from "../../src/core/mailer/mail-settings.service";
 import { providerMock, qbMock, repoMock } from "../helpers/mocks";
 
 // bcrypt.compare is the only crypto the login path relies on; stub it so tests
@@ -45,6 +46,7 @@ function makeMocks() {
     groupMembers,
     refreshTokens,
     geocoding: providerMock<GeocodingService>({ geocodeCity: vi.fn() }),
+    mailSettings: providerMock<MailSettingsService>({ isEnabled: vi.fn(async () => false) }),
   };
 }
 
@@ -55,7 +57,7 @@ describe("JwtAuthService", () => {
   beforeEach(() => {
     m = makeMocks();
     compare.mockReset();
-    svc = new JwtAuthService(m.jwt, m.accounts, m.profiles, m.groups, m.groupMembers, m.refreshTokens, m.geocoding);
+    svc = new JwtAuthService(m.jwt, m.accounts, m.profiles, m.groups, m.groupMembers, m.refreshTokens, m.geocoding, m.mailSettings);
   });
 
   describe("login", () => {

@@ -11,6 +11,7 @@ interface Session {
   displayName?: string | null;
   avatarUrl?: string | null;
   isRoot?: boolean;
+  mailEnabled?: boolean;
   groups?: { id: string; name: string }[];
 }
 
@@ -22,6 +23,7 @@ interface Profile {
   displayName: string | null;
   avatarUrl: string | null;
   isRoot: boolean;
+  mailEnabled: boolean;
   groups: { id: string; name: string }[];
 }
 
@@ -84,6 +86,7 @@ export const useAuthStore = defineStore("auth", {
         displayName: me.displayName,
         avatarUrl: me.avatarUrl,
         isRoot: me.isRoot,
+        mailEnabled: me.mailEnabled,
         groups: me.groups,
       };
     },
@@ -101,6 +104,7 @@ export const useAuthStore = defineStore("auth", {
         displayName: me.displayName,
         avatarUrl: me.avatarUrl,
         isRoot: me.isRoot,
+        mailEnabled: me.mailEnabled,
         groups: me.groups,
       };
     },

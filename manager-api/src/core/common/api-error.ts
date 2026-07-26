@@ -20,6 +20,9 @@ export const API_ERROR_CODES = [
   "recipients.quotaExceedsDomain",
   "aliases.notFound",
   "aliases.alreadyExists",
+  "mail.notConfigured",
+  "mail.otpInvalid",
+  "mail.sendFailed",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

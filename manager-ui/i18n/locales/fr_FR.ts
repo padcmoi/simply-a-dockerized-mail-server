@@ -25,6 +25,7 @@ import postfixPage from "./fr_FR/postfixPage";
 import rspamdPage from "./fr_FR/rspamdPage";
 import apiTokens from "./fr_FR/apiTokens";
 import groups from "./fr_FR/groups";
+import config from "./fr_FR/config";
 
 // One file per top-level namespace under ./fr_FR/, this file only assembles
 // them. `satisfies Locales` still type-checks the whole tree here, and each
@@ -56,4 +57,5 @@ export default {
   rspamdPage,
   apiTokens,
   groups,
+  config,
 } satisfies Locales;

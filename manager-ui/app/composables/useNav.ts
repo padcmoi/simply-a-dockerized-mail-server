@@ -67,6 +67,9 @@ export function useNav(onSignOut: () => Promise<void>) {
     ...(canAccessGlobal("api-tokens")
       ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens", active: isActive("/api-tokens") }]
       : []),
+    ...(auth.session?.isRoot === true
+      ? [{ label: t("nav.config"), icon: "i-lucide-settings-2", to: "/config", active: isActive("/config") }]
+      : []),
   ]);
 
   const domainNavItems = computed<NavigationMenuItem[]>(() => {

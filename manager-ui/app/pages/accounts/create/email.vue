@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
+
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
@@ -20,6 +22,7 @@ setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: t("accoun
 
 const { groups, load: loadGroups } = useGroups();
 const { isRoot, hasGlobal } = usePermissions();
+const auth = useAuthStore();
 
 const email = ref("");
 const domainId = ref<number | undefined>(undefined);
@@ -43,7 +46,8 @@ const canMakeOwner = computed(
       hasGlobal("domains", "transfer-domain-ownership") &&
       hasGlobal("domain_owner_elevated", "transfer-domain-ownership"))
 );
-const canSubmit = computed(() => /.+@.+\..+/.test(email.value) && domainId.value !== undefined);
+const mailEnabled = computed(() => auth.session?.mailEnabled ?? true);
+const canSubmit = computed(() => mailEnabled.value && /.+@.+\..+/.test(email.value) && domainId.value !== undefined);
 
 watch(domainId, () => {
   makeOwner.value = false;
@@ -108,6 +112,14 @@ onMounted(() => {
       :description="t('accounts.invite.emailAlertDescription')"
       color="neutral"
       variant="subtle"
+    />
+
+    <UAlert
+      v-if="!mailEnabled"
+      icon="i-lucide-mail-x"
+      color="warning"
+      variant="subtle"
+      :description="t('config.mailOffNotice')"
     />
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/accounts" size="sm">

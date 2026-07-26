@@ -11,6 +11,7 @@ import { GroupMember } from "../../entities/group-member.entity";
 import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
 import { GeocodingService } from "../../geocoding/geocoding.service";
+import { MailSettingsService } from "../../mailer/mail-settings.service";
 import { UpdateProfileDto } from "./jwt.validation";
 
 // Columns the session-history list may sort by, mapped to their real SQL
@@ -36,6 +37,7 @@ export type ProfileResponse = {
   latitude: string | null;
   longitude: string | null;
   isRoot: boolean;
+  mailEnabled: boolean;
   groups: { id: string; name: string }[];
 };
 
@@ -52,7 +54,8 @@ export class JwtAuthService {
     @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     @InjectRepository(RefreshToken)
     private readonly refreshTokens: Repository<RefreshToken>,
-    private readonly geocoding: GeocodingService
+    private readonly geocoding: GeocodingService,
+    private readonly mailSettings: MailSettingsService
   ) {}
 
   // Login identity is the email now (no username).
@@ -320,9 +323,10 @@ export class JwtAuthService {
   }
 
   private async toProfile(account: Account): Promise<ProfileResponse> {
-    const [profile, memberRows] = await Promise.all([
+    const [profile, memberRows, mailEnabled] = await Promise.all([
       this.profiles.findOne({ where: { accountId: account.id } }),
       this.groupMembers.find({ where: { accountId: account.id } }),
+      this.mailSettings.isEnabled(),
     ]);
     const groupIds = memberRows.map((m) => m.groupId);
     const groupRows = groupIds.length ? await this.groups.findBy({ id: In(groupIds) }) : [];
@@ -340,6 +344,7 @@ export class JwtAuthService {
       latitude: profile?.latitude ?? null,
       longitude: profile?.longitude ?? null,
       isRoot: account.isRoot === 1,
+      mailEnabled,
       groups: groupRows.map((g) => ({ id: g.id, name: g.name })),
     };
   }

@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
+
 definePageMeta({});
 
 const { t } = useI18n();
 const toast = useToast();
+const auth = useAuthStore();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { load, save } = useNotificationPreferences();
 
 setBreadcrumb([{ label: t("layout.profile"), to: "/profile" }, { label: t("notifications.title") }]);
 
 const saving = ref<NotificationSource | null>(null);
+const mailEnabled = computed(() => auth.session?.mailEnabled ?? true);
 
 const { data: preferences, status } = await useAsyncData("notification-preferences", () => load());
 
@@ -46,6 +50,14 @@ async function update(source: NotificationSource, channel: "inApp" | "email", va
       :description="t('notifications.pageDescription')"
     />
 
+    <UAlert
+      v-if="!mailEnabled"
+      icon="i-lucide-mail-x"
+      color="warning"
+      variant="subtle"
+      :description="t('config.mailOffNotice')"
+    />
+
     <UCard>
       <div v-if="status === 'pending'" class="space-y-4">
         <USkeleton v-for="i in 2" :key="i" class="h-16 w-full" />
@@ -72,7 +84,7 @@ async function update(source: NotificationSource, channel: "inApp" | "email", va
               <UCheckbox
                 :model-value="entry.channels.email"
                 :label="t('notifications.channel.email')"
-                :disabled="saving === entry.source"
+                :disabled="saving === entry.source || !mailEnabled"
                 @update:model-value="update(entry.source, 'email', $event === true)"
               />
             </div>

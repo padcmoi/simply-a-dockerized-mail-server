@@ -14,4 +14,5 @@ export default {
   accounts: "Comptes",
   groups: "Groupes",
   apiTokens: "Tokens API",
+  config: "Configuration",
 } satisfies Locales["nav"];

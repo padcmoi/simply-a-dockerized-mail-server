@@ -11,6 +11,7 @@ import { VirtualDomain } from "../../entities/virtual-domain.entity";
 import { VirtualUser } from "../../entities/virtual-user.entity";
 import { CustomPermissionGuardModule } from "../../custom-permission-guard/custom-permission-guard.module";
 import { GeocodingModule } from "../../geocoding/geocoding.module";
+import { MailerModule } from "../../mailer/mailer.module";
 import { JwtAuthController } from "./jwt.controller";
 import { JwtAuthService } from "./jwt.service";
 import { JwtStrategy } from "./jwt.strategy";
@@ -22,6 +23,7 @@ import { JwtStrategy } from "./jwt.strategy";
     TypeOrmModule.forFeature([Account, AccountProfile, Group, GroupMember, RefreshToken, VirtualDomain, VirtualUser]),
     CustomPermissionGuardModule,
     GeocodingModule,
+    MailerModule,
   ],
   providers: [JwtAuthService, JwtStrategy],
   controllers: [JwtAuthController],
