@@ -32,7 +32,17 @@ const ownerConfirmOpen = ref(false);
 const useDomainGroup = ref(false);
 const domains = ref<DomainOption[]>([]);
 const sending = ref(false);
+const selectedRecipientIds = ref<number[]>([]);
+const selectedAliasIds = ref<number[]>([]);
+const assignableRecipients = ref<{ id: number; email: string }[]>([]);
+const assignableAliases = ref<{ id: number; source: string; destination: string }[]>([]);
 
+const canAssignRecipient = computed(() => isRoot.value || hasGlobal("accounts", "assign-recipient-owner"));
+const canAssignAlias = computed(() => isRoot.value || hasGlobal("accounts", "assign-alias-owner"));
+const recipientAssignOptions = computed(() => assignableRecipients.value.map((r) => ({ label: r.email, value: r.id })));
+const aliasAssignOptions = computed(() =>
+  assignableAliases.value.map((a) => ({ label: `${a.source} → ${a.destination}`, value: a.id }))
+);
 const domainOptions = computed(() => domains.value.map((d) => ({ label: d.domain, value: d.id })));
 const groupOptions = computed(() => groups.value.filter((g) => !g.isDefault).map((g) => ({ label: g.name, value: g.id })));
 const selectedDomain = computed(() => domains.value.find((d) => d.id === domainId.value) ?? null);
@@ -52,7 +62,38 @@ const canSubmit = computed(() => mailEnabled.value && /.+@.+\..+/.test(email.val
 watch(domainId, () => {
   makeOwner.value = false;
   useDomainGroup.value = false;
+  selectedRecipientIds.value = [];
+  selectedAliasIds.value = [];
+  void loadAssignable();
 });
+
+// Existing, unassigned recipients/aliases of the chosen domain the inviter may
+// attach. The account picker route is account-agnostic; the caller's own id
+// satisfies its :id segment, the global assign action gates it.
+async function loadAssignable() {
+  const account = auth.session?.accountId;
+  if (!account || domainId.value === undefined) {
+    assignableRecipients.value = [];
+    assignableAliases.value = [];
+    return;
+  }
+  const q = `domainId=${domainId.value}`;
+  try {
+    if (canAssignRecipient.value) {
+      const res = await call<{ items: { id: number; email: string }[] }>(`/accounts/${account}/recipients/assignable?${q}`);
+      assignableRecipients.value = res.items;
+    }
+    if (canAssignAlias.value) {
+      const res = await call<{ items: { id: number; source: string; destination: string }[] }>(
+        `/accounts/${account}/aliases/assignable?${q}`
+      );
+      assignableAliases.value = res.items;
+    }
+  } catch {
+    assignableRecipients.value = [];
+    assignableAliases.value = [];
+  }
+}
 
 // Turning the switch ON is the sensitive move: it only takes effect once the
 // invitee accepts, so we confirm the deferred transfer before staging it.
@@ -87,6 +128,8 @@ async function submit() {
         groupIds: selectedGroupIds.value,
         makeOwner: makeOwner.value,
         useDomainGroup: useDomainGroup.value,
+        recipientIds: canAssignRecipient.value ? selectedRecipientIds.value : [],
+        aliasIds: canAssignAlias.value ? selectedAliasIds.value : [],
       },
     });
     toast.add({ title: t("accounts.toast.invited"), color: "success" });
@@ -167,6 +210,41 @@ onMounted(() => {
               class="w-full"
             />
             <p class="text-xs text-muted mt-1.5">{{ t("accounts.invite.groupsHint") }}</p>
+          </UFormField>
+        </div>
+      </UCard>
+
+      <UCard v-if="domainId !== undefined && (canAssignRecipient || canAssignAlias)">
+        <template #header>
+          <h2 class="font-semibold flex items-center gap-1.5">
+            <UIcon name="i-lucide-user-plus" class="size-4 text-muted" />
+            {{ t("accounts.invite.assignSectionTitle") }}
+          </h2>
+        </template>
+
+        <div class="space-y-4">
+          <p class="text-sm text-muted">{{ t("accounts.invite.assignHint") }}</p>
+          <UFormField v-if="canAssignRecipient" :label="t('accounts.invite.assignRecipients')">
+            <USelectMenu
+              v-model="selectedRecipientIds"
+              multiple
+              value-key="value"
+              icon="i-lucide-users"
+              :items="recipientAssignOptions"
+              :placeholder="t('accounts.invite.assignRecipientsPlaceholder')"
+              class="w-full"
+            />
+          </UFormField>
+          <UFormField v-if="canAssignAlias" :label="t('accounts.invite.assignAliases')">
+            <USelectMenu
+              v-model="selectedAliasIds"
+              multiple
+              value-key="value"
+              icon="i-lucide-at-sign"
+              :items="aliasAssignOptions"
+              :placeholder="t('accounts.invite.assignAliasesPlaceholder')"
+              class="w-full"
+            />
           </UFormField>
         </div>
       </UCard>

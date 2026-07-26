@@ -12,6 +12,12 @@ interface OwnedRecipient {
   active: boolean;
   quota: string;
 }
+interface OwnedAlias {
+  id: number;
+  source: string;
+  destination: string;
+  domain: string;
+}
 interface AccountOverview {
   account: {
     id: string;
@@ -24,6 +30,7 @@ interface AccountOverview {
   };
   domains: OwnedDomain[];
   recipients: OwnedRecipient[];
+  aliases: OwnedAlias[];
 }
 
 definePageMeta({
@@ -47,12 +54,15 @@ const accountId = computed(() => String(route.params.id));
 const account = computed(() => overview.value?.account ?? null);
 const domains = computed(() => overview.value?.domains ?? []);
 const recipients = computed(() => overview.value?.recipients ?? []);
+const aliases = computed(() => overview.value?.aliases ?? []);
 const activeDomains = computed(() => domains.value.filter((d) => d.active).length);
 const activeRecipients = computed(() => recipients.value.filter((r) => r.active).length);
 const avatarAlt = computed(() => account.value?.displayName || account.value?.email || "?");
 
 const canEdit = computed(() => isRoot.value || hasGlobal("accounts", "edit-account"));
 const canManageGroups = computed(() => isRoot.value || hasGlobal("accounts", "view-account"));
+const canManageRecipients = computed(() => isRoot.value || hasGlobal("accounts", "assign-recipient-owner"));
+const canManageAliases = computed(() => isRoot.value || hasGlobal("accounts", "assign-alias-owner"));
 
 watchEffect(() => {
   setBreadcrumb([{ label: t("nav.accounts"), to: "/accounts" }, { label: account.value?.email ?? "..." }]);
@@ -109,7 +119,7 @@ onMounted(load);
         </div>
       </UCard>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
         <DomainStatCard
           :label="t('nav.domains')"
           :value="domains.length"
@@ -123,6 +133,13 @@ onMounted(load);
           :sub="t('accounts.overviewPage.activeCount', { count: activeRecipients })"
           icon="i-lucide-users"
           icon-color="text-info"
+        />
+        <DomainStatCard
+          :label="t('nav.aliases')"
+          :value="aliases.length"
+          :sub="t('accounts.overviewPage.stats.aliasesSub')"
+          icon="i-lucide-share-2"
+          icon-color="text-warning"
         />
         <DomainStatCard
           :label="t('nav.groups')"
@@ -156,9 +173,31 @@ onMounted(load);
             <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
           </div>
         </UCard>
+        <UCard
+          v-if="canManageRecipients"
+          :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+          @click="navigateTo(`/accounts/${accountId}/recipients`)"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-mailbox" class="text-info text-xl" />
+            <span class="font-medium">{{ t("accounts.overviewPage.actions.recipients") }}</span>
+            <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+          </div>
+        </UCard>
+        <UCard
+          v-if="canManageAliases"
+          :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+          @click="navigateTo(`/accounts/${accountId}/aliases`)"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-share-2" class="text-warning text-xl" />
+            <span class="font-medium">{{ t("accounts.overviewPage.actions.aliases") }}</span>
+            <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+          </div>
+        </UCard>
       </div>
 
-      <AccountsOwnedResourcesCards :domains="domains" :recipients="recipients" />
+      <OwnedResourcesCards :domains="domains" :recipients="recipients" />
     </template>
   </div>
 </template>

@@ -12,6 +12,7 @@ interface Recipient {
   quota: string;
   usedBytes: string;
   active: number;
+  ownerEmail: string | null;
 }
 
 const MB = 1024 * 1024;
@@ -30,10 +31,22 @@ const { apiErrorMessage } = useApiError();
 const toast = useToast();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { isRoot, hasDomain } = usePermissions();
 const { availableMb, loadHeadroom } = useRecipientHeadroom(domainId);
 
 const recipientId = computed(() => Number(route.params.id));
 const listPath = computed(() => `/domains/${domainFqdn.value}/recipients`);
+const isPostmaster = computed(() => !!recipient.value?.email.toLowerCase().startsWith("postmaster@"));
+const canAssignOwner = computed(
+  () =>
+    !isPostmaster.value && !!domainId.value && (isRoot.value || hasDomain(domainId.value, "mailboxes", "assign-recipient-owner"))
+);
+const canUnassignOwner = computed(
+  () =>
+    !isPostmaster.value &&
+    !!domainId.value &&
+    (isRoot.value || hasDomain(domainId.value, "mailboxes", "unassign-recipient-owner"))
+);
 
 // Shrinking below what the mailbox already stores would put it instantly over
 // quota and dovecot would bounce its mail, so its usage is the real floor.
@@ -169,6 +182,21 @@ async function save() {
           </div>
         </UFormField>
       </UForm>
+
+      <div
+        v-if="recipient && domainId && !isPostmaster && (recipient.ownerEmail || canAssignOwner || canUnassignOwner)"
+        class="pt-4 mt-4 border-t border-default"
+      >
+        <MailboxOwnerField
+          kind="recipients"
+          :domain-id="domainId"
+          :resource-id="recipient.id"
+          :owner-email="recipient.ownerEmail"
+          :can-assign="canAssignOwner"
+          :can-unassign="canUnassignOwner"
+          @changed="load"
+        />
+      </div>
 
       <template #footer>
         <div class="flex justify-end gap-2">

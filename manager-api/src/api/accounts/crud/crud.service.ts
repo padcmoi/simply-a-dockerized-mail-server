@@ -1,11 +1,13 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Not, Repository } from "typeorm";
+import { ApiError } from "../../../core/common/api-error";
 import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { Account } from "../../../core/entities/account.entity";
 import { AccountProfile } from "../../../core/entities/account-profile.entity";
 import { GroupMember } from "../../../core/entities/group-member.entity";
 import { Group } from "../../../core/entities/group.entity";
+import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { GeocodingService } from "../../../core/geocoding/geocoding.service";
@@ -37,7 +39,8 @@ export class AccountsService {
     @InjectRepository(GroupMember) private readonly groupMembers: Repository<GroupMember>,
     private readonly geocoding: GeocodingService,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
-    @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>
+    @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>,
+    @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>
   ) {}
 
   // `notInGroup` (a group id) filters out accounts that are already members of
@@ -219,14 +222,16 @@ export class AccountsService {
   // 404 and the account shape (groups included) stay identical to GET /:id.
   async getOverview(id: string) {
     const account = await this.getById(id);
-    const [domains, recipients] = await Promise.all([
+    const [domains, recipients, aliases] = await Promise.all([
       this.domains.find({ where: { ownerId: id }, order: { domain: "ASC" } }),
       this.virtualUsers.find({ where: { ownerId: id }, order: { email: "ASC" } }),
+      this.aliases.find({ where: { ownerId: id }, order: { source: "ASC" } }),
     ]);
     return {
       account,
       domains: domains.map((d) => ({ id: d.id, domain: d.domain, active: d.active === 1, quota: d.quota })),
       recipients: recipients.map((r) => ({ id: r.id, email: r.email, domain: r.domain, active: r.active === 1, quota: r.quota })),
+      aliases: aliases.map((a) => ({ id: a.id, source: a.source, destination: a.destination, domain: a.domain })),
     };
   }
 
@@ -242,5 +247,153 @@ export class AccountsService {
     if (account.isRoot === 1) throw new BadRequestException("Cannot delete a root account");
     await this.accounts.delete({ id });
     return { ok: true };
+  }
+
+  private async assertAccount(accountId: string) {
+    if (!(await this.accounts.findOne({ where: { id: accountId } }))) {
+      throw new NotFoundException(`Account #${accountId} not found`);
+    }
+  }
+
+  private async domainIdByName(names: string[]): Promise<Map<string, number>> {
+    const unique = [...new Set(names)];
+    if (!unique.length) return new Map();
+    const rows = await this.domains.find({ where: { domain: In(unique) }, select: { id: true, domain: true } });
+    return new Map(rows.map((d) => [d.domain, d.id]));
+  }
+
+  // The recipients this account owns.
+  async ownedRecipients(accountId: string) {
+    await this.assertAccount(accountId);
+    const rows = await this.virtualUsers.find({ where: { ownerId: accountId }, order: { email: "ASC" } });
+    const idByName = await this.domainIdByName(rows.map((r) => r.domain));
+    return rows.map((r) => ({ id: r.id, email: r.email, domain: r.domain, domainId: idByName.get(r.domain) ?? null }));
+  }
+
+  async ownedAliases(accountId: string) {
+    await this.assertAccount(accountId);
+    const rows = await this.aliases.find({ where: { ownerId: accountId }, order: { source: "ASC" } });
+    const idByName = await this.domainIdByName(rows.map((r) => r.domain));
+    return rows.map((r) => ({
+      id: r.id,
+      source: r.source,
+      destination: r.destination,
+      domain: r.domain,
+      domainId: idByName.get(r.domain) ?? null,
+    }));
+  }
+
+  // Distinct domains that still have an unassigned resource of this kind (so the
+  // account page can offer a domain filter for the picker). postmaster@ is never
+  // ownable, so a domain whose only free mailbox is its postmaster is excluded.
+  private async unassignedDomains(kind: "recipients" | "aliases"): Promise<{ id: number; domain: string }[]> {
+    const repo = kind === "recipients" ? this.virtualUsers : this.aliases;
+    const addr = kind === "recipients" ? "x.email" : "x.source";
+    const rows = await repo
+      .createQueryBuilder("x")
+      .select("DISTINCT x.domain", "domain")
+      .where("x.owner_id IS NULL")
+      .andWhere(`LOWER(${addr}) NOT LIKE 'postmaster@%'`)
+      .getRawMany<{ domain: string }>();
+    const names = rows.map((r) => r.domain);
+    if (!names.length) return [];
+    return this.domains.find({ where: { domain: In(names) }, select: { id: true, domain: true }, order: { domain: "ASC" } });
+  }
+
+  // Unassigned recipients for the account picker: the domains that still have any
+  // (for the selector) plus a capped, optionally domain- and search-filtered page.
+  async assignableRecipients(domainId?: number, search?: string) {
+    const domains = await this.unassignedDomains("recipients");
+    const qb = this.virtualUsers
+      .createQueryBuilder("r")
+      .where("r.owner_id IS NULL")
+      .andWhere("LOWER(r.email) NOT LIKE 'postmaster@%'");
+    if (domainId !== undefined) {
+      const picked = domains.find((d) => d.id === domainId);
+      if (!picked) return { domains, items: [] };
+      qb.andWhere("r.domain = :dn", { dn: picked.domain });
+    }
+    if (search) qb.andWhere("r.email LIKE :s", { s: `%${search}%` });
+    const rows = await qb.orderBy("r.email", "ASC").take(25).getMany();
+    const idByName = new Map(domains.map((d) => [d.domain, d.id]));
+    const items = rows.map((r) => ({ id: r.id, email: r.email, domain: r.domain, domainId: idByName.get(r.domain) ?? null }));
+    return { domains, items };
+  }
+
+  async assignableAliases(domainId?: number, search?: string) {
+    const domains = await this.unassignedDomains("aliases");
+    const qb = this.aliases
+      .createQueryBuilder("a")
+      .where("a.owner_id IS NULL")
+      .andWhere("LOWER(a.source) NOT LIKE 'postmaster@%'");
+    if (domainId !== undefined) {
+      const picked = domains.find((d) => d.id === domainId);
+      if (!picked) return { domains, items: [] };
+      qb.andWhere("a.domain = :dn", { dn: picked.domain });
+    }
+    if (search) qb.andWhere("(a.source LIKE :s OR a.destination LIKE :s)", { s: `%${search}%` });
+    const rows = await qb.orderBy("a.source", "ASC").take(25).getMany();
+    const idByName = new Map(domains.map((d) => [d.domain, d.id]));
+    const items = rows.map((r) => ({
+      id: r.id,
+      source: r.source,
+      destination: r.destination,
+      domain: r.domain,
+      domainId: idByName.get(r.domain) ?? null,
+    }));
+    return { domains, items };
+  }
+
+  // Attach an unassigned recipient/alias to this account, or detach one it owns.
+  // The account side manages ownership globally; `owner_id` is the single source.
+  async attachRecipient(accountId: string, recipientId: number) {
+    await this.assertAccount(accountId);
+    const recipient = await this.virtualUsers.findOne({ where: { id: recipientId } });
+    if (!recipient) throw new NotFoundException(`Recipient #${recipientId} not found`);
+    if (recipient.email.toLowerCase().startsWith("postmaster@")) {
+      throw new ApiError(
+        HttpStatus.FORBIDDEN,
+        "recipients.postmasterUnassignable",
+        "postmaster@ cannot be assigned to an account",
+        { id: recipientId }
+      );
+    }
+    if (recipient.ownerId)
+      throw new ApiError(HttpStatus.CONFLICT, "recipients.alreadyAssigned", `Recipient #${recipientId} is already assigned`, {
+        id: recipientId,
+      });
+    recipient.ownerId = accountId;
+    return this.virtualUsers.save(recipient);
+  }
+
+  async detachRecipient(accountId: string, recipientId: number) {
+    const recipient = await this.virtualUsers.findOne({ where: { id: recipientId, ownerId: accountId } });
+    if (!recipient) throw new NotFoundException(`Recipient #${recipientId} not owned by account #${accountId}`);
+    recipient.ownerId = null;
+    return this.virtualUsers.save(recipient);
+  }
+
+  async attachAlias(accountId: string, aliasId: number) {
+    await this.assertAccount(accountId);
+    const alias = await this.aliases.findOne({ where: { id: aliasId } });
+    if (!alias) throw new NotFoundException(`Alias #${aliasId} not found`);
+    if (alias.source.toLowerCase().startsWith("postmaster@")) {
+      throw new ApiError(HttpStatus.FORBIDDEN, "aliases.postmasterUnassignable", "postmaster@ cannot be assigned to an account", {
+        id: aliasId,
+      });
+    }
+    if (alias.ownerId)
+      throw new ApiError(HttpStatus.CONFLICT, "aliases.alreadyAssigned", `Alias #${aliasId} is already assigned`, {
+        id: aliasId,
+      });
+    alias.ownerId = accountId;
+    return this.aliases.save(alias);
+  }
+
+  async detachAlias(accountId: string, aliasId: number) {
+    const alias = await this.aliases.findOne({ where: { id: aliasId, ownerId: accountId } });
+    if (!alias) throw new NotFoundException(`Alias #${aliasId} not owned by account #${accountId}`);
+    alias.ownerId = null;
+    return this.aliases.save(alias);
   }
 }

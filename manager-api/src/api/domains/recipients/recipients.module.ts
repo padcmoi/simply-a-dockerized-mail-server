@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { Account } from "../../../core/entities/account.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualQuotaUser } from "../../../core/entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
@@ -10,7 +11,7 @@ import { RecipientsService } from "./recipients.service";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([VirtualUser, VirtualDomain, VirtualQuotaUser]),
+    TypeOrmModule.forFeature([VirtualUser, VirtualDomain, VirtualQuotaUser, Account]),
     CustomPermissionGuardModule,
     MailStorageModule,
   ],

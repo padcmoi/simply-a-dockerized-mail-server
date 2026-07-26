@@ -45,6 +45,11 @@ unreachable link behind the reverse proxy.
 - **Domain**, which decides the sending address.
 - **Groups**, optional and multi-select. The default group is not listed: it is
   assigned automatically.
+- **Assign recipients and aliases** -- multi-select of existing, unassigned
+  recipients and/or aliases of the chosen domain to hand to the invitee (0..N of
+  each). It only shows for a caller holding the global assign action, and on
+  acceptance the still-unassigned ones get the new account as owner. Ownership
+  only: no password is generated or changed, and nothing is shown to the invitee.
 - **Domain ownership** -- a switch making the invitee the owner of the chosen
   domain. It shows the current owner and warns that a domain has one owner, so
   any existing one is replaced. It applies only when the invitation is accepted,
@@ -71,11 +76,26 @@ than offering a broken form.
 stack:
 
 - identity card (avatar, display name, email, root badge),
-- stat tiles including group memberships,
+- stat tiles: owned domains, owned recipients, **owned aliases** and group
+  memberships,
 - **owned domains** and **owned recipients**, each with active counts and
   quotas, or an explicit "this account owns no domain" when there are none,
-- buttons through to Edit and Manage groups, shown only with the matching
+- buttons through to Edit, Manage groups, and (with the matching assign action)
+  **Recipients** and **Aliases** ownership management, each shown only with its
   action.
+
+### Recipients / aliases ownership
+
+[`/accounts/:id/recipients`](../../manager-ui/app/pages/accounts/[id]/recipients.vue)
+and [`/accounts/:id/aliases`](../../manager-ui/app/pages/accounts/[id]/aliases.vue)
+manage which recipients and aliases the account owns, globally (across every
+domain). A recipient and an alias belong to at most one account; `postmaster@`
+is never assignable and never listed. Each page offers a domain filter and a
+picker of unassigned resources to **attach** (`assign-*-owner`), and lists the
+owned ones with a **detach** action (`unassign-*-owner`). Attaching one already
+owned returns 409. The routes live on the accounts controller
+(`GET/POST/DELETE /accounts/:id/{recipients,aliases}[/assignable][/:itemId]`) and
+are gated by the global `accounts` assign/unassign actions.
 
 ### Edit
 

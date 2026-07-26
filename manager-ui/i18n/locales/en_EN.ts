@@ -20,6 +20,7 @@ import profile from "./en_EN/profile";
 import preferences from "./en_EN/preferences";
 import accounts from "./en_EN/accounts";
 import invite from "./en_EN/invite";
+import mailboxOwner from "./en_EN/mailboxOwner";
 import domainDashboard from "./en_EN/domainDashboard";
 import postfixPage from "./en_EN/postfixPage";
 import rspamdPage from "./en_EN/rspamdPage";
@@ -52,6 +53,7 @@ export default {
   preferences,
   accounts,
   invite,
+  mailboxOwner,
   domainDashboard,
   postfixPage,
   rspamdPage,

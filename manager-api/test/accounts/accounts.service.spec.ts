@@ -6,6 +6,7 @@ import { AccountProfile } from "../../src/core/entities/account-profile.entity";
 import { Group } from "../../src/core/entities/group.entity";
 import { GroupMember } from "../../src/core/entities/group-member.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
+import { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import type { GeocodingService } from "../../src/core/geocoding/geocoding.service";
 import { providerMock, qbMock, repoMock } from "../helpers/mocks";
@@ -26,6 +27,7 @@ function makeMocks() {
     }),
     domains: repoMock<VirtualDomain>(),
     virtualUsers: repoMock<VirtualUser>(),
+    aliases: repoMock<VirtualAlias>(),
   };
 }
 
@@ -35,7 +37,7 @@ describe("AccountsService", () => {
 
   beforeEach(() => {
     m = makeMocks();
-    svc = new AccountsService(m.accounts, m.profiles, m.groups, m.groupMembers, m.geocoding, m.domains, m.virtualUsers);
+    svc = new AccountsService(m.accounts, m.profiles, m.groups, m.groupMembers, m.geocoding, m.domains, m.virtualUsers, m.aliases);
   });
 
   describe("listNames", () => {
@@ -366,21 +368,24 @@ describe("AccountsService", () => {
       await expect(svc.getOverview("x")).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it("returns the account with the domains and recipients it owns", async () => {
+    it("returns the account with the domains, recipients and aliases it owns", async () => {
       const account = { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null };
       m.accounts.findOne.mockResolvedValue(account);
       m.profiles.findOne.mockResolvedValue(null);
       m.groupMembers.find.mockResolvedValue([]);
       m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com", active: 1, quota: "0" }]);
       m.virtualUsers.find.mockResolvedValue([{ id: 9, email: "j@ex.com", domain: "ex.com", active: 0, quota: "100" }]);
+      m.aliases.find.mockResolvedValue([{ id: 4, source: "a@ex.com", destination: "j@ex.com", domain: "ex.com" }]);
 
       const res = await svc.getOverview("a1");
 
       expect(m.domains.find).toHaveBeenCalledWith({ where: { ownerId: "a1" }, order: { domain: "ASC" } });
       expect(m.virtualUsers.find).toHaveBeenCalledWith({ where: { ownerId: "a1" }, order: { email: "ASC" } });
+      expect(m.aliases.find).toHaveBeenCalledWith({ where: { ownerId: "a1" }, order: { source: "ASC" } });
       expect(res.account.id).toBe("a1");
       expect(res.domains).toEqual([{ id: 5, domain: "ex.com", active: true, quota: "0" }]);
       expect(res.recipients).toEqual([{ id: 9, email: "j@ex.com", domain: "ex.com", active: false, quota: "100" }]);
+      expect(res.aliases).toEqual([{ id: 4, source: "a@ex.com", destination: "j@ex.com", domain: "ex.com" }]);
     });
   });
 

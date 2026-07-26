@@ -6,6 +6,7 @@ import { ApiError } from "../../src/core/common/api-error";
 import type { CreateRecipientDto } from "../../src/api/domains/recipients/recipients.validation";
 import type { PaginationQuery } from "../../src/core/common/pagination.validation";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
+import { Account } from "../../src/core/entities/account.entity";
 import { VirtualQuotaUser } from "../../src/core/entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import type { MailStorageService } from "../../src/core/mail-storage/mail-storage.service";
@@ -51,6 +52,7 @@ describe("RecipientsService", () => {
   let recipients: ReturnType<typeof makeRecipientsRepo>;
   let domains: Loose<Repository<VirtualDomain>>;
   let recipientQuotas: Loose<Repository<VirtualQuotaUser>>;
+  let accounts: Loose<Repository<Account>>;
   let storage: Loose<MailStorageService>;
   let qb: ReturnType<typeof makeQb>;
   let svc: RecipientsService;
@@ -68,8 +70,9 @@ describe("RecipientsService", () => {
     recipients = makeRecipientsRepo();
     domains = repoMock<VirtualDomain>();
     recipientQuotas = repoMock<VirtualQuotaUser>();
+    accounts = repoMock<Account>();
     storage = providerMock<MailStorageService>({ removeRecipient: vi.fn() });
-    svc = new RecipientsService(recipients, domains, recipientQuotas, storage);
+    svc = new RecipientsService(recipients, domains, recipientQuotas, accounts, storage);
   });
 
   describe("resolveDomain", () => {
@@ -367,6 +370,46 @@ describe("RecipientsService", () => {
       const diskRemove = storage.removeRecipient.mock.invocationCallOrder[0];
       expect(quotaDelete).toBeLessThan(rowRemove);
       expect(rowRemove).toBeLessThan(diskRemove);
+    });
+  });
+
+  describe("assignOwner / clearOwner", () => {
+    it("assigns an unassigned recipient after checking the account exists", async () => {
+      recipients.findOne.mockResolvedValue({ id: 9, domain: FQDN, ownerId: null, email: `j@${FQDN}` });
+      accounts.findOne.mockResolvedValue({ id: "acc-1" });
+      const saved = await svc.assignOwner(9, FQDN, "acc-1");
+      expect(accounts.findOne).toHaveBeenCalledWith({ where: { id: "acc-1" } });
+      expect(saved.ownerId).toBe("acc-1");
+    });
+
+    it("409s (alreadyAssigned) when the recipient already has an owner", async () => {
+      recipients.findOne.mockResolvedValue({ id: 9, domain: FQDN, ownerId: "other", email: `j@${FQDN}` });
+      const e = await rejection(svc.assignOwner(9, FQDN, "acc-1"));
+      expect((e as ApiError).getStatus()).toBe(409);
+      expect(recipients.save).not.toHaveBeenCalled();
+    });
+
+    it("403s (postmasterUnassignable) and never touches accounts for the postmaster mailbox", async () => {
+      recipients.findOne.mockResolvedValue({ id: 9, domain: FQDN, ownerId: null, email: `postmaster@${FQDN}` });
+      const e = await rejection(svc.assignOwner(9, FQDN, "acc-1"));
+      expect((e as ApiError).getStatus()).toBe(403);
+      expect((e as ApiError).getResponse()).toMatchObject({ code: "recipients.postmasterUnassignable" });
+      expect(accounts.findOne).not.toHaveBeenCalled();
+      expect(recipients.save).not.toHaveBeenCalled();
+    });
+
+    it("404s when the target account does not exist", async () => {
+      recipients.findOne.mockResolvedValue({ id: 9, domain: FQDN, ownerId: null, email: `j@${FQDN}` });
+      accounts.findOne.mockResolvedValue(null);
+      await expect(svc.assignOwner(9, FQDN, "ghost")).rejects.toBeInstanceOf(NotFoundException);
+      expect(recipients.save).not.toHaveBeenCalled();
+    });
+
+    it("clearOwner releases the owner without touching accounts", async () => {
+      recipients.findOne.mockResolvedValue({ id: 9, domain: FQDN, ownerId: "acc-1", email: `j@${FQDN}` });
+      const saved = await svc.clearOwner(9, FQDN);
+      expect(accounts.findOne).not.toHaveBeenCalled();
+      expect(saved.ownerId).toBeNull();
     });
   });
 });

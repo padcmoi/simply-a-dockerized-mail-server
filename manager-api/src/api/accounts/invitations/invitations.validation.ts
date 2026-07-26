@@ -14,6 +14,11 @@ export const sendInvitationSchema = z.object({
     .transform((v) => v.toLowerCase()),
   domainId: z.coerce.number().int().positive(),
   groupIds: z.array(z.string().uuid()).default([]),
+  // Existing, unassigned recipients/aliases of the chosen domain to hand to the
+  // invitee on acceptance (0..N of each). Pure ownership assignment: no password
+  // is generated or changed.
+  recipientIds: z.array(z.coerce.number().int().positive()).default([]),
+  aliasIds: z.array(z.coerce.number().int().positive()).default([]),
   // When true, accepting the invitation makes the new account the owner of the
   // chosen domain (virtual_domains.owner_id). A domain has a single owner.
   makeOwner: z.boolean().default(false),

@@ -122,6 +122,16 @@ async function onDeleteConfirmed() {
     <template v-else>
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
+          <template #source-cell="{ row }">
+            <NuxtLink
+              v-if="canEditAliases"
+              :to="`/domains/${domainFqdn}/aliases/edit/${row.original.id}`"
+              class="font-medium text-primary hover:underline"
+            >
+              {{ row.original.source }}
+            </NuxtLink>
+            <span v-else class="font-medium">{{ row.original.source }}</span>
+          </template>
           <template #lastActivity-cell="{ row }">
             <span class="text-muted">{{ formatDateTime(row.original.lastActivity) }}</span>
           </template>

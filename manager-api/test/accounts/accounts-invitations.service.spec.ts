@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from "@nestjs/common";
+import { In, IsNull } from "typeorm";
 import * as bcrypt from "bcrypt";
 import { AccountsInvitationsService } from "../../src/api/accounts/invitations/invitations.service";
 import { AccountInvitation } from "../../src/core/entities/account-invitation.entity";
 import { Account } from "../../src/core/entities/account.entity";
 import { AccountProfile } from "../../src/core/entities/account-profile.entity";
 import { Group } from "../../src/core/entities/group.entity";
+import { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
+import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import type { AntiEscalationService } from "../../src/core/acl/anti-escalation.service";
 import type { MailerService } from "../../src/core/mailer/mailer.service";
 import type { AppSettingsService } from "../../src/core/settings/app-settings.service";
@@ -28,6 +31,8 @@ function makeMocks() {
     profiles: repoMock<AccountProfile>(),
     groups: repoMock<Group>(),
     domains: repoMock<VirtualDomain>(),
+    recipients: repoMock<VirtualUser>(),
+    aliases: repoMock<VirtualAlias>(),
     mailer: providerMock<MailerService>({ sendInvitation: vi.fn(async () => undefined) }),
     cpg: cpgMock(),
     antiEscalation: providerMock<AntiEscalationService>({ assertActingUserHolds: vi.fn(async () => undefined) }),
@@ -49,6 +54,8 @@ describe("AccountsInvitationsService", () => {
       m.profiles,
       m.groups,
       m.domains,
+      m.recipients,
+      m.aliases,
       m.mailer,
       m.cpg,
       m.antiEscalation,
@@ -371,6 +378,46 @@ describe("AccountsInvitationsService", () => {
       await svc.acceptInvitation("t", { password: "longenough" });
 
       expect(m.domains.update).not.toHaveBeenCalled();
+    });
+
+    it("assigns the staged recipients/aliases (still-unassigned only) without touching passwords", async () => {
+      const inv = {
+        email: "x@y.com",
+        groupId: null,
+        groupIds: null,
+        recipientIds: JSON.stringify([3, 4]),
+        aliasIds: JSON.stringify([7]),
+        ownerDomainId: null,
+        acceptedAt: null,
+        expiresAt: new Date(Date.now() + 1000),
+      };
+      m.invitations.findOne.mockResolvedValue(inv);
+      m.accounts.findOne.mockResolvedValue(null);
+
+      await svc.acceptInvitation("t", { password: "longenough" });
+
+      expect(m.recipients.update).toHaveBeenCalledWith({ id: In([3, 4]), ownerId: IsNull() }, { ownerId: "generated-id" });
+      expect(m.aliases.update).toHaveBeenCalledWith({ id: In([7]), ownerId: IsNull() }, { ownerId: "generated-id" });
+    });
+
+    it("does not touch recipients/aliases when none were staged", async () => {
+      const inv = {
+        email: "x@y.com",
+        groupId: null,
+        groupIds: null,
+        recipientIds: null,
+        aliasIds: null,
+        ownerDomainId: null,
+        acceptedAt: null,
+        expiresAt: new Date(Date.now() + 1000),
+      };
+      m.invitations.findOne.mockResolvedValue(inv);
+      m.accounts.findOne.mockResolvedValue(null);
+
+      await svc.acceptInvitation("t", { password: "longenough" });
+
+      expect(m.recipients.update).not.toHaveBeenCalled();
+      expect(m.aliases.update).not.toHaveBeenCalled();
     });
   });
 });

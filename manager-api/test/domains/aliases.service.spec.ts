@@ -4,6 +4,7 @@ import { Like } from "typeorm";
 import { AliasesService } from "../../src/api/domains/aliases/aliases.service";
 import { ApiError } from "../../src/core/common/api-error";
 import type { PaginationQuery } from "../../src/core/common/pagination.validation";
+import { Account } from "../../src/core/entities/account.entity";
 import { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import { repoMock } from "../helpers/mocks";
@@ -20,18 +21,23 @@ function makeAliasRepo() {
 function makeDomainRepo() {
   return repoMock<VirtualDomain>();
 }
+function makeAccountRepo() {
+  return repoMock<Account>();
+}
 
 const q = (over: Partial<PaginationQuery> = {}): PaginationQuery => ({ offset: 0, sortDir: "desc", ...over });
 
 describe("AliasesService", () => {
   let aliases: ReturnType<typeof makeAliasRepo>;
   let domains: ReturnType<typeof makeDomainRepo>;
+  let accounts: ReturnType<typeof makeAccountRepo>;
   let svc: AliasesService;
 
   beforeEach(() => {
     aliases = makeAliasRepo();
     domains = makeDomainRepo();
-    svc = new AliasesService(aliases, domains);
+    accounts = makeAccountRepo();
+    svc = new AliasesService(aliases, domains, accounts);
   });
 
   describe("resolveDomain", () => {
@@ -187,6 +193,51 @@ describe("AliasesService", () => {
       aliases.findOne.mockResolvedValue(null);
       await expect(svc.remove(5, "example.test")).rejects.toBeInstanceOf(ApiError);
       expect(aliases.remove).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("assignOwner / clearOwner", () => {
+    it("assigns an unassigned alias after checking the account exists", async () => {
+      aliases.findOne.mockResolvedValue({ id: 7, domain: "example.test", ownerId: null, source: "a@example.test" });
+      accounts.findOne.mockResolvedValue({ id: "acc-1" });
+      const saved = await svc.assignOwner(7, "example.test", "acc-1");
+      expect(accounts.findOne).toHaveBeenCalledWith({ where: { id: "acc-1" } });
+      expect(saved.ownerId).toBe("acc-1");
+    });
+
+    it("409s (alreadyAssigned) when the alias already has an owner", async () => {
+      aliases.findOne.mockResolvedValue({ id: 7, domain: "example.test", ownerId: "other", source: "a@example.test" });
+      await expect(svc.assignOwner(7, "example.test", "acc-1")).rejects.toBeInstanceOf(ApiError);
+      expect(aliases.save).not.toHaveBeenCalled();
+    });
+
+    it("403s (postmasterUnassignable) and never touches accounts for the postmaster alias", async () => {
+      aliases.findOne.mockResolvedValue({ id: 7, domain: "example.test", ownerId: null, source: "postmaster@example.test" });
+      const e = await svc.assignOwner(7, "example.test", "acc-1").catch((x: unknown) => x);
+      expect((e as ApiError).getStatus()).toBe(403);
+      expect((e as ApiError).getResponse()).toMatchObject({ code: "aliases.postmasterUnassignable" });
+      expect(accounts.findOne).not.toHaveBeenCalled();
+      expect(aliases.save).not.toHaveBeenCalled();
+    });
+
+    it("404s when the target account does not exist", async () => {
+      aliases.findOne.mockResolvedValue({ id: 7, domain: "example.test", ownerId: null, source: "a@example.test" });
+      accounts.findOne.mockResolvedValue(null);
+      await expect(svc.assignOwner(7, "example.test", "ghost")).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("clearOwner releases the owner without touching accounts", async () => {
+      aliases.findOne.mockResolvedValue({ id: 7, domain: "example.test", ownerId: "acc-1", source: "a@example.test" });
+      const saved = await svc.clearOwner(7, "example.test");
+      expect(accounts.findOne).not.toHaveBeenCalled();
+      expect(saved.ownerId).toBeNull();
+    });
+
+    it("getWithOwner returns the owning account email", async () => {
+      aliases.findOne.mockResolvedValue({ id: 7, domain: "example.test", ownerId: "acc-1", source: "a@example.test" });
+      accounts.findOne.mockResolvedValue({ email: "owner@example.test" });
+      const res = await svc.getWithOwner(7, "example.test");
+      expect(res.ownerEmail).toBe("owner@example.test");
     });
   });
 });

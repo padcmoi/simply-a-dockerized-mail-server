@@ -141,7 +141,7 @@ useAsyncData(
       />
     </div>
 
-    <AccountsOwnedResourcesCards :domains="ownedDomains" :recipients="ownedRecipients" />
+    <OwnedResourcesCards :domains="ownedDomains" :recipients="ownedRecipients" />
 
     <UCard>
       <template #header>

@@ -686,6 +686,12 @@ export interface Locales {
       groupsLabel: string;
       groupsHint: string;
       groupsPlaceholder: string;
+      assignSectionTitle: string;
+      assignHint: string;
+      assignRecipients: string;
+      assignRecipientsPlaceholder: string;
+      assignAliases: string;
+      assignAliasesPlaceholder: string;
       ownerSectionTitle: string;
       currentOwnerLabel: string;
       noOwner: string;
@@ -722,9 +728,33 @@ export interface Locales {
       ownedRecipients: string;
       noDomains: string;
       noRecipients: string;
-      stats: { groupsSub: string };
-      actions: { edit: string; groups: string };
+      stats: { groupsSub: string; aliasesSub: string };
+      actions: { edit: string; groups: string; recipients: string; aliases: string };
       toast: { loadFailed: string };
+    };
+    ownership: {
+      backToAccount: string;
+      recipientsTitle: string;
+      aliasesTitle: string;
+      recipientsAlertTitle: string;
+      recipientsAlertDescription: string;
+      aliasesAlertTitle: string;
+      aliasesAlertDescription: string;
+      ownedRecipients: string;
+      ownedAliases: string;
+      assignRecipient: string;
+      assignAlias: string;
+      searchRecipient: string;
+      searchAlias: string;
+      noOwnedRecipients: string;
+      noOwnedAliases: string;
+      attach: string;
+      detach: string;
+      assigned: string;
+      unassigned: string;
+      failed: string;
+      allDomains: string;
+      filterDomain: string;
     };
     groupsPage: {
       alertTitle: string;
@@ -786,6 +816,17 @@ export interface Locales {
     toast: {
       failed: string;
     };
+  };
+  mailboxOwner: {
+    label: string;
+    hint: string;
+    unassigned: string;
+    pickAccount: string;
+    attach: string;
+    detach: string;
+    assigned: string;
+    detached: string;
+    failed: string;
   };
   domainDashboard: {
     disk: {
@@ -1083,6 +1124,7 @@ export interface Locales {
           domain: string;
           recipients: string;
           aliases: string;
+          mailboxes: string;
           quotas: string;
           rspamd: string;
           admin: string;
@@ -1122,6 +1164,10 @@ export interface Locales {
             "view-account-sessions": string;
             "revoke-account-sessions": string;
             "purge-account-sessions": string;
+            "assign-recipient-owner": string;
+            "unassign-recipient-owner": string;
+            "assign-alias-owner": string;
+            "unassign-alias-owner": string;
           };
           apiTokens: {
             access: string;
@@ -1198,6 +1244,13 @@ export interface Locales {
             "create-alias": string;
             "edit-alias": string;
             "delete-alias": string;
+          };
+          mailboxes: {
+            access: string;
+            "assign-recipient-owner": string;
+            "unassign-recipient-owner": string;
+            "assign-alias-owner": string;
+            "unassign-alias-owner": string;
           };
           quotas: {
             access: string;

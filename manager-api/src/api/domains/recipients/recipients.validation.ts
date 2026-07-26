@@ -51,5 +51,9 @@ export const updateRecipientSchema = z
   })
   .strict();
 
+// Body of PUT :id/owner: the account (uuid) to hand this recipient to.
+export const assignRecipientOwnerSchema = z.object({ ownerId: z.string().uuid() }).strict();
+
 export type CreateRecipientDto = z.infer<typeof createRecipientSchema>;
 export type UpdateRecipientDto = z.infer<typeof updateRecipientSchema>;
+export type AssignRecipientOwnerDto = z.infer<typeof assignRecipientOwnerSchema>;

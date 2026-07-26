@@ -3,9 +3,16 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Like, Not, Repository } from "typeorm";
 import { ApiError } from "../../../core/common/api-error";
 import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
+import { Account } from "../../../core/entities/account.entity";
 import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { CreateAliasDto, UpdateAliasDto } from "./aliases.validation";
+
+// postmaster@<domain> is provisioned automatically per domain and is never a
+// real, ownable mailbox.
+function isPostmaster(source: string, domain: string) {
+  return source.toLowerCase() === `postmaster@${domain.toLowerCase()}`;
+}
 
 // `id` has no dedicated UI column/header but stays an accepted value since
 // it's the existing default -- keeps `resolveSortColumn`'s fallback
@@ -21,13 +28,53 @@ export class AliasesService {
     @InjectRepository(VirtualAlias)
     private readonly aliases: Repository<VirtualAlias>,
     @InjectRepository(VirtualDomain)
-    private readonly domains: Repository<VirtualDomain>
+    private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(Account)
+    private readonly accounts: Repository<Account>
   ) {}
 
   async resolveDomain(domainId: number): Promise<string> {
     const found = await this.domains.findOne({ where: { id: domainId } });
     if (!found) throw new NotFoundException(`Domain #${domainId} not found`);
     return found.domain;
+  }
+
+  // Fetch an alias plus the email of its owning account (null if unowned), for
+  // the domain-side owner field.
+  async getWithOwner(id: number, domain: string) {
+    const alias = await this.get(id, domain);
+    const ownerEmail = alias.ownerId
+      ? ((await this.accounts.findOne({ where: { id: alias.ownerId }, select: { email: true } }))?.email ?? null)
+      : null;
+    return { ...alias, ownerEmail };
+  }
+
+  // Assign this alias to an account. An alias belongs to at most one account, so
+  // assigning one already owned is refused: it must be released first.
+  // postmaster@<domain> can never be owned.
+  async assignOwner(id: number, domain: string, ownerId: string) {
+    const alias = await this.get(id, domain);
+    if (isPostmaster(alias.source, domain)) {
+      throw new ApiError(HttpStatus.FORBIDDEN, "aliases.postmasterUnassignable", "postmaster@ cannot be assigned to an account", {
+        id,
+      });
+    }
+    if (alias.ownerId) {
+      throw new ApiError(HttpStatus.CONFLICT, "aliases.alreadyAssigned", `Alias #${id} is already assigned to an account`, {
+        id,
+      });
+    }
+    const account = await this.accounts.findOne({ where: { id: ownerId } });
+    if (!account) throw new NotFoundException(`Account #${ownerId} not found`);
+    alias.ownerId = ownerId;
+    return this.aliases.save(alias);
+  }
+
+  // Release this alias's owner (set it back to empty). Always allowed.
+  async clearOwner(id: number, domain: string) {
+    const alias = await this.get(id, domain);
+    alias.ownerId = null;
+    return this.aliases.save(alias);
   }
 
   // `query.limit` absent = legacy unpaginated behavior, still relied on by

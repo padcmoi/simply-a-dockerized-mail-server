@@ -61,8 +61,9 @@ produced them and cleared as soon as that field is edited.
 An alias forwards an address, or a whole domain, to one or more real recipients.
 No mailbox, no password, no quota.
 
-Columns: from, to, domain. Row actions: edit (a dedicated page) and delete
-behind a confirmation.
+Columns: from, to, domain. The **from** address is a link to the edit page (like
+the recipient address), shown only with `edit-alias`. Row actions: edit (a
+dedicated page) and delete behind a confirmation.
 
 - [Create](../../manager-ui/app/pages/domains/[domain]/aliases/create.vue) --
   local part plus destination address, `create-alias`.
@@ -73,6 +74,19 @@ behind a confirmation.
 Destination validation is deliberately loose client-side: the API's
 `z.string().email()` is the authority, and the local pattern only exists to
 catch an obvious typo before a round trip.
+
+## Owner account
+
+The recipient and alias edit pages carry an **owner account** field
+([`MailboxOwnerField`](../../manager-ui/app/components/domains/MailboxOwnerField.vue)):
+the account a mailbox belongs to (at most one). It shows the current owner or
+"no owner", an account picker (typeahead over `/accounts/names`) to **assign**,
+and a **detach** action. The `GET` of a recipient/alias returns `ownerEmail` so
+the field renders the current owner. `postmaster@` can never be owned, so the
+field is hidden for it. This is the domain side of ownership, gated by the domain
+`mailboxes` resource (`assign-*-owner` / `unassign-*-owner`); the same ownership
+is also managed globally from an account (see `accounts.md`). Routes:
+`PUT`/`DELETE /domains/:domainId/{recipients,aliases}/:id/owner`.
 
 ## Quotas
 

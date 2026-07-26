@@ -49,5 +49,9 @@ export const updateAliasSchema = z
   })
   .strict();
 
+// Body of PUT :id/owner: the account (uuid) to hand this alias to.
+export const assignAliasOwnerSchema = z.object({ ownerId: z.string().uuid() }).strict();
+
 export type CreateAliasDto = z.infer<typeof createAliasSchema>;
 export type UpdateAliasDto = z.infer<typeof updateAliasSchema>;
+export type AssignAliasOwnerDto = z.infer<typeof assignAliasOwnerSchema>;

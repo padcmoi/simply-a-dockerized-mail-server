@@ -205,6 +205,34 @@ export const UpdateAliasDocs = () =>
     })
   );
 
+export const AssignAliasOwnerDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Assign this alias to an account (set its owner)",
+      description:
+        "An alias belongs to at most one account. Assigning one already owned returns 409; it must be released " +
+        "first. postmaster@<domain> can never be owned (403).",
+    }),
+    ApiParam({ name: "id", type: Number, example: 1, description: "virtual_aliases.id" }),
+    ApiBody({ schema: { example: { ownerId: "3f1c2b8e-0000-4a00-9000-000000000000" } } }),
+    ApiResponse({ status: 200, description: "Owner assigned" }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission mailboxes:assign-alias-owner, or target is postmaster@<domain>",
+    }),
+    ApiResponse({ status: 404, description: "Parent domain, alias, or target account not found" }),
+    ApiResponse({ status: 409, description: "Alias already assigned to an account" })
+  );
+
+export const UnassignAliasOwnerDocs = () =>
+  applyDecorators(
+    ApiOperation({ summary: "Release this alias's owner (set it back to empty)" }),
+    ApiParam({ name: "id", type: Number, example: 1, description: "virtual_aliases.id" }),
+    ApiResponse({ status: 200, description: "Owner released" }),
+    ApiResponse({ status: 403, description: "Missing permission mailboxes:unassign-alias-owner" }),
+    ApiResponse({ status: 404, description: "Parent domain or alias not found" })
+  );
+
 export const RemoveAliasDocs = () =>
   applyDecorators(
     ApiOperation({ summary: "Delete an alias from this domain" }),

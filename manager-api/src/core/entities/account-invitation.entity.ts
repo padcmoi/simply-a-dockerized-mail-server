@@ -20,6 +20,15 @@ export class AccountInvitation {
   @Column({ name: "group_ids", type: "text", nullable: true })
   groupIds!: string | null;
 
+  // JSON arrays of virtual_users.id / virtual_aliases.id to assign to the new
+  // account on acceptance (only those still unassigned at that point). No
+  // password is touched -- pure ownership assignment.
+  @Column({ name: "recipient_ids", type: "text", nullable: true })
+  recipientIds!: string | null;
+
+  @Column({ name: "alias_ids", type: "text", nullable: true })
+  aliasIds!: string | null;
+
   @Column({ name: "owner_domain_id", type: "int", nullable: true })
   ownerDomainId!: number | null;
 

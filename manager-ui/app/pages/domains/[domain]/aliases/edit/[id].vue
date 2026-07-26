@@ -11,6 +11,7 @@ interface Alias {
   source: string;
   destination: string;
   domain: string;
+  ownerEmail: string | null;
 }
 
 // Mirrors the local-part regex of aliases.validation.ts, which has no "@" in
@@ -58,6 +59,15 @@ const formInvalid = computed(
 
 const listPath = computed(() => `/domains/${domainFqdn.value}/aliases`);
 
+const isPostmaster = computed(() => !!alias.value?.source.toLowerCase().startsWith("postmaster@"));
+const canAssignOwner = computed(
+  () => !isPostmaster.value && !!domainId.value && (isRoot.value || hasDomain(domainId.value, "mailboxes", "assign-alias-owner"))
+);
+const canUnassignOwner = computed(
+  () =>
+    !isPostmaster.value && !!domainId.value && (isRoot.value || hasDomain(domainId.value, "mailboxes", "unassign-alias-owner"))
+);
+
 const route = useRoute();
 const { t } = useI18n();
 const { call } = useApi();
@@ -65,6 +75,7 @@ const { apiErrorBody, apiErrorStatus, apiErrorMessage } = useApiError();
 const toast = useToast();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { isRoot, hasDomain } = usePermissions();
 
 const aliasId = computed(() => Number(route.params.id));
 
@@ -180,6 +191,21 @@ async function save() {
           />
         </UFormField>
       </UForm>
+
+      <div
+        v-if="alias && domainId && !isPostmaster && (alias.ownerEmail || canAssignOwner || canUnassignOwner)"
+        class="pt-4 mt-4 border-t border-default"
+      >
+        <MailboxOwnerField
+          kind="aliases"
+          :domain-id="domainId"
+          :resource-id="alias.id"
+          :owner-email="alias.ownerEmail"
+          :can-assign="canAssignOwner"
+          :can-unassign="canUnassignOwner"
+          @changed="load"
+        />
+      </div>
 
       <template #footer>
         <div class="flex justify-end gap-2">

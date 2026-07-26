@@ -80,9 +80,16 @@ sends one request.
 ### Dependencies cascade
 
 Some resources cannot function without another. `recipients`, `aliases`,
-`quotas`, `rspamd`, `admin` and `dkim` all depend on `domain:access`; `groups`
-depends on `accounts:access` + `list-account-names`; `tickets` depends on
-`domains:access`.
+`mailboxes`, `quotas`, `rspamd`, `admin` and `dkim` all depend on
+`domain:access`; `groups` depends on `accounts:access` + `list-account-names`;
+`tickets` depends on `domains:access`.
+
+The `mailboxes` domain resource ("Mailboxes") is the domain side of recipient /
+alias ownership: `assign-recipient-owner`, `unassign-recipient-owner`,
+`assign-alias-owner`, `unassign-alias-owner`. The account side of the same
+ownership is a set of global `accounts` actions with the same four names, which
+gate managing ownership across every domain from an account (see `accounts.md`
+and `mailboxes.md`).
 
 The editor reads that map from the API and applies it in both directions:
 checking a dependent action also grants what it needs, and clearing a

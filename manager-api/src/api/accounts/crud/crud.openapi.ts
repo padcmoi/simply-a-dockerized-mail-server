@@ -139,3 +139,55 @@ export const DeleteAccountDocs = () =>
     ApiResponse({ status: 403, description: "Root access required" }),
     ApiResponse({ status: 404, description: "Account not found" })
   );
+
+export const OwnedResourcesDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: String, description: "accounts.id" }),
+    ApiOperation({ summary: "List the recipients / aliases this account owns" }),
+    ApiResponse({ status: 200, description: "Owned resources returned" }),
+    ApiResponse({
+      status: 403,
+      description: "Insufficient permissions (accounts:assign-recipient-owner / assign-alias-owner required)",
+    }),
+    ApiResponse({ status: 404, description: "Account not found" })
+  );
+
+export const AssignableResourcesDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: String, description: "accounts.id" }),
+    ApiQuery({ name: "domainId", required: false, type: Number, description: "Filter the picker to one domain" }),
+    ApiQuery({ name: "search", required: false, type: String, description: "Filter by address" }),
+    ApiOperation({
+      summary: "List unassigned recipients / aliases that may be attached to this account",
+      description:
+        "Returns `{ domains, items }`: `domains` are the domains that still hold an unassigned resource of this kind " +
+        "(for a domain selector), `items` is a capped page. postmaster@ is never listed. The global assign action gates it.",
+    }),
+    ApiResponse({ status: 200, description: "Assignable resources returned" }),
+    ApiResponse({
+      status: 403,
+      description: "Insufficient permissions (accounts:assign-recipient-owner / assign-alias-owner required)",
+    })
+  );
+
+export const AttachResourceDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: String, description: "accounts.id" }),
+    ApiOperation({ summary: "Attach an unassigned recipient / alias to this account (set its owner)" }),
+    ApiResponse({ status: 201, description: "Attached" }),
+    ApiResponse({ status: 403, description: "Insufficient permissions, or target is postmaster@ (never ownable)" }),
+    ApiResponse({ status: 404, description: "Account or resource not found" }),
+    ApiResponse({ status: 409, description: "Resource already assigned to an account" })
+  );
+
+export const DetachResourceDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: String, description: "accounts.id" }),
+    ApiOperation({ summary: "Detach a recipient / alias this account owns (clear its owner)" }),
+    ApiResponse({ status: 200, description: "Detached" }),
+    ApiResponse({
+      status: 403,
+      description: "Insufficient permissions (accounts:unassign-recipient-owner / unassign-alias-owner required)",
+    }),
+    ApiResponse({ status: 404, description: "Resource not owned by this account" })
+  );

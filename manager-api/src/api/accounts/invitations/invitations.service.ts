@@ -9,7 +9,9 @@ import { AccountInvitation } from "../../../core/entities/account-invitation.ent
 import { Account } from "../../../core/entities/account.entity";
 import { AccountProfile } from "../../../core/entities/account-profile.entity";
 import { Group } from "../../../core/entities/group.entity";
+import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
+import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { MailerService } from "../../../core/mailer/mailer.service";
 import { AppSettingsService } from "../../../core/settings/app-settings.service";
 import type { AcceptInvitationDto, SendInvitationDto } from "./invitations.validation";
@@ -22,6 +24,8 @@ export class AccountsInvitationsService {
     @InjectRepository(AccountProfile) private readonly profiles: Repository<AccountProfile>,
     @InjectRepository(Group) private readonly groups: Repository<Group>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(VirtualUser) private readonly recipients: Repository<VirtualUser>,
+    @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>,
     private readonly mailer: MailerService,
     private readonly cpg: CustomPermissionGuardService,
     private readonly antiEscalation: AntiEscalationService,
@@ -38,6 +42,46 @@ export class AccountsInvitationsService {
       }
     }
     return inv.groupId ? [inv.groupId] : [];
+  }
+
+  private parseIds(raw: string | null): number[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) return parsed.filter((x): x is number => typeof x === "number");
+    } catch {
+      // malformed JSON: treat as none
+    }
+    return [];
+  }
+
+  // Only currently-unassigned recipients/aliases of the chosen domain may be
+  // attached through an invitation, and only by a caller who holds the global
+  // assign action. postmaster@ is never ownable.
+  private async assertAssignableRecipients(actingUser: ActingUser, ids: number[], domain: string) {
+    if (!ids.length) return;
+    if (!actingUser.isRoot) {
+      await this.cpg.guard.assertOne.global(actingUser.id, "accounts", { acrud: ["assign-recipient-owner"] });
+    }
+    const rows = await this.recipients.findBy({ id: In(ids) });
+    if (rows.length !== new Set(ids).size) throw new NotFoundException("One or more recipients not found");
+    if (rows.some((r) => r.domain !== domain)) throw new BadRequestException("A recipient does not belong to the chosen domain");
+    if (rows.some((r) => r.email.toLowerCase().startsWith("postmaster@")))
+      throw new BadRequestException("postmaster@ cannot be assigned to an account");
+    if (rows.some((r) => r.ownerId)) throw new ConflictException("A recipient is already assigned to an account");
+  }
+
+  private async assertAssignableAliases(actingUser: ActingUser, ids: number[], domain: string) {
+    if (!ids.length) return;
+    if (!actingUser.isRoot) {
+      await this.cpg.guard.assertOne.global(actingUser.id, "accounts", { acrud: ["assign-alias-owner"] });
+    }
+    const rows = await this.aliases.findBy({ id: In(ids) });
+    if (rows.length !== new Set(ids).size) throw new NotFoundException("One or more aliases not found");
+    if (rows.some((a) => a.domain !== domain)) throw new BadRequestException("An alias does not belong to the chosen domain");
+    if (rows.some((a) => a.source.toLowerCase().startsWith("postmaster@")))
+      throw new BadRequestException("postmaster@ cannot be assigned to an account");
+    if (rows.some((a) => a.ownerId)) throw new ConflictException("An alias is already assigned to an account");
   }
 
   async sendInvitation(actingUser: ActingUser, input: SendInvitationDto, baseUrl: string) {
@@ -102,6 +146,13 @@ export class AccountsInvitationsService {
       await this.antiEscalation.assertActingUserHolds(actingUser, groupGlobal, groupDomain);
     }
 
+    // Recipients/aliases to hand over on acceptance: must be existing, unassigned
+    // and in the chosen domain, and the inviter must hold the global assign action.
+    const recipientIds = input.recipientIds ?? [];
+    const aliasIds = input.aliasIds ?? [];
+    await this.assertAssignableRecipients(actingUser, recipientIds, domain.domain);
+    await this.assertAssignableAliases(actingUser, aliasIds, domain.domain);
+
     const token = randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
     await this.invitations.save(
@@ -111,6 +162,8 @@ export class AccountsInvitationsService {
         invitedBy: actingUser.id,
         groupId: null,
         groupIds: JSON.stringify(groupIdList),
+        recipientIds: JSON.stringify(recipientIds),
+        aliasIds: JSON.stringify(aliasIds),
         ownerDomainId: input.makeOwner ? domain.id : null,
         expiresAt,
       })
@@ -170,6 +223,17 @@ export class AccountsInvitationsService {
     // (single owner on virtual_domains.owner_id, replacing any current one).
     if (inv.ownerDomainId) {
       await this.domains.update(inv.ownerDomainId, { ownerId: account.id });
+    }
+    // Assign the staged recipients/aliases to the fresh account -- but only those
+    // still unassigned now (someone may have taken them meanwhile). Ownership
+    // only; no password is touched.
+    const recipientIds = this.parseIds(inv.recipientIds);
+    const aliasIds = this.parseIds(inv.aliasIds);
+    if (recipientIds.length) {
+      await this.recipients.update({ id: In(recipientIds), ownerId: IsNull() }, { ownerId: account.id });
+    }
+    if (aliasIds.length) {
+      await this.aliases.update({ id: In(aliasIds), ownerId: IsNull() }, { ownerId: account.id });
     }
     inv.acceptedAt = new Date();
     await this.invitations.save(inv);

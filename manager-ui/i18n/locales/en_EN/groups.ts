@@ -122,6 +122,7 @@ export default {
         domain: "Domain access",
         recipients: "Recipients",
         aliases: "Aliases",
+        mailboxes: "Mailboxes",
         quotas: "Quotas",
         rspamd: "Rspamd",
         admin: "Administration",
@@ -161,6 +162,10 @@ export default {
           "view-account-sessions": "View sessions",
           "revoke-account-sessions": "Revoke sessions",
           "purge-account-sessions": "Purge session history",
+          "assign-recipient-owner": "Assign a recipient to an account",
+          "unassign-recipient-owner": "Release a recipient from an account",
+          "assign-alias-owner": "Assign an alias to an account",
+          "unassign-alias-owner": "Release an alias from an account",
         },
         apiTokens: {
           access: "Access",
@@ -237,6 +242,13 @@ export default {
           "create-alias": "Create an alias",
           "edit-alias": "Edit an alias",
           "delete-alias": "Delete an alias",
+        },
+        mailboxes: {
+          access: "Access",
+          "assign-recipient-owner": "Assign a recipient's owner",
+          "unassign-recipient-owner": "Release a recipient's owner",
+          "assign-alias-owner": "Assign an alias's owner",
+          "unassign-alias-owner": "Release an alias's owner",
         },
         quotas: {
           access: "Access",

@@ -261,6 +261,34 @@ export const UpdateRecipientDocs = () =>
     })
   );
 
+export const AssignRecipientOwnerDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Assign this recipient to an account (set its owner)",
+      description:
+        "A recipient belongs to at most one account. Assigning one already owned returns 409; it must be released " +
+        "first. postmaster@<domain> can never be owned (403).",
+    }),
+    ApiParam({ name: "id", type: Number, example: 1, description: "virtual_users.id" }),
+    ApiBody({ schema: { example: { ownerId: "3f1c2b8e-0000-4a00-9000-000000000000" } } }),
+    ApiResponse({ status: 200, description: "Owner assigned" }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission mailboxes:assign-recipient-owner, or target is postmaster@<domain>",
+    }),
+    ApiResponse({ status: 404, description: "Parent domain, recipient, or target account not found" }),
+    ApiResponse({ status: 409, description: "Recipient already assigned to an account" })
+  );
+
+export const UnassignRecipientOwnerDocs = () =>
+  applyDecorators(
+    ApiOperation({ summary: "Release this recipient's owner (set it back to empty)" }),
+    ApiParam({ name: "id", type: Number, example: 1, description: "virtual_users.id" }),
+    ApiResponse({ status: 200, description: "Owner released" }),
+    ApiResponse({ status: 403, description: "Missing permission mailboxes:unassign-recipient-owner" }),
+    ApiResponse({ status: 404, description: "Parent domain or recipient not found" })
+  );
+
 export const RemoveRecipientDocs = () =>
   applyDecorators(
     ApiOperation({

@@ -51,6 +51,10 @@ export const GLOBAL_ACTIONS = {
     "view-account-sessions",
     "revoke-account-sessions",
     "purge-account-sessions",
+    "assign-recipient-owner",
+    "unassign-recipient-owner",
+    "assign-alias-owner",
+    "unassign-alias-owner",
   ],
   // An api token acts on behalf of its owner, and every route here is scoped to
   // the caller's own tokens (see ApiTokenController). The actions gate whether
@@ -115,6 +119,9 @@ export const DOMAIN_ACTIONS = {
     "delete-recipient",
   ],
   aliases: ["access", "list-aliases", "view-alias", "create-alias", "edit-alias", "delete-alias"],
+  // "Boites aux lettres": the domain-side owner assignment for recipients and
+  // aliases. Two actions to attach an owner (one per kind) and two to release it.
+  mailboxes: ["access", "assign-recipient-owner", "unassign-recipient-owner", "assign-alias-owner", "unassign-alias-owner"],
   quotas: ["access", "view-quotas"],
   rspamd: ["access", "view-rspamd-stats", "view-rspamd-history"],
   // `admin` is the Administration tab of a domain. It gates the page itself,
@@ -154,6 +161,7 @@ export const GLOBAL_RESOURCES_DEPENDS_ON: GlobalDependsOnEntry[] = [
 export const DOMAIN_RESOURCE_DEPENDS_ON: DomainDependsOnEntry[] = [
   { resource: "recipients", dependsOn: [{ resource: "domain", action: ["access"] }] },
   { resource: "aliases", dependsOn: [{ resource: "domain", action: ["access"] }] },
+  { resource: "mailboxes", dependsOn: [{ resource: "domain", action: ["access"] }] },
   { resource: "quotas", dependsOn: [{ resource: "domain", action: ["access"] }] },
   { resource: "rspamd", dependsOn: [{ resource: "domain", action: ["access"] }] },
   { resource: "admin", dependsOn: [{ resource: "domain", action: ["access"] }] },

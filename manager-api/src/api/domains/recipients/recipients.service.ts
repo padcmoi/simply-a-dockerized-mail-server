@@ -4,6 +4,7 @@ import { In, Repository } from "typeorm";
 import { ApiError } from "../../../core/common/api-error";
 import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { sha512crypt } from "../../../core/common/sha512-crypt";
+import { Account } from "../../../core/entities/account.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualQuotaUser } from "../../../core/entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
@@ -43,8 +44,50 @@ export class RecipientsService {
     private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(VirtualQuotaUser)
     private readonly recipientQuotas: Repository<VirtualQuotaUser>,
+    @InjectRepository(Account)
+    private readonly accounts: Repository<Account>,
     private readonly storage: MailStorageService
   ) {}
+
+  // Assign this recipient to an account. A recipient belongs to at most one
+  // account, so assigning one already owned is refused: it must be released
+  // first. postmaster@<domain> is never a real mailbox and is never owned.
+  async assignOwner(id: number, domain: string, ownerId: string) {
+    const recipient = await this.get(id, domain);
+    if (isPostmaster(recipient.email, domain)) {
+      throw new ApiError(
+        HttpStatus.FORBIDDEN,
+        "recipients.postmasterUnassignable",
+        "postmaster@ cannot be assigned to an account",
+        { id }
+      );
+    }
+    if (recipient.ownerId) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        "recipients.alreadyAssigned",
+        `Recipient #${id} is already assigned to an account`,
+        { id }
+      );
+    }
+    const account = await this.accounts.findOne({ where: { id: ownerId } });
+    if (!account) throw new NotFoundException(`Account #${ownerId} not found`);
+    recipient.ownerId = ownerId;
+    return this.recipients.save(recipient);
+  }
+
+  // Release this recipient's owner (set it back to empty). Always allowed.
+  async clearOwner(id: number, domain: string) {
+    const recipient = await this.get(id, domain);
+    recipient.ownerId = null;
+    return this.recipients.save(recipient);
+  }
+
+  private async resolveOwnerEmail(ownerId: string | null): Promise<string | null> {
+    if (!ownerId) return null;
+    const account = await this.accounts.findOne({ where: { id: ownerId }, select: { email: true } });
+    return account?.email ?? null;
+  }
 
   // Resolve the parent domain from `:domainId` and return its `domain`
   // string (FQDN). 404s on unknown parent: every nested handler must call
@@ -119,7 +162,8 @@ export class RecipientsService {
   // the entity alone, so get() stays lean and this enrichment is opt-in.
   async getWithUsage(id: number, domain: string) {
     const found = await this.get(id, domain);
-    return (await this.attachUsage([found]))[0];
+    const [withUsage] = await this.attachUsage([found]);
+    return { ...withUsage, ownerEmail: await this.resolveOwnerEmail(found.ownerId) };
   }
 
   // The domain's own quota is the hard ceiling on what its recipients may

@@ -4,12 +4,15 @@
 // It draws nothing itself: it only derives the current section from the nav so
 // an error page keeps a way back, rather than stranding the user with no trail.
 const route = useRoute();
-const { set } = useBreadcrumb();
+// error.vue mounts this under the errored route's own layout; the auth layout
+// (login and other pre-auth pages) has no BreadcrumbProvider, so use the
+// non-throwing variant and simply feed nothing when the provider is absent.
+const breadcrumb = useBreadcrumbOptional();
 const { globalNavItems } = useNav(async () => {});
 
 const section = computed(() => navSectionFor(route.path, globalNavItems.value));
 
-watchEffect(() => set(section.value ? [section.value] : []));
+watchEffect(() => breadcrumb?.set(section.value ? [section.value] : []));
 </script>
 
 <template>

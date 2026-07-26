@@ -23,3 +23,11 @@ export function useBreadcrumb() {
   if (!ctx) throw new Error("useBreadcrumb called outside BreadcrumbProvider");
   return ctx;
 }
+
+// Non-throwing variant for components that may legitimately render without a
+// provider -- notably ErrorBreadcrumb, which error.vue mounts inside whatever
+// layout the errored route used (the `auth` layout has no BreadcrumbProvider).
+// Returns null there instead of throwing and taking the error page down.
+export function useBreadcrumbOptional() {
+  return inject(BreadcrumbKey, null);
+}

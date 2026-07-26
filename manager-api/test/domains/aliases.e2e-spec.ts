@@ -10,9 +10,12 @@ describe("AliasesController (e2e: auth + ACL + behavior)", () => {
     resolveDomain: vi.fn(),
     list: vi.fn(),
     get: vi.fn(),
+    getWithOwner: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     remove: vi.fn(),
+    assignOwner: vi.fn(),
+    clearOwner: vi.fn(),
   };
 
   beforeAll(async () => {
@@ -80,9 +83,9 @@ describe("AliasesController (e2e: auth + ACL + behavior)", () => {
   describe("GET /:id", () => {
     it("200 for root and forwards id + domain", async () => {
       svc.resolveDomain.mockResolvedValueOnce("example.test");
-      svc.get.mockResolvedValueOnce({ id: 5, source: "a@example.test" });
+      svc.getWithOwner.mockResolvedValueOnce({ id: 5, source: "a@example.test", ownerEmail: null });
       await api().get("/api/v1/domains/1/aliases/5").set("Authorization", auth(ROOT)).expect(200);
-      expect(svc.get).toHaveBeenCalledWith(5, "example.test");
+      expect(svc.getWithOwner).toHaveBeenCalledWith(5, "example.test");
     });
 
     it("400 when :id is not an integer", async () => {

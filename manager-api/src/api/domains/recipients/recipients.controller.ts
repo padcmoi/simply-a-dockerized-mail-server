@@ -1,20 +1,29 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { paginationQuerySchema, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
 import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
 import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
 import { RequireDomainPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
 import {
+  AssignRecipientOwnerDocs,
   CreateRecipientDocs,
   GetRecipientDocs,
   GetRecipientsHeadroomDocs,
   ListRecipientsDocs,
   RecipientsApi,
   RemoveRecipientDocs,
+  UnassignRecipientOwnerDocs,
   UpdateRecipientDocs,
 } from "./recipients.openapi";
 import { RecipientsService } from "./recipients.service";
-import { CreateRecipientDto, UpdateRecipientDto, createRecipientSchema, updateRecipientSchema } from "./recipients.validation";
+import {
+  AssignRecipientOwnerDto,
+  CreateRecipientDto,
+  UpdateRecipientDto,
+  assignRecipientOwnerSchema,
+  createRecipientSchema,
+  updateRecipientSchema,
+} from "./recipients.validation";
 
 @RecipientsApi()
 @Controller({ path: "domains/:domainId/recipients", version: "1" })
@@ -82,5 +91,25 @@ export class RecipientsController {
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
     return this.svc.remove(id, domain);
+  }
+
+  @Put(":id/owner")
+  @RequireDomainPermissions([{ resource: "mailboxes", actions: ["access", "assign-recipient-owner"] }])
+  @AssignRecipientOwnerDocs()
+  async assignOwner(
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Param("id", ParseIntPipe) id: number,
+    @Body(new ZodValidationPipe(assignRecipientOwnerSchema)) body: AssignRecipientOwnerDto
+  ) {
+    const domain = await this.svc.resolveDomain(domainId);
+    return this.svc.assignOwner(id, domain, body.ownerId);
+  }
+
+  @Delete(":id/owner")
+  @RequireDomainPermissions([{ resource: "mailboxes", actions: ["access", "unassign-recipient-owner"] }])
+  @UnassignRecipientOwnerDocs()
+  async clearOwner(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
+    const domain = await this.svc.resolveDomain(domainId);
+    return this.svc.clearOwner(id, domain);
   }
 }
