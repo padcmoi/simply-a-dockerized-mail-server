@@ -9,6 +9,7 @@ import { Group } from "../../src/core/entities/group.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import type { AntiEscalationService } from "../../src/core/acl/anti-escalation.service";
 import type { MailerService } from "../../src/core/mailer/mailer.service";
+import type { AppSettingsService } from "../../src/core/settings/app-settings.service";
 import { cpgMock, providerMock, repoMock } from "../helpers/mocks";
 
 // bcrypt is native + slow; the service only ever needs a deterministic hash.
@@ -30,6 +31,9 @@ function makeMocks() {
     mailer: providerMock<MailerService>({ sendInvitation: vi.fn(async () => undefined) }),
     cpg: cpgMock(),
     antiEscalation: providerMock<AntiEscalationService>({ assertActingUserHolds: vi.fn(async () => undefined) }),
+    appSettings: providerMock<AppSettingsService>({
+      get: vi.fn().mockReturnValue({ offlineNotifyAfterMs: 0, offlineSweepIntervalMs: 0, mailMinIntervalMs: 0, managerUrl: "" }),
+    }),
   };
 }
 
@@ -47,7 +51,8 @@ describe("AccountsInvitationsService", () => {
       m.domains,
       m.mailer,
       m.cpg,
-      m.antiEscalation
+      m.antiEscalation,
+      m.appSettings
     );
   });
 
@@ -67,9 +72,26 @@ describe("AccountsInvitationsService", () => {
         expect.objectContaining({ email: "new@x.com", invitedBy: "inviter-id", groupId: null, groupIds: "[]" })
       );
       expect(m.mailer.sendInvitation).toHaveBeenCalledWith(
-        expect.objectContaining({ to: "new@x.com", fromDomain: "example.com", groupNames: [] })
+        expect.objectContaining({
+          to: "new@x.com",
+          fromDomain: "example.com",
+          groupNames: [],
+          link: expect.stringMatching(/^https:\/\/mail\.host\.test\/invite\//),
+        })
       );
       expect(res).toEqual({ ok: true });
+    });
+
+    it("prefers the configured interface address over the request host for the link", async () => {
+      m.invitations.findOne.mockResolvedValue(null);
+      m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });
+      m.appSettings.get.mockReturnValue({ offlineNotifyAfterMs: 0, offlineSweepIntervalMs: 0, mailMinIntervalMs: 0, managerUrl: "https://mail-manager.gestionpratique.ovh" });
+
+      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, useDomainGroup: false }, BASE);
+
+      expect(m.mailer.sendInvitation).toHaveBeenCalledWith(
+        expect.objectContaining({ link: expect.stringMatching(/^https:\/\/mail-manager\.gestionpratique\.ovh\/invite\//) })
+      );
     });
 
     it("throws NotFound when the domain does not exist and saves nothing", async () => {

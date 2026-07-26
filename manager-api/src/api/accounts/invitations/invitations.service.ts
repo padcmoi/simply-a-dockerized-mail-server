@@ -11,6 +11,7 @@ import { AccountProfile } from "../../../core/entities/account-profile.entity";
 import { Group } from "../../../core/entities/group.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { MailerService } from "../../../core/mailer/mailer.service";
+import { AppSettingsService } from "../../../core/settings/app-settings.service";
 import type { AcceptInvitationDto, SendInvitationDto } from "./invitations.validation";
 
 @Injectable()
@@ -23,7 +24,8 @@ export class AccountsInvitationsService {
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     private readonly mailer: MailerService,
     private readonly cpg: CustomPermissionGuardService,
-    private readonly antiEscalation: AntiEscalationService
+    private readonly antiEscalation: AntiEscalationService,
+    private readonly appSettings: AppSettingsService
   ) {}
 
   private parseGroupIds(inv: AccountInvitation): string[] {
@@ -114,7 +116,10 @@ export class AccountsInvitationsService {
       })
     );
 
-    const link = `${baseUrl.replace(/\/+$/, "")}/invite/${token}`;
+    // The configured public interface address is authoritative for links that
+    // reach an inbox; the request host is only a fallback when none is set.
+    const configured = this.appSettings.get().managerUrl;
+    const link = `${(configured || baseUrl).replace(/\/+$/, "")}/invite/${token}`;
     await this.mailer.sendInvitation({
       to: input.email,
       link,

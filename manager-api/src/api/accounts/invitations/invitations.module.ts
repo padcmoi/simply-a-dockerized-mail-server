@@ -8,6 +8,7 @@ import { AccountProfile } from "../../../core/entities/account-profile.entity";
 import { Group } from "../../../core/entities/group.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { MailerModule } from "../../../core/mailer/mailer.module";
+import { SettingsModule } from "../../../core/settings/settings.module";
 import { AccountsInvitationsController } from "./invitations.controller";
 import { AccountsInvitationsService } from "./invitations.service";
 
@@ -15,6 +16,7 @@ import { AccountsInvitationsService } from "./invitations.service";
   imports: [
     TypeOrmModule.forFeature([AccountInvitation, Account, AccountProfile, Group, VirtualDomain]),
     MailerModule,
+    SettingsModule,
     CustomPermissionGuardModule,
     AclModule,
   ],
