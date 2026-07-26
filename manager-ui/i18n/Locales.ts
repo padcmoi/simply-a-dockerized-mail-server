@@ -746,13 +746,14 @@ export interface Locales {
     toast: {
       invited: string;
       inviteFailed: string;
-      revoked: string;
-      revokeFailed: string;
+      deleted: string;
+      deleteFailed: string;
       groupUpdated: string;
       groupUpdateFailed: string;
       loadFailed: string;
     };
-    confirmRevoke: string;
+    confirmDelete: string;
+    confirmDeleteHint: string;
   };
   invite: {
     loading: string;

@@ -125,16 +125,16 @@ export const UpdateAccountDocs = () =>
     ApiResponse({ status: 409, description: "Email already used by another account" })
   );
 
-export const RevokeAccountDocs = () =>
+export const DeleteAccountDocs = () =>
   applyDecorators(
-    ApiParam({ name: "id", type: Number, description: "accounts.id" }),
+    ApiParam({ name: "id", type: String, description: "accounts.id" }),
     ApiOperation({
-      summary: "Disable a manager account (root only)",
+      summary: "Delete a manager account (root only)",
       description:
-        "Sets `enabled` to false; the account row and its data are kept, not deleted. A root account can never be revoked through this route.",
+        "Permanently deletes the account row. Rows that belong to it (profile, presence, sessions, group memberships, notifications, preferences, API tokens) are removed by cascade; references that outlive it (owned domains and recipients, authored tickets and messages, group ownership, audit entries, invitations sent) are set to null. A root account can never be deleted through this route.",
     }),
-    ApiResponse({ status: 200, description: "Account revoked", schema: { example: { ok: true } } }),
-    ApiResponse({ status: 400, description: "The target account is a root account and cannot be revoked" }),
+    ApiResponse({ status: 200, description: "Account deleted", schema: { example: { ok: true } } }),
+    ApiResponse({ status: 400, description: "The target account is a root account and cannot be deleted" }),
     ApiResponse({ status: 401, description: "Missing or invalid credentials" }),
     ApiResponse({ status: 403, description: "Root access required" }),
     ApiResponse({ status: 404, description: "Account not found" })

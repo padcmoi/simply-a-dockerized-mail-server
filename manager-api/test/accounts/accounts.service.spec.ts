@@ -384,23 +384,23 @@ describe("AccountsService", () => {
     });
   });
 
-  describe("revokeAccount", () => {
+  describe("deleteAccount", () => {
     it("throws NotFound when absent", async () => {
       m.accounts.findOne.mockResolvedValue(null);
-      await expect(svc.revokeAccount("x")).rejects.toBeInstanceOf(NotFoundException);
+      await expect(svc.deleteAccount("x")).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it("refuses to revoke a root account with 400", async () => {
+    it("refuses to delete a root account with 400", async () => {
       m.accounts.findOne.mockResolvedValue({ id: "a1", isRoot: 1, enabled: 1 });
-      await expect(svc.revokeAccount("a1")).rejects.toBeInstanceOf(BadRequestException);
-      expect(m.accounts.save).not.toHaveBeenCalled();
+      await expect(svc.deleteAccount("a1")).rejects.toBeInstanceOf(BadRequestException);
+      expect(m.accounts.delete).not.toHaveBeenCalled();
     });
 
-    it("disables the account and returns ok", async () => {
-      const account = { id: "a1", isRoot: 0, enabled: 1 };
-      m.accounts.findOne.mockResolvedValue(account);
-      const res = await svc.revokeAccount("a1");
-      expect(m.accounts.save).toHaveBeenCalledWith(expect.objectContaining({ enabled: 0 }));
+    it("hard-deletes the account and returns ok", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1", isRoot: 0, enabled: 1 });
+      const res = await svc.deleteAccount("a1");
+      expect(m.accounts.delete).toHaveBeenCalledWith({ id: "a1" });
+      expect(m.accounts.save).not.toHaveBeenCalled();
       expect(res).toEqual({ ok: true });
     });
   });

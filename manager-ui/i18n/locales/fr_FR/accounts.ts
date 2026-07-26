@@ -138,11 +138,12 @@ export default {
   toast: {
     invited: "Invitation envoyée",
     inviteFailed: "Échec de l'invitation",
-    revoked: "Compte révoqué",
-    revokeFailed: "Échec de la révocation",
+    deleted: "Compte supprimé",
+    deleteFailed: "Échec de la suppression",
     groupUpdated: "Groupe mis à jour",
     groupUpdateFailed: "Échec de la mise à jour du groupe",
     loadFailed: "Échec du chargement",
   },
-  confirmRevoke: "Révoquer ce compte ?",
+  confirmDelete: "Supprimer ce compte ?",
+  confirmDeleteHint: "Supprime définitivement le compte. Les domaines, destinataires et groupes qu'il possède sont conservés mais perdent leur propriétaire.",
 } satisfies Locales["accounts"];

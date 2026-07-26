@@ -75,13 +75,13 @@ const columns = computed(() => [
   { id: "actions", header: "" },
 ]);
 
-async function revokeAccount(acc: ManagerAccount) {
+async function deleteAccount(acc: ManagerAccount) {
   try {
     await call(`/accounts/${acc.id}`, { method: "DELETE" });
-    toast.add({ title: t("accounts.toast.revoked"), color: "success" });
+    toast.add({ title: t("accounts.toast.deleted"), color: "success" });
     await load();
   } catch {
-    toast.add({ title: t("accounts.toast.revokeFailed"), color: "error" });
+    toast.add({ title: t("accounts.toast.deleteFailed"), color: "error" });
   }
 }
 
@@ -190,13 +190,13 @@ async function onDeleteConfirmed() {
                 :to="`/accounts/${row.original.id}/edit`"
               />
               <UButton
-                v-if="!row.original.isRoot && row.original.enabled && canRevokeAccount"
-                icon="i-lucide-user-x"
+                v-if="!row.original.isRoot && canRevokeAccount"
+                icon="i-lucide-trash-2"
                 size="xs"
                 color="error"
                 variant="ghost"
-                :title="t('common.revoke')"
-                @click="requestDelete(() => revokeAccount(row.original))"
+                :title="t('common.delete')"
+                @click="requestDelete(() => deleteAccount(row.original))"
               />
             </div>
           </template>
@@ -210,13 +210,18 @@ async function onDeleteConfirmed() {
           v-else
           :key="acc.id"
           :account="acc"
-          @revoke="requestDelete(() => revokeAccount(acc))"
+          @delete="requestDelete(() => deleteAccount(acc))"
         />
       </div>
 
       <ListPagination v-model:page="page" :total="total" :limit="limit" />
     </template>
 
-    <ConfirmModal v-model:open="confirmOpen" :title="t('accounts.confirmRevoke')" @confirm="onDeleteConfirmed" />
+    <ConfirmModal
+      v-model:open="confirmOpen"
+      :title="t('accounts.confirmDelete')"
+      :description="t('accounts.confirmDeleteHint')"
+      @confirm="onDeleteConfirmed"
+    />
   </div>
 </template>

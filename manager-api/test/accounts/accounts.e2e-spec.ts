@@ -22,7 +22,7 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
     getById: vi.fn(),
     getOverview: vi.fn(),
     updateAccount: vi.fn(),
-    revokeAccount: vi.fn(),
+    deleteAccount: vi.fn(),
   };
 
   beforeAll(async () => {
@@ -234,14 +234,14 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
 
     it("200 for a user granted the exact permission", async () => {
       h.cpg.grantGlobal("accounts", "access", "revoke-account");
-      svc.revokeAccount.mockResolvedValueOnce({ ok: true });
+      svc.deleteAccount.mockResolvedValueOnce({ ok: true });
       await api().delete(`/api/v1/accounts/${UUID}`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
     });
 
     it("200 for root and forwards the id", async () => {
-      svc.revokeAccount.mockResolvedValueOnce({ ok: true });
+      svc.deleteAccount.mockResolvedValueOnce({ ok: true });
       await api().delete(`/api/v1/accounts/${UUID}`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
-      expect(svc.revokeAccount).toHaveBeenCalledWith(UUID);
+      expect(svc.deleteAccount).toHaveBeenCalledWith(UUID);
     });
 
     it("400 when :id is not a uuid", async () => {

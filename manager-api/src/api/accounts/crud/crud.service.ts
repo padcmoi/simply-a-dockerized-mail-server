@@ -230,12 +230,17 @@ export class AccountsService {
     };
   }
 
-  async revokeAccount(id: string) {
+  // Hard delete. Rows that belong to the account (profile, presence, sessions,
+  // group memberships, notifications, preferences, API tokens, read receipts) go
+  // with it by ON DELETE CASCADE; references that outlive it (owned domains and
+  // recipients, authored tickets and messages, group ownership, audit entries,
+  // invitations sent) are ON DELETE SET NULL, so the account vanishes without
+  // taking those records down. A root account is never deletable here.
+  async deleteAccount(id: string) {
     const account = await this.accounts.findOne({ where: { id } });
     if (!account) throw new NotFoundException(`Account #${id} not found`);
-    if (account.isRoot === 1) throw new BadRequestException("Cannot revoke a root account");
-    account.enabled = 0;
-    await this.accounts.save(account);
+    if (account.isRoot === 1) throw new BadRequestException("Cannot delete a root account");
+    await this.accounts.delete({ id });
     return { ok: true };
   }
 }

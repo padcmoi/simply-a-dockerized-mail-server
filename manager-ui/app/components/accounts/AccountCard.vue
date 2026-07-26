@@ -8,7 +8,7 @@ interface ManagerAccount {
   groups: { id: string; name: string }[];
 }
 
-const emit = defineEmits<{ revoke: [] }>();
+const emit = defineEmits<{ delete: [] }>();
 
 defineProps<{
   account: ManagerAccount;
@@ -55,8 +55,8 @@ const { t } = useI18n();
       <UButton icon="i-lucide-pencil" size="sm" color="neutral" variant="outline" :to="`/accounts/${account.id}/edit`">
         {{ t("accounts.table.editAccount") }}
       </UButton>
-      <UButton v-if="account.enabled" icon="i-lucide-user-x" size="sm" color="error" variant="outline" @click="emit('revoke')">
-        {{ t("common.revoke") }}
+      <UButton icon="i-lucide-trash-2" size="sm" color="error" variant="outline" @click="emit('delete')">
+        {{ t("common.delete") }}
       </UButton>
     </div>
   </UCard>

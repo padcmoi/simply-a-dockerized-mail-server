@@ -9,7 +9,7 @@ import {
   GetAccountOverviewDocs,
   ListAccountNamesDocs,
   ListAccountsDocs,
-  RevokeAccountDocs,
+  DeleteAccountDocs,
   UpdateAccountDocs,
 } from "./crud.openapi";
 import { AccountsService } from "./crud.service";
@@ -74,8 +74,8 @@ export class AccountsController {
 
   @Delete(":id")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "revoke-account"] }])
-  @RevokeAccountDocs()
-  revoke(@Param("id", ParseUUIDPipe) id: string) {
-    return this.svc.revokeAccount(id);
+  @DeleteAccountDocs()
+  remove(@Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.deleteAccount(id);
   }
 }
