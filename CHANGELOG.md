@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- test(websocket): every data-backed watcher (dashboard, disk, domain recipients, aliases, quota, rspamd and postfix, plus notifications, sessions, the presence authorization and the rspamd-stats fetch) now has a unit spec exercising its payload closure, bringing the watchers directory to full function coverage (27-07-2026)
+- test(accounts): the account ownership and assignment service methods (owned and assignable recipients and aliases, attach and detach) are unit-tested, restoring the manager-api coverage gate above its 95% function threshold (27-07-2026)
 - test(core): the `useLocalePreference` spec stubs `useApi` and mocks the auth store, which the composable now instantiates at its top, so the pure-logic suite passes again (27-07-2026)
 - fix(ui): in the administration dashboard "Recently modified recipients" list, the domain line under a recipient's address is truncated instead of overflowing the card (27-07-2026)
 - refactor(admin): the personal space route is renamed from `/me` to `/my-space` (page directory, nav item, breadcrumb, header title map, login and error redirects, last-route fallback and the related specs), leaving the `/auth/jwt/me` API untouched (27-07-2026)

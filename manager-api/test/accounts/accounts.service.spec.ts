@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, HttpStatus, NotFoundException } from "@nestjs/common";
 import { AccountsService } from "../../src/api/accounts/crud/crud.service";
+import { ApiError } from "../../src/core/common/api-error";
 import { Account } from "../../src/core/entities/account.entity";
 import { AccountProfile } from "../../src/core/entities/account-profile.entity";
 import { Group } from "../../src/core/entities/group.entity";
@@ -407,6 +408,260 @@ describe("AccountsService", () => {
       expect(m.accounts.delete).toHaveBeenCalledWith({ id: "a1" });
       expect(m.accounts.save).not.toHaveBeenCalled();
       expect(res).toEqual({ ok: true });
+    });
+  });
+
+  describe("ownedRecipients", () => {
+    it("throws NotFound when the account is absent", async () => {
+      m.accounts.findOne.mockResolvedValue(null);
+      await expect(svc.ownedRecipients("x")).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("resolves each recipient's domain id, null when the domain is gone", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.virtualUsers.find.mockResolvedValue([
+        { id: 1, email: "a@ex.com", domain: "ex.com" },
+        { id: 2, email: "b@gone.com", domain: "gone.com" },
+      ]);
+      m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com" }]);
+
+      const res = await svc.ownedRecipients("a1");
+
+      expect(m.virtualUsers.find).toHaveBeenCalledWith({ where: { ownerId: "a1" }, order: { email: "ASC" } });
+      expect(res).toEqual([
+        { id: 1, email: "a@ex.com", domain: "ex.com", domainId: 5 },
+        { id: 2, email: "b@gone.com", domain: "gone.com", domainId: null },
+      ]);
+    });
+
+    it("skips the domain lookup when the account owns nothing", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.virtualUsers.find.mockResolvedValue([]);
+
+      const res = await svc.ownedRecipients("a1");
+
+      expect(res).toEqual([]);
+      expect(m.domains.find).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("ownedAliases", () => {
+    it("throws NotFound when the account is absent", async () => {
+      m.accounts.findOne.mockResolvedValue(null);
+      await expect(svc.ownedAliases("x")).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("resolves each alias's domain id from its domain name", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.aliases.find.mockResolvedValue([{ id: 3, source: "a@ex.com", destination: "b@ex.com", domain: "ex.com" }]);
+      m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com" }]);
+
+      const res = await svc.ownedAliases("a1");
+
+      expect(m.aliases.find).toHaveBeenCalledWith({ where: { ownerId: "a1" }, order: { source: "ASC" } });
+      expect(res).toEqual([{ id: 3, source: "a@ex.com", destination: "b@ex.com", domain: "ex.com", domainId: 5 }]);
+    });
+  });
+
+  describe("assignableRecipients", () => {
+    it("lists the unassigned domains and a capped, searched page", async () => {
+      const disc = qbMock<VirtualUser>();
+      disc.getRawMany.mockResolvedValue([{ domain: "ex.com" }]);
+      const page = qbMock<VirtualUser>();
+      page.getMany.mockResolvedValue([{ id: 1, email: "free@ex.com", domain: "ex.com" }]);
+      m.virtualUsers.createQueryBuilder.mockReturnValueOnce(disc).mockReturnValueOnce(page);
+      m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com" }]);
+
+      const res = await svc.assignableRecipients(undefined, "free");
+
+      expect(page.andWhere).toHaveBeenCalledWith("r.email LIKE :s", { s: "%free%" });
+      expect(page.take).toHaveBeenCalledWith(25);
+      expect(res.domains).toEqual([{ id: 5, domain: "ex.com" }]);
+      expect(res.items).toEqual([{ id: 1, email: "free@ex.com", domain: "ex.com", domainId: 5 }]);
+    });
+
+    it("filters on the picked domain when it is assignable", async () => {
+      const disc = qbMock<VirtualUser>();
+      disc.getRawMany.mockResolvedValue([{ domain: "ex.com" }]);
+      const page = qbMock<VirtualUser>();
+      page.getMany.mockResolvedValue([]);
+      m.virtualUsers.createQueryBuilder.mockReturnValueOnce(disc).mockReturnValueOnce(page);
+      m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com" }]);
+
+      await svc.assignableRecipients(5);
+
+      expect(page.andWhere).toHaveBeenCalledWith("r.domain = :dn", { dn: "ex.com" });
+    });
+
+    it("returns no items when the picked domain has none free", async () => {
+      const disc = qbMock<VirtualUser>();
+      disc.getRawMany.mockResolvedValue([{ domain: "ex.com" }]);
+      const page = qbMock<VirtualUser>();
+      m.virtualUsers.createQueryBuilder.mockReturnValueOnce(disc).mockReturnValueOnce(page);
+      m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com" }]);
+
+      const res = await svc.assignableRecipients(999);
+
+      expect(res).toEqual({ domains: [{ id: 5, domain: "ex.com" }], items: [] });
+      expect(page.getMany).not.toHaveBeenCalled();
+    });
+
+    it("short-circuits the domain lookup when nothing is unassigned", async () => {
+      const disc = qbMock<VirtualUser>();
+      disc.getRawMany.mockResolvedValue([]);
+      const page = qbMock<VirtualUser>();
+      page.getMany.mockResolvedValue([]);
+      m.virtualUsers.createQueryBuilder.mockReturnValueOnce(disc).mockReturnValueOnce(page);
+
+      const res = await svc.assignableRecipients();
+
+      expect(m.domains.find).not.toHaveBeenCalled();
+      expect(res).toEqual({ domains: [], items: [] });
+    });
+  });
+
+  describe("assignableAliases", () => {
+    it("lists the unassigned alias domains and a searched page", async () => {
+      const disc = qbMock<VirtualAlias>();
+      disc.getRawMany.mockResolvedValue([{ domain: "ex.com" }]);
+      const page = qbMock<VirtualAlias>();
+      page.getMany.mockResolvedValue([{ id: 3, source: "a@ex.com", destination: "b@ex.com", domain: "ex.com" }]);
+      m.aliases.createQueryBuilder.mockReturnValueOnce(disc).mockReturnValueOnce(page);
+      m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com" }]);
+
+      const res = await svc.assignableAliases(5, "a@");
+
+      expect(page.andWhere).toHaveBeenCalledWith("(a.source LIKE :s OR a.destination LIKE :s)", { s: "%a@%" });
+      expect(res.items).toEqual([{ id: 3, source: "a@ex.com", destination: "b@ex.com", domain: "ex.com", domainId: 5 }]);
+    });
+
+    it("returns no items when the picked alias domain has none free", async () => {
+      const disc = qbMock<VirtualAlias>();
+      disc.getRawMany.mockResolvedValue([{ domain: "ex.com" }]);
+      const page = qbMock<VirtualAlias>();
+      m.aliases.createQueryBuilder.mockReturnValueOnce(disc).mockReturnValueOnce(page);
+      m.domains.find.mockResolvedValue([{ id: 5, domain: "ex.com" }]);
+
+      const res = await svc.assignableAliases(999);
+
+      expect(res.items).toEqual([]);
+      expect(page.getMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("attachRecipient", () => {
+    it("throws NotFound when the account is absent", async () => {
+      m.accounts.findOne.mockResolvedValue(null);
+      await expect(svc.attachRecipient("x", 1)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("throws NotFound when the recipient is absent", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.virtualUsers.findOne.mockResolvedValue(null);
+      await expect(svc.attachRecipient("a1", 1)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("forbids assigning a postmaster mailbox", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.virtualUsers.findOne.mockResolvedValue({ id: 1, email: "postmaster@ex.com", ownerId: null });
+
+      const err = await svc.attachRecipient("a1", 1).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(ApiError);
+      if (err instanceof ApiError) expect(err.getStatus()).toBe(HttpStatus.FORBIDDEN);
+      expect(m.virtualUsers.save).not.toHaveBeenCalled();
+    });
+
+    it("rejects a recipient already assigned to someone", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.virtualUsers.findOne.mockResolvedValue({ id: 1, email: "a@ex.com", ownerId: "other" });
+
+      const err = await svc.attachRecipient("a1", 1).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(ApiError);
+      if (err instanceof ApiError) expect(err.getStatus()).toBe(HttpStatus.CONFLICT);
+    });
+
+    it("assigns a free recipient to the account", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      const recipient = { id: 1, email: "a@ex.com", ownerId: null };
+      m.virtualUsers.findOne.mockResolvedValue(recipient);
+      m.virtualUsers.save.mockResolvedValue({ ...recipient, ownerId: "a1" });
+
+      await svc.attachRecipient("a1", 1);
+
+      expect(m.virtualUsers.save).toHaveBeenCalledWith(expect.objectContaining({ id: 1, ownerId: "a1" }));
+    });
+  });
+
+  describe("detachRecipient", () => {
+    it("throws NotFound when the recipient is not owned by the account", async () => {
+      m.virtualUsers.findOne.mockResolvedValue(null);
+      await expect(svc.detachRecipient("a1", 1)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("clears the owner of a recipient the account owns", async () => {
+      m.virtualUsers.findOne.mockResolvedValue({ id: 1, email: "a@ex.com", ownerId: "a1" });
+
+      await svc.detachRecipient("a1", 1);
+
+      expect(m.virtualUsers.findOne).toHaveBeenCalledWith({ where: { id: 1, ownerId: "a1" } });
+      expect(m.virtualUsers.save).toHaveBeenCalledWith(expect.objectContaining({ id: 1, ownerId: null }));
+    });
+  });
+
+  describe("attachAlias", () => {
+    it("throws NotFound when the alias is absent", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.aliases.findOne.mockResolvedValue(null);
+      await expect(svc.attachAlias("a1", 1)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("forbids assigning a postmaster alias", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.aliases.findOne.mockResolvedValue({ id: 1, source: "postmaster@ex.com", ownerId: null });
+
+      const err = await svc.attachAlias("a1", 1).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(ApiError);
+      if (err instanceof ApiError) expect(err.getStatus()).toBe(HttpStatus.FORBIDDEN);
+    });
+
+    it("rejects an alias already assigned to someone", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.aliases.findOne.mockResolvedValue({ id: 1, source: "a@ex.com", ownerId: "other" });
+
+      const err = await svc.attachAlias("a1", 1).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(ApiError);
+      if (err instanceof ApiError) expect(err.getStatus()).toBe(HttpStatus.CONFLICT);
+    });
+
+    it("assigns a free alias to the account", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      const alias = { id: 1, source: "a@ex.com", ownerId: null };
+      m.aliases.findOne.mockResolvedValue(alias);
+      m.aliases.save.mockResolvedValue({ ...alias, ownerId: "a1" });
+
+      await svc.attachAlias("a1", 1);
+
+      expect(m.aliases.save).toHaveBeenCalledWith(expect.objectContaining({ id: 1, ownerId: "a1" }));
+    });
+  });
+
+  describe("detachAlias", () => {
+    it("throws NotFound when the alias is not owned by the account", async () => {
+      m.aliases.findOne.mockResolvedValue(null);
+      await expect(svc.detachAlias("a1", 1)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("clears the owner of an alias the account owns", async () => {
+      m.aliases.findOne.mockResolvedValue({ id: 1, source: "a@ex.com", ownerId: "a1" });
+
+      await svc.detachAlias("a1", 1);
+
+      expect(m.aliases.findOne).toHaveBeenCalledWith({ where: { id: 1, ownerId: "a1" } });
+      expect(m.aliases.save).toHaveBeenCalledWith(expect.objectContaining({ id: 1, ownerId: null }));
     });
   });
 });
