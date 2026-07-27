@@ -294,7 +294,7 @@ const recipientsPerDomain = computed(() => view.value.recipientsPerDomain);
             <UAvatar :alt="r.email" size="sm" />
             <div class="min-w-0 flex-1">
               <p class="font-medium truncate">{{ r.email }}</p>
-              <p class="text-xs text-muted">{{ r.domain }}</p>
+              <p class="text-xs text-muted truncate">{{ r.domain }}</p>
             </div>
             <UBadge :color="r.active ? 'success' : 'neutral'" variant="subtle">
               {{ r.active ? t("common.active") : t("common.inactive") }}
