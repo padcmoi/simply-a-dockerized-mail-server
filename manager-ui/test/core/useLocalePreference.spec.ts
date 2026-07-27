@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ref } from "vue";
 import { useLocalePreference } from "~/composables/useLocalePreference";
 
+vi.mock("~/stores/auth", () => ({ useAuthStore: () => ({ session: null }) }));
+
 // Pure-logic coverage of the tri-state locale preference. The browser-detection
 // branch of detectBrowserLocale() is client-only (`import.meta.client`), which is
 // falsy under vitest, so here `detected` falls back to the active i18n locale --
@@ -29,6 +31,7 @@ beforeEach(() => {
   vi.stubGlobal("countryFlagEmoji", (c: string) => c);
   // Fresh ref per call, defaulting to the requested initial value ("system").
   vi.stubGlobal("useLocalStorage", (_k: string, init: unknown) => ref(init));
+  vi.stubGlobal("useApi", () => ({ call: vi.fn() }));
 });
 
 describe("useLocalePreference", () => {

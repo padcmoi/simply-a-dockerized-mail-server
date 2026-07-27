@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- test(core): the `useLocalePreference` spec stubs `useApi` and mocks the auth store, which the composable now instantiates at its top, so the pure-logic suite passes again (27-07-2026)
 - fix(ui): in the administration dashboard "Recently modified recipients" list, the domain line under a recipient's address is truncated instead of overflowing the card (27-07-2026)
 - refactor(admin): the personal space route is renamed from `/me` to `/my-space` (page directory, nav item, breadcrumb, header title map, login and error redirects, last-route fallback and the related specs), leaving the `/auth/jwt/me` API untouched (27-07-2026)
 - feat(admin): the whole administration surface moves under `/admin/**` (the former dashboard becomes `/admin`, gated by `domains:access`, and every section is namespaced beneath it) and a new personal space at `/me` "My space" lists the domains, recipients and aliases the account owns and is the default landing after login. The sidebar keeps the personal space and the selected domain at the top and pins the admin sections to the bottom, only frontend navigation paths are prefixed (API calls are unchanged), and `GET /auth/jwt/me/overview` now also returns owned aliases (27-07-2026)
