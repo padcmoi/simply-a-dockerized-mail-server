@@ -8,9 +8,9 @@ const route = useRoute();
 // (login and other pre-auth pages) has no BreadcrumbProvider, so use the
 // non-throwing variant and simply feed nothing when the provider is absent.
 const breadcrumb = useBreadcrumbOptional();
-const { globalNavItems } = useNav(async () => {});
+const { personalNavItems, adminNavItems } = useNav(async () => {});
 
-const section = computed(() => navSectionFor(route.path, globalNavItems.value));
+const section = computed(() => navSectionFor(route.path, [...adminNavItems.value, ...personalNavItems.value]));
 
 watchEffect(() => breadcrumb?.set(section.value ? [section.value] : []));
 </script>

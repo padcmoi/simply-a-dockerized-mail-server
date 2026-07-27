@@ -34,7 +34,7 @@ const items = computed(() => [
 // are namespaced under /acl to keep them visually grouped and distinct from
 // the group's own settings.
 function targetFor(section: Section) {
-  const base = `/groups/${props.groupId}`;
+  const base = `/admin/groups/${props.groupId}`;
   if (section === "info") return base;
   if (section === "application") return `${base}/acl/app`;
   if (section === "domain") return `${base}/acl/domain`;

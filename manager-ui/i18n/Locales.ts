@@ -35,6 +35,8 @@ export interface Locales {
   };
   nav: {
     dashboard: string;
+    administration: string;
+    myspace: string;
     domains: string;
     rspamd: string;
     postfix: string;
@@ -48,6 +50,18 @@ export interface Locales {
     groups: string;
     apiTokens: string;
     config: string;
+  };
+  myspace: {
+    alertTitle: string;
+    alertDescription: string;
+    ownedDomains: string;
+    ownedRecipients: string;
+    ownedAliases: string;
+    noDomains: string;
+    noRecipients: string;
+    noAliases: string;
+    quotaLabel: string;
+    loadFailed: string;
   };
   config: {
     landingAlertTitle: string;

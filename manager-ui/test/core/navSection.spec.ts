@@ -2,31 +2,38 @@ import { describe, it, expect } from "vitest";
 import { navSectionFor } from "~/utils/navSection";
 
 const NAV = [
-  { label: "Dashboard", to: "/dashboard" },
-  { label: "Support", to: "/tickets" },
-  { label: "Domains", to: "/domains" },
+  { label: "Administration", to: "/admin" },
+  { label: "My space", to: "/me" },
+  { label: "Domains", to: "/admin/domains" },
+  { label: "Support", to: "/admin/tickets" },
 ];
 
 describe("navSectionFor", () => {
   it("finds the section a deep path belongs to", () => {
-    expect(navSectionFor("/tickets/18", NAV)).toEqual({ label: "Support", to: "/tickets" });
+    expect(navSectionFor("/admin/tickets/18", NAV)).toEqual({ label: "Support", to: "/admin/tickets" });
   });
 
   it("matches the exact section root", () => {
-    expect(navSectionFor("/domains", NAV)).toEqual({ label: "Domains", to: "/domains" });
+    expect(navSectionFor("/admin/domains", NAV)).toEqual({ label: "Domains", to: "/admin/domains" });
   });
 
-  // The dashboard is the home the breadcrumb already prepends, never a section.
-  it("never returns the dashboard", () => {
-    expect(navSectionFor("/dashboard", NAV)).toBeNull();
+  it("prefers the longest matching section over a shared parent prefix", () => {
+    expect(navSectionFor("/admin/domains/example.com/recipients", NAV)).toEqual({ label: "Domains", to: "/admin/domains" });
+  });
+
+  it("resolves the bare /admin dashboard to Administration", () => {
+    expect(navSectionFor("/admin", NAV)).toEqual({ label: "Administration", to: "/admin" });
+  });
+
+  it("never returns the personal space", () => {
+    expect(navSectionFor("/me", NAV)).toBeNull();
   });
 
   it("returns nothing for an unknown path", () => {
     expect(navSectionFor("/nowhere", NAV)).toBeNull();
   });
 
-  // A path that merely shares a prefix but not a segment boundary must not match.
-  it("does not match a partial segment", () => {
-    expect(navSectionFor("/ticketsxyz", NAV)).toBeNull();
+  it("does not bind a partial segment to a section", () => {
+    expect(navSectionFor("/admin/domainsxyz", NAV)).toEqual({ label: "Administration", to: "/admin" });
   });
 });

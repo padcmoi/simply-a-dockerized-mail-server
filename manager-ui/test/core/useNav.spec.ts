@@ -56,30 +56,36 @@ function asUser() {
 const noop = async () => {};
 
 describe("useNav global nav items", () => {
-  it("shows every section for a root account (perms bypassed)", () => {
+  it("lists every admin section for a root account (perms bypassed)", () => {
     asRoot();
-    const { globalNavItems } = useNav(noop);
-    expect(globalNavItems.value.map((i) => i.to)).toEqual([
-      "/dashboard",
-      "/domains",
-      "/rspamd",
-      "/postfix",
-      "/sieve",
-      "/accounts",
-      "/groups",
-      "/tickets",
-      "/api-tokens",
-      "/config",
+    const { adminNavItems } = useNav(noop);
+    expect(adminNavItems.value.map((i) => i.to)).toEqual([
+      "/admin",
+      "/admin/domains",
+      "/admin/rspamd",
+      "/admin/postfix",
+      "/admin/sieve",
+      "/admin/accounts",
+      "/admin/groups",
+      "/admin/tickets",
+      "/admin/api-tokens",
+      "/admin/config",
     ]);
   });
 
-  it("shows only the dashboard for a permissionless non-root account", () => {
+  it("always exposes the personal space, whatever the permissions", () => {
     asUser();
-    const { globalNavItems } = useNav(noop);
-    expect(globalNavItems.value.map((i) => i.to)).toEqual(["/dashboard"]);
+    const { personalNavItems } = useNav(noop);
+    expect(personalNavItems.value.map((i) => i.to)).toEqual(["/me"]);
   });
 
-  it("reveals exactly the sections the account holds `access` on", () => {
+  it("shows no admin section for a permissionless non-root account", () => {
+    asUser();
+    const { adminNavItems } = useNav(noop);
+    expect(adminNavItems.value).toEqual([]);
+  });
+
+  it("reveals exactly the admin sections the account holds `access` on", () => {
     asUser();
     usePermissionsStore().data = {
       global: [
@@ -88,17 +94,18 @@ describe("useNav global nav items", () => {
       ],
       domain: [],
     };
-    const { globalNavItems } = useNav(noop);
-    expect(globalNavItems.value.map((i) => i.to)).toEqual(["/dashboard", "/accounts", "/groups"]);
+    const { adminNavItems } = useNav(noop);
+    expect(adminNavItems.value.map((i) => i.to)).toEqual(["/admin/accounts", "/admin/groups"]);
   });
 
   it("marks the section active with a prefix-aware match on the route path", () => {
     asRoot();
-    vi.stubGlobal("useRoute", () => ({ path: "/domains/example.com" }));
-    const { globalNavItems } = useNav(noop);
-    const byTo = Object.fromEntries(globalNavItems.value.map((i) => [i.to, i.active]));
-    expect(byTo["/domains"]).toBe(true);
-    expect(byTo["/dashboard"]).toBe(false);
+    vi.stubGlobal("useRoute", () => ({ path: "/admin/domains/example.com" }));
+    const { adminNavItems, personalNavItems } = useNav(noop);
+    const byTo = Object.fromEntries([...adminNavItems.value, ...personalNavItems.value].map((i) => [i.to, i.active]));
+    expect(byTo["/admin/domains"]).toBe(true);
+    expect(byTo["/admin"]).toBe(false);
+    expect(byTo["/me"]).toBe(false);
   });
 });
 
@@ -114,12 +121,12 @@ describe("useNav domain nav items", () => {
     useDomainStore().select({ id: 1, domain: "example.com", quota: "0", active: 1 });
     const { domainNavItems } = useNav(noop);
     expect(domainNavItems.value.map((i) => i.to)).toEqual([
-      "/domains/example.com",
-      "/domains/example.com/recipients",
-      "/domains/example.com/aliases",
-      "/domains/example.com/quotas",
-      "/domains/example.com/app",
-      "/domains/example.com/rspamd",
+      "/admin/domains/example.com",
+      "/admin/domains/example.com/recipients",
+      "/admin/domains/example.com/aliases",
+      "/admin/domains/example.com/quotas",
+      "/admin/domains/example.com/app",
+      "/admin/domains/example.com/rspamd",
     ]);
   });
 
@@ -131,16 +138,16 @@ describe("useNav domain nav items", () => {
       domain: [{ domainId: 1, domainName: "example.com", resource: "recipients", action: "access" }],
     };
     const { domainNavItems } = useNav(noop);
-    expect(domainNavItems.value.map((i) => i.to)).toEqual(["/domains/example.com/recipients"]);
+    expect(domainNavItems.value.map((i) => i.to)).toEqual(["/admin/domains/example.com/recipients"]);
   });
 
   it("highlights the domain home only on an exact path match", () => {
     asRoot();
     useDomainStore().select({ id: 1, domain: "example.com", quota: "0", active: 1 });
-    vi.stubGlobal("useRoute", () => ({ path: "/domains/example.com" }));
+    vi.stubGlobal("useRoute", () => ({ path: "/admin/domains/example.com" }));
     const { domainNavItems } = useNav(noop);
-    const home = domainNavItems.value.find((i) => i.to === "/domains/example.com");
-    const recipients = domainNavItems.value.find((i) => i.to === "/domains/example.com/recipients");
+    const home = domainNavItems.value.find((i) => i.to === "/admin/domains/example.com");
+    const recipients = domainNavItems.value.find((i) => i.to === "/admin/domains/example.com/recipients");
     expect(home?.active).toBe(true);
     expect(recipients?.active).toBe(false);
   });

@@ -7,6 +7,7 @@ import { AccountProfile } from "../../entities/account-profile.entity";
 import { GroupMember } from "../../entities/group-member.entity";
 import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
+import { VirtualAlias } from "../../entities/virtual-alias.entity";
 import { VirtualDomain } from "../../entities/virtual-domain.entity";
 import { VirtualUser } from "../../entities/virtual-user.entity";
 import { CustomPermissionGuardModule } from "../../custom-permission-guard/custom-permission-guard.module";
@@ -20,7 +21,16 @@ import { JwtStrategy } from "./jwt.strategy";
   imports: [
     PassportModule,
     JwtModule.register({}),
-    TypeOrmModule.forFeature([Account, AccountProfile, Group, GroupMember, RefreshToken, VirtualDomain, VirtualUser]),
+    TypeOrmModule.forFeature([
+      Account,
+      AccountProfile,
+      Group,
+      GroupMember,
+      RefreshToken,
+      VirtualAlias,
+      VirtualDomain,
+      VirtualUser,
+    ]),
     CustomPermissionGuardModule,
     GeocodingModule,
     MailerModule,

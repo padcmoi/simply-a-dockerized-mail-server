@@ -23,7 +23,7 @@ const { t } = useI18n();
       <div class="flex items-center gap-2 min-w-0">
         <UAvatar :alt="account.displayName ?? account.email" size="sm" />
         <NuxtLink
-          :to="`/accounts/${account.id}`"
+          :to="`/admin/accounts/${account.id}`"
           class="font-semibold truncate break-all text-primary hover:underline underline-offset-2 transition-colors"
         >
           {{ account.email }}
@@ -59,10 +59,16 @@ const { t } = useI18n();
       </div>
     </div>
     <div v-if="!account.isRoot" class="mt-3 pt-3 border-t border-default flex flex-wrap items-center gap-2">
-      <UButton icon="i-lucide-users-round" size="sm" color="neutral" variant="outline" :to="`/accounts/${account.id}/groups`">
+      <UButton
+        icon="i-lucide-users-round"
+        size="sm"
+        color="neutral"
+        variant="outline"
+        :to="`/admin/accounts/${account.id}/groups`"
+      >
         {{ t("accounts.table.manageGroups") }}
       </UButton>
-      <UButton icon="i-lucide-pencil" size="sm" color="neutral" variant="outline" :to="`/accounts/${account.id}/edit`">
+      <UButton icon="i-lucide-pencil" size="sm" color="neutral" variant="outline" :to="`/admin/accounts/${account.id}/edit`">
         {{ t("accounts.table.editAccount") }}
       </UButton>
       <UButton icon="i-lucide-trash-2" size="sm" color="error" variant="outline" @click="emit('delete')">

@@ -58,7 +58,7 @@ watch(sorted, () => {
           :key="r.recipient"
           class="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-elevated/50"
         >
-          <span class="truncate min-w-0" :title="r.recipient">{{ r.recipient }}</span>
+          <TruncatedText :text="r.recipient" />
           <div class="flex items-center gap-3 shrink-0 tabular-nums">
             <span class="flex items-center gap-1 text-success">
               <UIcon name="i-lucide-thumbs-up" class="size-3.5" />{{ r.learnsHam.toLocaleString() }}

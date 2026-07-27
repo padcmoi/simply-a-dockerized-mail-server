@@ -374,7 +374,7 @@ export function useDomainDashboard() {
   const barChartHeight = computed(() => Math.max(160, topMailboxes.value.length * 36));
 
   watchEffect(() => {
-    setBreadcrumb([{ label: t("nav.domains"), to: "/domains" }, { label: domain.value?.domain ?? "..." }]);
+    setBreadcrumb([{ label: t("nav.domains"), to: "/admin/domains" }, { label: domain.value?.domain ?? "..." }]);
   });
 
   async function rotateDkim() {

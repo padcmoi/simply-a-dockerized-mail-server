@@ -3,6 +3,7 @@ import request from "supertest";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
 import { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
+import { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
@@ -31,6 +32,7 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
   const findGroupDomainPermissions = vi.fn();
   const domainRepo = { findBy: vi.fn(), find: vi.fn() };
   const virtualUserRepo = { find: vi.fn() };
+  const virtualAliasRepo = { find: vi.fn() };
 
   beforeAll(async () => {
     h = await buildHarness({
@@ -39,6 +41,7 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
         { provide: JwtAuthService, useValue: auth },
         { provide: getRepositoryToken(VirtualDomain), useValue: domainRepo },
         { provide: getRepositoryToken(VirtualUser), useValue: virtualUserRepo },
+        { provide: getRepositoryToken(VirtualAlias), useValue: virtualAliasRepo },
       ],
     });
     Object.assign(h.cpg.guard, {
@@ -121,14 +124,17 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
     it("401 with a garbage bearer token", async () => {
       await api().get("/api/v1/auth/jwt/me/overview").set("Authorization", "Bearer nope").expect(401);
     });
-    it("200 with a token: returns the caller's owned domains and recipients", async () => {
+    it("200 with a token: returns the caller's owned domains, recipients and aliases", async () => {
       domainRepo.find.mockResolvedValueOnce([{ id: 5, domain: "ex.com", active: 1, quota: "0" }]);
       virtualUserRepo.find.mockResolvedValueOnce([{ id: 9, email: "j@ex.com", domain: "ex.com", active: 0, quota: "100" }]);
+      virtualAliasRepo.find.mockResolvedValueOnce([{ id: 3, source: "c@ex.com", destination: "j@ex.com", domain: "ex.com" }]);
       const res = await api().get("/api/v1/auth/jwt/me/overview").set(bearer(h.token(USER))).expect(200);
       expect(domainRepo.find).toHaveBeenCalledWith({ where: { ownerId: USER.id }, order: { domain: "ASC" } });
       expect(virtualUserRepo.find).toHaveBeenCalledWith({ where: { ownerId: USER.id }, order: { email: "ASC" } });
+      expect(virtualAliasRepo.find).toHaveBeenCalledWith({ where: { ownerId: USER.id }, order: { source: "ASC" } });
       expect(res.body.domains).toEqual([{ id: 5, domain: "ex.com", active: true, quota: "0" }]);
       expect(res.body.recipients).toEqual([{ id: 9, email: "j@ex.com", domain: "ex.com", active: false, quota: "100" }]);
+      expect(res.body.aliases).toEqual([{ id: 3, source: "c@ex.com", destination: "j@ex.com", domain: "ex.com" }]);
     });
   });
 

@@ -36,7 +36,7 @@ const { t } = useI18n();
           v-for="d in domains"
           :key="d.id"
           class="py-3 flex items-center gap-3 cursor-pointer hover:bg-elevated/50 transition-colors rounded-md px-1 -mx-1"
-          @click="navigateTo(`/domains/${d.domain}`)"
+          @click="navigateTo(`/admin/domains/${d.domain}`)"
         >
           <div class="rounded-md p-2 bg-elevated shrink-0">
             <UIcon name="i-lucide-globe" class="text-primary" />
@@ -62,7 +62,7 @@ const { t } = useI18n();
           v-for="r in recipients"
           :key="r.id"
           class="py-3 flex items-center gap-3 cursor-pointer hover:bg-elevated/50 transition-colors rounded-md px-1 -mx-1"
-          @click="navigateTo(`/domains/${r.domain}/recipients`)"
+          @click="navigateTo(`/admin/domains/${r.domain}/recipients`)"
         >
           <UAvatar :alt="r.email" size="sm" />
           <div class="min-w-0 flex-1">

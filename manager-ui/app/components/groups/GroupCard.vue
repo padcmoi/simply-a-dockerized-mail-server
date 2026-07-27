@@ -13,7 +13,9 @@ const { t } = useI18n();
     <div class="flex items-start justify-between gap-2">
       <div class="min-w-0">
         <div class="flex items-center gap-2 min-w-0">
-          <NuxtLink :to="`/groups/${group.id}`" class="font-semibold truncate hover:underline min-w-0">{{ group.name }}</NuxtLink>
+          <NuxtLink :to="`/admin/groups/${group.id}`" class="font-semibold truncate hover:underline min-w-0">{{
+            group.name
+          }}</NuxtLink>
           <UBadge v-if="group.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">{{
             t("groups.defaultBadge")
           }}</UBadge>

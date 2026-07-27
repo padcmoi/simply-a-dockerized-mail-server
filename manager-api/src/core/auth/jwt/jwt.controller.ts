@@ -21,6 +21,7 @@ import { In, Repository } from "typeorm";
 import { PaginationQuery, paginationQuerySchema } from "../../common/pagination.validation";
 import { ZodValidationPipe } from "../../common/zod.pipe";
 import { CustomPermissionGuardService } from "../../custom-permission-guard/custom-permission-guard.service";
+import { VirtualAlias } from "../../entities/virtual-alias.entity";
 import { VirtualDomain } from "../../entities/virtual-domain.entity";
 import { VirtualUser } from "../../entities/virtual-user.entity";
 import { Public } from "../auth.decorator";
@@ -52,7 +53,8 @@ export class JwtAuthController {
     private readonly auth: JwtAuthService,
     private readonly cpg: CustomPermissionGuardService,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
-    @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>
+    @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>,
+    @InjectRepository(VirtualAlias) private readonly virtualAliases: Repository<VirtualAlias>
   ) {}
 
   // Resolves each domain-scoped permission's domainId to its FQDN, server-side,
@@ -105,20 +107,23 @@ export class JwtAuthController {
     return this.auth.me(req.user.id);
   }
 
-  // Self-scoped overview: the domains and recipients the caller owns (owner_id on
-  // virtual_domains / virtual_users). Powers the "what you own" section of the
-  // profile page; same shape as the admin GET /accounts/:id/overview, minus the
-  // account block the caller already has from GET /me.
+  // Self-scoped overview: the domains, recipients and aliases the caller owns
+  // (owner_id on virtual_domains / virtual_users / virtual_aliases). Powers the
+  // personal space (/me) and the profile "what you own" section; same shape as
+  // the admin GET /accounts/:id/overview, minus the account block the caller
+  // already has from GET /me.
   @Get("me/overview")
   @JwtMeOverviewDocs()
   async meOverview(@Req() req: AuthedRequest) {
-    const [domains, recipients] = await Promise.all([
+    const [domains, recipients, aliases] = await Promise.all([
       this.domains.find({ where: { ownerId: req.user.id }, order: { domain: "ASC" } }),
       this.virtualUsers.find({ where: { ownerId: req.user.id }, order: { email: "ASC" } }),
+      this.virtualAliases.find({ where: { ownerId: req.user.id }, order: { source: "ASC" } }),
     ]);
     return {
       domains: domains.map((d) => ({ id: d.id, domain: d.domain, active: d.active === 1, quota: d.quota })),
       recipients: recipients.map((r) => ({ id: r.id, email: r.email, domain: r.domain, active: r.active === 1, quota: r.quota })),
+      aliases: aliases.map((a) => ({ id: a.id, source: a.source, destination: a.destination, domain: a.domain })),
     };
   }
 

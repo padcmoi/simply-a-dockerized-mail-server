@@ -2,6 +2,8 @@ import type { Locales } from "../../Locales";
 
 export default {
   dashboard: "Dashboard",
+  administration: "Administration",
+  myspace: "My space",
   domains: "Domains",
   rspamd: "Rspamd",
   postfix: "Postfix",

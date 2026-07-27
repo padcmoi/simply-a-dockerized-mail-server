@@ -16,7 +16,7 @@ const { t } = useI18n();
 <template>
   <UCard>
     <div class="flex items-center justify-between gap-2">
-      <span class="font-semibold truncate">{{ item.domain }}</span>
+      <span class="font-semibold truncate min-w-0">{{ item.domain }}</span>
       <UBadge :color="item.active ? 'success' : 'neutral'" variant="subtle" size="sm">
         {{ item.active ? t("common.yes") : t("common.no") }}
       </UBadge>

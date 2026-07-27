@@ -3,7 +3,7 @@ import { useAuthStore } from "~/stores/auth";
 import { useDomainStore } from "~/stores/domain";
 
 const { open, close } = useSidebar();
-const { globalNavItems, domainNavItems, userItems } = useNav(onSignOut);
+const { personalNavItems, adminNavItems, domainNavItems, userItems } = useNav(onSignOut);
 
 const domainStore = useDomainStore();
 const auth = useAuthStore();
@@ -44,7 +44,7 @@ async function onSignOut() {
 
 function closeDomain() {
   domainStore.clear();
-  navigateTo("/domains");
+  navigateTo("/admin/domains");
 }
 </script>
 
@@ -66,47 +66,70 @@ function closeDomain() {
         color="neutral"
         variant="ghost"
         square
-        to="/dashboard"
+        to="/me"
         class="w-full overflow-hidden"
         :ui="{ leadingIcon: 'text-primary' }"
       />
     </template>
 
     <template #default="{ state }">
-      <UNavigationMenu
-        :key="`global-${state}`"
-        :items="globalNavItems"
-        orientation="vertical"
-        :ui="{ link: 'p-1.5 overflow-hidden' }"
-      />
+      <div class="flex flex-col h-full min-h-0">
+        <div class="flex-1 min-h-0 overflow-y-auto">
+          <UNavigationMenu
+            :key="`personal-${state}`"
+            :items="personalNavItems"
+            orientation="vertical"
+            :ui="{ link: 'p-1.5 overflow-hidden' }"
+          />
 
-      <template v-if="domainStore.selected">
-        <USeparator class="my-2" />
-        <div class="flex items-center gap-1.5 px-1.5 py-1 min-w-0">
-          <NuxtLink :to="`/domains/${domainStore.selected.domain}`" class="flex items-center gap-1.5 min-w-0 flex-1 group">
-            <UIcon name="i-lucide-folder-open" class="text-primary shrink-0 size-4" />
-            <span v-if="open" class="text-xs font-semibold truncate text-muted group-hover:text-primary transition-colors">
-              {{ domainStore.selected.domain }}
-            </span>
-          </NuxtLink>
-          <UButton
-            v-if="open"
-            icon="i-lucide-x"
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            square
-            class="shrink-0"
-            @click="closeDomain"
+          <template v-if="domainStore.selected">
+            <USeparator class="my-2" />
+            <div class="flex items-center gap-1.5 px-1.5 py-1 min-w-0">
+              <NuxtLink
+                :to="`/admin/domains/${domainStore.selected.domain}`"
+                class="flex items-center gap-1.5 min-w-0 flex-1 group"
+              >
+                <UIcon name="i-lucide-folder-open" class="text-primary shrink-0 size-4" />
+                <div v-if="open" class="min-w-0 flex-1">
+                  <TruncatedText
+                    :text="domainStore.selected.domain"
+                    :limit="22"
+                    text-class="text-xs font-semibold text-muted group-hover:text-primary transition-colors"
+                  />
+                </div>
+              </NuxtLink>
+              <UButton
+                v-if="open"
+                icon="i-lucide-x"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                square
+                class="shrink-0"
+                @click="closeDomain"
+              />
+            </div>
+            <div :class="open ? 'ml-3 border-l border-default pl-1.5' : ''">
+              <UNavigationMenu
+                :key="`domain-${state}`"
+                :items="domainNavItems"
+                orientation="vertical"
+                :ui="{ link: 'p-1.5 overflow-hidden' }"
+              />
+            </div>
+          </template>
+        </div>
+
+        <div class="shrink-0">
+          <USeparator class="my-2" />
+          <UNavigationMenu
+            :key="`admin-${state}`"
+            :items="adminNavItems"
+            orientation="vertical"
+            :ui="{ link: 'p-1.5 overflow-hidden' }"
           />
         </div>
-        <UNavigationMenu
-          :key="`domain-${state}`"
-          :items="domainNavItems"
-          orientation="vertical"
-          :ui="{ link: 'p-1.5 overflow-hidden' }"
-        />
-      </template>
+      </div>
     </template>
 
     <template #footer>

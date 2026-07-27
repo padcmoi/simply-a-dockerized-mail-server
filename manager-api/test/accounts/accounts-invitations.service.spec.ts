@@ -71,7 +71,7 @@ describe("AccountsInvitationsService", () => {
       m.invitations.findOne.mockResolvedValue(null);
       m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });
 
-      const res = await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, useDomainGroup: false }, BASE);
+      const res = await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE);
 
       expect(m.domains.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
       expect(m.invitations.save).toHaveBeenCalledTimes(1);
@@ -94,7 +94,7 @@ describe("AccountsInvitationsService", () => {
       m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });
       m.appSettings.get.mockReturnValue({ offlineNotifyAfterMs: 0, offlineSweepIntervalMs: 0, mailMinIntervalMs: 0, managerUrl: "https://mail-manager.gestionpratique.ovh" });
 
-      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, useDomainGroup: false }, BASE);
+      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE);
 
       expect(m.mailer.sendInvitation).toHaveBeenCalledWith(
         expect.objectContaining({ link: expect.stringMatching(/^https:\/\/mail-manager\.gestionpratique\.ovh\/invite\//) })
@@ -105,7 +105,7 @@ describe("AccountsInvitationsService", () => {
       m.invitations.findOne.mockResolvedValue(null);
       m.domains.findOne.mockResolvedValue(null);
       await expect(
-        svc.sendInvitation(actor, { email: "new@x.com", domainId: 99, groupIds: [], makeOwner: false, useDomainGroup: false }, BASE)
+        svc.sendInvitation(actor, { email: "new@x.com", domainId: 99, groupIds: [], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE)
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(m.invitations.save).not.toHaveBeenCalled();
       expect(m.mailer.sendInvitation).not.toHaveBeenCalled();
@@ -116,7 +116,7 @@ describe("AccountsInvitationsService", () => {
       m.invitations.findOne.mockResolvedValue(existing);
       m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });
 
-      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, useDomainGroup: false }, BASE);
+      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE);
 
       expect(m.invitations.save).toHaveBeenCalledWith(existing);
       expect(existing.expiresAt.getTime()).toBeLessThanOrEqual(Date.now());
@@ -126,7 +126,7 @@ describe("AccountsInvitationsService", () => {
     it("leaves an already-expired previous invitation untouched", async () => {
       m.invitations.findOne.mockResolvedValue({ id: 1, email: "new@x.com", expiresAt: new Date(Date.now() - 3600_000) });
       m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });
-      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, useDomainGroup: false }, BASE);
+      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE);
       expect(m.invitations.save).toHaveBeenCalledTimes(1);
     });
 
@@ -140,7 +140,7 @@ describe("AccountsInvitationsService", () => {
       m.cpg.guard.findGroupGlobalPermissions.mockResolvedValue([{ resource: "accounts", action: "access" }]);
       m.cpg.guard.findGroupDomainPermissions.mockResolvedValue([]);
 
-      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: ["g1", "g2"], makeOwner: false, useDomainGroup: false }, BASE);
+      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: ["g1", "g2"], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE);
 
       expect(m.antiEscalation.assertActingUserHolds).toHaveBeenCalledTimes(2);
       expect(m.invitations.create).toHaveBeenCalledWith(expect.objectContaining({ groupIds: JSON.stringify(["g1", "g2"]) }));
@@ -151,7 +151,7 @@ describe("AccountsInvitationsService", () => {
       m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });
       m.groups.findBy.mockResolvedValue([{ id: "g1", name: "Admins" }]);
       await expect(
-        svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: ["g1", "ghost"], makeOwner: false, useDomainGroup: false }, BASE)
+        svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: ["g1", "ghost"], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE)
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(m.invitations.save).not.toHaveBeenCalled();
     });
@@ -162,7 +162,7 @@ describe("AccountsInvitationsService", () => {
       m.groups.findBy.mockResolvedValue([{ id: "g1", name: "Admins" }]);
       m.antiEscalation.assertActingUserHolds.mockRejectedValue(new Error("escalation"));
       await expect(
-        svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: ["g1"], makeOwner: false, useDomainGroup: false }, BASE)
+        svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: ["g1"], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE)
       ).rejects.toThrow("escalation");
       expect(m.invitations.save).not.toHaveBeenCalled();
       expect(m.mailer.sendInvitation).not.toHaveBeenCalled();
@@ -171,7 +171,7 @@ describe("AccountsInvitationsService", () => {
     it("builds the invite link from the given base url", async () => {
       m.invitations.findOne.mockResolvedValue(null);
       m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });
-      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, useDomainGroup: false }, "https://ui.test/");
+      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 1, groupIds: [], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, "https://ui.test/");
       const arg = m.mailer.sendInvitation.mock.calls.at(-1)![0] as { link: string };
       expect(arg.link).toMatch(/^https:\/\/ui\.test\/invite\/[a-f0-9]+$/);
     });
@@ -181,7 +181,7 @@ describe("AccountsInvitationsService", () => {
       m.domains.findOne.mockResolvedValue({ id: 7, domain: "example.com", ownerId: null });
       await svc.sendInvitation(
         { id: "inviter-id", isRoot: true },
-        { email: "new@x.com", domainId: 7, groupIds: [], makeOwner: true, useDomainGroup: false },
+        { email: "new@x.com", domainId: 7, groupIds: [], makeOwner: true, recipientIds: [], aliasIds: [], useDomainGroup: false },
         BASE
       );
       expect(m.cpg.guard.assertOne.global).not.toHaveBeenCalled();
@@ -191,7 +191,7 @@ describe("AccountsInvitationsService", () => {
     it("requires both the accounts and domains ownership actions from a non-root inviter", async () => {
       m.invitations.findOne.mockResolvedValue(null);
       m.domains.findOne.mockResolvedValue({ id: 7, domain: "example.com", ownerId: null });
-      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 7, groupIds: [], makeOwner: true, useDomainGroup: false }, BASE);
+      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 7, groupIds: [], makeOwner: true, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE);
       expect(m.cpg.guard.assertOne.global).toHaveBeenCalledWith("inviter-id", "accounts", { acrud: ["set-domain-owner"] });
       expect(m.cpg.guard.assertOne.global).toHaveBeenCalledWith("inviter-id", "domains", {
         acrud: ["transfer-domain-ownership"],
@@ -207,7 +207,7 @@ describe("AccountsInvitationsService", () => {
       m.domains.findOne.mockResolvedValue({ id: 7, domain: "example.com", ownerId: null });
       m.cpg.guard.assertOne.global.mockRejectedValueOnce(new ForbiddenException("nope"));
       await expect(
-        svc.sendInvitation(actor, { email: "new@x.com", domainId: 7, groupIds: [], makeOwner: true, useDomainGroup: false }, BASE)
+        svc.sendInvitation(actor, { email: "new@x.com", domainId: 7, groupIds: [], makeOwner: true, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE)
       ).rejects.toBeInstanceOf(ForbiddenException);
       expect(m.invitations.save).not.toHaveBeenCalled();
       expect(m.mailer.sendInvitation).not.toHaveBeenCalled();
@@ -216,7 +216,7 @@ describe("AccountsInvitationsService", () => {
     it("never checks the ownership action when makeOwner is false", async () => {
       m.invitations.findOne.mockResolvedValue(null);
       m.domains.findOne.mockResolvedValue({ id: 7, domain: "example.com", ownerId: null });
-      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 7, groupIds: [], makeOwner: false, useDomainGroup: false }, BASE);
+      await svc.sendInvitation(actor, { email: "new@x.com", domainId: 7, groupIds: [], makeOwner: false, recipientIds: [], aliasIds: [], useDomainGroup: false }, BASE);
       expect(m.cpg.guard.assertOne.global).not.toHaveBeenCalled();
       expect(m.invitations.create).toHaveBeenCalledWith(expect.objectContaining({ ownerDomainId: null }));
     });

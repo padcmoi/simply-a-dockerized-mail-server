@@ -41,34 +41,40 @@ export function useNav(onSignOut: () => Promise<void>) {
     return auth.session?.isRoot === true || perms.hasDomain(domainId, resource, "access");
   }
 
-  const globalNavItems = computed<NavigationMenuItem[]>(() => [
-    { label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: "/dashboard", active: isActive("/dashboard") },
+  const personalNavItems = computed<NavigationMenuItem[]>(() => [
+    { label: t("nav.myspace"), icon: "i-lucide-house", to: "/me", active: isActive("/me") },
+  ]);
+
+  const adminNavItems = computed<NavigationMenuItem[]>(() => [
     ...(canAccessGlobal("domains")
-      ? [{ label: t("nav.domains"), icon: "i-lucide-globe", to: "/domains", active: isActive("/domains") }]
+      ? [{ label: t("nav.administration"), icon: "i-lucide-layout-dashboard", to: "/admin", active: route.path === "/admin" }]
+      : []),
+    ...(canAccessGlobal("domains")
+      ? [{ label: t("nav.domains"), icon: "i-lucide-globe", to: "/admin/domains", active: isActive("/admin/domains") }]
       : []),
     ...(canAccessGlobal("rspamd")
-      ? [{ label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/rspamd", active: isActive("/rspamd") }]
+      ? [{ label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/admin/rspamd", active: isActive("/admin/rspamd") }]
       : []),
     ...(canAccessGlobal("postfix")
-      ? [{ label: t("nav.postfix"), icon: "i-lucide-send", to: "/postfix", active: isActive("/postfix") }]
+      ? [{ label: t("nav.postfix"), icon: "i-lucide-send", to: "/admin/postfix", active: isActive("/admin/postfix") }]
       : []),
     ...(canAccessGlobal("sieve")
-      ? [{ label: t("nav.sieve"), icon: "i-lucide-filter", to: "/sieve", active: isActive("/sieve") }]
+      ? [{ label: t("nav.sieve"), icon: "i-lucide-filter", to: "/admin/sieve", active: isActive("/admin/sieve") }]
       : []),
     ...(canAccessGlobal("accounts")
-      ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/accounts", active: isActive("/accounts") }]
+      ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/admin/accounts", active: isActive("/admin/accounts") }]
       : []),
     ...(canAccessGlobal("groups")
-      ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/groups", active: isActive("/groups") }]
+      ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/admin/groups", active: isActive("/admin/groups") }]
       : []),
     ...(canAccessGlobal("tickets")
-      ? [{ label: t("nav.tickets"), icon: "i-lucide-life-buoy", to: "/tickets", active: isActive("/tickets") }]
+      ? [{ label: t("nav.tickets"), icon: "i-lucide-life-buoy", to: "/admin/tickets", active: isActive("/admin/tickets") }]
       : []),
     ...(canAccessGlobal("api-tokens")
-      ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/api-tokens", active: isActive("/api-tokens") }]
+      ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/admin/api-tokens", active: isActive("/admin/api-tokens") }]
       : []),
     ...(auth.session?.isRoot === true
-      ? [{ label: t("nav.config"), icon: "i-lucide-settings-2", to: "/config", active: isActive("/config") }]
+      ? [{ label: t("nav.config"), icon: "i-lucide-settings-2", to: "/admin/config", active: isActive("/admin/config") }]
       : []),
   ]);
 
@@ -76,7 +82,7 @@ export function useNav(onSignOut: () => Promise<void>) {
     const sel = domainStore.selected;
     if (!sel) return [];
     const domainId = sel.id;
-    const domainHome = `/domains/${sel.domain}`;
+    const domainHome = `/admin/domains/${sel.domain}`;
     return [
       // Exact match only (not the shared prefix-aware `isActive`): this entry
       // now shares its `domainHome` prefix with its 3 siblings below, each
@@ -204,5 +210,5 @@ export function useNav(onSignOut: () => Promise<void>) {
     ],
   ]);
 
-  return { globalNavItems, domainNavItems, userItems };
+  return { personalNavItems, adminNavItems, domainNavItems, userItems };
 }

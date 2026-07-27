@@ -9,7 +9,7 @@ const is403 = computed(() => props.error.statusCode === 403);
 const is404 = computed(() => props.error.statusCode === 404);
 
 function goHome() {
-  clearError({ redirect: "/dashboard" });
+  clearError({ redirect: "/me" });
 }
 
 function goBack() {
@@ -47,8 +47,8 @@ function goBack() {
           <UButton color="neutral" variant="outline" icon="i-lucide-arrow-left" @click="goBack">
             {{ t("common.back") }}
           </UButton>
-          <UButton color="primary" icon="i-lucide-layout-dashboard" @click="goHome">
-            {{ t("nav.dashboard") }}
+          <UButton color="primary" icon="i-lucide-house" @click="goHome">
+            {{ t("nav.myspace") }}
           </UButton>
         </div>
       </div>

@@ -161,19 +161,20 @@ export const JwtMeOverviewDocs = () =>
   applyDecorators(
     ApiSecurity("apiToken"),
     ApiOperation({
-      summary: "Return the domains and recipients the authenticated account owns",
+      summary: "Return the domains, recipients and aliases the authenticated account owns",
       description:
-        "Self-scoped: lists every `virtual_domains` and `virtual_users` row whose `owner_id` is the caller " +
-        "(req.user.id). No permission beyond being authenticated; powers the 'what you own' section of the " +
-        "profile page.",
+        "Self-scoped: lists every `virtual_domains`, `virtual_users` and `virtual_aliases` row whose `owner_id` " +
+        "is the caller (req.user.id). No permission beyond being authenticated; powers the personal space (/me) " +
+        "and the 'what you own' section of the profile page.",
     }),
     ApiResponse({
       status: 200,
-      description: "Owned domains and recipients returned",
+      description: "Owned domains, recipients and aliases returned",
       schema: {
         example: {
           domains: [{ id: 1, domain: "example.com", active: true, quota: "0" }],
           recipients: [{ id: 1, email: "jane@example.com", domain: "example.com", active: true, quota: "0" }],
+          aliases: [{ id: 1, source: "contact@example.com", destination: "jane@example.com", domain: "example.com" }],
         },
       },
     }),

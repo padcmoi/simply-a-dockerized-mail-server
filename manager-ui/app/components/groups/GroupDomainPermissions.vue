@@ -55,7 +55,7 @@ const pickedDomainId = computed<number | undefined>({
   set: (value) => {
     if (value === undefined) return;
     const fqdn = props.domainOptions.find((o) => o.value === value)?.label;
-    if (fqdn) navigateTo(`/groups/${props.groupId}/acl/domain/${fqdn}`);
+    if (fqdn) navigateTo(`/admin/groups/${props.groupId}/acl/domain/${fqdn}`);
   },
 });
 
