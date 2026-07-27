@@ -91,7 +91,7 @@ function isPostmaster(item: Recipient) {
 }
 
 function editTo(item: Recipient) {
-  return `/domains/${domainFqdn.value}/recipients/${item.id}/edit`;
+  return `/admin/domains/${domainFqdn.value}/recipients/${item.id}/edit`;
 }
 
 function occupancy(r: Recipient) {

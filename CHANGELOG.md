@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- fix(ui): prefix the two navigation links the `/admin` migration missed. The recipient edit button (`editTo`) and the group domain-ACL "Domain" breadcrumb still pointed at the pre-migration `/domains/...` and `/groups/...` paths and returned a 404; both now target their `/admin/**` routes (27-07-2026)
 - test(websocket): every data-backed watcher (dashboard, disk, domain recipients, aliases, quota, rspamd and postfix, plus notifications, sessions, the presence authorization and the rspamd-stats fetch) now has a unit spec exercising its payload closure, bringing the watchers directory to full function coverage (27-07-2026)
 - test(accounts): the account ownership and assignment service methods (owned and assignable recipients and aliases, attach and detach) are unit-tested, restoring the manager-api coverage gate above its 95% function threshold (27-07-2026)
 - test(core): the `useLocalePreference` spec stubs `useApi` and mocks the auth store, which the composable now instantiates at its top, so the pure-logic suite passes again (27-07-2026)

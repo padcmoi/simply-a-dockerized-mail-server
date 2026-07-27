@@ -39,7 +39,7 @@ watchEffect(() => {
     { label: group.value?.name ?? "...", to: `/admin/groups/${groupId.value}` },
     {
       label: t("groups.detail.tabs.domain"),
-      to: domainFqdn.value ? `/groups/${groupId.value}/acl/domain` : undefined,
+      to: domainFqdn.value ? `/admin/groups/${groupId.value}/acl/domain` : undefined,
     },
   ];
   if (domainFqdn.value) crumbs.push({ label: domainFqdn.value, to: undefined });
