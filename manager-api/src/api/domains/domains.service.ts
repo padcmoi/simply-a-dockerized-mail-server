@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, Injectable, Logger, NotFoundExc
 import { InjectRepository } from "@nestjs/typeorm";
 import { randomBytes } from "crypto";
 import { statfs } from "fs/promises";
-import { In, Like, Repository } from "typeorm";
+import { EntityManager, In, Like, Repository } from "typeorm";
 import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { sha512crypt } from "../../core/common/sha512-crypt";
@@ -132,17 +132,18 @@ export class DomainsService {
         `Quota ${input.quota} exceeds the ${assignableBytes} bytes still assignable on the mail volume`
       );
     }
-    const saved = await this.repo.save(
-      this.repo.create({
+    const saved = await this.repo.manager.transaction(async (manager) => {
+      const domain = await manager.save(VirtualDomain, {
         domain: input.domain,
         quota: String(input.quota),
         active: input.active ? 1 : 0,
         ownerId,
         userStartDate: new Date().toISOString().slice(0, 10),
         userEndDate: input.userEndDate ?? null,
-      })
-    );
-    await this.reservePostmaster(saved.domain);
+      });
+      await this.reservePostmaster(manager, domain.domain);
+      return domain;
+    });
     let dkim: DkimKey | null = null;
     try {
       dkim = await this.dkim.create(saved.domain);
@@ -157,28 +158,26 @@ export class DomainsService {
   // accept inbound mail, so we always insert it inactive. Existing rows are
   // forced back to active=0 on every domain create so the invariant holds
   // even after a partial / aborted earlier run.
-  private async reservePostmaster(domain: string) {
+  private async reservePostmaster(manager: EntityManager, domain: string) {
     const email = `postmaster@${domain}`;
-    const existing = await this.users.findOne({ where: { email } });
+    const existing = await manager.findOne(VirtualUser, { where: { email } });
     if (existing) {
-      if (existing.active !== 0) await this.users.save({ ...existing, active: 0 });
+      if (existing.active !== 0) await manager.save(VirtualUser, { ...existing, active: 0 });
       return;
     }
     const password = await sha512crypt(randomBytes(24).toString("hex"));
-    await this.users.save(
-      this.users.create({
-        email,
-        domain,
-        password,
-        maildir: `${domain}/postmaster/`,
-        quota: "0",
-        active: 0,
-        uid: "vmail",
-        gid: "vmail",
-        userStartDate: new Date().toISOString().slice(0, 10),
-        userEndDate: null,
-      })
-    );
+    await manager.save(VirtualUser, {
+      email,
+      domain,
+      password,
+      maildir: `${domain}/postmaster/`,
+      quota: "0",
+      active: 0,
+      uid: "vmail",
+      gid: "vmail",
+      userStartDate: new Date().toISOString().slice(0, 10),
+      userEndDate: null,
+    });
   }
 
   async update(id: number, input: UpdateDomainDto) {

@@ -23,7 +23,7 @@ export class VirtualUser {
   @Column({ name: "password", type: "varchar", length: 128 })
   password!: string;
 
-  @Column({ name: "maildir", type: "char", length: 50 })
+  @Column({ name: "maildir", type: "varchar", length: 255 })
   maildir!: string;
 
   @Column({ name: "quota", type: "bigint", width: 20, default: 0 })

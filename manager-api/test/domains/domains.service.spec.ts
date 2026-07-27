@@ -35,15 +35,24 @@ const STATFS = { type: 0, bsize: 4096, blocks: 1000, bfree: 0, bavail: 500, file
 // repo type or an invalid DTO now fails `tsc`.
 function makeMocks() {
   const repo = repoMock<VirtualDomain>();
-  // create() reads `saved.domain` off the save result to reserve the postmaster,
-  // so the save double must echo its input rather than the repoMock default.
   repo.save.mockImplementation(async (x: object) => x);
+  const txSave = vi.fn(async (_target: unknown, entity: object) => entity);
+  const txFindOne = vi.fn();
+  Object.assign(repo, {
+    manager: {
+      transaction: vi.fn(async (cb: (m: { save: typeof txSave; findOne: typeof txFindOne }) => unknown) =>
+        cb({ save: txSave, findOne: txFindOne })
+      ),
+    },
+  });
   const accounts = repoMock<Account>();
   accounts.findBy.mockResolvedValue([]);
   const quotaDomains = repoMock<VirtualQuotaDomain>();
   quotaDomains.find.mockResolvedValue([]);
   return {
     repo,
+    txSave,
+    txFindOne,
     users: repoMock<VirtualUser>(),
     accounts,
     quotaDomains,
@@ -184,7 +193,7 @@ describe("DomainsService", () => {
       await expect(svc.create({ domain: "dup.com", quota: 10485760 }, "owner-1")).rejects.toBeInstanceOf(
         ConflictException
       );
-      expect(m.repo.save).not.toHaveBeenCalled();
+      expect(m.txSave).not.toHaveBeenCalled();
     });
 
     it("rejects a quota above the assignable headroom with 400", async () => {
@@ -193,22 +202,24 @@ describe("DomainsService", () => {
       await expect(svc.create({ domain: "new.com", quota: 10485760 }, "owner-1")).rejects.toBeInstanceOf(
         BadRequestException
       );
-      expect(m.repo.save).not.toHaveBeenCalled();
+      expect(m.txSave).not.toHaveBeenCalled();
     });
 
-    it("saves the domain, reserves a fresh inactive postmaster, and returns the generated dkim key", async () => {
+    it("saves the domain and its postmaster in one transaction and returns the generated dkim key", async () => {
       m.repo.findOne.mockResolvedValueOnce(null); // no conflict
       vi.spyOn(svc, "disk").mockResolvedValueOnce({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 99_999_999 });
-      m.users.findOne.mockResolvedValueOnce(null); // no existing postmaster
+      m.txFindOne.mockResolvedValueOnce(null); // no existing postmaster
       m.dkim.create.mockResolvedValueOnce({ selector: "s", domain: "new.com" });
 
       const res = await svc.create({ domain: "new.com", quota: 10485760, active: true }, "owner-1");
 
-      expect(m.repo.save).toHaveBeenCalledWith(
+      expect(m.txSave).toHaveBeenCalledWith(
+        VirtualDomain,
         expect.objectContaining({ domain: "new.com", quota: "10485760", active: 1, ownerId: "owner-1" })
       );
-      expect(m.users.save).toHaveBeenCalledWith(
-        expect.objectContaining({ email: "postmaster@new.com", active: 0, domain: "new.com" })
+      expect(m.txSave).toHaveBeenCalledWith(
+        VirtualUser,
+        expect.objectContaining({ email: "postmaster@new.com", active: 0, domain: "new.com", maildir: "new.com/postmaster/" })
       );
       expect(res.dkim).toEqual({ selector: "s", domain: "new.com" });
     });
@@ -216,23 +227,33 @@ describe("DomainsService", () => {
     it("forces an existing active postmaster back inactive and tolerates a dkim failure (null key)", async () => {
       m.repo.findOne.mockResolvedValueOnce(null);
       vi.spyOn(svc, "disk").mockResolvedValueOnce({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 99_999_999 });
-      m.users.findOne.mockResolvedValueOnce({ id: 7, email: "postmaster@new.com", active: 1 });
+      m.txFindOne.mockResolvedValueOnce({ id: 7, email: "postmaster@new.com", active: 1 });
       m.dkim.create.mockRejectedValueOnce(new Error("dkim boom"));
 
       const res = await svc.create({ domain: "new.com", quota: 10485760, active: false }, "owner-1");
 
-      expect(m.users.save).toHaveBeenCalledWith(expect.objectContaining({ id: 7, active: 0 }));
+      expect(m.txSave).toHaveBeenCalledWith(VirtualUser, expect.objectContaining({ id: 7, active: 0 }));
       expect(res.dkim).toBeNull();
     });
 
     it("leaves an already-inactive postmaster untouched", async () => {
       m.repo.findOne.mockResolvedValueOnce(null);
       vi.spyOn(svc, "disk").mockResolvedValueOnce({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 99_999_999 });
-      m.users.findOne.mockResolvedValueOnce({ id: 7, email: "postmaster@new.com", active: 0 });
+      m.txFindOne.mockResolvedValueOnce({ id: 7, email: "postmaster@new.com", active: 0 });
       m.dkim.create.mockResolvedValueOnce({ selector: "s" });
 
       await svc.create({ domain: "new.com", quota: 10485760 }, "owner-1");
-      expect(m.users.save).not.toHaveBeenCalled();
+      expect(m.txSave).not.toHaveBeenCalledWith(VirtualUser, expect.anything());
+    });
+
+    it("rolls the whole create back when reserving the postmaster fails", async () => {
+      m.repo.findOne.mockResolvedValueOnce(null);
+      vi.spyOn(svc, "disk").mockResolvedValueOnce({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 99_999_999 });
+      m.txFindOne.mockResolvedValueOnce(null);
+      m.txSave.mockResolvedValueOnce({ domain: "new.com" }); // domain row
+      m.txSave.mockRejectedValueOnce(new Error("Data too long for column 'maildir'")); // postmaster insert fails
+      await expect(svc.create({ domain: "new.com", quota: 10485760 }, "owner-1")).rejects.toThrow(/maildir/);
+      expect(m.dkim.create).not.toHaveBeenCalled();
     });
   });
 
