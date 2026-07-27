@@ -66,7 +66,7 @@ function closeDomain() {
         color="neutral"
         variant="ghost"
         square
-        to="/me"
+        to="/my-space"
         class="w-full overflow-hidden"
         :ui="{ leadingIcon: 'text-primary' }"
       />

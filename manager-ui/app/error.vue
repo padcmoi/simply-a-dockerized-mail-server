@@ -9,7 +9,7 @@ const is403 = computed(() => props.error.statusCode === 403);
 const is404 = computed(() => props.error.statusCode === 404);
 
 function goHome() {
-  clearError({ redirect: "/me" });
+  clearError({ redirect: "/my-space" });
 }
 
 function goBack() {

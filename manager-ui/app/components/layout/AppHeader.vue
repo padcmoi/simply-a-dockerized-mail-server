@@ -18,7 +18,7 @@ const headerTitle = computed(() => {
     "/admin/tickets": t("nav.tickets"),
     "/admin/api-tokens": t("nav.apiTokens"),
     "/admin/config": t("nav.config"),
-    "/me": t("nav.myspace"),
+    "/my-space": t("nav.myspace"),
     "/profile": t("layout.profile"),
     "/preferences": t("layout.preferences"),
     "/admin": t("nav.administration"),

@@ -76,7 +76,7 @@ describe("useNav global nav items", () => {
   it("always exposes the personal space, whatever the permissions", () => {
     asUser();
     const { personalNavItems } = useNav(noop);
-    expect(personalNavItems.value.map((i) => i.to)).toEqual(["/me"]);
+    expect(personalNavItems.value.map((i) => i.to)).toEqual(["/my-space"]);
   });
 
   it("shows no admin section for a permissionless non-root account", () => {
@@ -105,7 +105,7 @@ describe("useNav global nav items", () => {
     const byTo = Object.fromEntries([...adminNavItems.value, ...personalNavItems.value].map((i) => [i.to, i.active]));
     expect(byTo["/admin/domains"]).toBe(true);
     expect(byTo["/admin"]).toBe(false);
-    expect(byTo["/me"]).toBe(false);
+    expect(byTo["/my-space"]).toBe(false);
   });
 });
 

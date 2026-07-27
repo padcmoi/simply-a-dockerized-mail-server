@@ -8,7 +8,7 @@
 // return `/login` and falls back to the personal space, as a belt-and-suspenders
 // guard against ever bouncing back to the login page.
 const LAST_ROUTE_STORAGE_KEY = "manager-last-route";
-const FALLBACK_ROUTE = "/me";
+const FALLBACK_ROUTE = "/my-space";
 
 export function useLastRoute() {
   const lastRoute = useLocalStorage(LAST_ROUTE_STORAGE_KEY, FALLBACK_ROUTE);

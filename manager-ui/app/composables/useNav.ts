@@ -42,7 +42,7 @@ export function useNav(onSignOut: () => Promise<void>) {
   }
 
   const personalNavItems = computed<NavigationMenuItem[]>(() => [
-    { label: t("nav.myspace"), icon: "i-lucide-house", to: "/me", active: isActive("/me") },
+    { label: t("nav.myspace"), icon: "i-lucide-house", to: "/my-space", active: isActive("/my-space") },
   ]);
 
   const adminNavItems = computed<NavigationMenuItem[]>(() => [

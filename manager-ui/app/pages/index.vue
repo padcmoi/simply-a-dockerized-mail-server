@@ -2,7 +2,7 @@
 definePageMeta({ layout: false });
 // SSR-side redirect: navigateTo from a script-setup top level redirects before
 // the page renders (no flash). useToast/useApi etc. are not needed here.
-await navigateTo("/me", { replace: true });
+await navigateTo("/my-space", { replace: true });
 </script>
 
 <template>

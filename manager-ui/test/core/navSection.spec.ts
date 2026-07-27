@@ -3,7 +3,7 @@ import { navSectionFor } from "~/utils/navSection";
 
 const NAV = [
   { label: "Administration", to: "/admin" },
-  { label: "My space", to: "/me" },
+  { label: "My space", to: "/my-space" },
   { label: "Domains", to: "/admin/domains" },
   { label: "Support", to: "/admin/tickets" },
 ];
@@ -26,7 +26,7 @@ describe("navSectionFor", () => {
   });
 
   it("never returns the personal space", () => {
-    expect(navSectionFor("/me", NAV)).toBeNull();
+    expect(navSectionFor("/my-space", NAV)).toBeNull();
   });
 
   it("returns nothing for an unknown path", () => {

@@ -12,7 +12,7 @@ function stubStorage(initial: string) {
 
 describe("useLastRoute.remember", () => {
   it("stores a protected route", () => {
-    const store = stubStorage("/me");
+    const store = stubStorage("/my-space");
     const { remember } = useLastRoute();
     remember("/domains");
     expect(store.value).toBe("/domains");
@@ -43,21 +43,21 @@ describe("useLastRoute.resolve", () => {
   });
 
   it("falls back to the personal space for a login or empty stored value", () => {
-    const store = stubStorage("/me");
+    const store = stubStorage("/my-space");
     const { resolve } = useLastRoute();
 
     store.value = "/login";
-    expect(resolve()).toBe("/me");
+    expect(resolve()).toBe("/my-space");
     store.value = "/login/callback";
-    expect(resolve()).toBe("/me");
+    expect(resolve()).toBe("/my-space");
     store.value = "";
-    expect(resolve()).toBe("/me");
+    expect(resolve()).toBe("/my-space");
   });
 
   it("defaults to the personal space before anything is remembered", () => {
-    stubStorage("/me");
+    stubStorage("/my-space");
     const { resolve, lastRoute } = useLastRoute();
-    expect(lastRoute.value).toBe("/me");
-    expect(resolve()).toBe("/me");
+    expect(lastRoute.value).toBe("/my-space");
+    expect(resolve()).toBe("/my-space");
   });
 });
