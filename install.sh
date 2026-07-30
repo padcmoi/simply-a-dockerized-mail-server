@@ -299,7 +299,7 @@ if ! stage_done admin; then
 	# The root account's email and password are asked here and kept ONLY in shell
 	# memory for the duration of this stage: neither is ever written to .env (a
 	# plaintext admin password lingering on disk is a needless secret to leak) --
-	# the account is identified by email + a bcrypt hash in the DB, nothing here is
+	# the account is identified by email + a scrypt hash in the DB, nothing here is
 	# needed at runtime. On a resume where this stage already ran, it is skipped,
 	# so nothing is re-prompted.
 	ADMIN_EMAIL=$(prompt_re "Email of the first (root) account" "" \
@@ -334,9 +334,12 @@ if ! stage_done admin; then
 	unset ADMIN_PW1 ADMIN_PW2
 
 	c "hashing root password and upserting accounts row..."
-	ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
-		node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" |
-		tr -d '\r')
+	ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api node -e '
+const { randomBytes, scryptSync } = require("crypto");
+const N = 16384, r = 8, p = 1, salt = randomBytes(16);
+const dk = scryptSync(process.env.P, salt, 64, { N, r, p, maxmem: 67108864 });
+process.stdout.write(`scrypt$${N}$${r}$${p}$${salt.toString("base64")}$${dk.toString("base64")}`);
+' | tr -d '\r')
 	# is_root=1 marks this row as the bootstrap super-admin. The login identity is
 	# the email (no username). The seeded account is the only one created by
 	# install.sh; every subsequent account, domain, postmaster reservation and

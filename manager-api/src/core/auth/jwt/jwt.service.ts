@@ -1,10 +1,10 @@
 import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
-import * as bcrypt from "bcrypt";
 import { createHash, randomBytes } from "crypto";
 import { In, IsNull, MoreThan, Not, Repository } from "typeorm";
 import { PaginationQuery, resolveSortColumn } from "../../common/pagination.validation";
+import { scryptVerify } from "../../common/scrypt";
 import { Account } from "../../entities/account.entity";
 import { AccountProfile } from "../../entities/account-profile.entity";
 import { GroupMember } from "../../entities/group-member.entity";
@@ -65,7 +65,7 @@ export class JwtAuthService {
       where: { email, enabled: 1 },
     });
     if (!account || !account.password) throw new UnauthorizedException("Invalid credentials");
-    if (!(await bcrypt.compare(password, account.password))) {
+    if (!(await scryptVerify(password, account.password))) {
       throw new UnauthorizedException("Invalid credentials");
     }
     account.lastLogin = new Date();

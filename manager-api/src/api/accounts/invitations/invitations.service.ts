@@ -1,9 +1,9 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import * as bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { In, IsNull, Repository } from "typeorm";
 import { AntiEscalationService, type ActingUser } from "../../../core/acl/anti-escalation.service";
+import { scryptHash } from "../../../core/common/scrypt";
 import { CustomPermissionGuardService } from "../../../core/custom-permission-guard/custom-permission-guard.service";
 import { AccountInvitation } from "../../../core/entities/account-invitation.entity";
 import { Account } from "../../../core/entities/account.entity";
@@ -200,7 +200,7 @@ export class AccountsInvitationsService {
     if (await this.accounts.findOne({ where: { email: inv.email } })) {
       throw new ConflictException(`An account with email "${inv.email}" already exists`);
     }
-    const passwordHash = await bcrypt.hash(input.password, 12);
+    const passwordHash = await scryptHash(input.password);
     const account = await this.accounts.save(
       this.accounts.create({
         email: inv.email,

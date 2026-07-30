@@ -11,12 +11,12 @@ import type { GeocodingService } from "../../src/core/geocoding/geocoding.servic
 import type { MailSettingsService } from "../../src/core/mailer/mail-settings.service";
 import { providerMock, qbMock, repoMock } from "../helpers/mocks";
 
-// bcrypt.compare is the only crypto the login path relies on; stub it so tests
-// stay pure and fast (no real hashing). Hoisted with an explicit signature so
-// the mock exists before vi.mock replaces the module AND mockResolvedValue stays
-// type-checked to a boolean (no cast on the resolved value).
-const { compare } = vi.hoisted(() => ({ compare: vi.fn<(data: string | Buffer, hash: string) => Promise<boolean>>() }));
-vi.mock("bcrypt", () => ({ compare }));
+// scryptVerify is the only crypto the login path relies on; stub it so tests stay
+// pure and fast (no real hashing). Hoisted with an explicit signature so the mock
+// exists before vi.mock replaces the module AND mockResolvedValue stays type-checked
+// to a boolean.
+const { verify } = vi.hoisted(() => ({ verify: vi.fn<(plain: string, stored: string) => Promise<boolean>>() }));
+vi.mock("../../src/core/common/scrypt", () => ({ scryptVerify: verify }));
 
 // One typed double per constructor argument, in order. Every dependency slots
 // straight into the service constructor with no structural cast, so a wrong
@@ -56,29 +56,45 @@ describe("JwtAuthService", () => {
 
   beforeEach(() => {
     m = makeMocks();
-    compare.mockReset();
-    svc = new JwtAuthService(m.jwt, m.accounts, m.profiles, m.groups, m.groupMembers, m.refreshTokens, m.geocoding, m.mailSettings);
+    verify.mockReset();
+    svc = new JwtAuthService(
+      m.jwt,
+      m.accounts,
+      m.profiles,
+      m.groups,
+      m.groupMembers,
+      m.refreshTokens,
+      m.geocoding,
+      m.mailSettings
+    );
   });
 
   describe("login", () => {
     it("401 when no account matches", async () => {
       m.accounts.findOne.mockResolvedValueOnce(null);
       await expect(svc.login("a@b.com", "pw")).rejects.toBeInstanceOf(UnauthorizedException);
-      expect(compare).not.toHaveBeenCalled();
+      expect(verify).not.toHaveBeenCalled();
     });
     it("401 when the account has no password set", async () => {
       m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: null });
       await expect(svc.login("a@b.com", "pw")).rejects.toBeInstanceOf(UnauthorizedException);
     });
     it("401 on a wrong password", async () => {
-      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash" });
-      compare.mockResolvedValueOnce(false);
+      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "scrypt$16384$8$1$salt$hash" });
+      verify.mockResolvedValueOnce(false);
       await expect(svc.login("a@b.com", "pw")).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+    it("verifies the password with scrypt", async () => {
+      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "scrypt$16384$8$1$salt$hash", isRoot: 0 });
+      verify.mockResolvedValueOnce(true);
+      const res = await svc.login("a@b.com", "pw");
+      expect(verify).toHaveBeenCalledWith("pw", "scrypt$16384$8$1$salt$hash");
+      expect(res.accessToken).toBe("access-token");
     });
     it("issues tokens, records last login and persists the refresh token", async () => {
       const account = { id: "a1", email: "a@b.com", password: "hash", isRoot: 1 as const };
       m.accounts.findOne.mockResolvedValueOnce(account);
-      compare.mockResolvedValueOnce(true);
+      verify.mockResolvedValueOnce(true);
       const res = await svc.login("a@b.com", "pw", "UA/1.0", "1.2.3.4");
       expect(res.accessToken).toBe("access-token");
       expect(typeof res.refreshToken).toBe("string");
@@ -96,13 +112,13 @@ describe("JwtAuthService", () => {
     });
     it("stores null ua/ip when not provided", async () => {
       m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
-      compare.mockResolvedValueOnce(true);
+      verify.mockResolvedValueOnce(true);
       await svc.login("a@b.com", "pw");
       expect(m.refreshTokens.insert.mock.calls[0][0]).toMatchObject({ userAgent: null, ip: null });
     });
     it("revokes the device's earlier live tokens first (one session per device)", async () => {
       m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
-      compare.mockResolvedValueOnce(true);
+      verify.mockResolvedValueOnce(true);
       await svc.login("a@b.com", "pw", "UA/1.0", "1.2.3.4");
       expect(m.refreshTokens.update).toHaveBeenCalledTimes(1);
       const [criteria] = m.refreshTokens.update.mock.calls[0];
@@ -110,7 +126,7 @@ describe("JwtAuthService", () => {
     });
     it("skips device consolidation when no ua/ip fingerprint is available", async () => {
       m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
-      compare.mockResolvedValueOnce(true);
+      verify.mockResolvedValueOnce(true);
       await svc.login("a@b.com", "pw");
       expect(m.refreshTokens.update).not.toHaveBeenCalled();
     });
@@ -122,7 +138,11 @@ describe("JwtAuthService", () => {
       await expect(svc.refresh("raw")).rejects.toBeInstanceOf(UnauthorizedException);
     });
     it("401 when the token is already revoked", async () => {
-      m.refreshTokens.findOne.mockResolvedValueOnce({ revokedAt: new Date(), expiresAt: new Date(Date.now() + 1000), account: {} });
+      m.refreshTokens.findOne.mockResolvedValueOnce({
+        revokedAt: new Date(),
+        expiresAt: new Date(Date.now() + 1000),
+        account: {},
+      });
       await expect(svc.refresh("raw")).rejects.toBeInstanceOf(UnauthorizedException);
     });
     it("401 when the token has expired", async () => {
@@ -210,7 +230,10 @@ describe("JwtAuthService", () => {
     }
 
     it("paginates inactive tokens and maps them with active=false", async () => {
-      const qb = makeQb([{ id: 3, userAgent: "UA", ip: "1.2.3.4", createdAt: new Date(), expiresAt: new Date(), revokedAt: new Date() }], 1);
+      const qb = makeQb(
+        [{ id: 3, userAgent: "UA", ip: "1.2.3.4", createdAt: new Date(), expiresAt: new Date(), revokedAt: new Date() }],
+        1
+      );
       m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb);
       const res = await svc.listSessionHistory("a1", { offset: 0, limit: 10, sortDir: "desc" });
       expect(res.total).toBe(1);
