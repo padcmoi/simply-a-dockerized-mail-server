@@ -67,6 +67,7 @@ const value = computed(() => {
         :format="(value: number) => `${value.toFixed(1)} %`"
         :at="at"
         :now="t('supervision.now')"
+        :live="range === 'minute'"
         area
       />
       <p v-else class="h-48 text-xs text-dimmed">{{ notice }}</p>

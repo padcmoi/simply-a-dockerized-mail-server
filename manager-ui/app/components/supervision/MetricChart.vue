@@ -20,6 +20,7 @@ const {
   at = [],
   now = "",
   variant = "ramp",
+  live = false,
 } = defineProps<{
   /** One to three curves, in the order the ramp reads: first is the loudest. A
    *  null is a moment with no figure, and the curve is cut rather than drawn
@@ -45,6 +46,8 @@ const {
   now?: string;
   /** `series` gives each curve its own hue; `ramp` steps one hue for ordered ones. */
   variant?: "ramp" | "series";
+  /** Points still arriving: the plot walks left instead of jumping a step. */
+  live?: boolean;
 }>();
 
 // One hue at three steps, for curves that are the same measurement at different
@@ -79,16 +82,32 @@ const gradient = useId();
 
 const palette = computed(() => (variant === "series" ? CATEGORICAL : RAMP));
 const count = computed(() => series[0]?.length ?? 0);
-const scale = computed(() => metricChartScale(count.value, max));
+
+// A live plot is laid out one step wider than its box and walked left over the
+// interval its samples arrive at, so it never jumps a step a second. See
+// useMetricWalk: everything below simply reads the geometry that implies.
+const { walks, step, stride, curve, labels } = useMetricWalk({
+  at: () => at,
+  count: () => count.value,
+  live: () => live,
+  frozen: () => hovered.value !== null,
+});
+
+const scale = computed(() => metricChartScale(count.value, max, CHART.width + step.value));
 
 const paths = computed(() => metricPaths(series, scale.value));
 const areas = computed(() => metricAreas(paths.value[0] ?? [], scale.value));
 
 const window = computed(() => axisWindow(at));
-const ticks = computed(() => axisTicks(window.value, tag.value));
+const ticks = computed(() => axisTicks(window.value, tag.value, 100 + stride.value));
 
-/** The left end: the oldest moment on the plot, not the width of the window. */
-const since = computed(() => (window.value ? axisClock(window.value.from, tag.value, window.value.scale) : ""));
+// The left end: the oldest moment still on the plot, not the oldest one drawn.
+// A walking chart lays its first sample one step off the box, and that sample is
+// the one the walk is in the middle of carrying out of view.
+const since = computed(() => {
+  const from = walks.value ? at[1] : window.value?.from;
+  return window.value && from !== undefined ? axisClock(from, tag.value, window.value.scale) : "";
+});
 
 // What the crosshair is showing, if anything: where it sits across the plot, and
 // every curve's value there.
@@ -109,7 +128,7 @@ const reading = computed(() => {
   if (!values.length) return null;
 
   return {
-    left: count.value > 1 ? (index / (count.value - 1)) * 100 : 0,
+    left: positionOf(index),
     // The pointer stays the precise instrument: it lands on a point of the
     // window rather than on a graduation of the axis, so it carries the seconds
     // where the axis carries the minute.
@@ -118,6 +137,13 @@ const reading = computed(() => {
   };
 });
 
+/** Where a point rests across the plot, in percent: the walk has already
+ *  carried it one step left by the time anything can be pointed at. */
+function positionOf(index: number) {
+  if (walks.value) return ((index - 1) / (count.value - 2)) * 100;
+  return count.value > 1 ? (index / (count.value - 1)) * 100 : 0;
+}
+
 // Pointer events rather than mouse ones: the same handler answers a finger on a
 // tablet.
 function track(event: PointerEvent) {
@@ -125,7 +151,8 @@ function track(event: PointerEvent) {
   if (!box || box.width === 0 || count.value < 2) return;
 
   const ratio = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width));
-  hovered.value = Math.round(ratio * (count.value - 1));
+  const index = walks.value ? Math.round(ratio * (count.value - 2)) + 1 : Math.round(ratio * (count.value - 1));
+  hovered.value = Math.min(count.value - 1, index);
 }
 </script>
 
@@ -154,23 +181,27 @@ function track(event: PointerEvent) {
           </linearGradient>
         </defs>
 
-        <template v-if="area">
-          <path v-for="(fill, index) in areas" :key="`area-${index}`" :d="fill" :fill="`url(#${gradient})`" />
-        </template>
+        <!-- Everything that is the curve walks together; the crosshair below
+             does not, since it marks where the pointer is, not where time is. -->
+        <g :style="curve">
+          <template v-if="area">
+            <path v-for="(fill, index) in areas" :key="`area-${index}`" :d="fill" :fill="`url(#${gradient})`" />
+          </template>
 
-        <template v-for="(fragments, index) in paths" :key="index">
-          <path
-            v-for="(fragment, piece) in fragments"
-            :key="piece"
-            :d="fragment.path"
-            :class="palette[index]?.line"
-            :stroke-width="palette[index]?.width"
-            fill="none"
-            stroke-linejoin="round"
-            stroke-linecap="round"
-            vector-effect="non-scaling-stroke"
-          />
-        </template>
+          <template v-for="(fragments, index) in paths" :key="index">
+            <path
+              v-for="(fragment, piece) in fragments"
+              :key="piece"
+              :d="fragment.path"
+              :class="palette[index]?.line"
+              :stroke-width="palette[index]?.width"
+              fill="none"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+              vector-effect="non-scaling-stroke"
+            />
+          </template>
+        </g>
 
         <line
           v-if="reading"
@@ -218,13 +249,7 @@ function track(event: PointerEvent) {
     <!-- The graduation, under the moment it marks. Absolutely placed rather than
          spaced by a flexbox: a time has to sit where it is, not where an even
          distribution would put it. -->
-    <div class="relative h-3 text-[10px] leading-none text-dimmed">
-      <span class="absolute left-0">{{ since }}</span>
-      <span v-for="(tick, index) in ticks" :key="index" class="absolute -translate-x-1/2" :style="{ left: `${tick.at}%` }">{{
-        tick.label
-      }}</span>
-      <span class="absolute right-0">{{ now }}</span>
-    </div>
+    <MetricAxis :since="since" :marks="ticks" :now="now" :walk="labels" />
 
     <ul v-if="legend.length" class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-dimmed">
       <li v-for="(name, index) in legend" :key="name" class="flex items-center gap-1.5">

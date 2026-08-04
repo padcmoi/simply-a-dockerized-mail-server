@@ -76,6 +76,7 @@ const legend = computed(() => {
         :format="inBytes"
         :at="at"
         :now="t('supervision.now')"
+        :live="range === 'minute'"
         area
       />
       <p v-else class="h-48 text-xs text-dimmed">{{ notice }}</p>

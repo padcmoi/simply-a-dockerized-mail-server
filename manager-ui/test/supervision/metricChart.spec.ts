@@ -1,11 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { CHART, axisClock, axisTicks, axisWindow, metricAreas, metricChartScale, metricPaths, metricRuns } from "~/utils/metricChart";
+import {
+  CHART,
+  axisClock,
+  axisTicks,
+  axisWindow,
+  metricAreas,
+  metricChartScale,
+  metricPaths,
+  metricRuns,
+} from "~/utils/metricChart";
 
 describe("metricChartScale", () => {
   it("spreads the points over the full width, first on the left edge and last on the right", () => {
     const scale = metricChartScale(3, 100);
     expect(scale.x(0)).toBe(0);
     expect(scale.x(2)).toBe(CHART.width);
+  });
+
+  // What makes a live plot able to walk: the newest sample is laid out one step
+  // past the right edge, and the walk brings it in over the sampling interval.
+  it("lays the curve out wider than its box when asked, one step past the edge", () => {
+    const count = 61;
+    const step = CHART.width / (count - 2);
+    const scale = metricChartScale(count, 100, CHART.width + step);
+    expect(scale.x(count - 1)).toBeCloseTo(CHART.width + step, 6);
+    expect(scale.x(count - 1) - step).toBeCloseTo(CHART.width, 6);
+    // And point 1 lands on the left edge once that step has been walked.
+    expect(scale.x(1) - step).toBeCloseTo(0, 6);
   });
 
   it("stands a single point on the left rather than dividing by zero", () => {
@@ -114,13 +135,57 @@ describe("axisTicks", () => {
 
   // Marks on round moments of the reader's own day: that is what keeps them
   // still while the curve moves under them.
-  it("stands its marks on round moments, inside the plot and never on its edges", () => {
+  it("stands its marks on round moments of the window, inside the plot", () => {
     const to = 1_800_000_000_000;
     const marks = axisTicks(axisWindow([to - 60_000, to]), "en-GB");
     expect(marks.length).toBeGreaterThan(0);
     for (const mark of marks) {
-      expect(mark.at).toBeGreaterThanOrEqual(4);
-      expect(mark.at).toBeLessThanOrEqual(96);
+      expect(mark.at).toBeGreaterThanOrEqual(0);
+      expect(mark.at).toBeLessThanOrEqual(100);
+    }
+  });
+
+  // Dropping a mark for standing near an end is what made one vanish mid-plot
+  // on a chart that walks. The ends are masked by their own labels instead.
+  it("keeps the marks that reach the ends rather than making them disappear", () => {
+    const to = 1_800_000_000_000;
+    const window = axisWindow([to - 60_000, to]);
+    const every = 15_000;
+    const expected = Math.floor((to - (to - 60_000)) / every);
+    expect(axisTicks(window, "en-GB").length).toBeGreaterThanOrEqual(expected - 1);
+  });
+});
+
+describe("axisTicks on a walking chart", () => {
+  // The marks are laid out over the same width the curve is, so a graduation
+  // and the moment of the curve it names travel together instead of the times
+  // jumping every second while the line glides.
+  it("places its marks over the wider layout, past the box's own edge", () => {
+    const to = 1_800_000_000_000;
+    const window = axisWindow([to - 60_000, to]);
+    const stride = 100 / 59;
+
+    const still = axisTicks(window, "en-GB", 100);
+    const walking = axisTicks(window, "en-GB", 100 + stride);
+
+    expect(walking).toHaveLength(still.length);
+    walking.forEach((mark, index) => {
+      const same = still[index];
+      expect(mark.label).toBe(same?.label);
+      // Where it will sit once the walk has carried it its one step left.
+      expect(mark.at - stride).toBeCloseTo((same?.at ?? 0) * (1 + stride / 100) - stride, 6);
+    });
+  });
+
+  // The newest mark starts just off the right edge and is carried in, the oldest
+  // is carried out on the left: neither pops into existence inside the plot.
+  it("lets a mark start off the box and walk into it", () => {
+    const to = 1_800_000_000_000;
+    const stride = 100 / 59;
+    const marks = axisTicks(axisWindow([to - 60_000, to]), "en-GB", 100 + stride);
+    for (const mark of marks) {
+      expect(mark.at).toBeGreaterThanOrEqual(0);
+      expect(mark.at - stride).toBeLessThanOrEqual(100);
     }
   });
 });

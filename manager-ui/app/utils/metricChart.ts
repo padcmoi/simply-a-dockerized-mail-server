@@ -23,11 +23,14 @@ export interface ChartScale {
   y: (value: number) => number;
 }
 
-export function metricChartScale(count: number, max: number) {
+// `width` is the plot's own, except on a live chart that walks: there the curve
+// is laid out one step wider than its box so the newest sample starts just past
+// the right edge, and the walk brings it in. See MetricChart.
+export function metricChartScale(count: number, max: number, width = CHART.width) {
   const span = max > 0 ? max : 1;
 
   const scale: ChartScale = {
-    x: (index) => (count > 1 ? (index / (count - 1)) * CHART.width : 0),
+    x: (index) => (count > 1 ? (index / (count - 1)) * width : 0),
     y: (value) => CHART.height - CHART.padding - (Math.min(span, Math.max(0, value)) / span) * (CHART.height - CHART.padding * 2),
   };
 
@@ -160,18 +163,24 @@ export function axisClock(moment: number, tag: string, scale: AxisScale, precise
 // The alignment takes the zone off before the division and puts it back after:
 // aligning on the epoch would stand a day mark at two in the morning for anybody
 // two hours ahead of UTC.
-export function axisTicks(window: AxisWindow | null, tag: string) {
+//
+// `span` is the width the moments are laid out over, in percent of the box: on a
+// live chart that walks it is wider than 100, exactly as the curve is, so a mark
+// and the moment it names travel together. What is off the box on the left is
+// what the walk has already carried out of it.
+export function axisTicks(window: AxisWindow | null, tag: string, span = 100) {
   if (!window) return [];
 
   const { from, to, scale } = window;
   const shift = -new Date(to).getTimezoneOffset() * 60_000;
 
+  // Every mark of the window is returned, right to both ends. None is dropped
+  // for being close to an end: the two labels standing there are opaque and
+  // painted over this row, so a mark reaching one slides under it rather than
+  // printing a second time on top of it or vanishing on a threshold.
   const marks: { at: number; label: string }[] = [];
   for (let mark = Math.floor((to + shift) / scale.every) * scale.every - shift; mark > from; mark -= scale.every) {
-    const position = ((mark - from) / (to - from)) * 100;
-    if (position < 4 || position > 96) continue;
-
-    marks.push({ at: position, label: axisClock(mark, tag, scale) });
+    marks.push({ at: ((mark - from) / (to - from)) * span, label: axisClock(mark, tag, scale) });
   }
 
   return marks;

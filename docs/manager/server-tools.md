@@ -120,6 +120,13 @@ on a narrow screen instead of being squeezed into a strip.
   container, and a stretch nothing was recorded in are three different holes:
   the curve is cut, the point keeps its place on the time axis, and each case
   has its own sentence rather than a dash that could mean any of them.
+- **The live minute never stops moving.** A curve redrawn in place jumps a step
+  a second, which reads as a stutter; instead the plot is laid out one step wider
+  than its box, with the newest sample just past the right edge, and walked left
+  by that step over the sampling interval, graduation included, so a mark and the
+  moment it names travel together. The walk freezes while the pointer is on the
+  plot, since reading a figure is not watching a curve, and does not happen at
+  all for an account asking for reduced motion or on the recorded windows.
 - **The axis carries clock times in the reader's own zone**, on round moments of
   their own day, so a peak lines up against a deploy or a backup instead of
   asking them to subtract. Pointing at the plot reads every curve at that moment.
