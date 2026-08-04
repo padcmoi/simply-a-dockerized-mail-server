@@ -76,6 +76,16 @@ export function useNav(onSignOut: () => Promise<void>) {
     ...(auth.session?.isRoot === true
       ? [{ label: t("nav.config"), icon: "i-lucide-settings-2", to: "/admin/config", active: isActive("/admin/config") }]
       : []),
+    ...(canAccessGlobal("supervision")
+      ? [
+          {
+            label: t("nav.supervision"),
+            icon: "i-lucide-activity",
+            to: "/admin/supervision",
+            active: isActive("/admin/supervision"),
+          },
+        ]
+      : []),
   ]);
 
   const domainNavItems = computed<NavigationMenuItem[]>(() => {

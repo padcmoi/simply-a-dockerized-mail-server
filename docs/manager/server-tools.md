@@ -1,7 +1,8 @@
 # Server-wide tools
 
-Four pages that act on the whole server rather than on one domain: the spam
-filter, the mail queue, the sender blocklist and API tokens.
+Five pages that act on the whole server rather than on one domain: the spam
+filter, the mail queue, the sender blocklist, API tokens, and the machine the
+whole stack runs on.
 
 ## Rspamd
 
@@ -97,3 +98,41 @@ retrieved later. It offers a copy button and an "I have saved it" button.
 Dismissing that modal without saving the key **revokes and deletes the token**
 rather than leaving an unusable row behind, and the toast says so: a token whose
 secret nobody holds is dead weight.
+
+## Supervision
+
+[`/admin/supervision`](../../manager-ui/app/pages/admin/supervision.vue),
+requiring `supervision:access` + `view-machine-metrics`. The state of the host
+itself: CPU, load average, memory and network. Four cards, one per measurement,
+because they are four different readings and a card each is what lets them wrap
+on a narrow screen instead of being squeezed into a strip.
+
+- **One window for the four curves** (`1 min`, `1 h`, `24 h`, `7 days`), set
+  from any card's header and applied to all of them. Four charts covering four
+  different periods cannot be read against each other, which is most of what a
+  row of them is for. The figures on the header lines stay live whatever the
+  curves are set to: what the machine is doing now is a fact about now.
+- **The minute comes from the socket**, one frame a second
+  (`supervision-machine`, see [realtime.md](realtime.md)); the three wider
+  windows come from recorded samples aggregated in SQL, one row per ten seconds.
+- **A missing figure is never drawn as a zero.** A CPU that has had only one
+  reading of `/proc/stat`, a host whose own interfaces are out of reach from the
+  container, and a stretch nothing was recorded in are three different holes:
+  the curve is cut, the point keeps its place on the time axis, and each case
+  has its own sentence rather than a dash that could mean any of them.
+- **The axis carries clock times in the reader's own zone**, on round moments of
+  their own day, so a peak lines up against a deploy or a backup instead of
+  asking them to subtract. Pointing at the plot reads every curve at that moment.
+- **Raised is named, not just coloured.** Past 70 % of the cores (load) or of
+  what is installed (memory) the card gains an outline **and** a badge saying
+  what happened, error past 90 %.
+
+Two things it does not do. It never claims to be live on a socket that stopped
+delivering: eight seconds without a frame flips the badge to Offline, while the
+last figures stay on screen, dimmed, because they are still the truth of a
+moment ago. And it reports **nothing at all** for the network when the host's
+own `/proc` is not mounted into `manager-api`, rather than reporting the
+container's veth as if it were the machine's interface.
+
+How long the recorded history is kept is a root-only setting, documented in
+[configuration.md](configuration.md).

@@ -12,6 +12,7 @@ import { MySpaceModule } from "./api/my-space/my-space.module";
 import { NotificationsApiModule } from "./api/notifications/notifications.module";
 import { PostfixModule } from "./api/postfix/postfix.module";
 import { RspamdModule } from "./api/rspamd/rspamd.module";
+import { SupervisionApiModule } from "./api/supervision/supervision.module";
 import { TicketsModule } from "./api/tickets/tickets.module";
 import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.module";
 import { ApiTokenModule } from "./core/auth/api-token/api-token.module";
@@ -54,6 +55,7 @@ import { WebsocketModule } from "./core/websocket/websocket.module";
     NotificationsApiModule,
     ConfigApiModule,
     MySpaceModule,
+    SupervisionApiModule,
     WebsocketModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: CombinedAuthGuard }],

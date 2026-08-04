@@ -11,6 +11,8 @@ export default {
   cadenceCardHint: "Send delays and anti-spam",
   generalCardLabel: "General",
   generalCardHint: "Public interface address",
+  supervisionCardLabel: "Supervision",
+  supervisionCardHint: "Machine history retention",
   mail: {
     alertTitle: "Outbound mail server.",
     alertDescription: "How the manager sends all its emails (invitations, notifications, codes...). Stored in the database, not the environment.",
@@ -86,6 +88,21 @@ export default {
     loadFailed: "Failed to load the cadence settings",
     cannotExceedDelay: "Cannot exceed the delay above.",
     reset: "Factory defaults",
+  },
+  supervision: {
+    cardTitle: "Machine history",
+    alertTitle: "Machine figures.",
+    alertDescription:
+      "How long the recorded CPU, load, memory and network history is kept. The purge runs at boot and then hourly, and reads this value on every pass: a change applies to the next purge, not at the next restart.",
+    retention: "Retention (days)",
+    retentionHint:
+      "From 1 to 365 days. One recorded row stands for 10 seconds, and the card windows reach back 7 days: below that, a card would ask for more than exists.",
+    rowsEstimate: "About {rows} rows kept in steady state.",
+    save: "Save",
+    saved: "Retention saved",
+    saveFailed: "Save failed",
+    loadFailed: "Load failed",
+    reset: "Factory value",
   },
   general: {
     cardTitle: "General",

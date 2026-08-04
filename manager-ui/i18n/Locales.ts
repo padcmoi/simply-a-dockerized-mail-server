@@ -50,6 +50,7 @@ export interface Locales {
     groups: string;
     apiTokens: string;
     config: string;
+    supervision: string;
   };
   myspace: {
     alertTitle: string;
@@ -124,6 +125,8 @@ export interface Locales {
     cadenceCardHint: string;
     generalCardLabel: string;
     generalCardHint: string;
+    supervisionCardLabel: string;
+    supervisionCardHint: string;
     mail: {
       alertTitle: string;
       alertDescription: string;
@@ -194,6 +197,19 @@ export interface Locales {
       saveFailed: string;
       loadFailed: string;
       cannotExceedDelay: string;
+      reset: string;
+    };
+    supervision: {
+      cardTitle: string;
+      alertTitle: string;
+      alertDescription: string;
+      retention: string;
+      retentionHint: string;
+      rowsEstimate: string;
+      save: string;
+      saved: string;
+      saveFailed: string;
+      loadFailed: string;
       reset: string;
     };
     general: {
@@ -1192,6 +1208,7 @@ export interface Locales {
           tickets: string;
           superadmin: string;
           domainOwnerElevated: string;
+          supervision: string;
         };
         domain: {
           domain: string;
@@ -1283,6 +1300,11 @@ export interface Locales {
             "handle-ticket": string;
             notification: string;
           };
+          supervision: {
+            access: string;
+            "view-machine-metrics": string;
+            "view-metrics-history": string;
+          };
           superadmin: {
             access: string;
             "resize-any-domain-quota": string;
@@ -1359,5 +1381,39 @@ export interface Locales {
       selectDomainPlaceholder: string;
       noDomainsAssigned: string;
     };
+  };
+  // The machine this server runs on: the live cards and the recorded windows
+  // behind them. Everything a figure can be missing for has its own sentence,
+  // because a dash cannot be told apart from a zero or from a broken feed.
+  supervision: {
+    subtitle: string;
+    machine: string;
+    live: string;
+    connecting: string;
+    offline: string;
+    now: string;
+    sampling: string;
+    unavailableTitle: string;
+    unavailableHint: string;
+    rangeWeek: string;
+    rangeDay: string;
+    rangeHour: string;
+    rangeMinute: string;
+    rangeLoading: string;
+    rangeEmpty: string;
+    rangeFailed: string;
+    cpu: string;
+    cores: string;
+    load: string;
+    loadBusy: string;
+    loadSaturated: string;
+    memory: string;
+    memoryDetail: string;
+    memoryBusy: string;
+    memorySaturated: string;
+    network: string;
+    networkIn: string;
+    networkOut: string;
+    networkUnavailable: string;
   };
 }

@@ -12,12 +12,14 @@ import { postfixQueueWatcher } from "../../src/core/websocket/watchers/postfix-q
 import { presenceWatcher } from "../../src/core/websocket/watchers/presence.watcher";
 import { rspamdStatsWatcher } from "../../src/core/websocket/watchers/rspamd-stats.watcher";
 import { sessionsWatcher } from "../../src/core/websocket/watchers/sessions.watcher";
+import { supervisionWatcher, SUPERVISION_INTERVAL_MS } from "../../src/core/websocket/watchers/supervision.watcher";
 import { RspamdService, type RspamdHistoryRow } from "../../src/core/rspamd/rspamd.service";
 import type { DomainsService } from "../../src/api/domains/domains.service";
 import type { PostfixService } from "../../src/core/postfix/postfix.service";
 import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
 import type { NotificationsService } from "../../src/core/notifications/notifications.service";
 import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
+import type { SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
 import { providerMock, entity } from "../helpers/mocks";
 
 describe("dashboardWatcher", () => {
@@ -228,5 +230,22 @@ describe("rspamdStatsWatcher", () => {
   it("returns null when rspamd answers with an error status", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
     await expect(rspamdStatsWatcher().fn()).resolves.toBeNull();
+  });
+});
+
+describe("supervisionWatcher", () => {
+  // The poller IS the sampling loop: it must drive the recorder's own tick,
+  // never read a value some second loop produced.
+  it("drives the recorder's tick and publishes the snapshot it returns", async () => {
+    const snapshot = { at: 1, cores: 8, cpu: null, load: { one: 0, five: 0, fifteen: 0 } };
+    const tick = vi.fn().mockResolvedValue(snapshot);
+    const watcher = supervisionWatcher(providerMock<SupervisionRecorderService>({ tick }));
+    await expect(watcher.fn()).resolves.toBe(snapshot);
+    expect(tick).toHaveBeenCalledTimes(1);
+  });
+
+  it("polls at the cadence the live cards are drawn at", () => {
+    const watcher = supervisionWatcher(providerMock<SupervisionRecorderService>({ tick: vi.fn() }));
+    expect(watcher.intervalMs).toBe(SUPERVISION_INTERVAL_MS);
   });
 });

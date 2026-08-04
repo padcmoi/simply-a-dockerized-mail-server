@@ -6,6 +6,7 @@ import type { PostfixService } from "../../src/core/postfix/postfix.service";
 import type { NotificationsService } from "../../src/core/notifications/notifications.service";
 import type { TicketsService } from "../../src/api/tickets/tickets.service";
 import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
+import type { SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
 import type { Watcher } from "../../src/core/websocket/watcher.type";
 import type { WebsocketGateway } from "../../src/core/websocket/websocket.gateway";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
@@ -46,7 +47,8 @@ describe("WebsocketService", () => {
       providerMock<JwtAuthService>({}),
       providerMock<NotificationsService>({}),
       providerMock<TicketsService>({}),
-      providerMock<AccountPresenceService>({})
+      providerMock<AccountPresenceService>({}),
+      providerMock<SupervisionRecorderService>({})
     );
     service.onModuleInit();
   }
@@ -72,7 +74,8 @@ describe("WebsocketService", () => {
       providerMock<JwtAuthService>({}),
       providerMock<NotificationsService>({}),
       providerMock<TicketsService>({}),
-      providerMock<AccountPresenceService>({})
+      providerMock<AccountPresenceService>({}),
+      providerMock<SupervisionRecorderService>({})
     );
     const handlers = { start: (_f: string, _b: string, _p: string) => undefined, stop: (_f: string) => undefined };
     gateway.setDynamicHandlers.mockImplementation((h: typeof handlers) => Object.assign(handlers, h));

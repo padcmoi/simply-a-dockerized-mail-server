@@ -6,6 +6,7 @@ import type { PostfixService } from "../../src/core/postfix/postfix.service";
 import type { NotificationsService } from "../../src/core/notifications/notifications.service";
 import type { TicketsService } from "../../src/api/tickets/tickets.service";
 import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
+import type { SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
 import { buildWatchers } from "../../src/core/websocket/watchers";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
 import { DOMAIN_ACTIONS, GLOBAL_ACTIONS } from "../../src/core/custom-permission-guard/permission-catalog";
@@ -19,6 +20,7 @@ const watchers = buildWatchers({
   notifications: providerMock<NotificationsService>({}),
   tickets: providerMock<TicketsService>({}),
   presence: providerMock<AccountPresenceService>({}),
+  supervision: providerMock<SupervisionRecorderService>({}),
 });
 
 describe("websocket watchers", () => {
@@ -79,6 +81,11 @@ describe("websocket watchers", () => {
 
   it.each(watchers.map((w) => [w.topic, w] as const))("%s never asks for a poll faster than the floor", (_topic, watcher) => {
     if (watcher.intervalMs !== undefined) expect(watcher.intervalMs).toBeGreaterThanOrEqual(MIN_INTERVAL_MS);
+  });
+
+  it("gates supervision-machine exactly like the live REST route it mirrors", () => {
+    const watcher = watchers.find((w) => w.topic === "supervision-machine");
+    expect(watcher?.permissions).toEqual([{ resource: "supervision", actions: ["access", "view-machine-metrics"] }]);
   });
 
   it("gates rspamd-stats exactly like the REST route it mirrors", () => {

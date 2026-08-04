@@ -5,7 +5,7 @@ The control plane's front end. A Nuxt 3 single-page app that talks to
 everything that has to stay live. It is the only interface to the mail stack
 that is not a shell: domains, mailboxes, aliases, quotas, spam filtering,
 manager accounts, permission groups, API tokens and support tickets are all
-driven from here.
+driven from here, and so is the state of the machine underneath them.
 
 The mail backends documented in the sibling folders keep delivering mail while
 this app is down. Nothing here is in the delivery path.
@@ -30,9 +30,11 @@ this app is down. Nothing here is in the delivery path.
 8. [support.md](support.md) -- support tickets, the live conversation, and the
    notification system built on top of them.
 9. [server-tools.md](server-tools.md) -- the server-wide pages: Rspamd,
-   Postfix queue, Sieve blocklist, API tokens.
+   Postfix queue, Sieve blocklist, API tokens, and Supervision (the machine's
+   own CPU, load, memory and network).
 10. [configuration.md](configuration.md) -- the root-only Configuration area:
-    outbound mail provider, email cadence, and the public interface address.
+    outbound mail provider, email cadence, the public interface address, and the
+    machine-history retention.
 11. [profile.md](profile.md) -- your own account: profile, owned resources,
     sessions, notification channels, device preferences.
 12. [realtime.md](realtime.md) -- the WebSocket layer underneath all of it:

@@ -8,6 +8,7 @@ import { RefreshToken } from "../entities/refresh-token.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { PostfixCoreModule } from "../postfix/postfix.module";
+import { SupervisionModule } from "../supervision/supervision.module";
 import { TopicPresenceModule } from "./presence.module";
 import { WebsocketGateway } from "./websocket.gateway";
 import { WebsocketService } from "./websocket.service";
@@ -21,6 +22,7 @@ import { WebsocketService } from "./websocket.service";
     NotificationsModule,
     TicketsModule,
     TopicPresenceModule,
+    SupervisionModule,
     TypeOrmModule.forFeature([RefreshToken, VirtualDomain]),
   ],
   providers: [WebsocketGateway, WebsocketService],

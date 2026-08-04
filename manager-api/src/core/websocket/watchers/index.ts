@@ -5,6 +5,7 @@ import { JwtAuthService } from "../../auth/jwt/jwt.service";
 import { NotificationsService } from "../../notifications/notifications.service";
 import { AccountPresenceService } from "../account-presence.service";
 import { PostfixService } from "../../postfix/postfix.service";
+import { SupervisionRecorderService } from "../../supervision/supervision-recorder.service";
 import { dashboardWatcher } from "./dashboard.watcher";
 import { diskWatcher } from "./disk.watcher";
 import { domainAliasesWatcher } from "./domain-aliases.watcher";
@@ -18,6 +19,7 @@ import { ticketThreadWatcher } from "./ticket-thread.watcher";
 import { postfixQueueWatcher } from "./postfix-queue.watcher";
 import { rspamdStatsWatcher } from "./rspamd-stats.watcher";
 import { sessionsWatcher } from "./sessions.watcher";
+import { supervisionWatcher } from "./supervision.watcher";
 import { Watcher } from "../watcher.type";
 
 export { MIN_INTERVAL_MS, Watcher } from "../watcher.type";
@@ -30,6 +32,7 @@ export interface WatcherDeps {
   notifications: NotificationsService;
   tickets: TicketsService;
   presence: AccountPresenceService;
+  supervision: SupervisionRecorderService;
 }
 
 export function buildWatchers(deps: WatcherDeps): Watcher[] {
@@ -48,5 +51,6 @@ export function buildWatchers(deps: WatcherDeps): Watcher[] {
     notificationsWatcher(deps.notifications),
     ticketThreadWatcher(deps.tickets),
     presenceWatcher(deps.presence),
+    supervisionWatcher(deps.supervision),
   ];
 }

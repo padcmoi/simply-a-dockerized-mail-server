@@ -17,4 +17,5 @@ export default {
   groups: "Groups",
   apiTokens: "API Tokens",
   config: "Configuration",
+  supervision: "Supervision",
 } satisfies Locales["nav"];

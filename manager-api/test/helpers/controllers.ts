@@ -8,6 +8,7 @@ import { AccountsSessionsController } from "../../src/api/accounts/sessions/sess
 import { MailConfigController } from "../../src/api/config/mail-config.controller";
 import { MailCadenceController } from "../../src/api/config/mail-cadence.controller";
 import { GeneralController } from "../../src/api/config/general.controller";
+import { SupervisionRetentionController } from "../../src/api/config/supervision-retention.controller";
 import { AdminDomainsController } from "../../src/api/domains/admin-domains/admin-domains.controller";
 import { AliasesController } from "../../src/api/domains/aliases/aliases.controller";
 import { DkimCheckController } from "../../src/api/domains/dkim-check/dkim-check.controller";
@@ -24,6 +25,7 @@ import { NotificationsController } from "../../src/api/notifications/notificatio
 import { PostfixController } from "../../src/api/postfix/postfix.controller";
 import { RspamdController } from "../../src/api/rspamd/rspamd.controller";
 import { RejectSendersController } from "../../src/api/sieve/reject-senders/reject-senders.controller";
+import { SupervisionController } from "../../src/api/supervision/supervision.controller";
 import { ApiTokenController } from "../../src/core/auth/api-token/api-token.controller";
 import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
 
@@ -34,6 +36,7 @@ export const ALL_CONTROLLERS = [
   MailConfigController,
   MailCadenceController,
   GeneralController,
+  SupervisionRetentionController,
   AdminDomainsController,
   AliasesController,
   DkimCheckController,
@@ -50,6 +53,7 @@ export const ALL_CONTROLLERS = [
   PostfixController,
   RspamdController,
   RejectSendersController,
+  SupervisionController,
   ApiTokenController,
   JwtAuthController,
 ] as const;

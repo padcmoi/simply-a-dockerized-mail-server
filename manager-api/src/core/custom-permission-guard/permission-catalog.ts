@@ -101,6 +101,11 @@ export const GLOBAL_ACTIONS = {
   ],
   domain_owner_elevated: ["access", "delete-dkim-key", "transfer-domain-ownership"],
   tickets: ["access", "list-tickets", "view-ticket", "create-ticket", "reply-ticket", "handle-ticket", "notification"],
+  // The machine this server runs on. `view-machine-metrics` covers the live
+  // figures (the websocket topic and the minute behind it),
+  // `view-metrics-history` the recorded windows an hour or a week wide, which
+  // are read from a table the live feed never touches.
+  supervision: ["access", "view-machine-metrics", "view-metrics-history"],
   superadmin: ["access", "resize-any-domain-quota", "delete-any-domain"],
 } as const;
 

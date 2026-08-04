@@ -59,6 +59,7 @@ id resolves asynchronously need.
 | `postfix-queue` | global | `postfix:access` + `view-postfix-queue` |
 | `rspamd-stats` | global | `rspamd:access` + `view-rspamd-stats` |
 | `sessions-overview` | global | `accounts:access` + `view-account-sessions` |
+| `supervision-machine` | global | `supervision:access` + `view-machine-metrics` |
 | `domain-recipients:<id>` | domain | `recipients:access` + `list-recipients` |
 | `domain-aliases:<id>` | domain | `aliases:access` + `list-aliases` |
 | `domain-quota:<id>` | domain | `quotas:access` + `view-quotas` |
@@ -81,6 +82,26 @@ Three kinds of authorization:
   `ticket:<id>` runs the same row-level visibility test the REST route applies,
   because ticket access is per row and a shared topic would otherwise leak
   private threads.
+
+## The one topic that is also a sampling loop
+
+`supervision-machine` is the exception to "every watcher is a poller reading
+something that exists anyway": its poller **is** the only place the machine is
+read. `/proc` counters are read as deltas between two samples, so a second loop
+would reset this one's baseline and both would publish rates nobody's machine
+ever had. It therefore ticks once a second from boot, subscriber or not, because
+the recorded history is built from the same samples.
+
+Two consequences worth knowing:
+
+- The page opens on `GET /supervision/live`, not on the socket. The gateway
+  republishes only the **latest** value of a topic to a new subscriber, never a
+  backlog, so the minute the loop has already been keeping is handed over by REST
+  and the socket takes it from there.
+- Nothing is written to the database at the socket's cadence: samples are
+  averaged in memory and one row lands every ten seconds.
+
+See [server-tools.md](server-tools.md) for the page itself.
 
 ## Presence
 

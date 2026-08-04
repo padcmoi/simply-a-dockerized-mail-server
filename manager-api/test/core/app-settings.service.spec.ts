@@ -26,6 +26,7 @@ describe("AppSettingsService", () => {
       row("offline_notify_after_ms", "number", "60000"),
       row("offline_sweep_interval_ms", "number", "15000"),
       row("mail_min_interval_ms", "number", "5000"),
+      row("supervision_retention_ms", "number", "604800000"),
       row("manager_url", "string", "https://mgr.test"),
     ]);
     await svc.reload();
@@ -33,6 +34,7 @@ describe("AppSettingsService", () => {
       offlineNotifyAfterMs: 60000,
       offlineSweepIntervalMs: 15000,
       mailMinIntervalMs: 5000,
+      supervisionRetentionMs: 604800000,
       managerUrl: "https://mgr.test",
     });
   });

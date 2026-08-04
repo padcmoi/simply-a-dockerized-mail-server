@@ -12,10 +12,17 @@ services:
       NODE_ENV: development
       OPENDKIM_API_URL: http://mail-opendkim:8080
       MAIL_VOLUME_PATH: /var/mail
+      HOST_PROC: /host/proc
     volumes:
       # Read-write, see manager-api.yml.
       - ${VOLUMES_PATH}/mail:/var/mail
       - ${VOLUMES_PATH}/postfix-spool:/var/spool/postfix:ro
+      # The machine cards read /proc. Docker does not namespace /proc/stat,
+      # /proc/loadavg or /proc/meminfo, so those are the host's own figures
+      # already, but /proc/net IS namespaced: without the host's own /proc
+      # mounted here, the network card would report this container's veth
+      # instead of the NIC, and it reports nothing at all rather than that.
+      - /proc:/host/proc:ro
       - ../../manager-api/src:/app/src
     networks:
       mail:

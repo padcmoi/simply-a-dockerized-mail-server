@@ -11,6 +11,8 @@ export default {
   cadenceCardHint: "Délais d'envoi et anti-spam",
   generalCardLabel: "Général",
   generalCardHint: "Adresse publique de l'interface",
+  supervisionCardLabel: "Supervision",
+  supervisionCardHint: "Rétention des mesures machine",
   mail: {
     alertTitle: "Serveur de mail sortant.",
     alertDescription: "Comment le manager envoie tous ses e-mails (invitations, notifications, codes...). Stocké en base, pas dans l'environnement.",
@@ -86,6 +88,20 @@ export default {
     loadFailed: "Échec du chargement de la cadence",
     cannotExceedDelay: "Ne peut pas dépasser le délai ci-dessus.",
     reset: "Valeurs d'usine",
+  },
+  supervision: {
+    cardTitle: "Historique de la machine",
+    alertTitle: "Mesures de la machine.",
+    alertDescription:
+      "Combien de temps l'historique CPU, charge, mémoire et réseau est conservé. La purge tourne au démarrage puis toutes les heures et relit cette valeur à chaque passage : un changement s'applique à la purge suivante, pas au prochain redémarrage.",
+    retention: "Rétention (jours)",
+    retentionHint: "De 1 à 365 jours. Une ligne enregistrée couvre 10 secondes, et les fenêtres des cartes vont jusqu'à 7 jours : en dessous, une carte demanderait plus que ce qui existe.",
+    rowsEstimate: "Environ {rows} lignes conservées en régime permanent.",
+    save: "Enregistrer",
+    saved: "Rétention enregistrée",
+    saveFailed: "Échec de l'enregistrement",
+    loadFailed: "Échec du chargement",
+    reset: "Valeur d'usine",
   },
   general: {
     cardTitle: "Général",

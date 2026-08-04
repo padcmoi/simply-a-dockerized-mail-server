@@ -70,6 +70,7 @@ describe("useNav global nav items", () => {
       "/admin/tickets",
       "/admin/api-tokens",
       "/admin/config",
+      "/admin/supervision",
     ]);
   });
 
@@ -96,6 +97,15 @@ describe("useNav global nav items", () => {
     };
     const { adminNavItems } = useNav(noop);
     expect(adminNavItems.value.map((i) => i.to)).toEqual(["/admin/accounts", "/admin/groups"]);
+  });
+
+  // The machine is the last entry of the sidebar, under the configuration it
+  // sits below, and it is gated like any other section: on `access` alone.
+  it("reveals the machine section on supervision access, root or not", () => {
+    asUser();
+    usePermissionsStore().data = { global: [{ resource: "supervision", action: "access" }], domain: [] };
+    const { adminNavItems } = useNav(noop);
+    expect(adminNavItems.value.map((i) => i.to)).toEqual(["/admin/supervision"]);
   });
 
   it("marks the section active with a prefix-aware match on the route path", () => {

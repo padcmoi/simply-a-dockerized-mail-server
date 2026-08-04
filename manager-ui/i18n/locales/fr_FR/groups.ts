@@ -117,6 +117,7 @@ export default {
         groups: "Groupes",
         domains: "Domaines",
         tickets: "Tickets de support",
+        supervision: "Supervision",
         superadmin: "Super administrateur",
         domainOwnerElevated: "Propriétaire de domaine élevé",
       },
@@ -209,6 +210,11 @@ export default {
           "reply-ticket": "Répondre à un ticket que l'on n'a pas ouvert",
           "handle-ticket": "Prendre en charge un ticket et changer son statut",
           notification: "Être notifié des tickets que l'on peut suivre",
+        },
+        supervision: {
+          access: "Accès",
+          "view-machine-metrics": "Voir les mesures en direct",
+          "view-metrics-history": "Voir l'historique des mesures",
         },
         superadmin: {
           access: "Accès",

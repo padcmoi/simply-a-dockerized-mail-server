@@ -60,6 +60,7 @@ caller's own profile, and the two invitation routes where the token is the crede
 | `api-tokens` | `list-api-tokens`, `create-api-token`, `edit-api-token`, `revoke-api-token`, `regenerate-api-token`, `delete-api-token` |
 | `groups` | `list-groups`, `view-group`, `list-group-members`, `create-group`, `edit-group`, `edit-group-global-permissions`, `edit-group-domain-permissions`, `delete-group`, `transfer-group-ownership`, `add-group-member`, `remove-group-member` |
 | `domains` | `list-all-domains`, `view-disk-usage`, `create-domain`, `view-domain`, `toggle-domain-active`, `transfer-domain-ownership` |
+| `supervision` | `view-machine-metrics`, `view-metrics-history` |
 | `superadmin` | `resize-any-domain-quota`, `delete-any-domain` |
 | `domain_owner_elevated` | `delete-dkim-key`, `transfer-domain-ownership` |
 
@@ -176,6 +177,8 @@ Root is exempt (`rawSetGroupGlobalPermissions`).
 | `GET` | `/rspamd/history` | `global:rspamd` [access, view-rspamd-history] |
 | `GET` | `/rspamd/stats` | `global:rspamd` [access, view-rspamd-stats] |
 | `GET` | `/sieve/reject-senders` | `global:sieve` [access, list-reject-senders] |
+| `GET` | `/supervision/live` | `global:supervision` [access, view-machine-metrics] |
+| `GET` | `/supervision/history/:range` | `global:supervision` [access, view-metrics-history] |
 | `POST` | `/sieve/reject-senders` | `global:sieve` [access, create-reject-sender] |
 | `PATCH` | `/sieve/reject-senders/:id` | `global:sieve` [access, edit-reject-sender] |
 | `DELETE` | `/sieve/reject-senders/:id` | `global:sieve` [access, delete-reject-sender] |
@@ -190,6 +193,15 @@ permission to obtain a token makes no sense. `GET`/`PATCH /auth/jwt/me` and
 no account yet, and the invitation token **is** their credential.
 
 ## Why some actions are what they are
+
+**`supervision` splits the live minute from the recorded month.** The two are not
+the same reading: `view-machine-metrics` opens what the machine is doing now (the
+live route and the websocket topic behind it, both fed by the same in-memory
+window), while `view-metrics-history` opens a month of recorded samples, which is
+a different question and a different table. Holding one grants nothing about the
+other. How long that month is kept is not in this catalog at all: it is a
+root-only `/config/**` setting, because a retention is a decision about the
+server, not a reading of it.
 
 **`rspamd` demanded `modify`+`delete` together, for two different routes.**
 `PATCH /rspamd/actions` writes arbitrary thresholds, an unbounded power that can

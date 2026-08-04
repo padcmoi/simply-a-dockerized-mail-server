@@ -21,7 +21,7 @@ unconditional; every other entry appears only if the account holds `access` on
 its resource, or is root:
 
 Dashboard, Domains, Rspamd, Postfix, Sieve, Accounts, Groups, Support,
-API Tokens.
+API Tokens, Configuration (root only), Supervision.
 
 `access` means exactly "this resource is visible to me", nothing more. What the
 page then shows is gated inside the page by that resource's own listing action.

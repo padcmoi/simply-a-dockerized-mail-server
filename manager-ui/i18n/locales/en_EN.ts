@@ -28,6 +28,7 @@ import rspamdPage from "./en_EN/rspamdPage";
 import apiTokens from "./en_EN/apiTokens";
 import groups from "./en_EN/groups";
 import config from "./en_EN/config";
+import supervision from "./en_EN/supervision";
 
 // One file per top-level namespace under ./en_EN/, this file only assembles
 // them. `satisfies Locales` still type-checks the whole tree here, and each
@@ -62,4 +63,5 @@ export default {
   apiTokens,
   groups,
   config,
+  supervision,
 } satisfies Locales;

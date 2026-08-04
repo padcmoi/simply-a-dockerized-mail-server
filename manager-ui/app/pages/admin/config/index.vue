@@ -38,6 +38,13 @@ setBreadcrumb([{ label: t("nav.config") }]);
         :hint="t('config.cadenceCardHint')"
         to="/admin/config/mail-cadence"
       />
+
+      <ProfileActionCard
+        icon="i-lucide-activity"
+        :label="t('config.supervisionCardLabel')"
+        :hint="t('config.supervisionCardHint')"
+        to="/admin/config/supervision"
+      />
     </div>
   </div>
 </template>

@@ -115,6 +115,7 @@ export default {
         groups: "Groups",
         domains: "Domains",
         tickets: "Support tickets",
+        supervision: "Supervision",
         superadmin: "Super admin",
         domainOwnerElevated: "Domain owner elevated",
       },
@@ -207,6 +208,11 @@ export default {
           "reply-ticket": "Reply on a ticket one did not open",
           "handle-ticket": "Take charge of a ticket and change its status",
           notification: "Be notified about the tickets one may follow",
+        },
+        supervision: {
+          access: "Access",
+          "view-machine-metrics": "View the live figures",
+          "view-metrics-history": "View the recorded history",
         },
         superadmin: {
           access: "Access",

@@ -1,0 +1,236 @@
+<script setup lang="ts">
+// A chart with its scale, its graduation and an answer when you point at it. The
+// axis labels sit ON the plot rather than in a gutter beside it: a column of 56
+// pixels for two short figures took a fifth of the width away from the curve,
+// which is the thing anyone came to look at.
+//
+// Several curves are either told apart by hue (the load's three windows) or by
+// their own label (in and out); the ramp is kept for curves that are one thing
+// at several depths. Every curve is named where it is read, so identity never
+// rests on colour alone.
+const {
+  series,
+  max,
+  maxLabel,
+  minLabel = "0",
+  legend = [],
+  names = [],
+  format = (value: number) => value.toFixed(2),
+  area = false,
+  at = [],
+  now = "",
+  variant = "ramp",
+} = defineProps<{
+  /** One to three curves, in the order the ramp reads: first is the loudest. A
+   *  null is a moment with no figure, and the curve is cut rather than drawn
+   *  through it. */
+  series: (number | null)[][];
+  /** The ceiling the curves are drawn against. */
+  max: number;
+  /** What that ceiling is, written on the plot. */
+  maxLabel: string;
+  minLabel?: string;
+  /** Names each curve under the chart, with its current value. */
+  legend?: string[];
+  /** Names each curve in the tooltip, without it. */
+  names?: string[];
+  /** Writes a value the way its card writes it. */
+  format?: (_value: number) => string;
+  /** Fills under the first curve, for the ones that stand alone. */
+  area?: boolean;
+  /** The moment of every point, in epoch milliseconds, in the order drawn. */
+  at?: number[];
+  /** What the right end of the axis is called, since a clock time for it is
+   *  stale the moment it is written. */
+  now?: string;
+  /** `series` gives each curve its own hue; `ramp` steps one hue for ordered ones. */
+  variant?: "ramp" | "series";
+}>();
+
+// One hue at three steps, for curves that are the same measurement at different
+// depths, where three hues would claim a difference in kind that is not there.
+const RAMP = [
+  { line: "stroke-primary", dot: "bg-primary", width: 2 },
+  { line: "stroke-primary opacity-70", dot: "bg-primary opacity-70", width: 1.75 },
+  { line: "stroke-primary opacity-45", dot: "bg-primary opacity-45", width: 1.5 },
+];
+
+// Three hues, for when the curves have to be told apart at a glance rather than
+// read as a progression. Not taken from the status colours, which mean good and
+// bad here and must not become "series 2". Light step first, dark step second.
+const CATEGORICAL = [
+  { line: "stroke-[#2a78d6] dark:stroke-[#3987e5]", dot: "bg-[#2a78d6] dark:bg-[#3987e5]", width: 2 },
+  { line: "stroke-[#eb6834] dark:stroke-[#d95926]", dot: "bg-[#eb6834] dark:bg-[#d95926]", width: 2 },
+  { line: "stroke-[#1baf7a] dark:stroke-[#199e70]", dot: "bg-[#1baf7a] dark:bg-[#199e70]", width: 2 },
+];
+
+const { locale } = useI18n();
+
+const plot = useTemplateRef<HTMLDivElement>("plot");
+const hovered = ref<number | null>(null);
+
+// The dictionaries are named fr_FR here and fr-FR in Intl, which is the only
+// thing standing between the app's locale and a date written the reader's way.
+const tag = computed(() => locale.value.replace("_", "-"));
+
+// The fill has to fade out downwards: a flat wash under a curve that barely
+// moves, which is what memory does, is a slab that hides the baseline.
+const gradient = useId();
+
+const palette = computed(() => (variant === "series" ? CATEGORICAL : RAMP));
+const count = computed(() => series[0]?.length ?? 0);
+const scale = computed(() => metricChartScale(count.value, max));
+
+const paths = computed(() => metricPaths(series, scale.value));
+const areas = computed(() => metricAreas(paths.value[0] ?? [], scale.value));
+
+const window = computed(() => axisWindow(at));
+const ticks = computed(() => axisTicks(window.value, tag.value));
+
+/** The left end: the oldest moment on the plot, not the width of the window. */
+const since = computed(() => (window.value ? axisClock(window.value.from, tag.value, window.value.scale) : ""));
+
+// What the crosshair is showing, if anything: where it sits across the plot, and
+// every curve's value there.
+const reading = computed(() => {
+  const index = hovered.value;
+  if (index === null || index >= count.value) return null;
+
+  const values = series
+    .map((curve, position) => ({
+      name: names[position] ?? "",
+      dot: palette.value[position]?.dot,
+      value: curve[index] ?? null,
+    }))
+    .filter((mark) => mark.value !== null);
+
+  // Nothing was recorded at that moment: no crosshair either, because a tooltip
+  // carrying only a time would say "here is a figure" about a hole.
+  if (!values.length) return null;
+
+  return {
+    left: count.value > 1 ? (index / (count.value - 1)) * 100 : 0,
+    // The pointer stays the precise instrument: it lands on a point of the
+    // window rather than on a graduation of the axis, so it carries the seconds
+    // where the axis carries the minute.
+    moment: window.value && at[index] !== undefined ? axisClock(at[index] as number, tag.value, window.value.scale, true) : "",
+    values: values.map((mark) => ({ ...mark, top: (scale.value.y(mark.value as number) / CHART.height) * 100 })),
+  };
+});
+
+// Pointer events rather than mouse ones: the same handler answers a finger on a
+// tablet.
+function track(event: PointerEvent) {
+  const box = plot.value?.getBoundingClientRect();
+  if (!box || box.width === 0 || count.value < 2) return;
+
+  const ratio = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width));
+  hovered.value = Math.round(ratio * (count.value - 1));
+}
+</script>
+
+<template>
+  <div class="space-y-1.5">
+    <!-- Out to the card's own edges: the negative margin cancels the body
+         padding, which is the only thing between the curve and the full width. -->
+    <div
+      ref="plot"
+      class="relative -mx-4 touch-none text-primary sm:-mx-6"
+      @pointermove="track"
+      @pointerdown="track"
+      @pointerleave="hovered = null"
+      @pointercancel="hovered = null"
+    >
+      <svg
+        class="block h-44 w-full"
+        :viewBox="`0 0 ${CHART.width} ${CHART.height}`"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient :id="gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="currentColor" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+
+        <template v-if="area">
+          <path v-for="(fill, index) in areas" :key="`area-${index}`" :d="fill" :fill="`url(#${gradient})`" />
+        </template>
+
+        <template v-for="(fragments, index) in paths" :key="index">
+          <path
+            v-for="(fragment, piece) in fragments"
+            :key="piece"
+            :d="fragment.path"
+            :class="palette[index]?.line"
+            :stroke-width="palette[index]?.width"
+            fill="none"
+            stroke-linejoin="round"
+            stroke-linecap="round"
+            vector-effect="non-scaling-stroke"
+          />
+        </template>
+
+        <line
+          v-if="reading"
+          :x1="(reading.left / 100) * CHART.width"
+          :x2="(reading.left / 100) * CHART.width"
+          y1="0"
+          :y2="CHART.height"
+          class="stroke-inverted opacity-60"
+          stroke-width="1"
+          vector-effect="non-scaling-stroke"
+        />
+      </svg>
+
+      <!-- The scale, on the plot rather than beside it. -->
+      <span class="absolute top-0 left-4 text-[10px] leading-none text-dimmed sm:left-6">{{ maxLabel }}</span>
+      <span class="absolute bottom-1 left-4 text-[10px] leading-none text-dimmed sm:left-6">{{ minLabel }}</span>
+      <!-- The baseline, full width, one shade off the surface. -->
+      <span class="absolute inset-x-0 bottom-0 h-px bg-accented" />
+
+      <!-- Round marks have to be HTML: the plot is stretched to the card's
+           width, which would turn a circle drawn in it into an ellipse. -->
+      <template v-if="reading">
+        <span
+          v-for="(mark, index) in reading.values"
+          :key="index"
+          class="pointer-events-none absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-default"
+          :class="mark.dot"
+          :style="{ left: `${reading.left}%`, top: `${mark.top}%` }"
+        />
+
+        <div
+          class="pointer-events-none absolute top-1 z-10 -translate-x-1/2 rounded-md bg-inverted px-2 py-1.5 text-xs whitespace-nowrap text-inverted shadow-lg"
+          :style="{ left: `${Math.min(82, Math.max(18, reading.left))}%` }"
+        >
+          <p class="mb-0.5 opacity-70">{{ reading.moment }}</p>
+          <p v-for="(mark, index) in reading.values" :key="index" class="flex items-center gap-1.5">
+            <span class="size-1.5 shrink-0 rounded-full" :class="mark.dot" />
+            <span v-if="mark.name" class="opacity-70">{{ mark.name }}</span>
+            <span class="font-medium">{{ format(mark.value as number) }}</span>
+          </p>
+        </div>
+      </template>
+    </div>
+
+    <!-- The graduation, under the moment it marks. Absolutely placed rather than
+         spaced by a flexbox: a time has to sit where it is, not where an even
+         distribution would put it. -->
+    <div class="relative h-3 text-[10px] leading-none text-dimmed">
+      <span class="absolute left-0">{{ since }}</span>
+      <span v-for="(tick, index) in ticks" :key="index" class="absolute -translate-x-1/2" :style="{ left: `${tick.at}%` }">{{
+        tick.label
+      }}</span>
+      <span class="absolute right-0">{{ now }}</span>
+    </div>
+
+    <ul v-if="legend.length" class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-dimmed">
+      <li v-for="(name, index) in legend" :key="name" class="flex items-center gap-1.5">
+        <span class="size-1.5 shrink-0 rounded-full" :class="palette[index]?.dot" />
+        {{ name }}
+      </li>
+    </ul>
+  </div>
+</template>

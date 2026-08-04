@@ -7,6 +7,8 @@ export interface AppSettingsView {
   offlineNotifyAfterMs: number;
   offlineSweepIntervalMs: number;
   mailMinIntervalMs: number;
+  /** How far back the recorded machine history is kept before it is pruned. */
+  supervisionRetentionMs: number;
   managerUrl: string;
 }
 
@@ -19,6 +21,7 @@ const FIELDS: Record<keyof AppSettingsView, FieldSpec> = {
   offlineNotifyAfterMs: { key: "offline_notify_after_ms", type: "number" },
   offlineSweepIntervalMs: { key: "offline_sweep_interval_ms", type: "number" },
   mailMinIntervalMs: { key: "mail_min_interval_ms", type: "number" },
+  supervisionRetentionMs: { key: "supervision_retention_ms", type: "number" },
   managerUrl: { key: "manager_url", type: "string" },
 };
 
@@ -26,6 +29,8 @@ export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
   offlineNotifyAfterMs: 300_000,
   offlineSweepIntervalMs: 20_000,
   mailMinIntervalMs: 30_000,
+  // A month, which is longer than the widest window a supervision card offers.
+  supervisionRetentionMs: 30 * 24 * 3_600_000,
   managerUrl: "",
 };
 
@@ -56,6 +61,7 @@ export class AppSettingsService implements OnModuleInit {
       offlineNotifyAfterMs: num(FIELDS.offlineNotifyAfterMs, APP_SETTINGS_DEFAULTS.offlineNotifyAfterMs),
       offlineSweepIntervalMs: num(FIELDS.offlineSweepIntervalMs, APP_SETTINGS_DEFAULTS.offlineSweepIntervalMs),
       mailMinIntervalMs: num(FIELDS.mailMinIntervalMs, APP_SETTINGS_DEFAULTS.mailMinIntervalMs),
+      supervisionRetentionMs: num(FIELDS.supervisionRetentionMs, APP_SETTINGS_DEFAULTS.supervisionRetentionMs),
       managerUrl: str(FIELDS.managerUrl, APP_SETTINGS_DEFAULTS.managerUrl),
     };
     return this.cache;

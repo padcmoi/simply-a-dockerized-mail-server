@@ -1,7 +1,8 @@
 # Configuration (root only)
 
 Server-wide settings that belong to nobody's domain: how the manager sends mail,
-when it sends notification mail, and its own public address. The whole area is
+when it sends notification mail, its own public address, and how long it keeps
+the machine's recorded figures. The whole area is
 **root only**. The API routes under `/config/**` are guarded by
 [`RootGuard`](../../manager-api/src/core/auth/root.guard.ts), not by the ACL, so
 they never appear in the permission catalogue; the pages carry
@@ -114,3 +115,26 @@ That list is a single backend catalogue
 the form validates the interface address against the **same** set the API does,
 without shipping a duplicated copy in the frontend. Both layers filter: the form
 disables Enregistrer and shows the error, and the API answers 400.
+
+## Supervision: how long the machine history is kept
+
+[`/admin/config/supervision`](../../manager-ui/app/pages/admin/config/supervision.vue),
+driven by
+[`useSupervisionRetention`](../../manager-ui/app/composables/useSupervisionRetention.ts).
+One setting, `supervision_retention_ms`: how far back the CPU, load, memory and
+network history behind the [Supervision page](server-tools.md) is kept.
+
+It is here and not under the `supervision` ACL resource on purpose. Reading the
+machine is a permission; deciding how much of the machine's past this server
+stores is a decision about the server, which is what `/config/**` is for.
+
+- **One day to one year**, a month by default. The floor is not arbitrary: the
+  cards offer a window seven days wide, and a retention under that would have a
+  card ask for more than exists.
+- **The form works in days and stores milliseconds**, and says what the choice
+  costs before it is made: one recorded row stands for ten seconds, so a day is
+  about 8 640 rows and the default month about 260 000.
+- **The purge re-reads it on every pass**, not at boot. It runs once at startup
+  and then hourly, so a retention shortened here takes effect at the next purge
+  rather than at the next restart. Shortening it deletes what falls outside the
+  new window on that pass; nothing is recoverable afterwards.

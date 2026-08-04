@@ -124,6 +124,7 @@ each one guards, is in [`../api/acl.md`](../api/acl.md).
 | `/postfix` | `postfix:access` + `view-postfix-queue` |
 | `/sieve` | `sieve:access` + `list-reject-senders` |
 | `/api-tokens` | `api-tokens:access` + `list-api-tokens` |
+| `/admin/supervision` | `supervision:access` + `view-machine-metrics` |
 
 ## Permission checks inside a page
 

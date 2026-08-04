@@ -19,6 +19,7 @@ export function usePermissionLabels() {
     "api-tokens": t("groups.permissions.resources.global.apiTokens"),
     groups: t("groups.permissions.resources.global.groups"),
     domains: t("groups.permissions.resources.global.domains"),
+    supervision: t("groups.permissions.resources.global.supervision"),
     superadmin: t("groups.permissions.resources.global.superadmin"),
     domain_owner_elevated: t("groups.permissions.resources.global.domainOwnerElevated"),
   }));
