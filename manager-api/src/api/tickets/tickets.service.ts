@@ -160,7 +160,7 @@ export class TicketsService {
       const domainName = (await this.domainNamesFor([ticket.domainId])).get(ticket.domainId) ?? null;
       const actor = (await this.authorsFor([actorId])).get(actorId)?.name ?? null;
       const payload = { ticketId: ticket.id, subject: ticket.subject, domainName, actor, ...extra };
-      const link = `/tickets/${ticket.id}`;
+      const link = `/admin/tickets/${ticket.id}`;
       await this.notifications.dispatch({
         accountIds,
         source: "support",

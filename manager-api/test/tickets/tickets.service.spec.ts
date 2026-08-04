@@ -548,7 +548,7 @@ describe("TicketsService (row-level visibility)", () => {
     it("carries the domain and the ticket link in the payload", async () => {
       await svc.create({ domainId: DOMAIN_ID, subject: "help", body: "b" }, caller(ACTOR));
       expect(dispatched()).toMatchObject({
-        link: "/tickets/5",
+        link: "/admin/tickets/5",
         payload: expect.objectContaining({ ticketId: 5, subject: "help", domainName: "example.com" }),
       });
     });
