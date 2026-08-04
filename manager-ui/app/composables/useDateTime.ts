@@ -5,7 +5,7 @@
 export function useDateTime() {
   const { locale } = useI18n();
 
-  // `fr_FR` / `en_EN` are this app's own locale ids, not BCP-47 tags, and
+  // `fr_FR` / `en_GB` are this app's own locale ids, not BCP-47 tags, and
   // there is no such region as "EN". Only the language subtag is kept; Intl
   // resolves the rest on its own.
   const intlLocale = computed(() => locale.value.split("_")[0]);

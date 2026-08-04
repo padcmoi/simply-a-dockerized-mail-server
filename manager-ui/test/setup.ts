@@ -38,7 +38,7 @@ for (const k of VUE_GLOBALS) vi.stubGlobal(k, (vue as unknown as Record<string, 
 vi.stubGlobal("useI18n", () => ({
   t: (k: string, params?: Record<string, unknown>) => (params ? `${k}:${JSON.stringify(params)}` : k),
   te: () => true,
-  locale: vue.ref("en_EN"),
+  locale: vue.ref("en_GB"),
   locales: vue.ref([]),
 }));
 vi.stubGlobal("navigateTo", vi.fn());

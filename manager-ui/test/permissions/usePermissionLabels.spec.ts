@@ -8,7 +8,7 @@ function stubI18n(te: (k: string) => boolean) {
   vi.stubGlobal("useI18n", () => ({
     t: (k: string) => k,
     te,
-    locale: ref("en_EN"),
+    locale: ref("en_GB"),
     locales: ref([]),
   }));
 }

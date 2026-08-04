@@ -13,7 +13,7 @@ let locale: ReturnType<typeof ref<string>>;
 let setLocale: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
-  locale = ref("en_EN");
+  locale = ref("en_GB");
   setLocale = vi.fn();
   // The composable reads i18n off nuxtApp.$i18n (so it works in the plugin too),
   // not useI18n(), so that is what the test provides.
@@ -21,7 +21,7 @@ beforeEach(() => {
     $i18n: {
       locale,
       locales: ref([
-        { code: "en_EN", name: "English" },
+        { code: "en_GB", name: "English" },
         { code: "fr_FR", name: "Français" },
       ]),
       setLocale,
@@ -38,13 +38,13 @@ describe("useLocalePreference", () => {
   it("defaults to the system preference, resolving to the active locale", () => {
     const { preference, detected, resolved } = useLocalePreference();
     expect(preference.value).toBe("system");
-    expect(detected.value).toBe("en_EN");
-    expect(resolved.value).toBe("en_EN");
+    expect(detected.value).toBe("en_GB");
+    expect(resolved.value).toBe("en_GB");
   });
 
   it("maps each configured locale to its real country flag, else the last two chars", () => {
     const { flagFor } = useLocalePreference();
-    expect(flagFor("en_EN")).toBe("GB");
+    expect(flagFor("en_GB")).toBe("GB");
     expect(flagFor("fr_FR")).toBe("FR");
     expect(flagFor("pt_BR")).toBe("BR");
   });
@@ -53,7 +53,7 @@ describe("useLocalePreference", () => {
     const { options } = useLocalePreference();
     expect(options.value).toEqual([
       { value: "system", flag: "GB", name: null },
-      { value: "en_EN", flag: "GB", name: "English" },
+      { value: "en_GB", flag: "GB", name: "English" },
       { value: "fr_FR", flag: "FR", name: "Français" },
     ]);
   });
@@ -62,6 +62,12 @@ describe("useLocalePreference", () => {
     const p = useLocalePreference();
     p.preference.value = "fr_FR";
     expect(p.resolved.value).toBe("fr_FR");
+  });
+
+  it("falls back to the detected locale when the stored code is no longer configured", () => {
+    const p = useLocalePreference();
+    p.preference.value = "en_EN";
+    expect(p.resolved.value).toBe("en_GB");
   });
 
   it("setPreference stores the choice and switches the active locale when it differs", async () => {
@@ -73,7 +79,7 @@ describe("useLocalePreference", () => {
 
   it("setPreference does not switch when the resolved locale is already active", async () => {
     const { setPreference } = useLocalePreference();
-    await setPreference("en_EN");
+    await setPreference("en_GB");
     expect(setLocale).not.toHaveBeenCalled();
   });
 });

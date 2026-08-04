@@ -2,7 +2,7 @@
 import * as locales from "@nuxt/ui/locale";
 
 const UI_LOCALE_MAP: Record<string, keyof typeof locales> = {
-  en_EN: "en",
+  en_GB: "en",
   fr_FR: "fr",
 };
 

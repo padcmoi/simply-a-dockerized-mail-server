@@ -64,7 +64,7 @@ one block per resource, one checkbox per action, with **All** / **None** per
 resource and **Check all** / **Uncheck all** across everything visible.
 
 Every resource and action carries a human label from
-[`i18n/locales/*/groups.ts`](../../manager-ui/i18n/locales/en_EN/groups.ts).
+[`i18n/locales/*/groups.ts`](../../manager-ui/i18n/locales/en_GB/groups.ts).
 The checkbox reads "Rotate the DKIM key", not `rotate-dkim-key`. Labels are
 typed against the catalog, so an action added to
 [`permission-catalog.ts`](../../manager-api/src/core/custom-permission-guard/permission-catalog.ts)

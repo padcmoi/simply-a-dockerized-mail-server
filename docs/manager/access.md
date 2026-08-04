@@ -160,4 +160,4 @@ a crash. It distinguishes three cases:
 
 Each offers Back (history, keeping the app state) and Dashboard (which clears
 the error). Titles and descriptions come from
-[`i18n/locales/*/error.ts`](../../manager-ui/i18n/locales/en_EN/error.ts).
+[`i18n/locales/*/error.ts`](../../manager-ui/i18n/locales/en_GB/error.ts).

@@ -5,7 +5,7 @@ import { useApiError } from "~/composables/useApiError";
 // The default setup.ts useI18n has te=()=>true; each test that cares about the
 // mapping/fallback path re-stubs useI18n so it controls te and t precisely.
 function stubI18n(te: (k: string) => boolean, t: (k: string, p?: Record<string, unknown>) => string) {
-  vi.stubGlobal("useI18n", () => ({ t, te, locale: ref("en_EN"), locales: ref([]) }));
+  vi.stubGlobal("useI18n", () => ({ t, te, locale: ref("en_GB"), locales: ref([]) }));
 }
 
 describe("useApiError.apiErrorBody", () => {

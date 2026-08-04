@@ -13,7 +13,7 @@ function stubLocale(locale: string) {
 
 describe("useDateTime.formatDateTime", () => {
   it("renders a dash for missing or unparseable values", () => {
-    stubLocale("en_EN");
+    stubLocale("en_GB");
     const { formatDateTime } = useDateTime();
     expect(formatDateTime(null)).toBe("-");
     expect(formatDateTime(undefined)).toBe("-");
@@ -22,7 +22,7 @@ describe("useDateTime.formatDateTime", () => {
   });
 
   it("renders a valid ISO timestamp with the app's language subtag only", () => {
-    stubLocale("en_EN");
+    stubLocale("en_GB");
     const { formatDateTime } = useDateTime();
     const iso = "2026-07-08T18:22:01.000Z";
     // Delegates to Intl with only the language subtag ("en", never "EN") and the

@@ -7,10 +7,10 @@ import { useAuthStore } from "~/stores/auth";
 // login screen too. `system` is the default, exactly like the color mode.
 export const LOCALE_PREFERENCE_KEY = "locale_preference";
 
-// The region half of some locale codes is not a real country ("en_EN" -> "EN"),
-// so map each configured locale to the flag we actually want to display.
+// Every configured locale code carries a real country in its region half
+// ("en_GB" -> "GB", "fr_FR" -> "FR"), which is the flag to display.
 const LOCALE_FLAG_CODE: Record<string, string> = {
-  en_EN: "GB",
+  en_GB: "GB",
   fr_FR: "FR",
 };
 
@@ -62,9 +62,13 @@ export function useLocalePreference() {
   }
 
   // The browser-detected locale, and the concrete locale the preference resolves
-  // to ("system" -> browser match).
+  // to ("system" -> browser match). A device holding a code that is no longer
+  // configured (a locale since renamed or dropped) also falls back to detection,
+  // otherwise it would pin a locale the app cannot load.
   const detected = computed(() => detectBrowserLocale());
-  const resolved = computed(() => (preference.value === "system" ? detected.value : preference.value));
+  const resolved = computed(() =>
+    preference.value === "system" || !availableCodes.value.includes(preference.value) ? detected.value : preference.value
+  );
 
   // System first (the default) carrying the detected flag, then each locale.
   const options = computed<LocaleOption[]>(() => [

@@ -19,9 +19,9 @@ beforeEach(() => {
   colorMode = reactive({ value: "dark", preference: "dark" });
   vi.stubGlobal("useI18n", () => ({
     t: (k: string) => k,
-    locale: ref("en_EN"),
+    locale: ref("en_GB"),
     locales: ref([
-      { code: "en_EN", name: "English" },
+      { code: "en_GB", name: "English" },
       { code: "fr_FR", name: "Français" },
     ]),
     setLocale: vi.fn(),
@@ -30,16 +30,16 @@ beforeEach(() => {
   // "system" entry), so stub it: preference "system", three flagged options.
   vi.stubGlobal("useLocalePreference", () => ({
     preference: ref("system"),
-    resolved: ref("en_EN"),
-    detected: ref("en_EN"),
+    resolved: ref("en_GB"),
+    detected: ref("en_GB"),
     options: ref([
       { value: "system", flag: "🇬🇧", name: null },
-      { value: "en_EN", flag: "🇬🇧", name: "English" },
+      { value: "en_GB", flag: "🇬🇧", name: "English" },
       { value: "fr_FR", flag: "🇫🇷", name: "Français" },
     ]),
-    availableCodes: ref(["en_EN", "fr_FR"]),
+    availableCodes: ref(["en_GB", "fr_FR"]),
     flagFor: (c: string) => c,
-    detectBrowserLocale: () => "en_EN",
+    detectBrowserLocale: () => "en_GB",
     apply: vi.fn(),
     setPreference: setLocalePreference,
   }));
