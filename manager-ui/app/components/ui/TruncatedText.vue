@@ -14,8 +14,8 @@ const display = computed(() => truncateChars(value.value, props.limit));
 </script>
 
 <template>
-  <UTooltip v-if="isLong" :text="value" :ui="{ content: 'max-w-md break-all' }">
+  <FullTooltip v-if="isLong" :text="value">
     <span :class="textClass">{{ display }}</span>
-  </UTooltip>
+  </FullTooltip>
   <span v-else :class="textClass">{{ value }}</span>
 </template>

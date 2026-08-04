@@ -158,11 +158,11 @@ onMounted(refreshDisk);
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
           <template #domain-cell="{ row }">
-            <UTooltip :text="row.original.domain" :ui="{ content: 'max-w-md break-all' }">
+            <FullTooltip :text="row.original.domain">
               <button class="text-left font-medium text-primary hover:underline" @click="openDomain(row.original)">
                 {{ truncateChars(row.original.domain, 44) }}
               </button>
-            </UTooltip>
+            </FullTooltip>
           </template>
           <template #active-cell="{ row }">
             <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">

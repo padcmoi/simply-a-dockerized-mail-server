@@ -121,7 +121,9 @@ async function create() {
         <UFormField :label="t('aliases.form.localPart')" name="localPart" :error="localPartError">
           <UInput v-model="form.localPart" placeholder="local-part" autocomplete="off" class="w-full">
             <template #trailing>
-              <span class="text-dimmed text-sm truncate">@{{ domainFqdn }}</span>
+              <FullTooltip :text="`@${domainFqdn}`"
+                ><span class="text-dimmed text-sm">@{{ truncateChars(domainFqdn, 24) }}</span></FullTooltip
+              >
             </template>
           </UInput>
         </UFormField>

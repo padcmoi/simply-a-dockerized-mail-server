@@ -158,7 +158,7 @@ async function onDeleteConfirmed() {
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
           <template #email-cell="{ row }">
             <div class="flex items-center gap-2">
-              <UTooltip :text="row.original.email" :ui="{ content: 'max-w-md break-all' }">
+              <FullTooltip :text="row.original.email">
                 <NuxtLink
                   v-if="canEditRecipients && !isPostmaster(row.original)"
                   :to="editTo(row.original)"
@@ -167,7 +167,7 @@ async function onDeleteConfirmed() {
                   {{ truncateChars(row.original.email, 44) }}
                 </NuxtLink>
                 <span v-else class="font-medium">{{ truncateChars(row.original.email, 44) }}</span>
-              </UTooltip>
+              </FullTooltip>
               <UBadge v-if="isPostmaster(row.original)" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock">
                 {{ t("recipients.postmaster.badge") }}
               </UBadge>
@@ -215,9 +215,9 @@ async function onDeleteConfirmed() {
                 @click="requestDelete(() => remove(row.original))"
               />
             </div>
-            <UTooltip v-else :text="t('recipients.postmaster.locked')">
+            <FullTooltip v-else :text="t('recipients.postmaster.locked')">
               <UIcon name="i-lucide-lock" class="text-dimmed" />
-            </UTooltip>
+            </FullTooltip>
           </template>
         </UTable>
       </UCard>

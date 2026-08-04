@@ -123,7 +123,7 @@ async function onDeleteConfirmed() {
       <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
         <UTable :columns="columns" :data="items" :loading="loading" sticky>
           <template #source-cell="{ row }">
-            <UTooltip :text="row.original.source" :ui="{ content: 'max-w-md break-all' }">
+            <FullTooltip :text="row.original.source">
               <NuxtLink
                 v-if="canEditAliases"
                 :to="`/admin/domains/${domainFqdn}/aliases/edit/${row.original.id}`"
@@ -132,12 +132,12 @@ async function onDeleteConfirmed() {
                 {{ truncateChars(row.original.source, 44) }}
               </NuxtLink>
               <span v-else class="font-medium">{{ truncateChars(row.original.source, 44) }}</span>
-            </UTooltip>
+            </FullTooltip>
           </template>
           <template #destination-cell="{ row }">
-            <UTooltip :text="row.original.destination" :ui="{ content: 'max-w-md break-all' }">
+            <FullTooltip :text="row.original.destination">
               <span>{{ truncateChars(row.original.destination, 44) }}</span>
-            </UTooltip>
+            </FullTooltip>
           </template>
           <template #lastActivity-cell="{ row }">
             <span class="text-muted">{{ formatDateTime(row.original.lastActivity) }}</span>
