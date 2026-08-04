@@ -11,5 +11,6 @@ import { AliasesService } from "./aliases.service";
   imports: [TypeOrmModule.forFeature([VirtualAlias, VirtualDomain, Account]), CustomPermissionGuardModule],
   providers: [AliasesService],
   controllers: [AliasesController],
+  exports: [AliasesService],
 })
 export class DomainsAliasesModule {}

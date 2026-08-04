@@ -62,6 +62,56 @@ export interface Locales {
     noAliases: string;
     quotaLabel: string;
     loadFailed: string;
+    backToSpace: string;
+    manage: string;
+    table: {
+      address: string;
+      domain: string;
+      status: string;
+      destination: string;
+    };
+    recipient: {
+      loadFailed: string;
+      notFound: string;
+      quota: string;
+      usage: string;
+      active: string;
+      activeHint: string;
+      statusSave: string;
+      statusSaved: string;
+      statusFailed: string;
+      passwordTitle: string;
+      passwordHint: string;
+      newPassword: string;
+      newPasswordPlaceholder: string;
+      passwordMin: string;
+      changePassword: string;
+      passwordChanged: string;
+      passwordFailed: string;
+      deleteTitle: string;
+      deleteHint: string;
+      delete: string;
+      deleteConfirm: string;
+      deleted: string;
+      deleteFailed: string;
+    };
+    alias: {
+      loadFailed: string;
+      notFound: string;
+      source: string;
+      destination: string;
+      destinationPlaceholder: string;
+      destinationInvalid: string;
+      save: string;
+      saved: string;
+      saveFailed: string;
+      deleteTitle: string;
+      deleteHint: string;
+      delete: string;
+      deleteConfirm: string;
+      deleted: string;
+      deleteFailed: string;
+    };
   };
   config: {
     landingAlertTitle: string;

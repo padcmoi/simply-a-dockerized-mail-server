@@ -8,6 +8,7 @@ import { ConfigApiModule } from "./api/config/config.module";
 import { DomainsModule } from "./api/domains/domains.module";
 import { GroupsModule } from "./api/groups/groups.module";
 import { HealthModule } from "./api/health/health.module";
+import { MySpaceModule } from "./api/my-space/my-space.module";
 import { NotificationsApiModule } from "./api/notifications/notifications.module";
 import { PostfixModule } from "./api/postfix/postfix.module";
 import { RspamdModule } from "./api/rspamd/rspamd.module";
@@ -52,6 +53,7 @@ import { WebsocketModule } from "./core/websocket/websocket.module";
     TicketsModule,
     NotificationsApiModule,
     ConfigApiModule,
+    MySpaceModule,
     WebsocketModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: CombinedAuthGuard }],

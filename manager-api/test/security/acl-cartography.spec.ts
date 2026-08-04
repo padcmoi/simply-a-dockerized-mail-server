@@ -34,6 +34,8 @@ const EXPECTED_PUBLIC = [
 const EXPECTED_NO_ACL_AUTHED = [
   "DELETE /api/v1/auth/jwt/me/sessions/:id",
   "DELETE /api/v1/groups/:id/members/all",
+  "DELETE /api/v1/my-space/aliases/:id",
+  "DELETE /api/v1/my-space/recipients/:id",
   "DELETE /api/v1/notifications/:id",
   "GET /api/v1/auth/jwt/me",
   "GET /api/v1/auth/jwt/me/groups/:id/permissions",
@@ -45,10 +47,14 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/config/general/tlds",
   "GET /api/v1/config/mail",
   "GET /api/v1/config/mail-cadence",
+  "GET /api/v1/my-space/aliases/:id",
+  "GET /api/v1/my-space/recipients/:id",
   "GET /api/v1/notifications",
   "GET /api/v1/notifications/feed",
   "GET /api/v1/notifications/preferences",
   "PATCH /api/v1/auth/jwt/me",
+  "PATCH /api/v1/my-space/aliases/:id",
+  "PATCH /api/v1/my-space/recipients/:id",
   "POST /api/v1/config/mail/disable",
   "POST /api/v1/config/mail/select",
   "POST /api/v1/config/mail/test",
@@ -78,7 +84,10 @@ describe("auth/ACL cartography (security contract)", () => {
   });
 
   it("exposes exactly the allowlisted public routes", () => {
-    const publicPaths = routes.filter((r) => r.public).map((r) => r.path).sort();
+    const publicPaths = routes
+      .filter((r) => r.public)
+      .map((r) => r.path)
+      .sort();
     expect(publicPaths).toEqual(EXPECTED_PUBLIC);
   });
 
