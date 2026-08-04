@@ -234,12 +234,16 @@ jobs:
           # its own here. The account is seeded by email, not a username.
           ADMIN_EMAIL="admin@${PRIMARY_DOMAIN}"
           ADMIN_PASS=$(openssl rand -hex 16)
-          ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api \
-            node -e "console.log(require('bcrypt').hashSync(process.env.P, 12))" | tr -d '\r')
+          ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api node -e '
+          const { randomBytes, scryptSync } = require("crypto");
+          const N = 16384, r = 8, p = 1, salt = randomBytes(16);
+          const dk = scryptSync(process.env.P, salt, 64, { N, r, p, maxmem: 67108864 });
+          process.stdout.write(`scrypt$${N}$${r}$${p}$${salt.toString("base64")}$${dk.toString("base64")}`);
+          ' | tr -d '\r')
           POSTMASTER_HASH=$(openssl passwd -6 -salt "$(openssl rand -hex 8)" "$(openssl rand -hex 16)")
           # The statements live in ci/seed.sql. Only their inputs are produced
           # here, and they travel as session variables rather than being pasted
-          # into SQL literals: a bcrypt hash is full of `$` and `/`, and a
+          # into SQL literals: a scrypt hash is full of `$` and `/`, and a
           # here-doc that interpolates it is one bad character away from a
           # syntax error nobody sees until CI turns red.
           {

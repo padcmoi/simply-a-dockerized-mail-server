@@ -7,7 +7,7 @@
 --
 -- Expected session variables:
 --   @admin_email      the root account's login email
---   @admin_hash       bcrypt hash of the admin password
+--   @admin_hash       scrypt hash of the admin password
 --   @primary_domain   the FQDN under test
 --   @postmaster_hash  sha512-crypt hash, never used to log in
 
