@@ -20,16 +20,23 @@ function isEditing(el: Element | null | undefined) {
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
   if ((el as HTMLElement).isContentEditable) return true;
   const role = el.getAttribute("role");
-  return (
-    role === "checkbox" ||
-    role === "switch" ||
-    role === "radio" ||
-    role === "textbox" ||
-    role === "combobox" ||
-    role === "menuitemcheckbox" ||
-    role === "menuitemradio" ||
-    role === "spinbutton"
-  );
+  return role === "textbox" || role === "spinbutton";
+}
+
+// A select or a menu whose list is OPEN. That is the moment a reload does damage: the
+// options are rebuilt under the pointer while somebody is choosing one.
+//
+// It cannot be read off the active element, and that is the difficulty: Reka UI moves
+// the focus INTO the popup when it opens, so the trigger carrying the state is no
+// longer the focused node. The document is asked instead, on every focus change, which
+// is exactly when a popup opens and when it closes.
+//
+// Matched on a trigger that both owns a popup and declares it expanded, rather than on
+// `aria-expanded` alone: a nav section left unfolded also carries that attribute, and
+// it would pause the heartbeat for as long as it stayed open.
+function popupOpen() {
+  if (!import.meta.client) return false;
+  return document.querySelector('[role="combobox"][aria-expanded="true"], [aria-haspopup][aria-expanded="true"]') !== null;
 }
 
 export function useHeartbeatStatus() {
@@ -64,7 +71,7 @@ export function useFocusHeartbeat() {
   watch(
     [focused, activeElement],
     ([isFocused, el]) => {
-      editing.value = isFocused && isEditing(el);
+      editing.value = isFocused && (isEditing(el) || popupOpen());
       if (isFocused && !editing.value) start();
       else stop();
     },
