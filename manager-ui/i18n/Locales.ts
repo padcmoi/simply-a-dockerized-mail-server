@@ -1391,7 +1391,6 @@ export interface Locales {
     live: string;
     connecting: string;
     offline: string;
-    now: string;
     sampling: string;
     unavailableTitle: string;
     unavailableHint: string;

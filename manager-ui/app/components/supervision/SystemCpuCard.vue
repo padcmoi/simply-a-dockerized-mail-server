@@ -66,7 +66,6 @@ const value = computed(() => {
         :names="['']"
         :format="(value: number) => `${value.toFixed(1)} %`"
         :at="at"
-        :now="t('supervision.now')"
         :live="range === 'minute'"
         area
       />

@@ -75,7 +75,6 @@ const legend = computed(() => {
         :names="['']"
         :format="inBytes"
         :at="at"
-        :now="t('supervision.now')"
         :live="range === 'minute'"
         area
       />

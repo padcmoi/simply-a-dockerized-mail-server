@@ -6,7 +6,6 @@ export default {
   live: "Live",
   connecting: "Connecting…",
   offline: "Offline",
-  now: "now",
   sampling: "Sampling…",
   unavailableTitle: "The machine figures are unavailable",
   unavailableHint: "The live feed cannot be reached. It comes back on its own as soon as it answers again.",

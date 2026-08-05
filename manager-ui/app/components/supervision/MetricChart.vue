@@ -18,7 +18,6 @@ const {
   format = (value: number) => value.toFixed(2),
   area = false,
   at = [],
-  now = "",
   variant = "ramp",
   live = false,
 } = defineProps<{
@@ -41,9 +40,6 @@ const {
   area?: boolean;
   /** The moment of every point, in epoch milliseconds, in the order drawn. */
   at?: number[];
-  /** What the right end of the axis is called, since a clock time for it is
-   *  stale the moment it is written. */
-  now?: string;
   /** `series` gives each curve its own hue; `ramp` steps one hue for ordered ones. */
   variant?: "ramp" | "series";
   /** Points still arriving: the plot walks left instead of jumping a step. */
@@ -100,14 +96,6 @@ const areas = computed(() => metricAreas(paths.value[0] ?? [], scale.value));
 
 const window = computed(() => axisWindow(at));
 const ticks = computed(() => axisTicks(window.value, tag.value, 100 + stride.value));
-
-// The left end: the oldest moment still on the plot, not the oldest one drawn.
-// A walking chart lays its first sample one step off the box, and that sample is
-// the one the walk is in the middle of carrying out of view.
-const since = computed(() => {
-  const from = walks.value ? at[1] : window.value?.from;
-  return window.value && from !== undefined ? axisClock(from, tag.value, window.value.scale) : "";
-});
 
 // What the crosshair is showing, if anything: where it sits across the plot, and
 // every curve's value there.
@@ -249,7 +237,7 @@ function track(event: PointerEvent) {
     <!-- The graduation, under the moment it marks. Absolutely placed rather than
          spaced by a flexbox: a time has to sit where it is, not where an even
          distribution would put it. -->
-    <MetricAxis :since="since" :marks="ticks" :now="now" :walk="labels" />
+    <MetricAxis :marks="ticks" :walk="labels" />
 
     <ul v-if="legend.length" class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-dimmed">
       <li v-for="(name, index) in legend" :key="name" class="flex items-center gap-1.5">

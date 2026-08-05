@@ -83,7 +83,6 @@ const legend = computed(() => {
         :format="(value: number) => value.toFixed(2)"
         variant="series"
         :at="at"
-        :now="t('supervision.now')"
         :live="range === 'minute'"
       />
       <p v-else class="h-48 text-xs text-dimmed">{{ notice }}</p>
