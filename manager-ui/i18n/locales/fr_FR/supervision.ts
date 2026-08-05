@@ -6,6 +6,8 @@ export default {
   live: "En direct",
   connecting: "Connexion…",
   offline: "Hors ligne",
+  pause: "Figer les courbes",
+  resume: "Reprendre le défilement",
   sampling: "Mesure…",
   unavailableTitle: "Les mesures de la machine sont indisponibles",
   unavailableHint: "Le flux temps réel est injoignable. Il repart tout seul dès qu'il répond à nouveau.",

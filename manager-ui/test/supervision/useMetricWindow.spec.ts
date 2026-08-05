@@ -111,6 +111,44 @@ describe("useMetricWindow", () => {
     expect(call).toHaveBeenCalledTimes(2);
   });
 
+  // The pause holds the drawing, not the feed: what arrived under it is on
+  // screen the moment it is lifted, rather than a hole where the paused
+  // seconds were.
+  it("holds the curve where it was and gives back the whole feed on release", async () => {
+    const range = ref<MetricRange>("minute");
+    const feed = ref<HistoryPoint[]>([point(1)]);
+    const paused = ref(false);
+    const window = useMetricWindow(range, () => feed.value, paused);
+
+    paused.value = true;
+    await nextTick();
+    feed.value = [point(1), point(2)];
+    await nextTick();
+    expect(window.points.value).toEqual([point(1)]);
+    expect(window.at.value).toEqual([1]);
+
+    paused.value = false;
+    await nextTick();
+    expect(window.points.value).toEqual([point(1), point(2)]);
+  });
+
+  // Another window is another set of points entirely, so the pause cannot go on
+  // showing the minute that was on screen under the axis of an hour.
+  it("holds the window asked for under the pause, not the one it was pressed on", async () => {
+    const range = ref<MetricRange>("minute");
+    const paused = ref(true);
+    const window = useMetricWindow(range, () => [point(9)], paused);
+    await nextTick();
+    expect(window.points.value).toEqual([point(9)]);
+
+    range.value = "hour";
+    await vi.waitFor(() => expect(window.points.value).toEqual([point(1), point(2)]));
+
+    call.mockResolvedValue({ points: [point(3), point(4)] });
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(window.points.value).toEqual([point(1), point(2)]);
+  });
+
   it("stops asking once the card is back on the live minute", async () => {
     const range = ref<MetricRange>("minute");
     useMetricWindow(range, () => []);

@@ -13,7 +13,18 @@ const { t } = useI18n();
 const { snapshot, history, status } = useSystemMetrics();
 
 const range = ref<MetricRange>("minute");
-const { points, at, notice } = useMetricWindow(range, () => history.value);
+
+// One pause for the four curves, for the same reason there is one window: they
+// are read against each other, and holding one of them alone would put four
+// different moments side by side. It holds the drawing, not the feed, so the
+// header figures stay live and nothing is missing when it is lifted.
+const paused = ref(false);
+
+const { points, at, notice } = useMetricWindow(range, () => history.value, paused);
+
+function togglePause() {
+  paused.value = !paused.value;
+}
 </script>
 
 <template>
@@ -24,20 +35,33 @@ const { points, at, notice } = useMetricWindow(range, () => history.value);
         {{ t("supervision.machine") }}
       </h3>
 
-      <UBadge v-if="status === 'live'" color="success" variant="subtle" size="sm">
-        <span class="relative mr-1 flex size-1.5">
-          <span class="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
-          <span class="relative inline-flex size-1.5 rounded-full bg-success" />
-        </span>
-        {{ t("supervision.live") }}
-      </UBadge>
-      <UBadge v-else-if="status === 'connecting'" color="neutral" variant="subtle" size="sm">
-        <UIcon name="i-lucide-loader-circle" class="mr-1 size-3 animate-spin" />
-        {{ t("supervision.connecting") }}
-      </UBadge>
-      <UBadge v-else color="warning" variant="subtle" size="sm" icon="i-lucide-unplug">
-        {{ t("supervision.offline") }}
-      </UBadge>
+      <div class="flex items-center gap-2">
+        <UTooltip v-if="snapshot" :text="t(paused ? 'supervision.resume' : 'supervision.pause')">
+          <UButton
+            :icon="paused ? 'i-lucide-play' : 'i-lucide-pause'"
+            :color="paused ? 'warning' : 'neutral'"
+            :aria-label="t(paused ? 'supervision.resume' : 'supervision.pause')"
+            variant="subtle"
+            size="sm"
+            @click="togglePause"
+          />
+        </UTooltip>
+
+        <UBadge v-if="status === 'live'" color="success" variant="subtle" size="sm">
+          <span class="relative mr-1 flex size-1.5">
+            <span class="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
+            <span class="relative inline-flex size-1.5 rounded-full bg-success" />
+          </span>
+          {{ t("supervision.live") }}
+        </UBadge>
+        <UBadge v-else-if="status === 'connecting'" color="neutral" variant="subtle" size="sm">
+          <UIcon name="i-lucide-loader-circle" class="mr-1 size-3 animate-spin" />
+          {{ t("supervision.connecting") }}
+        </UBadge>
+        <UBadge v-else color="warning" variant="subtle" size="sm" icon="i-lucide-unplug">
+          {{ t("supervision.offline") }}
+        </UBadge>
+      </div>
     </div>
 
     <!-- Nothing has arrived yet and no card can say anything: what is shown is

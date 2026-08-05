@@ -1414,6 +1414,8 @@ export interface Locales {
     live: string;
     connecting: string;
     offline: string;
+    pause: string;
+    resume: string;
     sampling: string;
     unavailableTitle: string;
     unavailableHint: string;
