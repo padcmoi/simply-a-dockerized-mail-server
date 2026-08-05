@@ -3,6 +3,7 @@ import request from "supertest";
 import { SupervisionController } from "../../src/api/supervision/supervision.controller";
 import { SupervisionHistoryService } from "../../src/core/supervision/supervision-history.service";
 import { SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
+import { MACHINE_BUSY, MACHINE_SATURATED } from "../../src/core/supervision/machine-alerts.service";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
 
 describe("SupervisionController (e2e: auth + ACL + behavior)", () => {
@@ -58,13 +59,15 @@ describe("SupervisionController (e2e: auth + ACL + behavior)", () => {
       recorder.latest.mockReturnValue(snapshot);
       recorder.recent.mockReturnValue([snapshot]);
       const res = await api().get(live).set("Authorization", auth(USER)).expect(200);
-      expect(res.body).toEqual({ snapshot, points: [snapshot] });
+      // The thresholds travel with the window: the interface paints its red
+      // with the numbers the machine notifies on, not with its own copy.
+      expect(res.body).toEqual({ snapshot, points: [snapshot], thresholds: { busy: MACHINE_BUSY, saturated: MACHINE_SATURATED } });
     });
     it("200 for root, and answers with a null snapshot before the first sample", async () => {
       recorder.latest.mockReturnValue(null);
       recorder.recent.mockReturnValue([]);
       const res = await api().get(live).set("Authorization", auth(ROOT)).expect(200);
-      expect(res.body).toEqual({ snapshot: null, points: [] });
+      expect(res.body).toMatchObject({ snapshot: null, points: [] });
     });
   });
 

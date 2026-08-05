@@ -25,7 +25,7 @@ export const GetLiveDocs = () =>
     ApiResponse({
       status: 200,
       description: "The latest snapshot and the live window, oldest point first (up to 31 points, one every two seconds).",
-      schema: { example: { snapshot, points: [snapshot] } },
+      schema: { example: { snapshot, points: [snapshot], thresholds: { busy: 0.7, saturated: 0.9 } } },
     }),
     ApiResponse({
       status: 403,

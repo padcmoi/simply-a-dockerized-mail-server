@@ -44,8 +44,24 @@ describe("NotificationsService", () => {
       await expect(svc.channelsFor(ALICE, "support")).resolves.toEqual({ inApp: true, email: true });
     });
 
-    it("reports every known source with the defaults applied", async () => {
-      await expect(svc.preferencesFor(ALICE)).resolves.toEqual({ support: { inApp: true, email: true } });
+    // Each source carries its own default. The support reaches whoever can read
+    // the ticket it is about; the machine's alerts reach nobody until they are
+    // asked for, a red figure being a fact about the host and not about anyone's
+    // work.
+    it("reports every known source with its own defaults applied", async () => {
+      await expect(svc.preferencesFor(ALICE)).resolves.toEqual({
+        support: { inApp: true, email: true },
+        supervision: { inApp: false, email: false },
+      });
+    });
+
+    it("leaves the machine silent for an account that never asked for it", async () => {
+      await expect(svc.channelsFor(ALICE, "supervision")).resolves.toEqual({ inApp: false, email: false });
+    });
+
+    it("writes nothing at all for a source nobody switched on", async () => {
+      await svc.dispatch({ ...input([ALICE]), source: "supervision", type: "machine-memory" });
+      expect(notifications.save).not.toHaveBeenCalled();
     });
 
     it("reads back what the stored row says", async () => {

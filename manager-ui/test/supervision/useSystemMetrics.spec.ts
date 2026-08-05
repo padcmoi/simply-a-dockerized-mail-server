@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ref, nextTick } from "vue";
 import type { SystemSnapshot } from "~/composables/useSystemMetrics";
+import { SHIPPED_THRESHOLDS } from "~/utils/metrics";
 
 // `onMounted(load)` is a deliberate no-op here (no component instance), so the
 // tests that need the opening window call `load()` themselves.
@@ -79,6 +80,25 @@ describe("useSystemMetrics", () => {
     expect(call).toHaveBeenCalledWith("/supervision/live");
     expect(metrics.history.value).toHaveLength(2);
     expect(metrics.status.value).toBe("live");
+  });
+
+  // The interface paints its red with the API's own thresholds: the machine
+  // notifies on a red figure, and a second copy of the number is how a card and
+  // a notification end up disagreeing about one host.
+  it("takes the thresholds the live window carries", async () => {
+    const metrics = useSystemMetrics();
+    expect(metrics.thresholds.value).toEqual(SHIPPED_THRESHOLDS);
+
+    call.mockResolvedValue({ snapshot: null, points: [], thresholds: { busy: 0.5, saturated: 0.8 } });
+    await metrics.load();
+    expect(metrics.thresholds.value).toEqual({ busy: 0.5, saturated: 0.8 });
+  });
+
+  it("keeps the ones it ships with when an older API carries none", async () => {
+    call.mockResolvedValue({ snapshot: null, points: [] });
+    const metrics = useSystemMetrics();
+    await metrics.load();
+    expect(metrics.thresholds.value).toEqual(SHIPPED_THRESHOLDS);
   });
 
   it("appends every frame the topic pushes", async () => {

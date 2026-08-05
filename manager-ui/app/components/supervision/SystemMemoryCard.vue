@@ -4,12 +4,14 @@ import type { MetricRange } from "~/composables/useMetricWindow";
 
 const range = defineModel<MetricRange>("range", { required: true });
 
-const { snapshot, points } = defineProps<{
+const { snapshot, points, thresholds } = defineProps<{
   snapshot: SystemSnapshot | null;
   points: HistoryPoint[];
   /** The moment of every point, for the axis. */
   at: number[];
   notice: string;
+  /** The API's own, so the outline is drawn on the figure it notifies about. */
+  thresholds: MetricThresholds;
 }>();
 
 const { t } = useI18n();
@@ -32,7 +34,7 @@ const ratio = computed(() => {
   return memory && memory.total > 0 ? memory.used / memory.total : null;
 });
 
-const alert = computed(() => metricAlert(ratio.value));
+const alert = computed(() => metricAlert(ratio.value, thresholds));
 const value = computed(() => (snapshot ? preciseBytes(snapshot.memory.used) : ""));
 
 // The legend carries figures rather than a description: "of what is installed"

@@ -1,6 +1,7 @@
 import { BadRequestException, Controller, Get, Param, UseGuards } from "@nestjs/common";
 import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global-permission.guard";
 import { RequireGlobalPermissions } from "../../core/custom-permission-guard/require-permissions.decorator";
+import { MACHINE_BUSY, MACHINE_SATURATED } from "../../core/supervision/machine-alerts.service";
 import { METRIC_RANGES, SupervisionHistoryService, type MetricRange } from "../../core/supervision/supervision-history.service";
 import { SupervisionRecorderService } from "../../core/supervision/supervision-recorder.service";
 import { GetHistoryDocs, GetLiveDocs, SupervisionApi } from "./supervision.openapi";
@@ -21,7 +22,14 @@ export class SupervisionController {
   @GetLiveDocs()
   @Get("live")
   live() {
-    return { snapshot: this.recorder.latest(), points: this.recorder.recent() };
+    // The thresholds travel with the window: the ratio a card outlines in red is
+    // the ratio the machine notifies on, and the interface reading its own copy
+    // is how the two end up disagreeing about the same host.
+    return {
+      snapshot: this.recorder.latest(),
+      points: this.recorder.recent(),
+      thresholds: { busy: MACHINE_BUSY, saturated: MACHINE_SATURATED },
+    };
   }
 
   @RequireGlobalPermissions([{ resource: "supervision", actions: ["access", "view-metrics-history"] }])

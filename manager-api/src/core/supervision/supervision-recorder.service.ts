@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Repository } from "typeorm";
 import { MetricsHistory } from "../entities/metrics-history.entity";
 import { AppSettingsService } from "../settings/app-settings.service";
+import { MachineAlertsService } from "./machine-alerts.service";
 import { SystemMetricsService, type SystemSnapshot } from "./system-metrics.service";
 
 /** Sixty intervals of one second: the minute the live cards promise. */
@@ -36,7 +37,8 @@ export class SupervisionRecorderService {
   constructor(
     private readonly metrics: SystemMetricsService,
     @InjectRepository(MetricsHistory) private readonly history: Repository<MetricsHistory>,
-    private readonly settings: AppSettingsService
+    private readonly settings: AppSettingsService,
+    private readonly alerts: MachineAlertsService
   ) {}
 
   // A tab that has just opened is on the live minute, and a minute it has to
@@ -57,6 +59,10 @@ export class SupervisionRecorderService {
     const snapshot = await this.metrics.sample();
     this.pending.push(snapshot);
     this.live = [...this.live, snapshot].slice(-LIVE_POINTS);
+
+    // The one loop that reads the host is also the one that knows a figure has
+    // just gone red: watching for it anywhere else would mean a second reader.
+    await this.alerts.inspect(snapshot);
 
     const now = snapshot.at;
     if (!this.lastWriteAt) this.lastWriteAt = now;

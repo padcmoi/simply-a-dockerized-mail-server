@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { NavigationMenuItem } from "@nuxt/ui";
 import { ref, reactive } from "vue";
 import { setActivePinia, createPinia, defineStore } from "pinia";
 import { useAuthStore } from "~/stores/auth";
@@ -56,7 +57,7 @@ function asUser() {
 const noop = async () => {};
 
 // Every page the sidebar links to, folded sections included.
-function pathsOf(items: { to?: unknown; children?: { to?: unknown }[] }[]) {
+function pathsOf(items: NavigationMenuItem[]) {
   return items.flatMap((item) => (item.children ? item.children.map((child) => child.to) : [item.to]));
 }
 

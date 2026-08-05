@@ -10,14 +10,18 @@ export default {
   pageDescription:
     "Pick how each source reaches you. Turn both channels off and that source stops notifying you entirely, in the app and by email.",
   channel: { inApp: "Notification", email: "Email" },
-  source: { support: "Support" },
+  source: { support: "Support", supervision: "Machine" },
   sourceHint: {
     support: "New tickets, replies, assignments and status changes, on the domains you have access to.",
+    supervision:
+      "Warn when one of the machine's figures goes red, the load per core or the memory. Nothing until you ask for it.",
   },
   event: {
     "ticket-created": '{actor} opened the ticket "{subject}" on {domain}',
     "ticket-replied": '{actor} replied to the ticket "{subject}"',
     "ticket-taken": '{actor} took charge of the ticket "{subject}"',
     "ticket-status": 'The ticket "{subject}" is now {status}',
+    "machine-load": "The machine's load is at {percent}% of its cores",
+    "machine-memory": "The machine's memory is {percent}% full",
   },
 } satisfies Locales["notifications"];

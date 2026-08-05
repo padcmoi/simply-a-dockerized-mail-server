@@ -245,13 +245,15 @@ export interface Locales {
     pageHint: string;
     pageDescription: string;
     channel: { inApp: string; email: string };
-    source: { support: string };
-    sourceHint: { support: string };
+    source: { support: string; supervision: string };
+    sourceHint: { support: string; supervision: string };
     event: {
       "ticket-created": string;
       "ticket-replied": string;
       "ticket-taken": string;
       "ticket-status": string;
+      "machine-load": string;
+      "machine-memory": string;
     };
   };
   tickets: {
@@ -1419,6 +1421,10 @@ export interface Locales {
     offline: string;
     pause: string;
     resume: string;
+    alertsEnabled: string;
+    alertsDisabled: string;
+    alertsOn: string;
+    alertsOff: string;
     sampling: string;
     unavailableTitle: string;
     unavailableHint: string;

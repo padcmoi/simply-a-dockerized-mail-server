@@ -6,8 +6,20 @@
 // Per core, which is the only way a load average means anything: 4 is idle on an
 // eight-thread host and desperate on a single-core one. The same thresholds
 // serve the memory and the CPU, so one colour means one thing across the cards.
+//
+// These are what the interface ships with. The API serves its own with the live
+// window (`thresholds`), and those are the ones a card is painted with as soon
+// as it answers: the machine notifies on a red figure, and a second copy of the
+// number is how a card and a notification end up disagreeing about one host.
 export const BUSY = 0.7;
 export const SATURATED = 0.9;
+
+export interface MetricThresholds {
+  busy: number;
+  saturated: number;
+}
+
+export const SHIPPED_THRESHOLDS: MetricThresholds = { busy: BUSY, saturated: SATURATED };
 
 // The outline is written with `!`: the card ships its own `ring-default` and the
 // two are the same utility, so which one survives would otherwise depend on the
@@ -20,8 +32,9 @@ const ALERT = {
 export type MetricAlert = (typeof ALERT)[keyof typeof ALERT];
 
 /** Null below the busy threshold: an outline that is always on says nothing. */
-export function metricAlert(ratio: number | null) {
-  const alert: MetricAlert | null = ratio === null || ratio < BUSY ? null : ratio >= SATURATED ? ALERT.saturated : ALERT.busy;
+export function metricAlert(ratio: number | null, thresholds: MetricThresholds = SHIPPED_THRESHOLDS) {
+  const alert: MetricAlert | null =
+    ratio === null || ratio < thresholds.busy ? null : ratio >= thresholds.saturated ? ALERT.saturated : ALERT.busy;
   return alert;
 }
 

@@ -6,6 +6,7 @@ import { SupervisionApiModule } from "../../src/api/supervision/supervision.modu
 import { SupervisionController } from "../../src/api/supervision/supervision.controller";
 import { SupervisionHistoryService } from "../../src/core/supervision/supervision-history.service";
 import { SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
+import { MachineAlertsService } from "../../src/core/supervision/machine-alerts.service";
 import { GlobalPermissionGuard } from "../../src/core/custom-permission-guard/global-permission.guard";
 
 @Global()
@@ -33,6 +34,10 @@ describe("SupervisionApiModule (DI wiring / boot)", () => {
     expect(moduleRef.get(SupervisionRecorderService, { strict: false })).toBeInstanceOf(SupervisionRecorderService);
     expect(moduleRef.get(SupervisionHistoryService, { strict: false })).toBeInstanceOf(SupervisionHistoryService);
     expect(moduleRef.get(GlobalPermissionGuard, { strict: false })).toBeInstanceOf(GlobalPermissionGuard);
+    // The sampling loop now notifies, so it drags the notifications and the
+    // permission guard into its own graph: a missing import here is a boot that
+    // fails in production and nowhere else.
+    expect(moduleRef.get(MachineAlertsService, { strict: false })).toBeInstanceOf(MachineAlertsService);
     await moduleRef.close();
   });
 });

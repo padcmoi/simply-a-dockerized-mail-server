@@ -6,7 +6,7 @@ import { Account } from "../entities/account.entity";
 import { Notification } from "../entities/notification.entity";
 import { NotificationPreference } from "../entities/notification-preference.entity";
 
-export const NOTIFICATION_SOURCES = ["support"] as const;
+export const NOTIFICATION_SOURCES = ["support", "supervision"] as const;
 export type NotificationSource = (typeof NOTIFICATION_SOURCES)[number];
 
 export interface NotificationChannels {
@@ -22,7 +22,15 @@ export interface DispatchInput {
   link: string;
 }
 
-const DEFAULT_CHANNELS: NotificationChannels = { inApp: true, email: true };
+// What a source does for an account that has never said anything. Support
+// reaches everyone who can read the ticket it is about; the machine's alerts
+// reach nobody until they are asked for. A red figure is a fact about the host
+// rather than about anyone's work, and a mailbox filled by one busy afternoon is
+// a mailbox that stops being read.
+const DEFAULT_CHANNELS: Record<NotificationSource, NotificationChannels> = {
+  support: { inApp: true, email: true },
+  supervision: { inApp: false, email: false },
+};
 const FEED_LIMIT = 20;
 
 @Injectable()
@@ -35,7 +43,7 @@ export class NotificationsService {
 
   async channelsFor(accountId: string, source: NotificationSource): Promise<NotificationChannels> {
     const row = await this.preferences.findOne({ where: { accountId, source } });
-    if (!row) return { ...DEFAULT_CHANNELS };
+    if (!row) return { ...DEFAULT_CHANNELS[source] };
     return { inApp: row.inApp === 1, email: row.email === 1 };
   }
 
@@ -45,7 +53,7 @@ export class NotificationsService {
     return Object.fromEntries(
       NOTIFICATION_SOURCES.map((source) => {
         const row = bySource.get(source);
-        return [source, row ? { inApp: row.inApp === 1, email: row.email === 1 } : { ...DEFAULT_CHANNELS }];
+        return [source, row ? { inApp: row.inApp === 1, email: row.email === 1 } : { ...DEFAULT_CHANNELS[source] }];
       })
     ) as Record<NotificationSource, NotificationChannels>;
   }

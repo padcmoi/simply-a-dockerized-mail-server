@@ -10,7 +10,7 @@
 import type { MetricRange } from "~/composables/useMetricWindow";
 
 const { t } = useI18n();
-const { snapshot, history, status } = useSystemMetrics();
+const { snapshot, history, status, thresholds } = useSystemMetrics();
 
 const range = ref<MetricRange>("minute");
 
@@ -36,6 +36,8 @@ function togglePause() {
       </h3>
 
       <div class="flex items-center gap-2">
+        <MachineAlertsToggle />
+
         <UTooltip v-if="snapshot" :text="t(paused ? 'supervision.resume' : 'supervision.pause')">
           <UButton
             :icon="paused ? 'i-lucide-play' : 'i-lucide-pause'"
@@ -94,8 +96,8 @@ function togglePause() {
          card that empties on every reconnect is a card that flashes. -->
     <div v-else class="grid items-stretch gap-4 transition-opacity lg:grid-cols-2" :class="status !== 'live' && 'opacity-60'">
       <SystemCpuCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
-      <SystemLoadCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
-      <SystemMemoryCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
+      <SystemLoadCard v-bind="{ snapshot, points, at, notice, thresholds }" v-model:range="range" />
+      <SystemMemoryCard v-bind="{ snapshot, points, at, notice, thresholds }" v-model:range="range" />
       <SystemNetworkCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
     </div>
   </section>

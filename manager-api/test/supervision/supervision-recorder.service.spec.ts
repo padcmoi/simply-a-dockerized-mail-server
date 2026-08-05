@@ -4,6 +4,7 @@ import { MetricsHistory } from "../../src/core/entities/metrics-history.entity";
 import { LIVE_POINTS, SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
 import type { SystemMetricsService, SystemSnapshot } from "../../src/core/supervision/system-metrics.service";
 import { APP_SETTINGS_DEFAULTS, type AppSettingsService } from "../../src/core/settings/app-settings.service";
+import type { MachineAlertsService } from "../../src/core/supervision/machine-alerts.service";
 import { providerMock, repoMock } from "../helpers/mocks";
 
 function snapshotAt(at: number, over: Partial<SystemSnapshot> = {}): SystemSnapshot {
@@ -22,17 +23,20 @@ describe("SupervisionRecorderService", () => {
   const history = repoMock<MetricsHistory>();
   let now = 1_800_000_000_000;
   let sample: ReturnType<typeof vi.fn>;
+  let inspect: ReturnType<typeof vi.fn>;
   let service: SupervisionRecorderService;
   let retentionMs = 30 * 24 * 3_600_000;
 
   // The tick is driven by the websocket poller, so time is driven here too.
   function build() {
     sample = vi.fn(async () => snapshotAt(now));
+    inspect = vi.fn(async () => undefined);
     const metrics = providerMock<SystemMetricsService>({ sample });
     const settings = providerMock<AppSettingsService>({
       get: vi.fn(() => ({ ...APP_SETTINGS_DEFAULTS, supervisionRetentionMs: retentionMs })),
     });
-    return new SupervisionRecorderService(metrics, history, settings);
+    const alerts = providerMock<MachineAlertsService>({ inspect });
+    return new SupervisionRecorderService(metrics, history, settings, alerts);
   }
 
   beforeEach(() => {

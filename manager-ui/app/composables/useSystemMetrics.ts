@@ -1,3 +1,5 @@
+import { SHIPPED_THRESHOLDS, type MetricThresholds } from "~/utils/metrics";
+
 export interface SystemSnapshot {
   /** Epoch milliseconds, read on the host that sampled it. */
   at: number;
@@ -59,6 +61,10 @@ export function useSystemMetrics() {
   const { call } = useApi();
 
   const snapshot = ref<SystemSnapshot | null>(null);
+  // What the API paints its red with, and what it notifies on: the same numbers,
+  // so a card and a notification cannot say different things about one host.
+  // Until it answers, the ones the interface ships with.
+  const thresholds = ref<MetricThresholds>(SHIPPED_THRESHOLDS);
   const history = ref<HistoryPoint[]>([]);
   const pending = ref(true);
   const lastFrameAt = ref(0);
@@ -73,9 +79,14 @@ export function useSystemMetrics() {
 
   async function load() {
     try {
-      const { snapshot: latest, points } = await call<{ snapshot: SystemSnapshot | null; points: SystemSnapshot[] }>(
+      const {
+        snapshot: latest,
+        points,
+        thresholds: served,
+      } = await call<{ snapshot: SystemSnapshot | null; points: SystemSnapshot[]; thresholds?: MetricThresholds }>(
         "/supervision/live"
       );
+      if (served) thresholds.value = served;
       if (latest) {
         history.value = points.map(pointOf).slice(-LIVE_POINTS);
         snapshot.value = latest;
@@ -115,5 +126,5 @@ export function useSystemMetrics() {
     return now.value - lastFrameAt.value < STALE_MS ? "live" : "offline";
   });
 
-  return { snapshot, history, status, pending, load };
+  return { snapshot, history, status, pending, thresholds, load };
 }

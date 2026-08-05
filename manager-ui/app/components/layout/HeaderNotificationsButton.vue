@@ -8,6 +8,12 @@ const formatter = computed(
   () => new Intl.DateTimeFormat(locale.value.replace("_", "-"), { dateStyle: "medium", timeStyle: "short" })
 );
 
+// One icon per source, so a machine alert is not read as a ticket at a glance.
+const ICONS: Record<string, string> = {
+  support: "i-lucide-life-buoy",
+  supervision: "i-lucide-activity",
+};
+
 function label(row: NotificationRow) {
   const p = row.payload ?? {};
   return t(`notifications.event.${row.type}`, {
@@ -15,6 +21,7 @@ function label(row: NotificationRow) {
     domain: p.domainName ?? "",
     actor: p.actor ?? t("notifications.someone"),
     status: p.status ? t(`tickets.status.${p.status}`) : "",
+    percent: p.percent ?? 0,
   });
 }
 
@@ -73,7 +80,11 @@ onMounted(() => refresh().catch(() => undefined));
             class="w-full text-left p-3 flex gap-3 hover:bg-elevated/50 transition-colors"
             @click="openNotification(row)"
           >
-            <UIcon name="i-lucide-life-buoy" class="size-4 mt-0.5 shrink-0" :class="row.readAt ? 'text-muted' : 'text-primary'" />
+            <UIcon
+              :name="ICONS[row.source] ?? 'i-lucide-bell'"
+              class="size-4 mt-0.5 shrink-0"
+              :class="row.readAt ? 'text-muted' : 'text-primary'"
+            />
             <span class="min-w-0 flex-1">
               <span class="block text-sm" :class="{ 'font-medium': !row.readAt }">{{ label(row) }}</span>
               <span class="block text-xs text-muted mt-0.5">{{ formatter.format(new Date(row.createdAt)) }}</span>

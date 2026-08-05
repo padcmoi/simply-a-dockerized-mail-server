@@ -13,6 +13,15 @@ describe("metricAlert", () => {
     expect(metricAlert(1.5)?.color).toBe("error");
   });
 
+  // The API serves its own with the live window, and they are the ones it
+  // notifies on: what a card outlines in red is what raises a notification.
+  it("reads the thresholds it is handed rather than the ones it ships with", () => {
+    const served = { busy: 0.4, saturated: 0.5 };
+    expect(metricAlert(0.45, served)?.color).toBe("warning");
+    expect(metricAlert(0.5, served)?.color).toBe("error");
+    expect(metricAlert(0.39, served)).toBeNull();
+  });
+
   it("says nothing about a ratio it does not have", () => {
     expect(metricAlert(null)).toBeNull();
   });

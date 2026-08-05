@@ -4,12 +4,14 @@ import type { MetricRange } from "~/composables/useMetricWindow";
 
 const range = defineModel<MetricRange>("range", { required: true });
 
-const { snapshot, points } = defineProps<{
+const { snapshot, points, thresholds } = defineProps<{
   snapshot: SystemSnapshot | null;
   points: HistoryPoint[];
   /** The moment of every point, for the axis. */
   at: number[];
   notice: string;
+  /** The API's own, so the outline is drawn on the figure it notifies about. */
+  thresholds: MetricThresholds;
 }>();
 
 const WINDOWS = ["1 min", "5 min", "15 min"];
@@ -33,7 +35,7 @@ const drawable = computed(() => metricKnown(series.value[0] ?? []) > 1);
 // out: the same figure is on the CPU card next to the core count that gives it
 // its meaning, and saying it twice on one screen made the header a sentence.
 const ratio = computed(() => (snapshot && snapshot.cores > 0 ? snapshot.load.one / snapshot.cores : null));
-const alert = computed(() => metricAlert(ratio.value));
+const alert = computed(() => metricAlert(ratio.value, thresholds));
 
 const value = computed(() => (snapshot ? snapshot.load.one.toFixed(2) : ""));
 
