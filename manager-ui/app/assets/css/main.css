@@ -12,3 +12,43 @@
     cursor: not-allowed;
   }
 }
+
+/* Marching ants: a dashed outline that travels around the control, for a value
+   picked by hand rather than inherited from the theme. Four repeating gradients
+   rather than a border, since a dashed border cannot be made to move, and they
+   sit above the background colour rather than replacing it. */
+@keyframes marching-ants {
+  to {
+    background-position:
+      16px 0,
+      -16px 100%,
+      0 -16px,
+      100% 16px;
+  }
+}
+
+.marching-ants {
+  background-image:
+    linear-gradient(90deg, var(--ui-warning) 50%, transparent 0), linear-gradient(90deg, var(--ui-warning) 50%, transparent 0),
+    linear-gradient(0deg, var(--ui-warning) 50%, transparent 0), linear-gradient(0deg, var(--ui-warning) 50%, transparent 0);
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-size:
+    8px 2px,
+    8px 2px,
+    2px 8px,
+    2px 8px;
+  background-position:
+    0 0,
+    0 100%,
+    0 0,
+    100% 0;
+  animation: marching-ants 0.8s linear infinite;
+}
+
+/* Still dashed, no longer walking: the mark has to survive the setting, it is
+   the only thing saying this value was chosen. */
+@media (prefers-reduced-motion: reduce) {
+  .marching-ants {
+    animation: none;
+  }
+}

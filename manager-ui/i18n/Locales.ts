@@ -354,6 +354,11 @@ export interface Locales {
     subtitle: string;
     language: string;
     appearance: string;
+    themeColors: string;
+    themeColorsHint: string;
+    themeColorsReset: string;
+    themeColorsLight: string;
+    themeColorsDark: string;
     pageSize: string;
     pageSizeHint: string;
   };

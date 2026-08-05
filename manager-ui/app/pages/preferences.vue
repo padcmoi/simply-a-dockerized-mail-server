@@ -76,6 +76,9 @@ function setTheme(value: string) {
       </div>
     </UCard>
 
+    <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">{{ t("preferences.themeColors") }}</h2>
+    <ThemeColorsCard />
+
     <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">{{ t("preferences.pageSize") }}</h2>
     <UCard>
       <USelectMenu v-model="pageSize" value-key="value" :items="pageSizeOptions" class="w-full sm:w-40" />
