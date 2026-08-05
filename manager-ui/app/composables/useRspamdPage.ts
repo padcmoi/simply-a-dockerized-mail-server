@@ -58,6 +58,20 @@ export function rspamdActionColor(action: string) {
   return "warning";
 }
 
+// The one colour each verdict wears, wherever it is read: the donut slice, its
+// legend dot and the counter tile. A tile at zero has no slice to be read
+// against, so it carries the colour all the same. Classes are written out
+// rather than built from the token, since a class assembled at runtime is a
+// class the stylesheet never hears about.
+export const RSPAMD_ACTION_STYLE = {
+  "no action": { chart: "success", text: "text-success", dot: "bg-success" },
+  greylist: { chart: "primary", text: "text-primary", dot: "bg-primary" },
+  "add header": { chart: "warning", text: "text-warning", dot: "bg-warning" },
+  "rewrite subject": { chart: "warning", text: "text-warning", dot: "bg-warning" },
+  "soft reject": { chart: "warning", text: "text-warning", dot: "bg-warning" },
+  reject: { chart: "error", text: "text-error", dot: "bg-error" },
+} as const satisfies Record<keyof RspamdActions, { chart: string; text: string; dot: string }>;
+
 // `domainId` absent -> server-wide /rspamd/*; present -> the identical
 // /domains/:id/rspamd/* endpoints, filtered to that domain's recipients.
 // Both pages (rspamd.vue, domains/[domain]/rspamd.vue) share this one

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ChartData, ChartOptions } from "chart.js";
-import type { RspamdStats } from "~/composables/useRspamdPage";
+import { RSPAMD_ACTION_STYLE, type RspamdStats } from "~/composables/useRspamdPage";
 
 const props = defineProps<{
   stats: RspamdStats | null;
@@ -8,23 +8,22 @@ const props = defineProps<{
   unavailable: boolean;
 }>();
 
-const colorMode = useColorMode();
+const { colors } = useChartColors();
 const { t } = useI18n();
 
+// The verdicts in the order they are drawn, each carrying the one colour it
+// wears everywhere else on the page (RSPAMD_ACTION_STYLE).
+const ACTIONS = ["no action", "reject", "add header", "rewrite subject", "soft reject", "greylist"] as const;
+
 const donutData = computed<ChartData<"doughnut">>(() => {
-  const dark = colorMode.value === "dark";
-  const successColor = dark ? "#4ade80" : "#22c55e";
-  const errorColor = dark ? "#f87171" : "#ef4444";
-  const warningColor = dark ? "#fbbf24" : "#f59e0b";
-  const primaryColor = dark ? "#60a5fa" : "#3b82f6";
   if (!props.stats) return { labels: [], datasets: [{ data: [], borderWidth: 0 }] };
   const a = props.stats.actions;
   return {
-    labels: ["no action", "reject", "add header", "rewrite subject", "soft reject", "greylist"],
+    labels: [...ACTIONS],
     datasets: [
       {
-        data: [a["no action"], a.reject, a["add header"], a["rewrite subject"], a["soft reject"], a.greylist],
-        backgroundColor: [successColor, errorColor, warningColor, warningColor, warningColor, primaryColor],
+        data: ACTIONS.map((action) => a[action]),
+        backgroundColor: ACTIONS.map((action) => colors.value[RSPAMD_ACTION_STYLE[action].chart]),
         borderWidth: 0,
         hoverOffset: 6,
       },
@@ -53,14 +52,11 @@ const donutOptions = computed<ChartOptions<"doughnut">>(() => ({
 const legendItems = computed(() => {
   if (!props.stats) return [];
   const a = props.stats.actions;
-  return [
-    { label: "no action", value: a["no action"], color: "bg-success" },
-    { label: "reject", value: a.reject, color: "bg-error" },
-    { label: "add header", value: a["add header"], color: "bg-warning" },
-    { label: "rewrite subject", value: a["rewrite subject"], color: "bg-warning" },
-    { label: "soft reject", value: a["soft reject"], color: "bg-warning" },
-    { label: "greylist", value: a.greylist, color: "bg-primary" },
-  ].filter((i) => i.value > 0);
+  return ACTIONS.map((action) => ({
+    label: action,
+    value: a[action],
+    color: RSPAMD_ACTION_STYLE[action].dot,
+  })).filter((i) => i.value > 0);
 });
 </script>
 
