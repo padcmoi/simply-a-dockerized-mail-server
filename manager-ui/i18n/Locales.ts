@@ -51,6 +51,9 @@ export interface Locales {
     apiTokens: string;
     config: string;
     supervision: string;
+    sectionMail: string;
+    sectionAccess: string;
+    sectionSystem: string;
   };
   myspace: {
     alertTitle: string;

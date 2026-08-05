@@ -6,6 +6,13 @@ const NAV = [
   { label: "My space", to: "/my-space" },
   { label: "Domains", to: "/admin/domains" },
   { label: "Support", to: "/admin/tickets" },
+  {
+    label: "System",
+    children: [
+      { label: "Configuration", to: "/admin/config" },
+      { label: "Supervision", to: "/admin/supervision" },
+    ],
+  },
 ];
 
 describe("navSectionFor", () => {
@@ -23,6 +30,12 @@ describe("navSectionFor", () => {
 
   it("resolves the bare /admin dashboard to Administration", () => {
     expect(navSectionFor("/admin", NAV)).toEqual({ label: "Administration", to: "/admin" });
+  });
+
+  // A folded page keeps its own name in the breadcrumb: the section around it
+  // is a place in the sidebar, not a route.
+  it("finds a page folded into a section", () => {
+    expect(navSectionFor("/admin/config/theme", NAV)).toEqual({ label: "Configuration", to: "/admin/config" });
   });
 
   it("never returns the personal space", () => {

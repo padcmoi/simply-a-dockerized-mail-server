@@ -3,7 +3,7 @@ import { useAuthStore } from "~/stores/auth";
 import { useDomainStore } from "~/stores/domain";
 
 const { open, close } = useSidebar();
-const { personalNavItems, adminNavItems, domainNavItems, userItems } = useNav(onSignOut);
+const { personalNavItems, adminNavItems, openAdminSections, domainNavItems, userItems } = useNav(onSignOut);
 
 const domainStore = useDomainStore();
 const auth = useAuthStore();
@@ -75,10 +75,16 @@ function closeDomain() {
     <template #default="{ state }">
       <div class="flex flex-col h-full min-h-0">
         <div class="flex-1 min-h-0 overflow-y-auto">
+          <!-- On the rail the menu is told it is collapsed rather than left to
+               clip its own labels: that is what turns a section into a popover
+               of its pages instead of an accordion unfolding inside 3 rem, and
+               what gives every icon the tooltip that names it. -->
           <UNavigationMenu
             :key="`personal-${state}`"
             :items="personalNavItems"
             orientation="vertical"
+            tooltip
+            :collapsed="state === 'collapsed'"
             :ui="{ link: 'p-1.5 overflow-hidden' }"
           />
 
@@ -114,6 +120,8 @@ function closeDomain() {
                 :key="`domain-${state}`"
                 :items="domainNavItems"
                 orientation="vertical"
+                tooltip
+                :collapsed="state === 'collapsed'"
                 :ui="{ link: 'p-1.5 overflow-hidden' }"
               />
             </div>
@@ -124,8 +132,12 @@ function closeDomain() {
           <USeparator class="my-2" />
           <UNavigationMenu
             :key="`admin-${state}`"
+            v-model="openAdminSections"
             :items="adminNavItems"
             orientation="vertical"
+            tooltip
+            popover
+            :collapsed="state === 'collapsed'"
             :ui="{ link: 'p-1.5 overflow-hidden' }"
           />
         </div>

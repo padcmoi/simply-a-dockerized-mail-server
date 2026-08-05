@@ -18,4 +18,7 @@ export default {
   apiTokens: "API Tokens",
   config: "Configuration",
   supervision: "Supervision",
+  sectionMail: "Mail",
+  sectionAccess: "Access",
+  sectionSystem: "System",
 } satisfies Locales["nav"];

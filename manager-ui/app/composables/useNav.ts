@@ -41,6 +41,23 @@ export function useNav(onSignOut: () => Promise<void>) {
     return auth.session?.isRoot === true || perms.hasDomain(domainId, resource, "access");
   }
 
+  // One entry, when the account holds `access` on the resource behind it.
+  function entry(resource: string, label: string, icon: string, to: string) {
+    return canAccessGlobal(resource) ? [{ label: t(label), icon, to, active: isActive(to) }] : [];
+  }
+
+  // Eleven entries in one column is a list that gets scanned rather than read.
+  // What is opened every day stays at the top level; the rest is folded into
+  // sections named after what they hold, which the sidebar opens by itself when
+  // the page on screen is one of theirs.
+  //
+  // A section of one is that one entry: a folder around a single page is a click
+  // for nothing, and permissions alone can leave a section with one visible page.
+  function section(value: string, label: string, icon: string, children: NavigationMenuItem[]) {
+    if (children.length < 2) return children;
+    return [{ value, label: t(label), icon, children, active: children.some((child) => child.active === true) }];
+  }
+
   const personalNavItems = computed<NavigationMenuItem[]>(() => [
     { label: t("nav.myspace"), icon: "i-lucide-house", to: "/my-space", active: isActive("/my-space") },
   ]);
@@ -49,44 +66,53 @@ export function useNav(onSignOut: () => Promise<void>) {
     ...(canAccessGlobal("domains")
       ? [{ label: t("nav.administration"), icon: "i-lucide-layout-dashboard", to: "/admin", active: route.path === "/admin" }]
       : []),
-    ...(canAccessGlobal("domains")
-      ? [{ label: t("nav.domains"), icon: "i-lucide-globe", to: "/admin/domains", active: isActive("/admin/domains") }]
-      : []),
-    ...(canAccessGlobal("rspamd")
-      ? [{ label: t("nav.rspamd"), icon: "i-lucide-shield", to: "/admin/rspamd", active: isActive("/admin/rspamd") }]
-      : []),
-    ...(canAccessGlobal("postfix")
-      ? [{ label: t("nav.postfix"), icon: "i-lucide-send", to: "/admin/postfix", active: isActive("/admin/postfix") }]
-      : []),
-    ...(canAccessGlobal("sieve")
-      ? [{ label: t("nav.sieve"), icon: "i-lucide-filter", to: "/admin/sieve", active: isActive("/admin/sieve") }]
-      : []),
-    ...(canAccessGlobal("accounts")
-      ? [{ label: t("nav.accounts"), icon: "i-lucide-shield-check", to: "/admin/accounts", active: isActive("/admin/accounts") }]
-      : []),
-    ...(canAccessGlobal("groups")
-      ? [{ label: t("nav.groups"), icon: "i-lucide-users-round", to: "/admin/groups", active: isActive("/admin/groups") }]
-      : []),
-    ...(canAccessGlobal("tickets")
-      ? [{ label: t("nav.tickets"), icon: "i-lucide-life-buoy", to: "/admin/tickets", active: isActive("/admin/tickets") }]
-      : []),
-    ...(canAccessGlobal("api-tokens")
-      ? [{ label: t("nav.apiTokens"), icon: "i-lucide-key", to: "/admin/api-tokens", active: isActive("/admin/api-tokens") }]
-      : []),
-    ...(auth.session?.isRoot === true
-      ? [{ label: t("nav.config"), icon: "i-lucide-settings-2", to: "/admin/config", active: isActive("/admin/config") }]
-      : []),
-    ...(canAccessGlobal("supervision")
-      ? [
-          {
-            label: t("nav.supervision"),
-            icon: "i-lucide-activity",
-            to: "/admin/supervision",
-            active: isActive("/admin/supervision"),
-          },
-        ]
-      : []),
+    ...entry("domains", "nav.domains", "i-lucide-globe", "/admin/domains"),
+    ...entry("tickets", "nav.tickets", "i-lucide-life-buoy", "/admin/tickets"),
+    ...section("mail", "nav.sectionMail", "i-lucide-mail-check", [
+      ...entry("rspamd", "nav.rspamd", "i-lucide-shield", "/admin/rspamd"),
+      ...entry("postfix", "nav.postfix", "i-lucide-send", "/admin/postfix"),
+      ...entry("sieve", "nav.sieve", "i-lucide-filter", "/admin/sieve"),
+    ]),
+    ...section("access", "nav.sectionAccess", "i-lucide-shield-check", [
+      ...entry("accounts", "nav.accounts", "i-lucide-user-cog", "/admin/accounts"),
+      ...entry("groups", "nav.groups", "i-lucide-users-round", "/admin/groups"),
+      ...entry("api-tokens", "nav.apiTokens", "i-lucide-key", "/admin/api-tokens"),
+    ]),
+    ...section("system", "nav.sectionSystem", "i-lucide-settings-2", [
+      ...(auth.session?.isRoot === true
+        ? [
+            {
+              label: t("nav.config"),
+              icon: "i-lucide-sliders-horizontal",
+              to: "/admin/config",
+              active: isActive("/admin/config"),
+            },
+          ]
+        : []),
+      ...entry("supervision", "nav.supervision", "i-lucide-activity", "/admin/supervision"),
+    ]),
   ]);
+
+  // Which sections are unfolded. Held here rather than left to the menu's own
+  // default, which is read once at mount: the sidebar is never remounted, so a
+  // section holding the page just navigated to would stay shut over it.
+  const openAdminSections = ref<string[]>([]);
+
+  const activeAdminSection = computed(
+    () => adminNavItems.value.find((item) => item.children?.length && item.active === true)?.value
+  );
+
+  // Opened for you when you land in it, and never closed for you: a section
+  // someone folded by hand stays folded until they are somewhere else.
+  watch(
+    activeAdminSection,
+    (value) => {
+      if (typeof value === "string" && !openAdminSections.value.includes(value)) {
+        openAdminSections.value = [...openAdminSections.value, value];
+      }
+    },
+    { immediate: true }
+  );
 
   const domainNavItems = computed<NavigationMenuItem[]>(() => {
     const sel = domainStore.selected;
@@ -220,5 +246,5 @@ export function useNav(onSignOut: () => Promise<void>) {
     ],
   ]);
 
-  return { personalNavItems, adminNavItems, domainNavItems, userItems };
+  return { personalNavItems, adminNavItems, openAdminSections, domainNavItems, userItems };
 }

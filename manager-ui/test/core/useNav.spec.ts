@@ -55,19 +55,35 @@ function asUser() {
 }
 const noop = async () => {};
 
+// Every page the sidebar links to, folded sections included.
+function pathsOf(items: { to?: unknown; children?: { to?: unknown }[] }[]) {
+  return items.flatMap((item) => (item.children ? item.children.map((child) => child.to) : [item.to]));
+}
+
 describe("useNav global nav items", () => {
-  it("lists every admin section for a root account (perms bypassed)", () => {
+  // Eleven entries in one column is a list that gets scanned rather than read:
+  // the pages opened every day stay at the top, the rest is folded into three
+  // named sections. Nothing is lost, only folded.
+  it("lists every admin page for a root account (perms bypassed)", () => {
     asRoot();
     const { adminNavItems } = useNav(noop);
-    expect(adminNavItems.value.map((i) => i.to)).toEqual([
+    expect(adminNavItems.value.map((i) => i.to ?? i.value)).toEqual([
       "/admin",
       "/admin/domains",
+      "/admin/tickets",
+      "mail",
+      "access",
+      "system",
+    ]);
+    expect(pathsOf(adminNavItems.value)).toEqual([
+      "/admin",
+      "/admin/domains",
+      "/admin/tickets",
       "/admin/rspamd",
       "/admin/postfix",
       "/admin/sieve",
       "/admin/accounts",
       "/admin/groups",
-      "/admin/tickets",
       "/admin/api-tokens",
       "/admin/config",
       "/admin/supervision",
@@ -96,16 +112,39 @@ describe("useNav global nav items", () => {
       domain: [],
     };
     const { adminNavItems } = useNav(noop);
-    expect(adminNavItems.value.map((i) => i.to)).toEqual(["/admin/accounts", "/admin/groups"]);
+    expect(adminNavItems.value.map((i) => i.value)).toEqual(["access"]);
+    expect(pathsOf(adminNavItems.value)).toEqual(["/admin/accounts", "/admin/groups"]);
   });
 
-  // The machine is the last entry of the sidebar, under the configuration it
-  // sits below, and it is gated like any other section: on `access` alone.
+  // The machine is gated like any other section: on `access` alone. A non-root
+  // account sees nothing else under System, and a folder around a single page is
+  // a click for nothing, so the entry stands on its own.
   it("reveals the machine section on supervision access, root or not", () => {
     asUser();
     usePermissionsStore().data = { global: [{ resource: "supervision", action: "access" }], domain: [] };
     const { adminNavItems } = useNav(noop);
     expect(adminNavItems.value.map((i) => i.to)).toEqual(["/admin/supervision"]);
+    expect(adminNavItems.value[0]?.children).toBeUndefined();
+  });
+
+  // A section holding the page on screen has to be open, or the sidebar hides
+  // where you are. The menu reads its own default once at mount and the sidebar
+  // is never remounted, so the open sections are held here instead.
+  it("opens the section holding the current page, and marks it active", () => {
+    asRoot();
+    vi.stubGlobal("useRoute", () => ({ path: "/admin/config/theme" }));
+    const { adminNavItems, openAdminSections } = useNav(noop);
+    expect(openAdminSections.value).toEqual(["system"]);
+    const system = adminNavItems.value.find((i) => i.value === "system");
+    expect(system?.active).toBe(true);
+    expect(adminNavItems.value.find((i) => i.value === "mail")?.active).toBe(false);
+  });
+
+  it("leaves every section folded on a page that belongs to none", () => {
+    asRoot();
+    vi.stubGlobal("useRoute", () => ({ path: "/admin" }));
+    const { openAdminSections } = useNav(noop);
+    expect(openAdminSections.value).toEqual([]);
   });
 
   it("marks the section active with a prefix-aware match on the route path", () => {
