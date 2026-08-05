@@ -372,6 +372,8 @@ export interface Locales {
     themeColorsReset: string;
     themeColorsLight: string;
     themeColorsDark: string;
+    themeEditLight: string;
+    themeEditDark: string;
     themeSaved: string;
     themeExport: string;
     themeImportLabel: string;

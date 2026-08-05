@@ -9,6 +9,7 @@
 const { scope = "account" } = defineProps<{ scope?: ThemeScope }>();
 
 const { t } = useI18n();
+const colorMode = useColorMode();
 const {
   aliases,
   surfaces,
@@ -35,6 +36,13 @@ const picker = useTemplateRef<HTMLInputElement>("picker");
 // when the system flips it; the pickers have to follow the theme now on screen.
 watch(mode, refreshSeeds);
 
+// A preference and not a one-off: the appearance menu of the account holds the
+// same setting, and leaving the page on the mode being worked on is what one
+// expects from having pressed it.
+function switchMode() {
+  colorMode.preference = mode.value === "dark" ? "light" : "dark";
+}
+
 async function onFile(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -52,9 +60,23 @@ onMounted(() => {
 <template>
   <UCard>
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <p class="text-sm text-muted">
-        {{ t(mode === "dark" ? "preferences.themeColorsDark" : "preferences.themeColorsLight") }}
-      </p>
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="text-sm text-muted">
+          {{ t(mode === "dark" ? "preferences.themeColorsDark" : "preferences.themeColorsLight") }}
+        </p>
+        <!-- The bench edits the mode the interface is in, since what it shows is
+             the page around it: switching to the other one is switching the
+             interface, and doing it from here rather than from the account menu
+             is the whole point of the button. -->
+        <UButton
+          :icon="mode === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
+          :label="t(mode === 'dark' ? 'preferences.themeEditLight' : 'preferences.themeEditDark')"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          @click="switchMode"
+        />
+      </div>
       <div class="flex flex-wrap items-center gap-2">
         <UButton icon="i-lucide-download" color="neutral" variant="subtle" size="sm" @click="exportFile">
           {{ t("preferences.themeExport") }}

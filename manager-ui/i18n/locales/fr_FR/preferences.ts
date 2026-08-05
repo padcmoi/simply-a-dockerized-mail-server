@@ -11,6 +11,8 @@ export default {
   themeColorsReset: "Rétablir",
   themeColorsLight: "Vous modifiez le thème clair.",
   themeColorsDark: "Vous modifiez le thème sombre.",
+  themeEditLight: "Modifier le thème clair",
+  themeEditDark: "Modifier le thème sombre",
   themeSaved: "Thème enregistré",
   themeExport: "Exporter",
   themeImportLabel: "Importer",
