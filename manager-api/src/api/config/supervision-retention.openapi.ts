@@ -3,7 +3,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 export const SupervisionRetentionApi = () => applyDecorators(ApiTags("config"));
 
-const example = { supervisionRetentionMs: 2592000000 };
+const example = { supervisionRetentionMs: 604800000 };
 
 const RootOnly = () =>
   applyDecorators(

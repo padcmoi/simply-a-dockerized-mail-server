@@ -34,7 +34,7 @@ interface Bucket {
 
 // A week holds around sixty thousand rows and a chart holds eighty-four columns
 // of pixels, so the grouping happens in SQL over the index and never by handing
-// a month of samples to javascript.
+// a week of samples to javascript.
 const QUERY = `
   SELECT FLOOR(at / ?) * ? AS at,
          AVG(cpu) AS cpu,

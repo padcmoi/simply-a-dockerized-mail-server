@@ -1,7 +1,7 @@
 import type { Locales } from "../../Locales";
 
 export default {
-  subtitle: "L'état de la machine qui fait tourner ce serveur mail, en direct et sur le mois écoulé.",
+  subtitle: "L'état de la machine qui fait tourner ce serveur mail, en direct et sur les sept derniers jours.",
   machine: "Machine",
   live: "En direct",
   connecting: "Connexion…",

@@ -128,12 +128,13 @@ It is here and not under the `supervision` ACL resource on purpose. Reading the
 machine is a permission; deciding how much of the machine's past this server
 stores is a decision about the server, which is what `/config/**` is for.
 
-- **One day to one year**, a month by default. The floor is not arbitrary: the
-  cards offer a window seven days wide, and a retention under that would have a
-  card ask for more than exists.
+- **One day to one year**, a week by default. The default is not arbitrary: the
+  widest window the cards offer is seven days, so a week is exactly what they
+  can draw and anything beyond it costs disk for history no chart reads. Set
+  less than that and a card asks for more than exists.
 - **The form works in days and stores milliseconds**, and says what the choice
   costs before it is made: one recorded row stands for ten seconds, so a day is
-  about 8 640 rows and the default month about 260 000.
+  about 8 640 rows and the default week about 60 000.
 - **The purge re-reads it on every pass**, not at boot. It runs once at startup
   and then hourly, so a retention shortened here takes effect at the next purge
   rather than at the next restart. Shortening it deletes what falls outside the

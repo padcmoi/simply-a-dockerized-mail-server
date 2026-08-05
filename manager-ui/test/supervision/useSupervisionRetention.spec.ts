@@ -68,11 +68,11 @@ describe("useSupervisionRetention", () => {
     expect(retention.rows.value).toBe(0);
   });
 
-  it("goes back to the month the recorder defaults to", () => {
+  it("goes back to the week the recorder defaults to", () => {
     const retention = useSupervisionRetention();
     retention.days.value = 200;
     retention.resetDefaults();
-    expect(retention.days.value).toBe(30);
+    expect(retention.days.value).toBe(7);
   });
 
   it("says so and stops claiming to be loading when the read fails", async () => {

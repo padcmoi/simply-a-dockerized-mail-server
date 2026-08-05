@@ -29,8 +29,9 @@ export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
   offlineNotifyAfterMs: 300_000,
   offlineSweepIntervalMs: 20_000,
   mailMinIntervalMs: 30_000,
-  // A month, which is longer than the widest window a supervision card offers.
-  supervisionRetentionMs: 30 * 24 * 3_600_000,
+  // A week, exactly the widest window a supervision card offers: keeping more
+  // than that costs disk for history nothing on the page can draw.
+  supervisionRetentionMs: 7 * 24 * 3_600_000,
   managerUrl: "",
 };
 

@@ -8,7 +8,9 @@ const ROWS_PER_DAY = 8_640;
 
 export const RETENTION_MIN_DAYS = 1;
 export const RETENTION_MAX_DAYS = 365;
-export const RETENTION_DEFAULT_DAYS = 30;
+/** A week, exactly the widest window a card offers: anything beyond it is
+ *  history no chart on the page can draw. */
+export const RETENTION_DEFAULT_DAYS = 7;
 
 // Kept in days rather than milliseconds: nobody sets a retention in
 // milliseconds, and the API is the only place that has to speak in them.
@@ -27,7 +29,7 @@ export function useSupervisionRetention() {
   );
 
   // What the choice costs, said in rows rather than left to be discovered on a
-  // disk: a year is twelve times the month the default keeps.
+  // disk: a year is fifty-two times the week the default keeps.
   const rows = computed(() => (valid.value ? days.value * ROWS_PER_DAY : 0));
 
   function resetDefaults() {

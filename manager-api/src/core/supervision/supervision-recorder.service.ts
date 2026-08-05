@@ -17,7 +17,7 @@ const PRUNE_MS = 3_600_000;
 // loop would reset this one's baseline and report rates nobody's machine ever did.
 //
 // Nothing is written every second. Samples are averaged in memory and one row
-// lands every ten, which is 6 rows a minute and about 260 000 for the month kept
+// lands every ten, which is 6 rows a minute and about 60 000 for the week kept
 // by default, all of it read back through an index and aggregated in SQL. How
 // long that is kept is `supervision_retention_ms`, read from the settings on
 // every pass rather than at boot, so changing it in the settings page applies to
@@ -62,7 +62,7 @@ export class SupervisionRecorderService {
     if (!this.lastWriteAt) this.lastWriteAt = now;
     if (!this.lastPruneAt) {
       // Once at boot as well: a host restarted every day would otherwise never
-      // reach the first hourly pass and keep the month before it forever.
+      // reach the first hourly pass and keep the week before it forever.
       this.lastPruneAt = now;
       await this.prune();
     }
