@@ -55,12 +55,13 @@ const RAMP = [
 ];
 
 // Three hues, for when the curves have to be told apart at a glance rather than
-// read as a progression. Not taken from the status colours, which mean good and
-// bad here and must not become "series 2". Light step first, dark step second.
+// read as a progression. The app's own colours rather than hexes written here:
+// each already carries its light and its dark step, so a curve follows the
+// theme like everything else on the page.
 const CATEGORICAL = [
-  { line: "stroke-[#2a78d6] dark:stroke-[#3987e5]", dot: "bg-[#2a78d6] dark:bg-[#3987e5]", width: 2 },
-  { line: "stroke-[#eb6834] dark:stroke-[#d95926]", dot: "bg-[#eb6834] dark:bg-[#d95926]", width: 2 },
-  { line: "stroke-[#1baf7a] dark:stroke-[#199e70]", dot: "bg-[#1baf7a] dark:bg-[#199e70]", width: 2 },
+  { line: "stroke-primary", dot: "bg-primary", width: 2 },
+  { line: "stroke-warning", dot: "bg-warning", width: 2 },
+  { line: "stroke-error", dot: "bg-error", width: 2 },
 ];
 
 const { locale } = useI18n();
