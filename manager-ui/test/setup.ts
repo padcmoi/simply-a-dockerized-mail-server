@@ -23,6 +23,7 @@ const VUE_GLOBALS = [
   "onUnmounted",
   "onBeforeUnmount",
   "onScopeDispose",
+  "getCurrentScope",
   "provide",
   "inject",
   "h",

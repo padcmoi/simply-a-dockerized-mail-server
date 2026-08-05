@@ -34,6 +34,13 @@ export function useThemeColors(scope: ThemeScope = "account") {
 
   const saving = ref(false);
 
+  // The theme as it is stored, held beside the one being edited. A pick is a
+  // proposal until it is saved: leaving the bench without saving puts the
+  // interface back where the database has it, instead of letting a colour nobody
+  // kept go on painting every other page for the rest of the session.
+  const stored = ref<ThemeView>(mergeThemes(scope === "app" ? app.value : account.value));
+  const dirty = ref(false);
+
   const mode = computed<ThemeMode>(() => (colorMode.value === "dark" ? "dark" : "light"));
   const edited = computed(() => (scope === "app" ? app.value : account.value));
   const effective = computed(() => mergeThemes(app.value, account.value));
@@ -52,6 +59,29 @@ export function useThemeColors(scope: ThemeScope = "account") {
     if (!import.meta.client) return;
     styleElement().textContent = themeCss(effective.value);
   }
+
+  function write(view: ThemeView) {
+    if (scope === "app") app.value = view;
+    else account.value = view;
+  }
+
+  // What is on screen is now what is stored: everything read back from the API
+  // and everything just written to it.
+  function remember() {
+    stored.value = mergeThemes(edited.value);
+    dirty.value = false;
+  }
+
+  // Only the instance that changed something puts it back. The page around the
+  // bench holds this composable too, merely to read the theme, and restoring
+  // from it on unmount would undo what the bench had just saved.
+  function discard() {
+    if (!dirty.value) return;
+    write(mergeThemes(stored.value));
+    apply();
+  }
+
+  if (getCurrentScope()) onScopeDispose(discard);
 
   // Two steps, because neither alone is enough. A probe resolves `var()` chains
   // and colour mixes into a concrete colour, but the browser keeps it in the
@@ -129,6 +159,7 @@ export function useThemeColors(scope: ThemeScope = "account") {
 
   function setValue(token: string, colour: string) {
     edited.value[mode.value][token] = colour;
+    dirty.value = true;
     // Changing `neutral` would drag the page background along with it, since
     // Nuxt UI cuts it from `neutral-900` in dark while light keeps a plain
     // white. Writing the background down at that moment cuts it loose for good,
@@ -144,6 +175,7 @@ export function useThemeColors(scope: ThemeScope = "account") {
   // is the point of holding two themes.
   function reset() {
     edited.value[mode.value] = {};
+    dirty.value = true;
     apply();
   }
 
@@ -152,9 +184,8 @@ export function useThemeColors(scope: ThemeScope = "account") {
   async function load() {
     const data = await call<StoredTheme>(path.value);
     if (data.tokens) catalogue.value = data.tokens;
-    const view = { light: data.light ?? {}, dark: data.dark ?? {} };
-    if (scope === "app") app.value = view;
-    else account.value = view;
+    write({ light: data.light ?? {}, dark: data.dark ?? {} });
+    remember();
     apply();
     refreshSeeds();
   }
@@ -190,9 +221,8 @@ export function useThemeColors(scope: ThemeScope = "account") {
     // A file holds every token, on purpose. What is kept is what it changes:
     // importing an export of the current theme has to leave the bench exactly as
     // it was, not mark all forty-four colours as chosen.
-    const trimmed = prune(result.theme);
-    if (scope === "app") app.value = trimmed;
-    else account.value = trimmed;
+    write(prune(result.theme));
+    dirty.value = true;
     apply();
     toast.add({ title: t("preferences.themeImport.done"), color: "success" });
     return true;
@@ -202,9 +232,11 @@ export function useThemeColors(scope: ThemeScope = "account") {
     saving.value = true;
     try {
       const trimmed = prune(edited.value);
-      if (scope === "app") app.value = trimmed;
-      else account.value = trimmed;
+      write(trimmed);
       await call(path.value, { method: "PUT", body: { light: trimmed.light, dark: trimmed.dark } });
+      // Kept as the theme to fall back to only once the API has taken it: a save
+      // that failed leaves an unsaved bench, which is what it is.
+      remember();
       toast.add({ title: t("preferences.themeSaved"), color: "success" });
     } catch (e) {
       toast.add({ title: apiErrorMessage(e), color: "error" });
