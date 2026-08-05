@@ -45,6 +45,13 @@ setBreadcrumb([{ label: t("nav.config") }]);
         :hint="t('config.supervisionCardHint')"
         to="/admin/config/supervision"
       />
+
+      <ProfileActionCard
+        icon="i-lucide-palette"
+        :label="t('config.themeCardLabel')"
+        :hint="t('config.themeCardHint')"
+        to="/admin/config/theme"
+      />
     </div>
   </div>
 </template>

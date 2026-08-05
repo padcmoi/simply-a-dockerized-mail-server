@@ -48,6 +48,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "GET /api/v1/config/mail  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "GET /api/v1/config/mail-cadence  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "GET /api/v1/config/supervision  ::  auth=ApiToken+JWT guards=[RootGuard]",
+  "GET /api/v1/config/theme  ::  auth=PUBLIC guards=[]",
   "GET /api/v1/domains  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:domains[access]",
   "GET /api/v1/domains/:domainId  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:domain[access,view-domain]",
   "GET /api/v1/domains/:domainId/aliases  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:aliases[access,list-aliases]",
@@ -68,6 +69,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "GET /api/v1/health  ::  auth=PUBLIC guards=[]",
   "GET /api/v1/my-space/aliases/:id  ::  auth=ApiToken+JWT guards=[]",
   "GET /api/v1/my-space/recipients/:id  ::  auth=ApiToken+JWT guards=[]",
+  "GET /api/v1/my-space/theme  ::  auth=ApiToken+JWT guards=[]",
   "GET /api/v1/notifications  ::  auth=ApiToken+JWT guards=[]",
   "GET /api/v1/notifications/feed  ::  auth=ApiToken+JWT guards=[]",
   "GET /api/v1/notifications/preferences  ::  auth=ApiToken+JWT guards=[]",
@@ -130,10 +132,12 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "PUT /api/v1/config/mail  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "PUT /api/v1/config/mail-cadence  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "PUT /api/v1/config/supervision  ::  auth=ApiToken+JWT guards=[RootGuard]",
+  "PUT /api/v1/config/theme  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "PUT /api/v1/domains/:domainId/aliases/:id/owner  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:mailboxes[access,assign-alias-owner]",
   "PUT /api/v1/domains/:domainId/recipients/:id/owner  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:mailboxes[access,assign-recipient-owner]",
   "PUT /api/v1/groups/:id/domain-permissions  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:groups[access,edit-group-domain-permissions]",
   "PUT /api/v1/groups/:id/global-permissions  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:groups[access,edit-group-global-permissions]",
+  "PUT /api/v1/my-space/theme  ::  auth=ApiToken+JWT guards=[]",
   "PUT /api/v1/notifications/preferences  ::  auth=ApiToken+JWT guards=[]",
 ]
 `;

@@ -15,9 +15,12 @@ const routes = scanAll(ALL_CONTROLLERS);
 // The ONLY routes reachable with no authentication at all. Anything else must
 // require auth. A new public route forces a conscious edit of this list, which
 // is the whole point: a silently public route is exactly the vulnerability this
-// suite exists to catch.
+// suite exists to catch. `GET /config/theme` is here deliberately: the login
+// screen is painted with the server theme, and the interface's own server reads
+// it before it has anyone to be authenticated as. It exposes colours.
 const EXPECTED_PUBLIC = [
   "GET /api/v1/accounts/invite/:token",
+  "GET /api/v1/config/theme",
   "GET /api/v1/health",
   "POST /api/v1/accounts/invite/:token/accept",
   "POST /api/v1/auth/jwt/login",
@@ -50,6 +53,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/config/supervision",
   "GET /api/v1/my-space/aliases/:id",
   "GET /api/v1/my-space/recipients/:id",
+  "GET /api/v1/my-space/theme",
   "GET /api/v1/notifications",
   "GET /api/v1/notifications/feed",
   "GET /api/v1/notifications/preferences",
@@ -67,6 +71,8 @@ const EXPECTED_NO_ACL_AUTHED = [
   "PUT /api/v1/config/mail",
   "PUT /api/v1/config/mail-cadence",
   "PUT /api/v1/config/supervision",
+  "PUT /api/v1/config/theme",
+  "PUT /api/v1/my-space/theme",
   "PUT /api/v1/notifications/preferences",
 ].sort();
 

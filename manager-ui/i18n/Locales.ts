@@ -127,6 +127,14 @@ export interface Locales {
     generalCardHint: string;
     supervisionCardLabel: string;
     supervisionCardHint: string;
+    themeCardLabel: string;
+    themeCardHint: string;
+    theme: {
+      cardTitle: string;
+      alertTitle: string;
+      alertDescription: string;
+      hint: string;
+    };
     mail: {
       alertTitle: string;
       alertDescription: string;
@@ -359,6 +367,16 @@ export interface Locales {
     themeColorsReset: string;
     themeColorsLight: string;
     themeColorsDark: string;
+    themeSaved: string;
+    themeExport: string;
+    themeImportLabel: string;
+    themeImport: {
+      done: string;
+      json: string;
+      shape: string;
+      token: string;
+      colour: string;
+    };
     pageSize: string;
     pageSizeHint: string;
   };

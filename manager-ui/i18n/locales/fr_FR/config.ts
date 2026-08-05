@@ -13,6 +13,8 @@ export default {
   generalCardHint: "Adresse publique de l'interface",
   supervisionCardLabel: "Supervision",
   supervisionCardHint: "Rétention des mesures machine",
+  themeCardLabel: "Thème",
+  themeCardHint: "Couleurs de l'interface pour tout le monde",
   mail: {
     alertTitle: "Serveur de mail sortant.",
     alertDescription: "Comment le manager envoie tous ses e-mails (invitations, notifications, codes...). Stocké en base, pas dans l'environnement.",
@@ -88,6 +90,13 @@ export default {
     loadFailed: "Échec du chargement de la cadence",
     cannotExceedDelay: "Ne peut pas dépasser le délai ci-dessus.",
     reset: "Valeurs d'usine",
+  },
+  theme: {
+    cardTitle: "Thème de l'interface",
+    alertTitle: "Couleurs de l'interface.",
+    alertDescription:
+      "Ce que tout le monde voit en arrivant, connecté ou non. Le serveur de l'interface lit ces couleurs avant de rendre la première page, elles sont donc là dès le premier affichage. Un compte peut les recouvrir depuis ses préférences.",
+    hint: "Enregistré pour tout le serveur. Une couleur laissée telle quelle n'est pas stockée : elle reste celle livrée avec l'interface, et « Rétablir » suivi de « Enregistrer » ramène le mode affiché à cet état.",
   },
   supervision: {
     cardTitle: "Historique de la machine",

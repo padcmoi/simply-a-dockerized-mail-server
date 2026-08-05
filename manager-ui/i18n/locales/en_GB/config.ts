@@ -13,6 +13,8 @@ export default {
   generalCardHint: "Public interface address",
   supervisionCardLabel: "Supervision",
   supervisionCardHint: "Machine history retention",
+  themeCardLabel: "Theme",
+  themeCardHint: "Interface colours for everyone",
   mail: {
     alertTitle: "Outbound mail server.",
     alertDescription: "How the manager sends all its emails (invitations, notifications, codes...). Stored in the database, not the environment.",
@@ -88,6 +90,13 @@ export default {
     loadFailed: "Failed to load the cadence settings",
     cannotExceedDelay: "Cannot exceed the delay above.",
     reset: "Factory defaults",
+  },
+  theme: {
+    cardTitle: "Interface theme",
+    alertTitle: "Interface colours.",
+    alertDescription:
+      "What everyone lands on, signed in or not. This interface's own server reads these colours before rendering the first page, so they are there from the first paint. An account can lay its own over them from its preferences.",
+    hint: "Saved for the whole server. A colour left alone is not stored: it stays the one the interface ships with, and Reset followed by Save returns the mode on screen to that state.",
   },
   supervision: {
     cardTitle: "Machine history",

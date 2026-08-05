@@ -1,120 +1,60 @@
-export const THEME_COLOR_ALIASES = ["primary", "secondary", "success", "info", "warning", "error", "neutral"] as const;
+// The interface's colours, in two layers and two modes.
+//
+// The server-wide theme (`app`) is what everyone sees, read by this app's own
+// server before the first page is rendered, so the personalisation is already
+// there at first paint rather than snapping in after it. An account's own theme
+// (`account`) is read at login and laid over it. Both are stored per mode, light
+// and dark being two themes rather than two shades of one.
+//
+// Nothing is seeded anywhere: a token nobody chose is absent, and absence means
+// the colour the interface ships with. That is what makes a reset a deletion.
+export type ThemeScope = "app" | "account";
 
-export type ThemeColorAlias = (typeof THEME_COLOR_ALIASES)[number];
-
-export const THEME_STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
-
-// The surfaces, which are not accents and not always cut from `neutral`: in
-// light the page background is plain white, so it can only be reached here.
-export const THEME_SURFACES = [
-  "--ui-bg",
-  "--ui-bg-muted",
-  "--ui-bg-elevated",
-  "--ui-bg-accented",
-  "--ui-bg-inverted",
-  "--ui-border",
-  "--ui-border-muted",
-  "--ui-border-accented",
-  "--ui-border-inverted",
-  "--ui-text-dimmed",
-  "--ui-text-muted",
-  "--ui-text-toned",
-  "--ui-text",
-  "--ui-text-highlighted",
-  "--ui-text-inverted",
-] as const;
-
-export type ThemeMode = "light" | "dark";
-
-// How far each step sits from the one that was picked: mixed towards white
-// below 500, towards black above, in oklab so the lightness moves evenly
-// instead of drifting channel by channel.
-const RAMP: Record<number, number> = {
-  50: 92,
-  100: 84,
-  200: 68,
-  300: 48,
-  400: 25,
-  500: 0,
-  600: -18,
-  700: -34,
-  800: -48,
-  900: -60,
-  950: -72,
-};
-
-const STYLE_ID = "theme-colors-bench";
-
-// The one token deliberately cut loose from its alias, see `apply`.
-const PAGE_BACKGROUND = "--ui-bg";
-
-export function stepVar(alias: ThemeColorAlias, step: number) {
-  return `--ui-color-${alias}-${step}`;
+interface StoredTheme extends ThemeView {
+  tokens?: { aliases: string[]; surfaces: string[] };
 }
 
-function shadeOf(base: string, mix: number) {
-  if (mix === 0) return base;
-  return `color-mix(in oklab, ${base}, ${mix > 0 ? "white" : "black"} ${Math.abs(mix)}%)`;
-}
-
-// `:root.dark` is what the colour mode sets; the light half is written as "not
-// dark" rather than `.light`, so it holds whether or not that class is present.
-function selectorFor(mode: ThemeMode) {
-  return mode === "dark" ? ":root.dark" : ":root:not(.dark)";
-}
-
-function everyToken() {
-  return [...THEME_COLOR_ALIASES.flatMap((alias) => THEME_STEPS.map((step) => stepVar(alias, step))), ...THEME_SURFACES];
-}
-
-export function useThemeColors() {
+export function useThemeColors(scope: ThemeScope = "account") {
   const colorMode = useColorMode();
-  const overrides = useState<Record<ThemeMode, Record<string, string>>>("theme-colors", () => ({ light: {}, dark: {} }));
+  const { call } = useApi();
+  const toast = useToast();
+  const { t } = useI18n();
+  const { apiErrorMessage } = useApiError();
 
-  // What each mode shows for each property, read from the live document and
-  // kept as the starting point of every picker. Both modes are read, not only
-  // the one on screen: the page background is pinned per mode below, and
-  // pinning dark's background to light's value would be worse than not pinning.
-  const seeds = useState<Record<ThemeMode, Record<string, string>>>("theme-colors-seeds", () => ({
-    light: {},
-    dark: {},
+  const app = useState<ThemeView>("theme-app", emptyTheme);
+  const account = useState<ThemeView>("theme-account", emptyTheme);
+  const catalogue = useState<{ aliases: string[]; surfaces: string[] }>("theme-tokens", () => ({
+    aliases: [...THEME_ALIASES],
+    surfaces: [...THEME_SURFACES],
   }));
 
+  // What each mode shows for each token with no theme applied at all, read from
+  // the live document and kept as the starting point of every picker.
+  const seeds = useState<Record<ThemeMode, ThemePalette>>("theme-seeds", () => ({ light: {}, dark: {} }));
+
+  const saving = ref(false);
+
   const mode = computed<ThemeMode>(() => (colorMode.value === "dark" ? "dark" : "light"));
-  const current = computed(() => overrides.value[mode.value]);
-  const touched = computed(() => Object.keys(current.value).length > 0);
+  const edited = computed(() => (scope === "app" ? app.value : account.value));
+  const effective = computed(() => mergeThemes(app.value, account.value));
+  const touched = computed(() => Object.keys(edited.value[mode.value]).length > 0);
 
   function styleElement() {
-    const found = document.getElementById(STYLE_ID);
+    const found = document.getElementById(THEME_STYLE_ID);
     if (found) return found as HTMLStyleElement;
     const style = document.createElement("style");
-    style.id = STYLE_ID;
+    style.id = THEME_STYLE_ID;
     document.head.append(style);
     return style;
   }
 
-  // The rules are written outside every `@layer`, which is the only thing that
-  // reliably outranks the layered theme Nuxt UI generates from app.config.
-  //
-  // The page background is written on every pass, picked or not: Nuxt UI cuts it
-  // from `neutral-900` in dark, so moving that alias would drag the whole page
-  // with it, while in light it is a plain white that never moves. Pinned to what
-  // the mode started with, it answers to its own picker in both modes and to
-  // nothing else.
   function apply() {
     if (!import.meta.client) return;
-    const blocks = (["light", "dark"] as ThemeMode[]).map((each) => {
-      const written = { ...overrides.value[each] };
-      const background = written[PAGE_BACKGROUND] ?? seeds.value[each][PAGE_BACKGROUND];
-      if (background) written[PAGE_BACKGROUND] = background;
-      const declarations = Object.entries(written).map(([token, colour]) => `${token}:${colour};`);
-      return declarations.length ? `${selectorFor(each)}{${declarations.join("")}}` : "";
-    });
-    styleElement().textContent = blocks.join("");
+    styleElement().textContent = themeCss(effective.value);
   }
 
   // Two steps, because neither alone is enough. A probe resolves `var()` chains
-  // and colour-mixes into a concrete colour, but the browser keeps it in the
+  // and colour mixes into a concrete colour, but the browser keeps it in the
   // space it was written in: reading a green `oklch(0.72 0.22 149)` as three
   // numbers yields a deep blue. Painting that colour on a one-pixel canvas and
   // reading the pixel back is the conversion to sRGB, done by the engine.
@@ -130,10 +70,9 @@ export function useThemeColors() {
     return `#${[red, green, blue].map((channel) => channel.toString(16).padStart(2, "0")).join("")}`.toUpperCase();
   }
 
-  // Read with the bench's own stylesheet muted, so a token reports the theme it
-  // would have without us rather than the colour we just wrote into it. Both
-  // modes are read in one pass, the dark class flipped and put back before
-  // anything is painted, so the page never blinks.
+  // Read with every theme muted, so a token reports what the interface ships
+  // with rather than the colour someone just wrote into it. Both modes in one
+  // pass, the dark class flipped and put back before anything is painted.
   function refreshSeeds() {
     if (!import.meta.client) return;
     const root = document.documentElement;
@@ -147,10 +86,11 @@ export function useThemeColors() {
     canvas.width = 1;
     canvas.height = 1;
     const paint = canvas.getContext("2d", { willReadFrequently: true });
-    const next: Record<ThemeMode, Record<string, string>> = { light: {}, dark: {} };
-    for (const each of ["light", "dark"] as ThemeMode[]) {
+    const next: Record<ThemeMode, ThemePalette> = { light: {}, dark: {} };
+    for (const each of THEME_MODES) {
       root.classList.toggle("dark", each === "dark");
-      for (const token of everyToken()) next[each][token] = readLive(probe, paint, `var(${token})`);
+      for (const alias of catalogue.value.aliases) next[each][alias] = readLive(probe, paint, `var(--ui-${alias})`);
+      for (const token of catalogue.value.surfaces) next[each][token] = readLive(probe, paint, `var(${token})`);
     }
     root.classList.toggle("dark", wasDark);
     probe.remove();
@@ -158,55 +98,137 @@ export function useThemeColors() {
     seeds.value = next;
   }
 
+  // What this token would be painted with if this scope held nothing: the layer
+  // underneath, which for an account is the server's theme and for the server is
+  // what the interface ships with.
+  function underneath(each: ThemeMode, token: string) {
+    if (scope === "account") {
+      const server = app.value[each][token];
+      if (server) return server;
+    }
+    return seeds.value[each][token];
+  }
+
+  // What a token is actually painted with in that mode: this scope's own colour
+  // if it has one, the layer underneath otherwise.
+  function valueIn(each: ThemeMode, token: string) {
+    return edited.value[each][token] ?? underneath(each, token) ?? "#000000";
+  }
+
+  function prune(view: ThemeView) {
+    return pruneTheme(view, underneath);
+  }
+
   function valueOf(token: string) {
-    return current.value[token] ?? seeds.value[mode.value][token] ?? "#000000";
+    return valueIn(mode.value, token);
   }
 
-  // Whether this mode holds a colour of its own for that property, which is what
-  // a marked control has to say: picked here, not inherited from the theme.
   function isPicked(token: string) {
-    return current.value[token] !== undefined;
-  }
-
-  function isAliasPicked(alias: ThemeColorAlias) {
-    return THEME_STEPS.some((step) => isPicked(stepVar(alias, step)));
+    return edited.value[mode.value][token] !== undefined;
   }
 
   function setValue(token: string, colour: string) {
-    current.value[token] = colour;
+    edited.value[mode.value][token] = colour;
+    // Changing `neutral` would drag the page background along with it, since
+    // Nuxt UI cuts it from `neutral-900` in dark while light keeps a plain
+    // white. Writing the background down at that moment cuts it loose for good,
+    // as data rather than as a rule applied later: what is stored is what is
+    // painted, on this page and on the server's first render alike.
+    if (token === "neutral" && edited.value[mode.value]["--ui-bg"] === undefined) {
+      edited.value[mode.value]["--ui-bg"] = valueOf("--ui-bg");
+    }
     apply();
   }
 
-  // One colour for a whole alias: the eleven steps are rebuilt around it, which
-  // is what the library expects to find and what app.config would have produced
-  // from a Tailwind palette.
-  function setAlias(alias: ThemeColorAlias, colour: string) {
-    for (const step of THEME_STEPS) current.value[stepVar(alias, step)] = shadeOf(colour, RAMP[step] ?? 0);
-    apply();
-  }
-
-  // Only the mode on screen: the other one keeps whatever was tried on it, which
+  // Only the mode on screen: the other one keeps what was chosen for it, which
   // is the point of holding two themes.
   function reset() {
-    overrides.value[mode.value] = {};
+    edited.value[mode.value] = {};
+    apply();
+  }
+
+  const path = computed(() => (scope === "app" ? "/config/theme" : "/my-space/theme"));
+
+  async function load() {
+    const data = await call<StoredTheme>(path.value);
+    if (data.tokens) catalogue.value = data.tokens;
+    const view = { light: data.light ?? {}, dark: data.dark ?? {} };
+    if (scope === "app") app.value = view;
+    else account.value = view;
     apply();
     refreshSeeds();
   }
 
+  // Every token of both modes, chosen or not: a file holding only what somebody
+  // touched would restore a theme that depends on whatever the interface shipped
+  // with the day it is read back. A snapshot says what the interface looked like,
+  // which is what an export is for. It is written as the API takes it, so the
+  // file can be replayed as is.
+  function exportFile() {
+    if (!import.meta.client) return;
+    const known = [...catalogue.value.aliases, ...catalogue.value.surfaces];
+    const snapshot = emptyTheme();
+    for (const each of THEME_MODES) for (const token of known) snapshot[each][token] = valueIn(each, token);
+    const payload = JSON.stringify(snapshot, null, 2);
+    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `theme-${scope}-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // Read into the bench, not into the database: an import is a proposal like any
+  // other pick, and it takes the same Save to become the theme.
+  async function importFile(file: File) {
+    const known = [...catalogue.value.aliases, ...catalogue.value.surfaces];
+    const result = parseThemeFile(await file.text(), known);
+    if (!result.ok) {
+      toast.add({ title: t(`preferences.themeImport.${result.reason}`), color: "error" });
+      return false;
+    }
+    // A file holds every token, on purpose. What is kept is what it changes:
+    // importing an export of the current theme has to leave the bench exactly as
+    // it was, not mark all forty-four colours as chosen.
+    const trimmed = prune(result.theme);
+    if (scope === "app") app.value = trimmed;
+    else account.value = trimmed;
+    apply();
+    toast.add({ title: t("preferences.themeImport.done"), color: "success" });
+    return true;
+  }
+
+  async function save() {
+    saving.value = true;
+    try {
+      const trimmed = prune(edited.value);
+      if (scope === "app") app.value = trimmed;
+      else account.value = trimmed;
+      await call(path.value, { method: "PUT", body: { light: trimmed.light, dark: trimmed.dark } });
+      toast.add({ title: t("preferences.themeSaved"), color: "success" });
+    } catch (e) {
+      toast.add({ title: apiErrorMessage(e), color: "error" });
+    } finally {
+      saving.value = false;
+    }
+  }
+
   return {
-    aliases: THEME_COLOR_ALIASES,
+    aliases: computed(() => catalogue.value.aliases),
+    surfaces: computed(() => catalogue.value.surfaces),
     steps: THEME_STEPS,
-    surfaces: THEME_SURFACES,
     mode,
     touched,
-    stepVar,
+    saving,
     valueOf,
     isPicked,
-    isAliasPicked,
     setValue,
-    setAlias,
     apply,
     refreshSeeds,
     reset,
+    load,
+    save,
+    exportFile,
+    importFile,
   };
 }

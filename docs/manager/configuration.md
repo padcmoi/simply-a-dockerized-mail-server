@@ -139,3 +139,36 @@ stores is a decision about the server, which is what `/config/**` is for.
   and then hourly, so a retention shortened here takes effect at the next purge
   rather than at the next restart. Shortening it deletes what falls outside the
   new window on that pass; nothing is recoverable afterwards.
+
+## Theme: the colours everyone lands on
+
+[`/admin/config/theme`](../../manager-ui/app/pages/admin/config/theme.vue), the
+same bench an account gets in its own preferences, pointed at the server-wide
+theme instead of a personal one.
+
+Two tables hold the colours, `app_themes` for the server and `account_themes`
+for a person, on the same key/value shape as `app_settings` with the mode in
+front of the value: light and dark are two themes, not two shades of one, so a
+green picked for dark says nothing about light.
+
+- **Both tables ship empty and are meant to stay that way** until someone
+  changes a colour. There is no seed, on purpose: what the interface ships with
+  is already written in the front, and a seeded row would be a copy of it, wrong
+  the day it moves and impossible to tell from a deliberate choice. A token
+  nobody set is absent, and absence means the colour the interface was built
+  with. That is what makes `Reset` a deletion rather than a rewrite.
+- **What is stored is what someone chose**, never what was derived from it: one
+  colour per alias, from which the eleven steps Nuxt UI reads are rebuilt in
+  CSS, plus the surfaces (backgrounds, borders, text) that are not cut from an
+  alias at all.
+- **The interface's own server reads the server theme before rendering**
+  ([`plugins/theme.ts`](../../manager-ui/app/plugins/theme.ts)) and writes it
+  into the page as a stylesheet, so the personalisation is in the first paint
+  rather than snapping in after hydration. The answer is held for a minute, so a
+  colour changed here is live at the next minute with no restart. `GET
+  /config/theme` is the one public route of the namespace, because the login
+  screen wears the theme too and there is nobody to authenticate yet. Writing it
+  is root, like the rest of `/config`.
+- **An account's own theme is read at login and laid over the server's**, token
+  by token, and dropped at logout so the next person on that browser gets the
+  server's colours rather than the last one's.

@@ -26,6 +26,8 @@ import { PostfixController } from "../../src/api/postfix/postfix.controller";
 import { RspamdController } from "../../src/api/rspamd/rspamd.controller";
 import { RejectSendersController } from "../../src/api/sieve/reject-senders/reject-senders.controller";
 import { SupervisionController } from "../../src/api/supervision/supervision.controller";
+import { AppThemeController } from "../../src/api/theme/app-theme.controller";
+import { AccountThemeController } from "../../src/api/theme/account-theme.controller";
 import { ApiTokenController } from "../../src/core/auth/api-token/api-token.controller";
 import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
 
@@ -54,6 +56,8 @@ export const ALL_CONTROLLERS = [
   RspamdController,
   RejectSendersController,
   SupervisionController,
+  AppThemeController,
+  AccountThemeController,
   ApiTokenController,
   JwtAuthController,
 ] as const;
