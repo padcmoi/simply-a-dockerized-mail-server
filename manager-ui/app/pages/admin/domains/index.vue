@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 import { useAuthStore } from "~/stores/auth";
 import { usePermissionsStore } from "~/stores/permissions";
 
@@ -48,21 +49,13 @@ const adminMaxQuotaMb = computed(() => {
   const currentMb = Number.isFinite(bytes) && bytes > 0 ? Math.round(bytes / MB) : 0;
   return assignable + currentMb;
 });
-// Same source feeds the desktop column headers below and ListToolbar's
-// mobile sort select.
-const SORTABLE_COLUMNS = computed(() => [
-  { key: "id", label: t("domains.table.id") },
-  { key: "domain", label: t("domains.table.domain") },
-  { key: "active", label: t("domains.table.active") },
-  { key: "quota", label: t("domains.table.quotaMb") },
-]);
-
-const columns = computed(() => [
-  { accessorKey: "id", header: header("id", t("domains.table.id")) },
-  { accessorKey: "domain", header: header("domain", t("domains.table.domain")) },
-  { accessorKey: "active", header: header("active", t("domains.table.active")) },
-  { accessorKey: "quota", header: header("quota", t("domains.table.quotaMb")) },
-  { id: "actions", header: "" },
+// Declared once: DataTable decides on its own width whether this is a table or
+// a block per row, so the page no longer carries one of each.
+const columns = computed<DataTableColumn<Domain>[]>(() => [
+  { key: "id", label: t("domains.table.id"), value: (row) => row.id, hideOnCard: true },
+  { key: "domain", label: t("domains.table.domain"), value: (row) => row.domain, primary: true },
+  { key: "active", label: t("domains.table.active"), value: (row) => row.active === 1 },
+  { key: "quota", label: t("domains.table.quotaMb"), value: (row) => Number(row.quota) },
 ]);
 
 const { t } = useI18n();
@@ -86,8 +79,6 @@ const {
   sortDir,
   load: loadDomains,
 } = usePaginatedList<Domain>("domains-list", () => "/domains", "id");
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 watch(useDataRefresh().tick, refreshDisk);
 
@@ -143,77 +134,57 @@ onMounted(refreshDisk);
       </UCard>
     </div>
 
-    <ListToolbar
-      v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
-      :total="total"
-      :sortable-columns="SORTABLE_COLUMNS"
-    />
-
     <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
-    <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
-        <UTable :columns="columns" :data="items" :loading="loading" sticky>
-          <template #domain-cell="{ row }">
-            <FullTooltip :text="row.original.domain">
-              <button class="text-left font-medium text-primary hover:underline" @click="openDomain(row.original)">
-                {{ truncateChars(row.original.domain, 44) }}
-              </button>
-            </FullTooltip>
-          </template>
-          <template #active-cell="{ row }">
-            <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
-              {{ row.original.active ? t("common.yes") : t("common.no") }}
-            </UBadge>
-          </template>
-          <template #quota-cell="{ row }">
-            <div class="min-w-[110px]">
-              <p>{{ occupancyLabel(row.original) }}</p>
-              <UProgress
-                :model-value="occupancy(row.original)"
-                :color="occupancyColor(occupancy(row.original))"
-                size="xs"
-                class="mt-1"
-              />
-            </div>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex justify-end gap-2">
-              <UButton
-                v-if="canAdminister()"
-                icon="i-lucide-shield-alert"
-                color="warning"
-                variant="outline"
-                size="xs"
-                @click="openAdminModal(row.original)"
-              />
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
+      v-model:search="search"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="items"
+      :columns="columns"
+      :total="total"
+      :loading="loading"
+      :row-key="(row: Domain) => row.id"
+      :empty-label="t('common.noResults')"
+    >
+      <template #domain="{ row }">
+        <FullTooltip :text="row.domain">
+          <button class="text-left font-medium text-primary hover:underline" @click="openDomain(row)">
+            {{ truncateChars(row.domain, 44) }}
+          </button>
+        </FullTooltip>
+      </template>
 
-              <UButton icon="i-lucide-arrow-right" color="primary" variant="outline" size="xs" @click="openDomain(row.original)">
-                {{ t("common.manage") }}
-              </UButton>
-            </div>
-          </template>
-        </UTable>
-      </UCard>
+      <template #active="{ row }">
+        <UBadge :color="row.active ? 'success' : 'neutral'" variant="subtle">
+          {{ row.active ? t("common.yes") : t("common.no") }}
+        </UBadge>
+      </template>
 
-      <div class="xl:hidden space-y-3">
-        <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <DomainCard
-          v-for="item in items"
-          v-else
-          :key="item.id"
-          :item="item"
-          :can-administer="canAdminister()"
-          @open="openDomain(item)"
-          @administer="openAdminModal(item)"
+      <template #quota="{ row }">
+        <div class="min-w-[110px]">
+          <p>{{ occupancyLabel(row) }}</p>
+          <UProgress :model-value="occupancy(row)" :color="occupancyColor(occupancy(row))" size="xs" class="mt-1" />
+        </div>
+      </template>
+
+      <template #actions="{ row }">
+        <UButton
+          v-if="canAdminister()"
+          icon="i-lucide-shield-alert"
+          color="warning"
+          variant="outline"
+          size="xs"
+          @click="openAdminModal(row)"
         />
-      </div>
-
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
-    </template>
+        <UButton icon="i-lucide-arrow-right" color="primary" variant="outline" size="xs" @click="openDomain(row)">
+          {{ t("common.manage") }}
+        </UButton>
+      </template>
+    </DataTable>
 
     <DomainAdminModal
       v-if="adminModalItem"

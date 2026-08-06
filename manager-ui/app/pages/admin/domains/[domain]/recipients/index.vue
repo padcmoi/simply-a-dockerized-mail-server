@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredDomain: [
     { resource: "recipients", action: "access" },
@@ -20,23 +21,14 @@ interface Recipient {
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
-// Same source feeds the desktop column headers below and ListToolbar's
-// mobile sort select.
-const SORTABLE_COLUMNS = computed(() => [
-  { key: "email", label: t("recipients.table.address") },
-  { key: "quota", label: t("recipients.table.quota") },
-  { key: "usedBytes", label: t("recipients.table.used") },
-  { key: "active", label: t("recipients.table.active") },
-  { key: "lastActivity", label: t("common.lastModification") },
-]);
-
-const columns = computed(() => [
-  { accessorKey: "email", header: header("email", t("recipients.table.address")) },
-  { accessorKey: "quota", header: header("quota", t("recipients.table.quota")) },
-  { accessorKey: "usedBytes", header: header("usedBytes", t("recipients.table.used")) },
-  { accessorKey: "active", header: header("active", t("recipients.table.active")) },
-  { accessorKey: "lastActivity", header: header("lastActivity", t("common.lastModification")) },
-  { id: "actions", header: "" },
+// Declared once for both renderings, which DataTable chooses between on its own
+// width rather than this page carrying one of each.
+const columns = computed<DataTableColumn<Recipient>[]>(() => [
+  { key: "email", label: t("recipients.table.address"), value: (row) => row.email, primary: true },
+  { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota) },
+  { key: "usedBytes", label: t("recipients.table.used"), value: (row) => Number(row.usedBytes) },
+  { key: "active", label: t("recipients.table.active"), value: (row) => row.active === 1 },
+  { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity },
 ]);
 
 // The create form now lives on its own page, which demands recipients:create-recipient.
@@ -83,8 +75,6 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
   "id",
   [domainId]
 );
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 function isPostmaster(item: Recipient) {
   return item.email.toLowerCase().startsWith("postmaster@");
@@ -142,102 +132,86 @@ async function onDeleteConfirmed() {
       </UCard>
     </div>
 
-    <ListToolbar
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
+
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
       v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="items"
+      :columns="columns"
       :total="total"
-      :sortable-columns="SORTABLE_COLUMNS"
-    />
+      :loading="loading"
+      :row-key="(row: Recipient) => row.id"
+      :empty-label="t('common.noResults')"
+    >
+      <template #email="{ row }">
+        <div class="flex items-center gap-2 min-w-0">
+          <FullTooltip :text="row.email">
+            <NuxtLink
+              v-if="canEditRecipients && !isPostmaster(row)"
+              :to="editTo(row)"
+              class="font-medium text-primary hover:underline"
+            >
+              {{ truncateChars(row.email, 44) }}
+            </NuxtLink>
+            <span v-else class="font-medium">{{ truncateChars(row.email, 44) }}</span>
+          </FullTooltip>
+          <UBadge v-if="isPostmaster(row)" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock">
+            {{ t("recipients.postmaster.badge") }}
+          </UBadge>
+        </div>
+      </template>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
+      <template #quota="{ row }">
+        <span>{{ formatBytes(Number(row.quota)) }}</span>
+      </template>
 
-    <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
-        <UTable :columns="columns" :data="items" :loading="loading" sticky>
-          <template #email-cell="{ row }">
-            <div class="flex items-center gap-2">
-              <FullTooltip :text="row.original.email">
-                <NuxtLink
-                  v-if="canEditRecipients && !isPostmaster(row.original)"
-                  :to="editTo(row.original)"
-                  class="font-medium text-primary hover:underline"
-                >
-                  {{ truncateChars(row.original.email, 44) }}
-                </NuxtLink>
-                <span v-else class="font-medium">{{ truncateChars(row.original.email, 44) }}</span>
-              </FullTooltip>
-              <UBadge v-if="isPostmaster(row.original)" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock">
-                {{ t("recipients.postmaster.badge") }}
-              </UBadge>
-            </div>
-          </template>
-          <template #quota-cell="{ row }">
-            <span>{{ formatBytes(Number(row.original.quota)) }}</span>
-          </template>
-          <template #usedBytes-cell="{ row }">
-            <div class="min-w-[110px]">
-              <p>{{ formatBytes(Number(row.original.usedBytes)) }}</p>
-              <UProgress
-                :model-value="occupancy(row.original)"
-                :color="occupancyColor(occupancy(row.original))"
-                size="xs"
-                class="mt-1"
-              />
-            </div>
-          </template>
-          <template #active-cell="{ row }">
-            <UBadge :color="row.original.active ? 'success' : 'neutral'" variant="subtle">
-              {{ row.original.active ? t("common.yes") : t("common.no") }}
-            </UBadge>
-          </template>
-          <template #lastActivity-cell="{ row }">
-            <span class="text-muted">{{ formatDateTime(row.original.lastActivity) }}</span>
-          </template>
-          <template #actions-cell="{ row }">
-            <div v-if="!isPostmaster(row.original)" class="flex justify-end gap-2">
-              <UButton
-                v-if="canEditRecipients"
-                :to="editTo(row.original)"
-                icon="i-lucide-pencil"
-                color="primary"
-                variant="ghost"
-                size="xs"
-                square
-              />
-              <UButton
-                icon="i-lucide-trash-2"
-                color="error"
-                variant="ghost"
-                size="xs"
-                square
-                @click="requestDelete(() => remove(row.original))"
-              />
-            </div>
-            <FullTooltip v-else :text="t('recipients.postmaster.locked')">
-              <UIcon name="i-lucide-lock" class="text-dimmed" />
-            </FullTooltip>
-          </template>
-        </UTable>
-      </UCard>
+      <template #usedBytes="{ row }">
+        <div class="min-w-[110px]">
+          <p>{{ formatBytes(Number(row.usedBytes)) }}</p>
+          <UProgress :model-value="occupancy(row)" :color="occupancyColor(occupancy(row))" size="xs" class="mt-1" />
+        </div>
+      </template>
 
-      <div class="xl:hidden space-y-3">
-        <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <RecipientCard
-          v-for="item in items"
-          v-else
-          :key="item.id"
-          :item="item"
-          :is-postmaster="isPostmaster(item)"
-          :can-edit="canEditRecipients"
-          :edit-to="editTo(item)"
-          @delete="requestDelete(() => remove(item))"
-        />
-      </div>
+      <template #active="{ row }">
+        <UBadge :color="row.active ? 'success' : 'neutral'" variant="subtle">
+          {{ row.active ? t("common.yes") : t("common.no") }}
+        </UBadge>
+      </template>
 
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
-    </template>
+      <template #lastActivity="{ row }">
+        <span class="text-muted">{{ formatDateTime(row.lastActivity) }}</span>
+      </template>
+
+      <template #actions="{ row }">
+        <template v-if="!isPostmaster(row)">
+          <UButton
+            v-if="canEditRecipients"
+            :to="editTo(row)"
+            icon="i-lucide-pencil"
+            color="primary"
+            variant="ghost"
+            size="xs"
+            square
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="xs"
+            square
+            @click="requestDelete(() => remove(row))"
+          />
+        </template>
+        <FullTooltip v-else :text="t('recipients.postmaster.locked')">
+          <UIcon name="i-lucide-lock" class="text-dimmed" />
+        </FullTooltip>
+      </template>
+    </DataTable>
 
     <ConfirmModal v-model:open="confirmOpen" :description="t('recipients.confirmDeleteDesc')" @confirm="onDeleteConfirmed" />
   </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
@@ -65,21 +66,27 @@ const {
   "createdAt"
 );
 
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
-
-const SORTABLE_COLUMNS = computed(() => [
-  { key: "createdAt", label: t("profile.sessionsPage.colSignedIn") },
-  { key: "expiresAt", label: t("profile.sessionsPage.colEnded") },
-]);
-
-const columns = computed(() => [
-  { id: "device", header: t("profile.sessionsPage.colDevice") },
-  { id: "ip", header: t("profile.sessionsPage.colIp") },
-  { accessorKey: "createdAt", header: header("createdAt", t("profile.sessionsPage.colSignedIn")) },
-  { id: "lastSeen", header: t("accounts.allSessions.colLastSeen") },
-  { accessorKey: "expiresAt", header: header("expiresAt", t("profile.sessionsPage.colEnded")) },
-  { id: "status", header: t("profile.sessionsPage.colStatus") },
+// Declared once for both renderings, which DataTable chooses between on its own
+// width. The device is read out of a user agent string and the status out of two
+// dates: neither is a column the API can order by.
+const columns = computed<DataTableColumn<Session>[]>(() => [
+  {
+    key: "device",
+    label: t("profile.sessionsPage.colDevice"),
+    value: (row) => deviceLabel(row.userAgent),
+    sortable: false,
+    primary: true,
+  },
+  { key: "ip", label: t("profile.sessionsPage.colIp"), value: (row) => row.ip ?? "", sortable: false },
+  { key: "createdAt", label: t("profile.sessionsPage.colSignedIn"), value: (row) => row.createdAt },
+  { key: "lastSeen", label: t("accounts.allSessions.colLastSeen"), value: (row) => row.lastSeenAt ?? "", sortable: false },
+  { key: "expiresAt", label: t("profile.sessionsPage.colEnded"), value: (row) => row.revokedAt ?? row.expiresAt },
+  {
+    key: "status",
+    label: t("profile.sessionsPage.colStatus"),
+    value: (row) => (row.revokedAt ? "revoked" : "expired"),
+    sortable: false,
+  },
 ]);
 
 watch(
@@ -134,6 +141,10 @@ async function purge() {
   }
 }
 
+function askPurge() {
+  confirmOpen.value = true;
+}
+
 onMounted(loadAccount);
 </script>
 
@@ -153,88 +164,62 @@ onMounted(loadAccount);
         size="xs"
         :loading="purging"
         class="shrink-0"
-        @click="confirmOpen = true"
+        @click="askPurge"
       >
         {{ t("accounts.allSessions.detail.purge") }}
       </UButton>
     </div>
 
-    <ListToolbar
-      v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
-      :total="total"
-      :sortable-columns="SORTABLE_COLUMNS"
-    />
-
     <ListSkeleton v-if="!historyLoaded" :columns="6" />
 
-    <template v-else-if="total === 0">
-      <UEmptyState icon="i-lucide-history" :title="t('accounts.allSessions.expiredEmpty')" />
-    </template>
+    <UEmptyState v-else-if="total === 0" icon="i-lucide-history" :title="t('accounts.allSessions.expiredEmpty')" />
 
-    <template v-else>
-      <UCard class="hidden xl:block">
-        <UTable :loading="historyLoading" :data="history" :columns="columns" sticky>
-          <template #device-cell="{ row }">
-            <div class="flex items-center gap-2">
-              <UIcon :name="deviceIcon(row.original.userAgent)" class="text-muted shrink-0" />
-              <span class="truncate" :title="row.original.userAgent ?? undefined">{{ deviceLabel(row.original.userAgent) }}</span>
-            </div>
-          </template>
-          <template #ip-cell="{ row }">
-            <span class="text-muted">{{ row.original.ip || t("profile.sessionsPage.unknownIp") }}</span>
-          </template>
-          <template #createdAt-cell="{ row }">
-            <span class="text-muted">{{ fmt(row.original.createdAt) }}</span>
-          </template>
-          <template #lastSeen-cell="{ row }">
-            <span class="text-muted" :title="row.original.lastSeenAt ? fmt(row.original.lastSeenAt) : undefined">
-              {{ timeAgo(row.original.lastSeenAt) ?? "-" }}
-            </span>
-          </template>
-          <template #expiresAt-cell="{ row }">
-            <span class="text-muted">{{ fmt(row.original.revokedAt ?? row.original.expiresAt) }}</span>
-          </template>
-          <template #status-cell="{ row }">
-            <UBadge v-if="row.original.revokedAt" color="warning" variant="subtle" size="sm">
-              {{ t("profile.sessionsPage.revoked") }}
-            </UBadge>
-            <UBadge v-else color="neutral" variant="subtle" size="sm">{{ t("profile.sessionsPage.expired") }}</UBadge>
-          </template>
-        </UTable>
-      </UCard>
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
+      v-model:search="search"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="history"
+      :columns="columns"
+      :total="total"
+      :loading="historyLoading"
+      :row-key="(row: Session) => row.id"
+      :empty-label="t('common.noResults')"
+    >
+      <template #device="{ row }">
+        <div class="flex items-center gap-2 min-w-0">
+          <UIcon :name="deviceIcon(row.userAgent)" class="text-muted shrink-0" />
+          <span class="truncate" :title="row.userAgent ?? undefined">{{ deviceLabel(row.userAgent) }}</span>
+        </div>
+      </template>
 
-      <div class="xl:hidden space-y-3">
-        <p v-if="history.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <UCard v-for="s in history" v-else :key="s.id" :ui="{ body: 'p-3 sm:p-3' }">
-          <div class="flex items-start gap-3">
-            <div class="rounded-md p-2 bg-elevated shrink-0">
-              <UIcon :name="deviceIcon(s.userAgent)" class="text-muted" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <p class="font-medium truncate">{{ deviceLabel(s.userAgent) }}</p>
-                <UBadge v-if="s.revokedAt" color="warning" variant="subtle" size="xs" class="shrink-0">
-                  {{ t("profile.sessionsPage.revoked") }}
-                </UBadge>
-                <UBadge v-else color="neutral" variant="subtle" size="xs" class="shrink-0">
-                  {{ t("profile.sessionsPage.expired") }}
-                </UBadge>
-              </div>
-              <p class="text-xs text-muted truncate">{{ s.ip || t("profile.sessionsPage.unknownIp") }}</p>
-              <p class="text-xs text-muted truncate">{{ t("profile.sessionsPage.signedIn") }} {{ fmt(s.createdAt) }}</p>
-              <p class="text-xs text-muted truncate">
-                {{ t("accounts.allSessions.colLastSeen") }}: {{ timeAgo(s.lastSeenAt) ?? "-" }}
-              </p>
-            </div>
-          </div>
-        </UCard>
-      </div>
+      <template #ip="{ row }">
+        <span class="text-muted">{{ row.ip || t("profile.sessionsPage.unknownIp") }}</span>
+      </template>
 
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
-    </template>
+      <template #createdAt="{ row }">
+        <span class="text-muted">{{ fmt(row.createdAt) }}</span>
+      </template>
+
+      <template #lastSeen="{ row }">
+        <span class="text-muted" :title="row.lastSeenAt ? fmt(row.lastSeenAt) : undefined">
+          {{ timeAgo(row.lastSeenAt) ?? "-" }}
+        </span>
+      </template>
+
+      <template #expiresAt="{ row }">
+        <span class="text-muted">{{ fmt(row.revokedAt ?? row.expiresAt) }}</span>
+      </template>
+
+      <template #status="{ row }">
+        <UBadge v-if="row.revokedAt" color="warning" variant="subtle" size="sm">
+          {{ t("profile.sessionsPage.revoked") }}
+        </UBadge>
+        <UBadge v-else color="neutral" variant="subtle" size="sm">{{ t("profile.sessionsPage.expired") }}</UBadge>
+      </template>
+    </DataTable>
 
     <ConfirmModal
       v-model:open="confirmOpen"

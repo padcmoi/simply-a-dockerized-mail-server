@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
@@ -29,8 +30,6 @@ const {
   sortDir,
   load,
 } = usePaginatedList<ManagerAccount>("accounts-list", "/accounts", "createdAt");
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
@@ -60,19 +59,20 @@ const inviteMenu = computed(() => [
 // `group` has no matching real column (computed post-query, see
 // accounts.service.ts's enrichWithGroups) -- not sortable, stays a plain
 // header. Same source feeds the desktop column headers below and
-// ListToolbar's mobile sort select.
-const SORTABLE_COLUMNS = computed(() => [
-  { key: "email", label: t("accounts.table.email") },
-  { key: "displayName", label: t("accounts.table.name") },
-  { key: "enabled", label: t("accounts.table.status") },
-]);
 
-const columns = computed(() => [
-  { accessorKey: "email", header: header("email", t("accounts.table.email")) },
-  { accessorKey: "displayName", header: header("displayName", t("accounts.table.name")) },
-  { id: "group", header: t("accounts.table.group") },
-  { id: "status", header: header("enabled", t("accounts.table.status")) },
-  { id: "actions", header: "" },
+// Declared once for both renderings, which DataTable chooses between on its own
+// width. The groups a member belongs to are read from a joined list and the API
+// has no column to order by, hence the one column that says so.
+const columns = computed<DataTableColumn<ManagerAccount>[]>(() => [
+  { key: "email", label: t("accounts.table.email"), value: (row) => row.email, primary: true },
+  { key: "displayName", label: t("accounts.table.name"), value: (row) => row.displayName ?? "" },
+  {
+    key: "group",
+    label: t("accounts.table.group"),
+    value: (row) => row.groups.map((group) => group.name).join(", "),
+    sortable: false,
+  },
+  { key: "enabled", label: t("accounts.table.status"), value: (row) => row.enabled },
 ]);
 
 async function deleteAccount(acc: ManagerAccount) {
@@ -124,106 +124,87 @@ async function onDeleteConfirmed() {
       </UDropdownMenu>
     </div>
 
-    <ListToolbar
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
+
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
       v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="accounts"
+      :columns="columns"
       :total="total"
-      :sortable-columns="SORTABLE_COLUMNS"
-    />
+      :loading="loading"
+      :row-key="(row: ManagerAccount) => row.id"
+      :empty-label="t('common.noResults')"
+    >
+      <template #email="{ row }">
+        <div class="flex items-center gap-2 min-w-0">
+          <UAvatar :alt="row.displayName ?? row.email" size="xs" />
+          <NuxtLink
+            :to="`/admin/accounts/${row.id}`"
+            class="font-medium text-primary hover:underline underline-offset-2 transition-colors truncate min-w-0"
+          >
+            {{ row.email }}
+          </NuxtLink>
+          <UBadge v-if="row.isRoot" color="warning" variant="subtle" size="xs" class="shrink-0">root</UBadge>
+        </div>
+      </template>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
+      <template #displayName="{ row }">
+        <span class="text-muted">{{ row.displayName ?? "-" }}</span>
+      </template>
 
-    <template v-else>
-      <UCard class="hidden xl:block">
-        <UTable :loading="loading" :data="accounts" :columns="columns" sticky>
-          <template #email-cell="{ row }">
-            <div class="flex items-center gap-2">
-              <UAvatar :alt="row.original.displayName ?? row.original.email" size="xs" />
-              <NuxtLink
-                :to="`/admin/accounts/${row.original.id}`"
-                class="font-medium text-primary hover:underline underline-offset-2 transition-colors"
-              >
-                {{ row.original.email }}
-              </NuxtLink>
-              <UBadge v-if="row.original.isRoot" color="warning" variant="subtle" size="xs">root</UBadge>
-            </div>
-          </template>
-          <template #displayName-cell="{ row }">
-            <span class="text-muted">{{ row.original.displayName ?? "-" }}</span>
-          </template>
-          <template #group-cell="{ row }">
-            <div v-if="row.original.isRoot" class="text-xs text-muted italic">
-              {{ t("accounts.table.rootAccess") }}
-            </div>
-            <div v-else-if="row.original.groups.length" class="flex flex-wrap gap-1">
-              <UBadge
-                v-for="g in row.original.groups"
-                :key="g.id"
-                color="neutral"
-                variant="subtle"
-                size="xs"
-                class="max-w-40"
-                :title="g.name"
-              >
-                <span class="truncate min-w-0">{{ g.name }}</span>
-              </UBadge>
-            </div>
-            <span v-else class="text-xs text-dimmed">{{ t("accounts.table.noGroup") }}</span>
-          </template>
-          <template #status-cell="{ row }">
-            <UBadge :color="row.original.enabled ? 'success' : 'neutral'" variant="subtle" size="sm">
-              {{ row.original.enabled ? t("common.active") : t("common.inactive") }}
-            </UBadge>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex items-center gap-1 justify-end">
-              <UButton
-                v-if="!row.original.isRoot && canEditAccount"
-                icon="i-lucide-users-round"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                :title="t('accounts.table.manageGroups')"
-                :to="`/admin/accounts/${row.original.id}/groups`"
-              />
-              <UButton
-                v-if="!row.original.isRoot && canEditAccount"
-                icon="i-lucide-pencil"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                :title="t('accounts.table.editAccount')"
-                :to="`/admin/accounts/${row.original.id}/edit`"
-              />
-              <UButton
-                v-if="!row.original.isRoot && canRevokeAccount"
-                icon="i-lucide-trash-2"
-                size="xs"
-                color="error"
-                variant="ghost"
-                :title="t('common.delete')"
-                @click="requestDelete(() => deleteAccount(row.original))"
-              />
-            </div>
-          </template>
-        </UTable>
-      </UCard>
+      <template #group="{ row }">
+        <div v-if="row.isRoot" class="text-xs text-muted italic">
+          {{ t("accounts.table.rootAccess") }}
+        </div>
+        <div v-else-if="row.groups.length" class="flex flex-wrap gap-1">
+          <UBadge v-for="g in row.groups" :key="g.id" color="neutral" variant="subtle" size="xs" class="max-w-40" :title="g.name">
+            <span class="truncate min-w-0">{{ g.name }}</span>
+          </UBadge>
+        </div>
+        <span v-else class="text-xs text-dimmed">{{ t("accounts.table.noGroup") }}</span>
+      </template>
 
-      <div class="xl:hidden space-y-3">
-        <p v-if="accounts.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <AccountCard
-          v-for="acc in accounts"
-          v-else
-          :key="acc.id"
-          :account="acc"
-          @delete="requestDelete(() => deleteAccount(acc))"
+      <template #enabled="{ row }">
+        <UBadge :color="row.enabled ? 'success' : 'neutral'" variant="subtle" size="sm">
+          {{ row.enabled ? t("common.active") : t("common.inactive") }}
+        </UBadge>
+      </template>
+
+      <template #actions="{ row }">
+        <UButton
+          v-if="!row.isRoot && canEditAccount"
+          icon="i-lucide-users-round"
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          :title="t('accounts.table.manageGroups')"
+          :to="`/admin/accounts/${row.id}/groups`"
         />
-      </div>
-
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
-    </template>
+        <UButton
+          v-if="!row.isRoot && canEditAccount"
+          icon="i-lucide-pencil"
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          :title="t('accounts.table.editAccount')"
+          :to="`/admin/accounts/${row.id}/edit`"
+        />
+        <UButton
+          v-if="!row.isRoot && canRevokeAccount"
+          icon="i-lucide-trash-2"
+          size="xs"
+          color="error"
+          variant="ghost"
+          :title="t('common.delete')"
+          @click="requestDelete(() => deleteAccount(row))"
+        />
+      </template>
+    </DataTable>
 
     <ConfirmModal
       v-model:open="confirmOpen"

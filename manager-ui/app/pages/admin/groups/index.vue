@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { GroupItem } from "~/composables/useGroups";
+import type { DataTableColumn } from "~/types/data-table";
 import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({
@@ -14,21 +15,17 @@ const saving = ref(false);
 const confirmOpen = ref(false);
 const pendingDelete = ref<GroupItem | null>(null);
 
-// `ownerEmail`/`memberCount` have no matching real column (computed
-// post-query, see groups.service.ts's enrichGroups) -- not sortable, stay
-// plain headers. Same source feeds the desktop column headers below and
-// ListToolbar's mobile sort select.
-const SORTABLE_COLUMNS = computed(() => [
-  { key: "name", label: t("groups.table.name") },
-  { key: "description", label: t("groups.table.description") },
-]);
-
-const columns = computed(() => [
-  { accessorKey: "name", header: header("name", t("groups.table.name")) },
-  { accessorKey: "description", header: header("description", t("groups.table.description")) },
-  { accessorKey: "ownerEmail", header: t("groups.table.owner") },
-  { accessorKey: "memberCount", header: t("groups.table.members") },
-  { id: "actions", header: "" },
+// Declared once for both renderings: DataTable decides on its own width whether
+// these rows are a table or a block each, so this page no longer carries a
+// desktop table beside a list of cards.
+//
+// `ownerEmail`/`memberCount` are computed after the query (groups.service.ts's
+// enrichGroups) and have no column to order by, so the API cannot sort on them.
+const columns = computed<DataTableColumn<GroupItem>[]>(() => [
+  { key: "name", label: t("groups.table.name"), value: (row) => row.name, primary: true },
+  { key: "description", label: t("groups.table.description"), value: (row) => row.description ?? "" },
+  { key: "ownerEmail", label: t("groups.table.owner"), value: (row) => row.ownerEmail ?? "", sortable: false },
+  { key: "memberCount", label: t("groups.table.members"), value: (row) => row.memberCount, sortable: false },
 ]);
 
 // Ids of the groups the current account belongs to (its own memberships, from
@@ -58,8 +55,6 @@ const {
   sortDir,
   load,
 } = usePaginatedList<GroupItem>("groups-list", "/groups", "createdAt");
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 function openCreate() {
   modalOpen.value = true;
@@ -118,79 +113,52 @@ async function onDeleteConfirmed() {
       </UButton>
     </div>
 
-    <ListToolbar
-      v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
-      :total="total"
-      :sortable-columns="SORTABLE_COLUMNS"
-    />
-
     <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
-    <template v-else>
-      <UCard class="hidden xl:block">
-        <UTable :loading="loading" :data="groups" :columns="columns" sticky>
-          <template #name-cell="{ row }">
-            <div class="flex items-center gap-2 min-w-0 max-w-64">
-              <NuxtLink :to="`/admin/groups/${row.original.id}`" class="font-medium hover:underline truncate min-w-0">{{
-                row.original.name
-              }}</NuxtLink>
-              <UBadge v-if="row.original.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">{{
-                t("groups.defaultBadge")
-              }}</UBadge>
-              <UIcon
-                v-if="row.original.protected"
-                name="i-lucide-lock"
-                class="shrink-0 text-warning"
-                :title="t('groups.protectedBadge')"
-              />
-              <UIcon
-                v-if="myGroupIds.has(row.original.id)"
-                name="i-lucide-circle-check"
-                class="shrink-0 text-success"
-                :title="t('groups.memberBadge')"
-              />
-            </div>
-          </template>
-          <template #description-cell="{ row }">
-            <span class="text-muted text-sm truncate block max-w-80">{{
-              row.original.description || t("groups.noDescription")
-            }}</span>
-          </template>
-          <template #ownerEmail-cell="{ row }">
-            <span class="text-muted text-sm">{{ row.original.ownerEmail ?? "-" }}</span>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex justify-end">
-              <UButton
-                icon="i-lucide-trash-2"
-                size="xs"
-                color="error"
-                variant="ghost"
-                square
-                @click="requestDelete(row.original)"
-              />
-            </div>
-          </template>
-        </UTable>
-      </UCard>
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
+      v-model:search="search"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="groups"
+      :columns="columns"
+      :total="total"
+      :loading="loading"
+      :row-key="(row: GroupItem) => row.id"
+      :empty-label="t('groups.empty')"
+    >
+      <template #name="{ row }">
+        <div class="flex items-center gap-2 min-w-0">
+          <NuxtLink :to="`/admin/groups/${row.id}`" class="font-medium hover:underline truncate min-w-0">
+            {{ row.name }}
+          </NuxtLink>
+          <UBadge v-if="row.isDefault" color="primary" variant="subtle" size="xs" class="shrink-0">
+            {{ t("groups.defaultBadge") }}
+          </UBadge>
+          <UIcon v-if="row.protected" name="i-lucide-lock" class="shrink-0 text-warning" :title="t('groups.protectedBadge')" />
+          <UIcon
+            v-if="myGroupIds.has(row.id)"
+            name="i-lucide-circle-check"
+            class="shrink-0 text-success"
+            :title="t('groups.memberBadge')"
+          />
+        </div>
+      </template>
 
-      <div class="xl:hidden space-y-3">
-        <p v-if="groups.length === 0" class="text-sm text-muted text-center py-6">{{ t("groups.empty") }}</p>
-        <GroupCard
-          v-for="group in groups"
-          v-else
-          :key="group.id"
-          :group="group"
-          :is-member="myGroupIds.has(group.id)"
-          @delete="requestDelete(group)"
-        />
-      </div>
+      <template #description="{ row }">
+        <span class="text-muted text-sm">{{ row.description || t("groups.noDescription") }}</span>
+      </template>
 
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
-    </template>
+      <template #ownerEmail="{ row }">
+        <span class="text-muted text-sm">{{ row.ownerEmail ?? "-" }}</span>
+      </template>
+
+      <template #actions="{ row }">
+        <UButton icon="i-lucide-trash-2" size="xs" color="error" variant="ghost" square @click="requestDelete(row)" />
+      </template>
+    </DataTable>
 
     <GroupFormModal v-model:open="modalOpen" :saving="saving" @submit="onSubmit" />
 

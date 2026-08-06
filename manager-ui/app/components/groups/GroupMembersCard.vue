@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 import type { GroupMember } from "~/composables/useGroups";
 
 const emit = defineEmits<{
@@ -9,6 +10,14 @@ const emit = defineEmits<{
   // Server-side typeahead: the parent fetches the matching non-member accounts.
   "search-accounts": [string];
 }>();
+
+// The member list is paged, searched and sorted by the API, so the state belongs to
+// the page: these only carry it down to the DataTable that reads it.
+const page = defineModel<number>("page", { default: 1 });
+const limit = defineModel<number>("pageSize", { default: 10 });
+const search = defineModel<string>("search", { default: "" });
+const sortKey = defineModel<string>("sortKey", { default: "" });
+const sortDirection = defineModel<"asc" | "desc">("sortDirection", { default: "asc" });
 
 defineProps<{
   members: GroupMember[];
@@ -23,6 +32,9 @@ defineProps<{
   loading: boolean;
   hasLoadedOnce: boolean;
   searching: boolean;
+  // How many members the group has under the current search, which is what the pager
+  // counts against: `members` is one page of them, never the whole list.
+  total: number;
   // Counts from the group detail (server COUNTs, search-independent): members in
   // this group, and accounts still assignable (non-members). Drive the two bulk
   // buttons' counters and disabled state -- never derived from the picker list,
@@ -39,6 +51,18 @@ const picked = ref<{ label: string; value: string }[]>([]);
 const searchTerm = ref("");
 
 const { t } = useI18n();
+
+// `displayName` and `email` are also the two columns the API sorts on, so a click on
+// either header is a query it can answer (see GROUP_MEMBERS_SORTABLE_COLUMNS).
+const columns = computed<DataTableColumn<GroupMember>[]>(() => [
+  {
+    key: "displayName",
+    label: t("groups.detail.members.name"),
+    value: (row) => row.displayName ?? row.email,
+    primary: true,
+  },
+  { key: "email", label: t("common.address"), value: (row) => row.email },
+]);
 
 // Debounced so a fast typist fires one request after they pause, not one per
 // keystroke -- the whole point: never hammer the API with the full table.
@@ -115,27 +139,32 @@ function onAdd() {
       </UButton>
     </div>
 
-    <div class="mb-4">
-      <slot name="toolbar" />
-    </div>
-
     <div v-if="!hasLoadedOnce" class="space-y-2">
       <USkeleton v-for="i in 5" :key="i" class="h-12 w-full rounded-md" />
     </div>
-    <p v-else-if="members.length === 0" class="text-sm text-muted py-2">
-      {{ searching ? t("common.noResults") : t("groups.detail.members.empty") }}
-    </p>
 
-    <ul v-else class="divide-y divide-default">
-      <li v-for="m in members" :key="m.id" class="flex items-center justify-between gap-2 py-2">
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
+      v-model:search="search"
+      v-model:sort-key="sortKey"
+      v-model:sort-direction="sortDirection"
+      :data="members"
+      :columns="columns"
+      :total="total"
+      :loading="loading"
+      :row-key="(row: GroupMember) => row.id"
+      :empty-label="searching ? t('common.noResults') : t('groups.detail.members.empty')"
+    >
+      <template #displayName="{ row }">
         <div class="min-w-0 flex items-center gap-2">
-          <UAvatar :alt="m.displayName ?? m.email" size="xs" />
-          <div class="min-w-0">
-            <p class="font-medium truncate">{{ m.displayName ?? m.email }}</p>
-            <p v-if="m.displayName" class="text-xs text-muted truncate">{{ m.email }}</p>
-          </div>
+          <UAvatar :alt="row.displayName ?? row.email" size="xs" />
+          <span class="font-medium truncate">{{ row.displayName ?? row.email }}</span>
         </div>
+      </template>
 
+      <template #actions="{ row }">
         <UButton
           icon="i-lucide-user-minus"
           size="xs"
@@ -143,9 +172,9 @@ function onAdd() {
           variant="ghost"
           square
           :title="t('groups.detail.members.remove')"
-          @click="emit('remove', m.id)"
+          @click="emit('remove', row.id)"
         />
-      </li>
-    </ul>
+      </template>
+    </DataTable>
   </UCard>
 </template>

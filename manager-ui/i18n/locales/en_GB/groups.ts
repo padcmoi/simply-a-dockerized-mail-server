@@ -26,7 +26,8 @@ export default {
     protected: "Protected group",
     protectedHint: "A protected group can never be deleted, by anyone, root included. Only a root account can change this.",
     invisible: "Invisible group",
-    invisibleHint: "An invisible group is completely hidden from every non-root account: it never appears anywhere, not even in the list, and neither the group nor its permissions can be viewed or changed. Only a root account can see it or change this.",
+    invisibleHint:
+      "An invisible group is completely hidden from every non-root account: it never appears anywhere, not even in the list, and neither the group nor its permissions can be viewed or changed. Only a root account can see it or change this.",
   },
   toast: {
     loadFailed: "Failed to load groups",
@@ -82,6 +83,7 @@ export default {
     },
     members: {
       title: "Members",
+      name: "Name",
       empty: "No members yet",
       pickPlaceholder: "Select an account to add",
       add: "Add",

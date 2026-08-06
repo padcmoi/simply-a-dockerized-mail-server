@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredDomain: [
     { resource: "aliases", action: "access" },
@@ -19,19 +20,12 @@ interface Alias {
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
-// Same source feeds the desktop column headers below and ListToolbar's
-// mobile sort select.
-const SORTABLE_COLUMNS = computed(() => [
-  { key: "source", label: t("aliases.table.from") },
-  { key: "destination", label: t("aliases.table.to") },
-  { key: "lastActivity", label: t("common.lastModification") },
-]);
-
-const columns = computed(() => [
-  { accessorKey: "source", header: header("source", t("aliases.table.from")) },
-  { accessorKey: "destination", header: header("destination", t("aliases.table.to")) },
-  { accessorKey: "lastActivity", header: header("lastActivity", t("common.lastModification")) },
-  { id: "actions", header: "" },
+// Declared once for both renderings, which DataTable chooses between on its own
+// width rather than this page carrying one of each.
+const columns = computed<DataTableColumn<Alias>[]>(() => [
+  { key: "source", label: t("aliases.table.from"), value: (row) => row.source, primary: true },
+  { key: "destination", label: t("aliases.table.to"), value: (row) => row.destination },
+  { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity },
 ]);
 
 // The create and edit pages demand aliases:create-alias / aliases:edit-alias. Hiding
@@ -67,8 +61,6 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
   "id",
   [domainId]
 );
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 async function remove(row: Alias) {
   if (!domainId.value) return;
@@ -86,6 +78,10 @@ function requestDelete(fn: () => Promise<void>) {
 async function onDeleteConfirmed() {
   await pendingDeleteFn.value?.();
   pendingDeleteFn.value = null;
+}
+
+function editAlias(alias: Alias) {
+  navigateTo(`/admin/domains/${domainFqdn.value}/aliases/edit/${alias.id}`);
 }
 </script>
 
@@ -108,79 +104,65 @@ async function onDeleteConfirmed() {
       </UCard>
     </div>
 
-    <ListToolbar
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
+
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
       v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="items"
+      :columns="columns"
       :total="total"
-      :sortable-columns="SORTABLE_COLUMNS"
-    />
+      :loading="loading"
+      :row-key="(row: Alias) => row.id"
+      :empty-label="t('common.noResults')"
+    >
+      <template #source="{ row }">
+        <FullTooltip :text="row.source">
+          <NuxtLink
+            v-if="canEditAliases"
+            :to="`/admin/domains/${domainFqdn}/aliases/edit/${row.id}`"
+            class="font-medium text-primary hover:underline"
+          >
+            {{ truncateChars(row.source, 44) }}
+          </NuxtLink>
+          <span v-else class="font-medium">{{ truncateChars(row.source, 44) }}</span>
+        </FullTooltip>
+      </template>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="2" />
+      <template #destination="{ row }">
+        <FullTooltip :text="row.destination">
+          <span>{{ truncateChars(row.destination, 44) }}</span>
+        </FullTooltip>
+      </template>
 
-    <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
-        <UTable :columns="columns" :data="items" :loading="loading" sticky>
-          <template #source-cell="{ row }">
-            <FullTooltip :text="row.original.source">
-              <NuxtLink
-                v-if="canEditAliases"
-                :to="`/admin/domains/${domainFqdn}/aliases/edit/${row.original.id}`"
-                class="font-medium text-primary hover:underline"
-              >
-                {{ truncateChars(row.original.source, 44) }}
-              </NuxtLink>
-              <span v-else class="font-medium">{{ truncateChars(row.original.source, 44) }}</span>
-            </FullTooltip>
-          </template>
-          <template #destination-cell="{ row }">
-            <FullTooltip :text="row.original.destination">
-              <span>{{ truncateChars(row.original.destination, 44) }}</span>
-            </FullTooltip>
-          </template>
-          <template #lastActivity-cell="{ row }">
-            <span class="text-muted">{{ formatDateTime(row.original.lastActivity) }}</span>
-          </template>
-          <template #actions-cell="{ row }">
-            <div class="flex justify-end gap-2">
-              <UButton
-                v-if="canEditAliases"
-                icon="i-lucide-pencil"
-                color="primary"
-                variant="ghost"
-                size="xs"
-                square
-                @click="navigateTo(`/admin/domains/${domainFqdn}/aliases/edit/${row.original.id}`)"
-              />
-              <UButton
-                icon="i-lucide-trash-2"
-                color="error"
-                variant="ghost"
-                size="xs"
-                square
-                @click="requestDelete(() => remove(row.original))"
-              />
-            </div>
-          </template>
-        </UTable>
-      </UCard>
+      <template #lastActivity="{ row }">
+        <span class="text-muted">{{ formatDateTime(row.lastActivity) }}</span>
+      </template>
 
-      <div class="xl:hidden space-y-3">
-        <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <AliasCard
-          v-for="item in items"
-          v-else
-          :key="item.id"
-          :item="item"
-          :can-edit="canEditAliases"
-          @delete="requestDelete(() => remove(item))"
-          @edit="navigateTo(`/admin/domains/${domainFqdn}/aliases/edit/${item.id}`)"
+      <template #actions="{ row }">
+        <UButton
+          v-if="canEditAliases"
+          icon="i-lucide-pencil"
+          color="primary"
+          variant="ghost"
+          size="xs"
+          square
+          @click="editAlias(row)"
         />
-      </div>
-
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
-    </template>
+        <UButton
+          icon="i-lucide-trash-2"
+          color="error"
+          variant="ghost"
+          size="xs"
+          square
+          @click="requestDelete(() => remove(row))"
+        />
+      </template>
+    </DataTable>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
   </div>

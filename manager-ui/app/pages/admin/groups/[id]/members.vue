@@ -26,8 +26,8 @@ const groupId = computed(() => String(route.params.id));
 const { group, loading: groupLoading, refresh: refreshGroup } = useGroupDetail(groupId);
 
 // Same server-side paginated + searchable list as every other table (10/25/50
-// page size, 1s-debounced search). The member list is kept as a div list, not a
-// table, so no clickable sort headers and no sortableColumns on the toolbar.
+// page size, 1s-debounced search), handed to the DataTable inside the card: it
+// owns the toolbar and the pager, this page owns the query they drive.
 const {
   items: members,
   total,
@@ -157,7 +157,13 @@ onMounted(loadAccountOptions);
       <GroupDetailTabs :group-id="groupId" active="members" :group-name="group.name" :is-protected="group.protected" />
 
       <GroupMembersCard
+        v-model:page="page"
+        v-model:page-size="limit"
+        v-model:search="search"
+        v-model:sort-key="sortBy"
+        v-model:sort-direction="sortDir"
         :members="members"
+        :total="total"
         :account-options="accountOptions"
         :options-loading="optionsLoading"
         :adding="addingMember"
@@ -173,13 +179,7 @@ onMounted(loadAccountOptions);
         @add-all="onAssignAll"
         @remove-all="onRemoveAll"
         @search-accounts="onSearchAccounts"
-      >
-        <template #toolbar>
-          <ListToolbar v-model:search="search" v-model:limit="limit" :sort-by="sortBy" :sort-dir="sortDir" :total="total" />
-        </template>
-      </GroupMembersCard>
-
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
+      />
     </template>
   </div>
 </template>

@@ -29,6 +29,7 @@ import apiTokens from "./fr_FR/apiTokens";
 import groups from "./fr_FR/groups";
 import config from "./fr_FR/config";
 import supervision from "./fr_FR/supervision";
+import table from "./fr_FR/table";
 
 // One file per top-level namespace under ./fr_FR/, this file only assembles
 // them. `satisfies Locales` still type-checks the whole tree here, and each
@@ -64,4 +65,5 @@ export default {
   groups,
   config,
   supervision,
+  table,
 } satisfies Locales;

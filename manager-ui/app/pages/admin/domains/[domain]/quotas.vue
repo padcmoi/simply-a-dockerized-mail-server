@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredDomain: [
     { resource: "quotas", action: "access" },
@@ -37,37 +38,33 @@ const { formatDateTime } = useDateTime();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { tick } = useDataRefresh();
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
-
-// Single source for both the desktop clickable headers and the mobile
-// select's column x direction options (ListToolbar's `sortable-columns` prop)
-// -- the "per domain" table below has none of this: it's a single aggregate
-// row, never paginated/sorted.
+// Declared once for both renderings, which DataTable chooses between on its own
+// width.
+//
 // Quota and usage read exactly as they do on the recipients page (same labels,
-// same occupancy bar); what this table adds on top is the message count and
-// the last delivery date, which live nowhere else.
-const RECIPIENT_SORTABLE_COLUMNS = computed(() => [
-  { key: "email", label: t("common.address") },
-  { key: "quota", label: t("recipients.table.quota") },
-  { key: "bytes", label: t("recipients.table.used") },
-  { key: "messages", label: t("common.messages") },
-  { key: "lastActivity", label: t("common.lastActivity") },
+// same occupancy bar); what this table adds on top is the message count and the
+// last delivery date, which live nowhere else.
+const recipientCols = computed<DataTableColumn<QuotaRow>[]>(() => [
+  { key: "email", label: t("common.address"), value: (row) => row.email ?? "", primary: true },
+  { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota ?? 0) },
+  { key: "bytes", label: t("recipients.table.used"), value: (row) => Number(row.bytes) },
+  { key: "messages", label: t("common.messages"), value: (row) => Number(row.messages) },
+  { key: "lastActivity", label: t("common.lastActivity"), value: (row) => row.lastActivity },
 ]);
 
 // `bytes` is what dovecot has written, summed over the domain's mailboxes:
 // consumption, not a neutral byte count. Shown against the domain's own quota,
 // which is the only figure that says whether it matters.
-const domainCols = computed(() => [
-  { accessorKey: "domain", header: t("common.domain") },
-  { accessorKey: "bytes", header: t("quotas.totalUsed") },
-  { accessorKey: "messages", header: t("common.messages") },
-  { accessorKey: "lastActivity", header: t("common.lastActivity") },
+//
+// Same component as the list under it and the same columns declared the same way,
+// with the search and the pager taken off: this is one aggregate row, there is
+// nothing to look for in it and no second page behind it.
+const domainCols = computed<DataTableColumn<QuotaRow>[]>(() => [
+  { key: "domain", label: t("common.domain"), value: (row) => row.domain, primary: true },
+  { key: "bytes", label: t("quotas.totalUsed"), value: (row) => Number(row.bytes) },
+  { key: "messages", label: t("common.messages"), value: (row) => Number(row.messages) },
+  { key: "lastActivity", label: t("common.lastActivity"), value: (row) => row.lastActivity },
 ]);
-const recipientCols = computed(() =>
-  RECIPIENT_SORTABLE_COLUMNS.value.map((c) => ({ accessorKey: c.key, header: header(c.key, c.label) }))
-);
-
 // The "per domain" table is a single aggregate row, never paginated -- only
 // "per recipient" is (nested `recipients: { items, total }` in the same
 // response, see quotas.controller.ts). Not `usePaginatedList` since that
@@ -146,86 +143,76 @@ function occupancy(row: QuotaRow) {
       {{ t("quotas.perDomain") }}
     </h2>
     <USkeleton v-if="!hasLoadedOnce" class="h-16 w-full rounded-lg" />
-    <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
-        <UTable :columns="domainCols" :data="domainRows" :loading="loading" sticky>
-          <!-- `quota`, `bytes` and `messages` arrive as strings: MariaDB
-               BIGINTs, which the driver keeps as text rather than lose
-               precision. -->
-          <template #bytes-cell="{ row }">
-            <div class="min-w-[140px]">
-              <p>
-                {{ formatBytes(Number(row.original.bytes)) }}
-                <span class="text-dimmed">/ {{ formatBytes(Number(row.original.quota ?? 0)) }}</span>
-              </p>
-              <UProgress
-                :model-value="occupancy(row.original)"
-                :color="occupancyColor(occupancy(row.original))"
-                size="xs"
-                class="mt-1"
-              />
-            </div>
-          </template>
-          <template #messages-cell="{ row }">
-            <span>{{ Number(row.original.messages).toLocaleString() }}</span>
-          </template>
-          <template #lastActivity-cell="{ row }">
-            <span>{{ formatDateTime(row.original.lastActivity) }}</span>
-          </template>
-        </UTable>
-      </UCard>
 
-      <div class="xl:hidden space-y-3">
-        <p v-if="domainRows.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <QuotaCard v-for="item in domainRows" v-else :key="item.id" :item="item" />
-      </div>
-    </template>
+    <DataTable
+      v-else
+      :data="domainRows"
+      :columns="domainCols"
+      :loading="loading"
+      :row-key="(row: QuotaRow) => row.id"
+      :with-search="false"
+      :with-pagination="false"
+      :empty-label="t('common.noResults')"
+    >
+      <!-- `quota`, `bytes` and `messages` arrive as strings: MariaDB BIGINTs,
+           which the driver keeps as text rather than lose precision. -->
+      <template #bytes="{ row }">
+        <div class="min-w-[140px]">
+          <p>
+            {{ formatBytes(Number(row.bytes)) }}
+            <span class="text-dimmed">/ {{ formatBytes(Number(row.quota ?? 0)) }}</span>
+          </p>
+          <UProgress :model-value="occupancy(row)" :color="occupancyColor(occupancy(row))" size="xs" class="mt-1" />
+        </div>
+      </template>
 
-    <ListToolbar
-      v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
-      :total="total"
-      :sortable-columns="RECIPIENT_SORTABLE_COLUMNS"
-    />
+      <template #messages="{ row }">
+        <span>{{ Number(row.messages).toLocaleString() }}</span>
+      </template>
+
+      <template #lastActivity="{ row }">
+        <span>{{ formatDateTime(row.lastActivity) }}</span>
+      </template>
+    </DataTable>
 
     <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
       {{ t("quotas.perRecipient") }}
     </h2>
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
-    <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
-        <UTable :columns="recipientCols" :data="recipientRows" :loading="loading" sticky>
-          <template #quota-cell="{ row }">
-            <span>{{ formatBytes(Number(row.original.quota ?? 0)) }}</span>
-          </template>
-          <template #bytes-cell="{ row }">
-            <div class="min-w-[110px]">
-              <p>{{ formatBytes(Number(row.original.bytes)) }}</p>
-              <UProgress
-                :model-value="occupancy(row.original)"
-                :color="occupancyColor(occupancy(row.original))"
-                size="xs"
-                class="mt-1"
-              />
-            </div>
-          </template>
-          <template #messages-cell="{ row }">
-            <span>{{ Number(row.original.messages).toLocaleString() }}</span>
-          </template>
-          <template #lastActivity-cell="{ row }">
-            <span>{{ formatDateTime(row.original.lastActivity) }}</span>
-          </template>
-        </UTable>
-      </UCard>
 
-      <div class="xl:hidden space-y-3">
-        <p v-if="recipientRows.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <QuotaCard v-for="item in recipientRows" v-else :key="item.id" :item="item" />
-      </div>
-    </template>
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
 
-    <ListPagination v-model:page="page" :total="total" :limit="limit" />
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
+      v-model:search="search"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="recipientRows"
+      :columns="recipientCols"
+      :total="total"
+      :loading="loading"
+      :row-key="(row: QuotaRow) => row.id"
+      :empty-label="t('common.noResults')"
+    >
+      <template #quota="{ row }">
+        <span>{{ formatBytes(Number(row.quota ?? 0)) }}</span>
+      </template>
+
+      <template #bytes="{ row }">
+        <div class="min-w-[110px]">
+          <p>{{ formatBytes(Number(row.bytes)) }}</p>
+          <UProgress :model-value="occupancy(row)" :color="occupancyColor(occupancy(row))" size="xs" class="mt-1" />
+        </div>
+      </template>
+
+      <template #messages="{ row }">
+        <span>{{ Number(row.messages).toLocaleString() }}</span>
+      </template>
+
+      <template #lastActivity="{ row }">
+        <span>{{ formatDateTime(row.lastActivity) }}</span>
+      </template>
+    </DataTable>
   </div>
 </template>

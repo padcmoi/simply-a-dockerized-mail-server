@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "tickets", action: "access" },
@@ -16,31 +17,40 @@ const { set: setBreadcrumb } = useBreadcrumb();
 // nothing assigned, so the filter would just hide their whole list.
 const onlyMine = ref(true);
 // A ticket whose last message is not the account's own reads like an unread
-// message: the row is tinted rather than carrying yet another icon.
-const tableMeta = {
-  class: { tr: (row: { original: TicketRow }) => (row.original.awaitingMyReply ? "bg-elevated/60" : "") },
-};
+// message: the row is tinted rather than carrying yet another icon. Handed to
+// DataTable, so the table row and the block are marked the same way.
+function toggleOnlyMine() {
+  onlyMine.value = !onlyMine.value;
+}
+
+function rowClass(row: TicketRow) {
+  return row.awaitingMyReply ? "bg-elevated/60" : "";
+}
 
 const canHandle = computed(() => isRoot.value || hasGlobal("tickets", "handle-ticket"));
 const canCreate = computed(() => isRoot.value || (hasGlobal("tickets", "access") && hasGlobal("tickets", "create-ticket")));
 
-const SORTABLE_COLUMNS = computed(() => [
-  { key: "subject", label: t("tickets.table.subject") },
-  { key: "status", label: t("tickets.table.status") },
-  { key: "updatedAt", label: t("tickets.table.updated") },
-]);
-
-const columns = computed(() => [
-  { accessorKey: "subject", header: header("subject", t("tickets.table.subject")) },
-  { accessorKey: "domainName", header: t("common.domain") },
-  { accessorKey: "status", header: header("status", t("tickets.table.status")) },
+// Declared once for both renderings, which DataTable chooses between on its own
+// width. Author and assignee are resolved after the query and the API has no
+// column to order them by, hence the two that say so.
+const columns = computed<DataTableColumn<TicketRow>[]>(() => [
+  { key: "subject", label: t("tickets.table.subject"), value: (row) => row.subject, primary: true },
+  { key: "domainName", label: t("common.domain"), value: (row) => row.domainName ?? "" },
+  { key: "status", label: t("tickets.table.status"), value: (row) => row.status },
   {
-    accessorKey: "author",
-    header: t("tickets.table.author"),
-    meta: { class: { td: "max-w-48 truncate", th: "max-w-48" } },
+    key: "author",
+    label: t("tickets.table.author"),
+    value: (row) => row.creatorName ?? row.creatorEmail ?? "",
+    sortable: false,
+    class: "max-w-48 truncate",
   },
-  { accessorKey: "assignee", header: t("tickets.table.assignee") },
-  { accessorKey: "updatedAt", header: header("updatedAt", t("tickets.table.updated")) },
+  {
+    key: "assignee",
+    label: t("tickets.table.assignee"),
+    value: (row) => row.assigneeName ?? row.assigneeEmail ?? "",
+    sortable: false,
+  },
+  { key: "updatedAt", label: t("tickets.table.updated"), value: (row) => row.updatedAt },
 ]);
 
 setBreadcrumb([{ label: t("nav.tickets") }]);
@@ -52,8 +62,6 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
   [onlyMine],
   () => ({ mine: canHandle.value && onlyMine.value ? "true" : "false" })
 );
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 function open(row: TicketRow) {
   navigateTo(`/admin/tickets/${row.id}`);
@@ -80,13 +88,22 @@ function open(row: TicketRow) {
       </UCard>
     </div>
 
-    <ListToolbar
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="6" />
+
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
       v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="items"
+      :columns="columns"
       :total="total"
-      :sortable-columns="SORTABLE_COLUMNS"
+      :loading="loading"
+      :row-key="(row: TicketRow) => row.id"
+      :row-class="rowClass"
+      :empty-label="t('tickets.empty')"
     >
       <template v-if="canHandle" #filters>
         <UButton
@@ -94,76 +111,43 @@ function open(row: TicketRow) {
           :variant="onlyMine ? 'subtle' : 'ghost'"
           icon="i-lucide-user-check"
           :title="t('tickets.table.onlyMine')"
-          @click="onlyMine = !onlyMine"
+          @click="toggleOnlyMine"
         >
           {{ t("tickets.table.onlyMine") }}
         </UButton>
       </template>
-    </ListToolbar>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="6" />
+      <template #subject="{ row }">
+        <span class="flex items-center gap-1.5 min-w-0">
+          <button class="text-left font-medium text-primary hover:underline truncate min-w-0" @click="open(row)">
+            {{ row.subject }}
+          </button>
+          <TicketVisibilityIcon :visibility="row.visibility" />
+        </span>
+      </template>
 
-    <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden lg:block">
-        <UTable :columns="columns" :data="items" :loading="loading" sticky :meta="tableMeta">
-          <template #subject-cell="{ row }">
-            <span class="flex items-center gap-1.5">
-              <button class="text-left font-medium text-primary hover:underline" @click="open(row.original)">
-                {{ row.original.subject }}
-              </button>
-              <TicketVisibilityIcon :visibility="row.original.visibility" />
-            </span>
-          </template>
-          <template #domainName-cell="{ row }">
-            <span class="text-muted">{{ row.original.domainName ?? "-" }}</span>
-          </template>
-          <template #status-cell="{ row }">
-            <TicketStatusCell :ticket="row.original" @changed="load" />
-          </template>
-          <template #author-cell="{ row }">
-            <span class="block truncate" :class="{ 'text-success': isOnline(row.original.createdBy) }">
-              {{ row.original.creatorName ?? row.original.creatorEmail ?? t("tickets.detail.unknown") }}
-            </span>
-          </template>
-          <template #assignee-cell="{ row }">
-            <span v-if="row.original.assigneeName ?? row.original.assigneeEmail">{{
-              row.original.assigneeName ?? row.original.assigneeEmail
-            }}</span>
-            <span v-else class="text-dimmed">{{ t("tickets.table.unassigned") }}</span>
-          </template>
-          <template #updatedAt-cell="{ row }">
-            <span class="text-muted">{{ formatDateTime(row.original.updatedAt) }}</span>
-          </template>
-        </UTable>
-      </UCard>
+      <template #domainName="{ row }">
+        <span class="text-muted">{{ row.domainName ?? "-" }}</span>
+      </template>
 
-      <div class="lg:hidden space-y-3">
-        <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("tickets.empty") }}</p>
-        <UCard
-          v-for="item in items"
-          v-else
-          :key="item.id"
-          :ui="{ root: `transition hover:shadow-md cursor-pointer${item.awaitingMyReply ? ' bg-elevated/60' : ''}` }"
-          @click="open(item)"
-        >
-          <div class="flex items-start justify-between gap-2">
-            <span class="flex items-center gap-1.5 min-w-0">
-              <span class="font-medium truncate">{{ item.subject }}</span>
-              <TicketVisibilityIcon :visibility="item.visibility" />
-            </span>
-            <TicketStatusCell :ticket="item" @changed="load" />
-          </div>
-          <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
-            <span>{{ item.domainName ?? "-" }}</span>
-            <span class="truncate max-w-40" :class="{ 'text-success': isOnline(item.createdBy) }">
-              {{ item.creatorName ?? item.creatorEmail ?? t("tickets.detail.unknown") }}
-            </span>
-            <span>{{ formatDateTime(item.updatedAt) }}</span>
-          </div>
-        </UCard>
-      </div>
+      <template #status="{ row }">
+        <TicketStatusCell :ticket="row" @changed="load" />
+      </template>
 
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
-    </template>
+      <template #author="{ row }">
+        <span class="block truncate" :class="{ 'text-success': isOnline(row.createdBy) }">
+          {{ row.creatorName ?? row.creatorEmail ?? t("tickets.detail.unknown") }}
+        </span>
+      </template>
+
+      <template #assignee="{ row }">
+        <span v-if="row.assigneeName ?? row.assigneeEmail">{{ row.assigneeName ?? row.assigneeEmail }}</span>
+        <span v-else class="text-dimmed">{{ t("tickets.table.unassigned") }}</span>
+      </template>
+
+      <template #updatedAt="{ row }">
+        <span class="text-muted">{{ formatDateTime(row.updatedAt) }}</span>
+      </template>
+    </DataTable>
   </div>
 </template>

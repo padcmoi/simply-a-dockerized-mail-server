@@ -1203,6 +1203,7 @@ export interface Locales {
       };
       members: {
         title: string;
+        name: string;
         empty: string;
         pickPlaceholder: string;
         add: string;
@@ -1415,6 +1416,20 @@ export interface Locales {
   // The machine this server runs on: the live cards and the recorded windows
   // behind them. Everything a figure can be missing for has its own sentence,
   // because a dash cannot be told apart from a zero or from a broken feed.
+  // The shared DataTable's own strings: its toolbar, its pager and the two
+  // things it can say when there is nothing to show.
+  table: {
+    allColumns: string;
+    sortBy: string;
+    noSort: string;
+    ascending: string;
+    descending: string;
+    goToPage: string;
+    perPage: string;
+    count: string;
+    empty: string;
+    loading: string;
+  };
   supervision: {
     subtitle: string;
     machine: string;

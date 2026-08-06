@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "sieve", action: "access" },
@@ -18,21 +19,13 @@ const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 const form = reactive({ sender: "" });
 
-// Same source feeds the desktop column headers below and ListToolbar's
-// mobile sort select.
-const SORTABLE_COLUMNS = computed(() => [
-  { key: "sender", label: t("sieve.table.sender") },
-  { key: "enabled", label: t("sieve.table.enabled") },
-  { key: "createdAt", label: t("sieve.table.created") },
-  { key: "updatedAt", label: t("sieve.table.updated") },
-]);
-
-const columns = computed(() => [
-  { accessorKey: "sender", header: header("sender", t("sieve.table.sender")) },
-  { accessorKey: "enabled", header: header("enabled", t("sieve.table.enabled")) },
-  { accessorKey: "createdAt", header: header("createdAt", t("sieve.table.created")) },
-  { accessorKey: "updatedAt", header: header("updatedAt", t("sieve.table.updated")) },
-  { id: "actions", header: "" },
+// Declared once for both renderings, which DataTable chooses between on its own
+// width rather than this page carrying one of each.
+const columns = computed<DataTableColumn<Reject>[]>(() => [
+  { key: "sender", label: t("sieve.table.sender"), value: (row) => row.sender, primary: true },
+  { key: "enabled", label: t("sieve.table.enabled"), value: (row) => row.enabled === 1 },
+  { key: "createdAt", label: t("sieve.table.created"), value: (row) => row.createdAt },
+  { key: "updatedAt", label: t("sieve.table.updated"), value: (row) => row.updatedAt },
 ]);
 
 const { t } = useI18n();
@@ -48,8 +41,6 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
   "/sieve/reject-senders",
   "createdAt"
 );
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(sortBy, sortDir, UButton);
 
 async function create() {
   try {
@@ -113,59 +104,45 @@ async function onDeleteConfirmed() {
       </UForm>
     </UCard>
 
-    <ListToolbar
-      v-model:search="search"
-      v-model:limit="limit"
-      v-model:sort-by="sortBy"
-      v-model:sort-dir="sortDir"
-      :total="total"
-      :sortable-columns="SORTABLE_COLUMNS"
-    />
-
     <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
-    <template v-else>
-      <UCard :ui="{ body: 'p-0 sm:p-0' }" class="hidden xl:block">
-        <UTable :columns="columns" :data="items" :loading="loading" sticky>
-          <template #enabled-cell="{ row }">
-            <USwitch :model-value="!!row.original.enabled" @update:model-value="toggle(row.original.id, row.original.enabled)" />
-          </template>
+    <DataTable
+      v-else
+      v-model:page="page"
+      v-model:page-size="limit"
+      v-model:search="search"
+      v-model:sort-key="sortBy"
+      v-model:sort-direction="sortDir"
+      :data="items"
+      :columns="columns"
+      :total="total"
+      :loading="loading"
+      :row-key="(row: Reject) => row.id"
+      :empty-label="t('common.noResults')"
+    >
+      <template #enabled="{ row }">
+        <USwitch :model-value="!!row.enabled" @update:model-value="toggle(row.id, row.enabled)" />
+      </template>
 
-          <template #createdAt-cell="{ row }">
-            <span class="text-muted">{{ formatDateTime(row.original.createdAt) }}</span>
-          </template>
+      <template #createdAt="{ row }">
+        <span class="text-muted">{{ formatDateTime(row.createdAt) }}</span>
+      </template>
 
-          <template #updatedAt-cell="{ row }">
-            <span class="text-muted">{{ formatDateTime(row.original.updatedAt) }}</span>
-          </template>
+      <template #updatedAt="{ row }">
+        <span class="text-muted">{{ formatDateTime(row.updatedAt) }}</span>
+      </template>
 
-          <template #actions-cell="{ row }">
-            <UButton
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="ghost"
-              size="xs"
-              square
-              @click="requestDelete(() => remove(row.original.id))"
-            />
-          </template>
-        </UTable>
-      </UCard>
-
-      <div class="xl:hidden space-y-3">
-        <p v-if="items.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-        <SieveRuleCard
-          v-for="item in items"
-          v-else
-          :key="item.id"
-          :item="item"
-          @delete="requestDelete(() => remove(item.id))"
-          @toggle="toggle(item.id, item.enabled)"
+      <template #actions="{ row }">
+        <UButton
+          icon="i-lucide-trash-2"
+          color="error"
+          variant="ghost"
+          size="xs"
+          square
+          @click="requestDelete(() => remove(row.id))"
         />
-      </div>
-
-      <ListPagination v-model:page="page" :total="total" :limit="limit" />
-    </template>
+      </template>
+    </DataTable>
 
     <ConfirmModal v-model:open="confirmOpen" @confirm="onDeleteConfirmed" />
   </div>

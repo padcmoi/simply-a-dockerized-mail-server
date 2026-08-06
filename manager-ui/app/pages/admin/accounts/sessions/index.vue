@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
@@ -33,57 +34,17 @@ const overview = ref<AccountSessionSummary[]>([]);
 const loading = ref(false);
 const loaded = ref(false);
 
-// Expired section is a table like /profile/sessions: searchable, sortable and
-// paginated, collapsing to cards under `xl`. The overview is a single fetch of
-// every account, so search/sort/paginate happen client-side over that list.
-const expiredSearch = ref("");
-const expiredSortBy = ref("expiredCount");
-const expiredSortDir = ref<"asc" | "desc">("desc");
-const expiredPage = ref(1);
-const expiredLimit = ref(10);
-
-const UButton = resolveComponent("UButton");
-const { header } = useSortableColumns(expiredSortBy, expiredSortDir, UButton);
-
 const activeAccounts = computed(() => overview.value.filter((a) => a.activeCount > 0));
 const expiredAccounts = computed(() => overview.value.filter((a) => a.expiredCount > 0));
 
-const EXPIRED_SORTABLE = computed(() => [
-  { key: "email", label: t("accounts.allSessions.colAccount") },
-  { key: "expiredCount", label: t("accounts.allSessions.colExpired") },
-  { key: "expiredLastSeenAt", label: t("accounts.allSessions.colLastSeen") },
+// The overview is a single fetch of every account, so DataTable holds the whole
+// list: searching, sorting and paging happen inside it, over these columns, and
+// it decides on its own width whether this is a table or a block per account.
+const expiredColumns = computed<DataTableColumn<AccountSessionSummary>[]>(() => [
+  { key: "account", label: t("accounts.allSessions.colAccount"), value: (row) => accountLabel(row), primary: true },
+  { key: "expiredCount", label: t("accounts.allSessions.colExpired"), value: (row) => row.expiredCount },
+  { key: "expiredLastSeenAt", label: t("accounts.allSessions.colLastSeen"), value: (row) => row.expiredLastSeenAt ?? "" },
 ]);
-
-const expiredColumns = computed(() => [
-  { id: "account", header: header("email", t("accounts.allSessions.colAccount")) },
-  { accessorKey: "expiredCount", header: header("expiredCount", t("accounts.allSessions.colExpired")) },
-  { accessorKey: "expiredLastSeenAt", header: header("expiredLastSeenAt", t("accounts.allSessions.colLastSeen")) },
-  { id: "actions", header: "" },
-]);
-
-const expiredFiltered = computed(() => {
-  const q = expiredSearch.value.trim().toLowerCase();
-  const rows = q
-    ? expiredAccounts.value.filter(
-        (a) => (a.email ?? "").toLowerCase().includes(q) || (a.displayName ?? "").toLowerCase().includes(q)
-      )
-    : expiredAccounts.value;
-  const dir = expiredSortDir.value === "asc" ? 1 : -1;
-  return [...rows].sort((a, b) => {
-    if (expiredSortBy.value === "email") return dir * (a.email ?? "").localeCompare(b.email ?? "");
-    if (expiredSortBy.value === "expiredLastSeenAt") {
-      const av = a.expiredLastSeenAt ? new Date(a.expiredLastSeenAt).getTime() : 0;
-      const bv = b.expiredLastSeenAt ? new Date(b.expiredLastSeenAt).getTime() : 0;
-      return dir * (av - bv);
-    }
-    return dir * (a.expiredCount - b.expiredCount);
-  });
-});
-const expiredTotal = computed(() => expiredFiltered.value.length);
-const expiredPaged = computed(() => {
-  const start = (expiredPage.value - 1) * expiredLimit.value;
-  return expiredFiltered.value.slice(start, start + expiredLimit.value);
-});
 
 // Reload on the shared refresh tick (header button, focus, heartbeat).
 const realtimeOverview = useRealtimeTopic<AccountSessionSummary[]>("sessions-overview");
@@ -187,93 +148,62 @@ onMounted(load);
     <div class="space-y-4">
       <h2 class="font-semibold">{{ t("accounts.allSessions.expiredTitle") }}</h2>
 
-      <ListToolbar
-        v-model:search="expiredSearch"
-        v-model:limit="expiredLimit"
-        v-model:sort-by="expiredSortBy"
-        v-model:sort-dir="expiredSortDir"
-        :total="expiredTotal"
-        :sortable-columns="EXPIRED_SORTABLE"
-      />
-
       <ListSkeleton v-if="!loaded" :columns="3" />
 
-      <template v-else-if="expiredAccounts.length === 0">
-        <UEmptyState icon="i-lucide-history" :title="t('accounts.allSessions.expiredEmpty')" />
-      </template>
+      <UEmptyState
+        v-else-if="expiredAccounts.length === 0"
+        icon="i-lucide-history"
+        :title="t('accounts.allSessions.expiredEmpty')"
+      />
 
-      <template v-else>
-        <UCard class="hidden xl:block">
-          <UTable :data="expiredPaged" :columns="expiredColumns" sticky>
-            <template #account-cell="{ row }">
-              <button type="button" class="flex items-center gap-2 text-left group" @click="openExpired(row.original)">
-                <UAvatar :alt="accountLabel(row.original)" size="xs" class="shrink-0" />
-                <span class="min-w-0">
-                  <span class="block font-medium truncate group-hover:text-primary transition-colors">
-                    {{ accountLabel(row.original) }}
-                  </span>
-                  <span v-if="row.original.displayName && row.original.email" class="block text-xs text-muted truncate">
-                    {{ row.original.email }}
-                  </span>
-                </span>
-              </button>
-            </template>
-            <template #expiredCount-cell="{ row }">
-              <UBadge color="neutral" variant="subtle" size="sm">
-                {{ t("accounts.allSessions.expiredCount", { count: row.original.expiredCount }) }}
-              </UBadge>
-            </template>
-            <template #expiredLastSeenAt-cell="{ row }">
-              <span class="text-muted">{{ lastSeenLabel(row.original) }}</span>
-            </template>
-            <template #actions-cell="{ row }">
-              <div class="flex justify-end">
-                <UButton
-                  icon="i-lucide-arrow-right"
-                  color="neutral"
-                  variant="ghost"
-                  size="xs"
-                  :title="t('accounts.allSessions.viewDetails')"
-                  @click="openExpired(row.original)"
-                />
-              </div>
-            </template>
-          </UTable>
-        </UCard>
+      <DataTable
+        v-else
+        :data="expiredAccounts"
+        :columns="expiredColumns"
+        :row-key="(row: AccountSessionSummary) => row.accountId"
+        sort-key="expiredCount"
+        sort-direction="desc"
+        :empty-label="t('common.noResults')"
+      >
+        <template #account="{ row }">
+          <button type="button" class="flex items-center gap-2 text-left group min-w-0" @click="openExpired(row)">
+            <PresenceAvatar
+              :alt="accountLabel(row)"
+              :online="isOnline(row.accountId)"
+              :last-seen-at="lastSeenAt(row.accountId)"
+              size="xs"
+              class="shrink-0"
+            />
+            <span class="min-w-0">
+              <span class="block font-medium truncate group-hover:text-primary transition-colors">
+                {{ accountLabel(row) }}
+              </span>
+              <span v-if="row.displayName && row.email" class="block text-xs text-muted truncate">{{ row.email }}</span>
+            </span>
+          </button>
+        </template>
 
-        <div class="xl:hidden space-y-3">
-          <p v-if="expiredPaged.length === 0" class="text-sm text-muted text-center py-6">{{ t("common.noResults") }}</p>
-          <UCard
-            v-for="a in expiredPaged"
-            v-else
-            :key="a.accountId"
-            :ui="{ body: 'p-3 sm:p-3' }"
-            class="cursor-pointer"
-            @click="openExpired(a)"
-          >
-            <div class="flex items-center gap-3">
-              <PresenceAvatar
-                :alt="accountLabel(a)"
-                :online="isOnline(a.accountId)"
-                :last-seen-at="lastSeenAt(a.accountId)"
-                size="sm"
-                class="shrink-0"
-              />
-              <div class="min-w-0 flex-1">
-                <p class="font-medium truncate">{{ accountLabel(a) }}</p>
-                <p v-if="a.displayName && a.email" class="text-xs text-muted truncate">{{ a.email }}</p>
-                <p class="text-xs text-muted truncate">{{ t("accounts.allSessions.colLastSeen") }}: {{ lastSeenLabel(a) }}</p>
-              </div>
-              <UBadge color="neutral" variant="subtle" size="sm" class="shrink-0">
-                {{ t("accounts.allSessions.expiredCount", { count: a.expiredCount }) }}
-              </UBadge>
-              <UIcon name="i-lucide-arrow-right" class="text-muted shrink-0" />
-            </div>
-          </UCard>
-        </div>
+        <template #expiredCount="{ row }">
+          <UBadge color="neutral" variant="subtle" size="sm">
+            {{ t("accounts.allSessions.expiredCount", { count: row.expiredCount }) }}
+          </UBadge>
+        </template>
 
-        <ListPagination v-model:page="expiredPage" :total="expiredTotal" :limit="expiredLimit" />
-      </template>
+        <template #expiredLastSeenAt="{ row }">
+          <span class="text-muted">{{ lastSeenLabel(row) }}</span>
+        </template>
+
+        <template #actions="{ row }">
+          <UButton
+            icon="i-lucide-arrow-right"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :title="t('accounts.allSessions.viewDetails')"
+            @click="openExpired(row)"
+          />
+        </template>
+      </DataTable>
     </div>
   </div>
 </template>

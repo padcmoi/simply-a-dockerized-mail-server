@@ -4,7 +4,7 @@ export interface PaginatedResponse<T> {
 }
 
 // Shared across every list on the site -- a single "items per page"
-// preference the user sets once (via ListToolbar) and keeps everywhere,
+// preference the user sets once (in DataTable's toolbar) and keeps everywhere,
 // persisted with VueUse's useLocalStorage (SSR-safe, syncs from
 // localStorage once mounted client-side). Exported so the two pages that
 // can't use this composable directly (quotas.vue, useRspamdPage.ts) sync
