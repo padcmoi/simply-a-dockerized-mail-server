@@ -9,6 +9,9 @@ export default {
   themeColorsHint:
     "Enregistré sur votre compte et réappliqué à chaque connexion, par-dessus les couleurs du serveur. Les deux thèmes sont tenus à part : ce qui est choisi ici ne touche que le mode affiché, et une couleur laissée telle quelle garde celle du serveur.",
   themeColorsReset: "Rétablir",
+  themeColorsResetConfirm: "Rétablir les couleurs ?",
+  themeColorsResetDesc:
+    "Les couleurs du mode affiché reviennent à celles du serveur. Rien n'est enregistré tant que vous n'avez pas cliqué sur Enregistrer.",
   themeColorsLight: "Vous modifiez le thème clair.",
   themeColorsDark: "Vous modifiez le thème sombre.",
   themeEditLight: "Modifier le thème clair",

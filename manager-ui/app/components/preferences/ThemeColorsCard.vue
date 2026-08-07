@@ -8,6 +8,8 @@
 // administration. The controls are the same, the layer underneath is not.
 const { scope = "account" } = defineProps<{ scope?: ThemeScope }>();
 
+const confirmResetOpen = ref(false);
+
 const { t } = useI18n();
 const colorMode = useColorMode();
 const {
@@ -41,6 +43,10 @@ watch(mode, refreshSeeds);
 // expects from having pressed it.
 function switchMode() {
   colorMode.preference = mode.value === "dark" ? "light" : "dark";
+}
+
+function askReset() {
+  confirmResetOpen.value = true;
 }
 
 async function onFile(event: Event) {
@@ -85,7 +91,7 @@ onMounted(() => {
           {{ t("preferences.themeImportLabel") }}
         </UButton>
         <input ref="picker" type="file" accept="application/json,.json" class="hidden" @change="onFile" />
-        <UButton icon="i-lucide-rotate-ccw" color="neutral" variant="subtle" size="sm" :disabled="!touched" @click="reset">
+        <UButton icon="i-lucide-rotate-ccw" color="neutral" variant="subtle" size="sm" :disabled="!touched" @click="askReset">
           {{ t("preferences.themeColorsReset") }}
         </UButton>
         <UButton icon="i-lucide-check" size="sm" :loading="saving" @click="save">
@@ -136,4 +142,12 @@ onMounted(() => {
       {{ t(scope === "app" ? "config.theme.hint" : "preferences.themeColorsHint") }}
     </p>
   </UCard>
+
+  <ConfirmModal
+    v-model:open="confirmResetOpen"
+    type="warning"
+    :title="t('preferences.themeColorsResetConfirm')"
+    :description="t(scope === 'app' ? 'config.theme.resetDesc' : 'preferences.themeColorsResetDesc')"
+    @confirm="reset"
+  />
 </template>

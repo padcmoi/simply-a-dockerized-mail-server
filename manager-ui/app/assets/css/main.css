@@ -11,6 +11,19 @@
   [role="button"][aria-disabled="true"] {
     cursor: not-allowed;
   }
+
+  /* Inherited, so one declaration covers everything; `select-text` re-allows it. */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 /* Marching ants: a dashed outline that travels around the control, for a value

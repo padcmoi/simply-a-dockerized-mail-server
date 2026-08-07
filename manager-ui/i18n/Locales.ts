@@ -136,6 +136,7 @@ export interface Locales {
       cardTitle: string;
       alertTitle: string;
       alertDescription: string;
+      resetDesc: string;
       hint: string;
     };
     mail: {
@@ -370,6 +371,8 @@ export interface Locales {
     themeColors: string;
     themeColorsHint: string;
     themeColorsReset: string;
+    themeColorsResetConfirm: string;
+    themeColorsResetDesc: string;
     themeColorsLight: string;
     themeColorsDark: string;
     themeEditLight: string;

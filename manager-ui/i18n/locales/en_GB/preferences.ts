@@ -9,6 +9,8 @@ export default {
   themeColorsHint:
     "Saved against your account and applied again at every login, over the server colours. The two themes are held apart: what is picked here only touches the mode on screen, and a colour left alone keeps the server's.",
   themeColorsReset: "Reset",
+  themeColorsResetConfirm: "Reset the colours?",
+  themeColorsResetDesc: "The colours of the mode on screen go back to the server's. Nothing is stored until you press Save.",
   themeColorsLight: "You are editing the light theme.",
   themeColorsDark: "You are editing the dark theme.",
   themeEditLight: "Edit the light theme",

@@ -96,6 +96,8 @@ export default {
     alertTitle: "Couleurs de l'interface.",
     alertDescription:
       "Ce que tout le monde voit en arrivant, connecté ou non. Le serveur de l'interface lit ces couleurs avant de rendre la première page, elles sont donc là dès le premier affichage. Un compte peut les recouvrir depuis ses préférences.",
+    resetDesc:
+      "Les couleurs du mode affiché reviennent à celles livrées avec l'interface, pour tout le serveur une fois enregistré.",
     hint: "Enregistré pour tout le serveur. Une couleur laissée telle quelle n'est pas stockée : elle reste celle livrée avec l'interface, et « Rétablir » suivi de « Enregistrer » ramène le mode affiché à cet état.",
   },
   supervision: {

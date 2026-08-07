@@ -96,6 +96,8 @@ export default {
     alertTitle: "Interface colours.",
     alertDescription:
       "What everyone lands on, signed in or not. This interface's own server reads these colours before rendering the first page, so they are there from the first paint. An account can lay its own over them from its preferences.",
+    resetDesc:
+      "The colours of the mode on screen go back to the ones the interface ships with, for the whole server once saved.",
     hint: "Saved for the whole server. A colour left alone is not stored: it stays the one the interface ships with, and Reset followed by Save returns the mode on screen to that state.",
   },
   supervision: {
