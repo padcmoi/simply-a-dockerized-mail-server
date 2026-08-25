@@ -14,6 +14,7 @@ import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { MailerService } from "../../../core/mailer/mailer.service";
 import { AppSettingsService } from "../../../core/settings/app-settings.service";
+import { DelegationsService } from "../../domains/delegations/delegations.service";
 import type { AcceptInvitationDto, SendInvitationDto } from "./invitations.validation";
 
 @Injectable()
@@ -29,7 +30,8 @@ export class AccountsInvitationsService {
     private readonly mailer: MailerService,
     private readonly cpg: CustomPermissionGuardService,
     private readonly antiEscalation: AntiEscalationService,
-    private readonly appSettings: AppSettingsService
+    private readonly appSettings: AppSettingsService,
+    private readonly delegationsSvc: DelegationsService
   ) {}
 
   private parseGroupIds(inv: AccountInvitation): string[] {
@@ -88,7 +90,7 @@ export class AccountsInvitationsService {
     const existing = await this.invitations.findOne({
       where: { email: input.email, acceptedAt: IsNull() },
     });
-    if (existing && existing.expiresAt > new Date()) {
+    if (existing && (existing.expiresAt === null || existing.expiresAt > new Date())) {
       existing.expiresAt = new Date();
       await this.invitations.save(existing);
     }
@@ -186,7 +188,7 @@ export class AccountsInvitationsService {
     const inv = await this.invitations.findOne({ where: { token } });
     if (!inv) throw new NotFoundException("Invitation not found");
     if (inv.acceptedAt) throw new BadRequestException("Invitation already used");
-    if (inv.expiresAt < new Date()) throw new BadRequestException("Invitation expired");
+    if (inv.expiresAt !== null && inv.expiresAt < new Date()) throw new BadRequestException("Invitation expired");
     const groupIds = this.parseGroupIds(inv);
     const groups = groupIds.length ? await this.groups.findBy({ id: In(groupIds) }) : [];
     return { email: inv.email, groups: groups.map((g) => g.name), expiresAt: inv.expiresAt };
@@ -196,14 +198,18 @@ export class AccountsInvitationsService {
     const inv = await this.invitations.findOne({ where: { token } });
     if (!inv) throw new NotFoundException("Invitation not found");
     if (inv.acceptedAt) throw new BadRequestException("Invitation already used");
-    if (inv.expiresAt < new Date()) throw new BadRequestException("Invitation expired");
-    if (await this.accounts.findOne({ where: { email: inv.email } })) {
-      throw new ConflictException(`An account with email "${inv.email}" already exists`);
+    if (inv.expiresAt !== null && inv.expiresAt < new Date()) throw new BadRequestException("Invitation expired");
+    // A pinned invitation carries its identity; an open token (email NULL)
+    // takes the visitor's own, which then must be free.
+    const email = inv.email ?? input.email;
+    if (!email) throw new BadRequestException("This invitation requires an email address");
+    if (await this.accounts.findOne({ where: { email } })) {
+      throw new ConflictException(`An account with email "${email}" already exists`);
     }
     const passwordHash = await scryptHash(input.password);
     const account = await this.accounts.save(
       this.accounts.create({
-        email: inv.email,
+        email,
         password: passwordHash,
         isRoot: 0,
         enabled: 1,
@@ -235,8 +241,38 @@ export class AccountsInvitationsService {
     if (aliasIds.length) {
       await this.aliases.update({ id: In(aliasIds), ownerId: IsNull() }, { ownerId: account.id });
     }
+    // Delegation staged by the domain-side invite or open token: lands now that
+    // the account exists (quota clamped inside to what the domain can commit).
+    await this.delegationsSvc.grantFromInvitation(inv, account.id);
     inv.acceptedAt = new Date();
     await this.invitations.save(inv);
     return { ok: true, email: account.email };
+  }
+
+  // Whether an email already has an account, told only to someone holding a
+  // valid, pending OPEN link: the token gates the probe, so this is not a free
+  // account-enumeration endpoint. The registration form uses it to switch
+  // between "create your account" and "sign in and take the grant".
+  async openTokenEmailExists(token: string, email: string) {
+    const inv = await this.invitations.findOne({ where: { token } });
+    const pending = inv && !inv.acceptedAt && (inv.expiresAt === null || inv.expiresAt > new Date());
+    if (!pending || inv.email !== null) throw new NotFoundException("Invitation not found");
+    return { exists: (await this.accounts.findOne({ where: { email } })) !== null };
+  }
+
+  // An open registration link consumed by an EXISTING account: instead of
+  // creating one, the caller takes the staged delegation for itself. Pinned
+  // invitations stay tied to their email and cannot be claimed.
+  async claimInvitation(token: string, accountId: string) {
+    const inv = await this.invitations.findOne({ where: { token } });
+    if (!inv) throw new NotFoundException("Invitation not found");
+    if (inv.acceptedAt) throw new BadRequestException("Invitation already used");
+    if (inv.expiresAt !== null && inv.expiresAt < new Date()) throw new BadRequestException("Invitation expired");
+    if (inv.email !== null) throw new BadRequestException("This invitation is tied to an email address");
+    if (!inv.delegationDomainId) throw new BadRequestException("This link carries nothing to claim");
+    await this.delegationsSvc.grantFromInvitation(inv, accountId);
+    inv.acceptedAt = new Date();
+    await this.invitations.save(inv);
+    return { ok: true, domainId: inv.delegationDomainId };
   }
 }

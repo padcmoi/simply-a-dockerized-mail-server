@@ -10,6 +10,7 @@ import { MailStorageModule } from "../../core/mail-storage/mail-storage.module";
 import { CustomPermissionGuardModule } from "../../core/custom-permission-guard/custom-permission-guard.module";
 import { AdminDomainsController } from "./admin-domains/admin-domains.controller";
 import { DomainsAliasesModule } from "./aliases/aliases.module";
+import { DomainsDelegationsModule } from "./delegations/delegations.module";
 import { DomainsDkimModule } from "./dkim/dkim.module";
 import { DomainsDkimCheckModule } from "./dkim-check/dkim-check.module";
 import { DomainsController } from "./domains.controller";
@@ -27,6 +28,7 @@ import { DomainsRspamdModule } from "./rspamd/rspamd.module";
     MailStorageModule,
     DomainsRecipientsModule,
     DomainsAliasesModule,
+    DomainsDelegationsModule,
     DomainsDkimModule,
     DomainsDkimCheckModule,
     DomainsQuotasModule,

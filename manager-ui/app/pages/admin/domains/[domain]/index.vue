@@ -21,6 +21,7 @@ const {
   usedBytes,
   allocatedBytes,
   reservedBytes,
+  reservedForAccountsBytes,
   assignableBytes,
   isUnlimited,
   messagesCount,
@@ -148,6 +149,11 @@ const dkimStatusText = computed(() => {
                 <span class="w-3 h-3 rounded-sm bg-warning shrink-0" />
                 <span class="text-muted">{{ $t("domainDashboard.disk.reserved") }}</span>
                 <span class="font-medium ml-auto pl-4">{{ formatBytes(reservedBytes) }}</span>
+              </li>
+              <li v-if="reservedForAccountsBytes > 0" class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-info shrink-0" />
+                <span class="text-muted">{{ $t("domainDashboard.disk.reservedForAccounts") }}</span>
+                <span class="font-medium ml-auto pl-4">{{ formatBytes(reservedForAccountsBytes) }}</span>
               </li>
               <li class="flex items-center gap-2">
                 <span class="w-3 h-3 rounded-sm bg-success shrink-0" />

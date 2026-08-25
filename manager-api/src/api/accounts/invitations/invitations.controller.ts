@@ -1,13 +1,26 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
 import { Public } from "../../../core/auth/auth.decorator";
 import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
 import { RequireGlobalPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
 import { AccountsApi } from "../crud/crud.openapi";
-import { AcceptInvitationDocs, GetInvitationDocs, SendInvitationDocs } from "./invitations.openapi";
+import {
+  AcceptInvitationDocs,
+  ClaimInvitationDocs,
+  EmailExistsDocs,
+  GetInvitationDocs,
+  SendInvitationDocs,
+} from "./invitations.openapi";
 import { AccountsInvitationsService } from "./invitations.service";
-import { AcceptInvitationDto, SendInvitationDto, acceptInvitationSchema, sendInvitationSchema } from "./invitations.validation";
+import {
+  AcceptInvitationDto,
+  EmailExistsQueryDto,
+  SendInvitationDto,
+  acceptInvitationSchema,
+  emailExistsQuerySchema,
+  sendInvitationSchema,
+} from "./invitations.validation";
 
 type AuthedRequest = Request & {
   user: { id: string; email: string; isRoot: boolean };
@@ -38,6 +51,21 @@ export class AccountsInvitationsController {
   @GetInvitationDocs()
   getInvitation(@Param("token") token: string) {
     return this.svc.getInvitation(token);
+  }
+
+  @Get("invite/:token/email-exists")
+  @Public()
+  @EmailExistsDocs()
+  emailExists(@Param("token") token: string, @Query(new ZodValidationPipe(emailExistsQuerySchema)) query: EmailExistsQueryDto) {
+    return this.svc.openTokenEmailExists(token, query.email);
+  }
+
+  // Authenticated on purpose (no @Public): an existing account consumes an open
+  // registration link and takes its staged delegation for itself.
+  @Post("invite/:token/claim")
+  @ClaimInvitationDocs()
+  claimInvitation(@Req() req: AuthedRequest, @Param("token") token: string) {
+    return this.svc.claimInvitation(token, req.user.id);
   }
 
   @Post("invite/:token/accept")

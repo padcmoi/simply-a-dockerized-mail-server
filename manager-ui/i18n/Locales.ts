@@ -24,6 +24,14 @@ export interface Locales {
       otpInvalid: string;
       sendFailed: string;
     };
+    delegations: {
+      quotaExceedsDomain: string;
+      ownerNotDelegable: string;
+      noDelegation: string;
+      recipientCapReached: string;
+      aliasCapReached: string;
+      reserveExceeded: string;
+    };
   };
   // Sidebar nav destinations only -- one entry per actual link. Anything
   // that isn't a nav link (breadcrumb-only labels, the user dropdown,
@@ -40,6 +48,7 @@ export interface Locales {
     domains: string;
     rspamd: string;
     postfix: string;
+    delegations: string;
     recipients: string;
     aliases: string;
     quotas: string;
@@ -72,6 +81,7 @@ export interface Locales {
       address: string;
       domain: string;
       status: string;
+      quota: string;
       destination: string;
     };
     recipient: {
@@ -98,6 +108,9 @@ export interface Locales {
       deleteConfirm: string;
       deleted: string;
       deleteFailed: string;
+      quotaEditHint: string;
+      quotaSaved: string;
+      quotaFailed: string;
     };
     alias: {
       loadFailed: string;
@@ -115,6 +128,37 @@ export interface Locales {
       deleteConfirm: string;
       deleted: string;
       deleteFailed: string;
+    };
+    delegations: {
+      title: string;
+      subtitle: string;
+      domain: string;
+      mailboxes: string;
+      aliases: string;
+      quota: string;
+      used: string;
+      unlimited: string;
+      usedQuota: string;
+      newRecipient: string;
+      newAlias: string;
+      createRecipientTitle: string;
+      createAliasTitle: string;
+      localPart: string;
+      localPartPlaceholder: string;
+      password: string;
+      passwordPlaceholder: string;
+      quotaMb: string;
+      destination: string;
+      destinationPlaceholder: string;
+      create: string;
+      createdRecipient: string;
+      createdAlias: string;
+      createFailed: string;
+      manageHint: string;
+      quotaAvailable: string;
+      quotaHint: string;
+      missing: string;
+      empty: string;
     };
   };
   config: {
@@ -490,6 +534,61 @@ export interface Locales {
     };
   };
   domains: {
+    delegations: {
+      title: string;
+      subtitle: string;
+      empty: string;
+      pendingTitle: string;
+      pendingHint: string;
+      tokenBadge: string;
+      copyLink: string;
+      copied: string;
+      invite: string;
+      createToken: string;
+      tokenCreatedTitle: string;
+      tokenCreatedHint: string;
+      edit: string;
+      revoke: string;
+      revokeConfirm: string;
+      revoked: string;
+      revokeFailed: string;
+      granted: string;
+      invited: string;
+      saveFailed: string;
+      saved: string;
+      email: string;
+      emailHint: string;
+      emailPlaceholder: string;
+      maxRecipients: string;
+      maxAliases: string;
+      unlimited: string;
+      quotaMb: string;
+      quotaHint: string;
+      mailboxes: string;
+      aliases: string;
+      used: string;
+      usedUnlimited: string;
+      usedQuota: string;
+      expires: string;
+      expiresColumn: string;
+      pendingEmpty: string;
+      showInvitations: string;
+      showDelegations: string;
+      createTitle: string;
+      modeLabel: string;
+      modeInvite: string;
+      modeToken: string;
+      expiryDays: string;
+      noExpiry: string;
+      noExpiryShort: string;
+      editInviteTitle: string;
+      revokeInviteConfirm: string;
+      noteLabel: string;
+      noteHint: string;
+      notePlaceholder: string;
+      quotaAvailable: string;
+      quotaAvailableUnlimited: string;
+    };
     alertTitle: string;
     alertDescription: string;
     listLocked: string;
@@ -918,6 +1017,14 @@ export interface Locales {
     confirmDeleteHint: string;
   };
   invite: {
+    emailChooseHint: string;
+    existingTitle: string;
+    existingHint: string;
+    claimSubmit: string;
+    claimed: string;
+    claimFailed: string;
+    emailPlaceholder: string;
+    emailInvalid: string;
     loading: string;
     invalid: string;
     title: string;
@@ -957,6 +1064,7 @@ export interface Locales {
       free: string;
       allocated: string;
       reserved: string;
+      reservedForAccounts: string;
       assignable: string;
       unlimited: string;
     };

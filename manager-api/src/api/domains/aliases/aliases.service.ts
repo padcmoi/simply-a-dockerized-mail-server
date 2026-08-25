@@ -119,7 +119,7 @@ export class AliasesService {
     }
   }
 
-  async create(input: CreateAliasDto, domain: string) {
+  async create(input: CreateAliasDto, domain: string, opts: { ownerId?: string } = {}) {
     const source = `${input.localPart}@${domain}`;
     await this.assertSourceFree(source);
     return this.aliases.save(
@@ -127,6 +127,7 @@ export class AliasesService {
         source,
         destination: input.destination,
         domain,
+        ownerId: opts.ownerId ?? null,
         userStartDate: new Date().toISOString().slice(0, 10),
         userEndDate: input.userEndDate ?? null,
       })

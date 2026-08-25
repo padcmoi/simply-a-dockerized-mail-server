@@ -11,6 +11,7 @@ import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { MailerModule } from "../../../core/mailer/mailer.module";
 import { SettingsModule } from "../../../core/settings/settings.module";
+import { DomainsDelegationsModule } from "../../domains/delegations/delegations.module";
 import { AccountsInvitationsController } from "./invitations.controller";
 import { AccountsInvitationsService } from "./invitations.service";
 
@@ -21,6 +22,7 @@ import { AccountsInvitationsService } from "./invitations.service";
     SettingsModule,
     CustomPermissionGuardModule,
     AclModule,
+    DomainsDelegationsModule,
   ],
   providers: [AccountsInvitationsService],
   controllers: [AccountsInvitationsController],

@@ -21,4 +21,12 @@ export default {
     otpInvalid: "Code de vérification invalide ou expiré",
     sendFailed: "Échec de l'envoi : {detail}",
   },
+  delegations: {
+    quotaExceedsDomain: "Impossible d'octroyer {requestedMb} Mo sur {domain} : seuls {grantableMb} Mo restent engageables",
+    ownerNotDelegable: "Le propriétaire du domaine gère déjà tout et n'a besoin d'aucune délégation",
+    noDelegation: "Vous n'avez aucune délégation sur ce domaine",
+    recipientCapReached: "Vous avez atteint votre plafond de boîtes ({max})",
+    aliasCapReached: "Vous avez atteint votre plafond d'alias ({max})",
+    reserveExceeded: "Cette boîte dépasserait votre quota octroyé ({usedMb} sur {reservedMb} Mo utilisés, {requestedMb} Mo demandés)",
+  },
 } satisfies Locales["apiErrors"];

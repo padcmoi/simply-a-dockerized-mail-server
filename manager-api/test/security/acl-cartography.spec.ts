@@ -20,6 +20,7 @@ const routes = scanAll(ALL_CONTROLLERS);
 // it before it has anyone to be authenticated as. It exposes colours.
 const EXPECTED_PUBLIC = [
   "GET /api/v1/accounts/invite/:token",
+  "GET /api/v1/accounts/invite/:token/email-exists",
   "GET /api/v1/config/theme",
   "GET /api/v1/health",
   "POST /api/v1/accounts/invite/:token/accept",
@@ -52,6 +53,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/config/mail-cadence",
   "GET /api/v1/config/supervision",
   "GET /api/v1/my-space/aliases/:id",
+  "GET /api/v1/my-space/delegations",
   "GET /api/v1/my-space/recipients/:id",
   "GET /api/v1/my-space/theme",
   "GET /api/v1/notifications",
@@ -64,7 +66,10 @@ const EXPECTED_NO_ACL_AUTHED = [
   "POST /api/v1/config/mail/select",
   "POST /api/v1/config/mail/test",
   "POST /api/v1/config/mail/verify",
+  "POST /api/v1/accounts/invite/:token/claim",
   "POST /api/v1/groups/:id/members/all",
+  "POST /api/v1/my-space/domains/:domainId/aliases",
+  "POST /api/v1/my-space/domains/:domainId/recipients",
   "POST /api/v1/notifications/:id/read",
   "POST /api/v1/notifications/read-all",
   "PUT /api/v1/config/general",

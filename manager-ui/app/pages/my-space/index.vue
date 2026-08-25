@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DataTableColumn } from "~/types/data-table";
+
 definePageMeta({});
 
 interface OwnedDomain {
@@ -13,6 +15,7 @@ interface OwnedRecipient {
   domain: string;
   active: boolean;
   quota: string;
+  usedBytes: string;
 }
 interface OwnedAlias {
   id: number;
@@ -30,6 +33,7 @@ const { t } = useI18n();
 const { call } = useApi();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { tick } = useDataRefresh();
+const route = useRoute();
 
 setBreadcrumb([{ label: t("nav.myspace") }]);
 
@@ -39,18 +43,51 @@ const { data, status } = useAsyncData<Overview>("myspace-overview", () => call<O
   default: () => ({ domains: [], recipients: [], aliases: [] }),
 });
 
+const TABS = ["domains", "delegations", "recipients", "aliases"] as const;
+
+// The active tab is remembered app-wide: coming back to /my-space without a
+// ?tab query (breadcrumb, sidebar, Back buttons) reopens the last tab instead
+// of the "recipients" default. An explicit ?tab in the URL still wins.
+const storedTab = useState<string>("myspace-active-tab", () => "recipients");
+
 const hasLoadedOnce = ref(false);
+const tab = ref<string>(TABS.includes(route.query.tab as (typeof TABS)[number]) ? String(route.query.tab) : storedTab.value);
 
 const failed = computed(() => status.value === "error");
 const loading = computed(() => status.value === "pending");
 const domains = computed(() => data.value?.domains ?? []);
 const recipients = computed(() => data.value?.recipients ?? []);
 const aliases = computed(() => data.value?.aliases ?? []);
+const domainColumns = computed<DataTableColumn<OwnedDomain>[]>(() => [
+  { key: "domain", label: t("myspace.table.domain"), value: (row) => row.domain, primary: true },
+  { key: "quota", label: t("myspace.table.quota"), value: (row) => row.quota },
+  { key: "active", label: t("myspace.table.status"), value: (row) => row.active },
+]);
+
+// Icon-only triggers: each section already carries its own title in the page.
+const tabs = computed(() => [
+  { value: "recipients", icon: "i-lucide-mail", ariaLabel: t("myspace.ownedRecipients") },
+  { value: "aliases", icon: "i-lucide-at-sign", ariaLabel: t("myspace.ownedAliases") },
+  { value: "domains", icon: "i-lucide-globe", ariaLabel: t("myspace.ownedDomains") },
+  { value: "delegations", icon: "i-lucide-user-plus", ariaLabel: t("myspace.delegations.title") },
+]);
 
 watch(
   status,
   (s) => {
     if (s === "success" || s === "error") hasLoadedOnce.value = true;
+  },
+  { immediate: true }
+);
+
+// The active tab survives a refresh and a round-trip to the creation pages.
+watch(
+  tab,
+  (v) => {
+    storedTab.value = v;
+    if (v !== (route.query.tab ?? "recipients")) {
+      navigateTo({ query: v === "recipients" ? {} : { tab: v } }, { replace: true });
+    }
   },
   { immediate: true }
 );
@@ -68,35 +105,61 @@ watch(
 
     <UAlert v-if="failed" color="error" variant="subtle" icon="i-lucide-triangle-alert" :title="t('myspace.loadFailed')" />
 
-    <UCard>
-      <template #header>
-        <div class="flex items-center gap-2">
-          <h2 class="font-semibold">{{ t("myspace.ownedDomains") }}</h2>
-          <UBadge v-if="hasLoadedOnce" color="neutral" variant="subtle">{{ domains.length }}</UBadge>
-        </div>
-      </template>
+    <UTabs
+      v-model="tab"
+      :items="tabs"
+      :content="false"
+      :ui="{
+        list: 'justify-around w-full',
+        trigger: 'grow flex-col gap-1 py-2',
+        leadingIcon: 'size-7',
+      }"
+      class="w-full"
+    />
 
-      <div v-if="!hasLoadedOnce" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <USkeleton v-for="i in 3" :key="i" class="h-16 w-full" />
+    <section v-if="tab === 'domains'" class="space-y-4">
+      <div class="flex items-center gap-2">
+        <h2 class="font-semibold">{{ t("myspace.ownedDomains") }}</h2>
+        <UBadge v-if="hasLoadedOnce" color="neutral" variant="subtle">{{ domains.length }}</UBadge>
       </div>
-      <UEmptyState v-else-if="domains.length === 0" icon="i-lucide-globe" :title="t('myspace.noDomains')" />
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <div v-for="d in domains" :key="d.id" class="flex items-center gap-3 rounded-md border border-default p-3 min-w-0">
-          <div class="rounded-md p-2 bg-elevated shrink-0">
-            <UIcon name="i-lucide-globe" class="text-primary" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-medium truncate">{{ d.domain }}</p>
-            <p class="text-xs text-muted truncate">{{ t("myspace.quotaLabel", { value: d.quota }) }}</p>
-          </div>
-          <UBadge :color="d.active ? 'success' : 'neutral'" variant="subtle">
-            {{ d.active ? t("common.active") : t("common.inactive") }}
+
+      <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
+
+      <DataTable
+        v-else
+        :data="domains"
+        :columns="domainColumns"
+        :loading="loading"
+        :row-key="(row: OwnedDomain) => row.id"
+        sort-key="domain"
+        :empty-label="t('myspace.noDomains')"
+      >
+        <template #domain="{ row }">
+          <FullTooltip :text="row.domain">
+            <span class="font-medium">{{ truncateChars(row.domain, 40) }}</span>
+          </FullTooltip>
+        </template>
+
+        <template #quota="{ row }">
+          <span class="text-muted">{{ row.quota }}</span>
+        </template>
+
+        <template #active="{ row }">
+          <UBadge :color="row.active ? 'success' : 'neutral'" variant="subtle">
+            {{ row.active ? t("common.active") : t("common.inactive") }}
           </UBadge>
-        </div>
-      </div>
-    </UCard>
+        </template>
+      </DataTable>
+    </section>
 
-    <OwnedRecipientsTable :recipients="recipients" :loading="loading" :has-loaded-once="hasLoadedOnce" />
-    <OwnedAliasesTable :aliases="aliases" :loading="loading" :has-loaded-once="hasLoadedOnce" />
+    <MyDelegationsSection v-else-if="tab === 'delegations'" />
+
+    <OwnedRecipientsTable
+      v-else-if="tab === 'recipients'"
+      :recipients="recipients"
+      :loading="loading"
+      :has-loaded-once="hasLoadedOnce"
+    />
+    <OwnedAliasesTable v-else :aliases="aliases" :loading="loading" :has-loaded-once="hasLoadedOnce" />
   </div>
 </template>

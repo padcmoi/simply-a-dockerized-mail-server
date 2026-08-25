@@ -7,6 +7,7 @@ export default {
   domains: "Domaines",
   rspamd: "Rspamd",
   postfix: "Postfix",
+  delegations: "Délégations",
   recipients: "Destinataires",
   aliases: "Alias",
   quotas: "Quotas",

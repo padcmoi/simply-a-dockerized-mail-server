@@ -23,6 +23,7 @@ import { ZodValidationPipe } from "../../common/zod.pipe";
 import { CustomPermissionGuardService } from "../../custom-permission-guard/custom-permission-guard.service";
 import { VirtualAlias } from "../../entities/virtual-alias.entity";
 import { VirtualDomain } from "../../entities/virtual-domain.entity";
+import { VirtualQuotaUser } from "../../entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../entities/virtual-user.entity";
 import { Public } from "../auth.decorator";
 import {
@@ -54,7 +55,8 @@ export class JwtAuthController {
     private readonly cpg: CustomPermissionGuardService,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>,
-    @InjectRepository(VirtualAlias) private readonly virtualAliases: Repository<VirtualAlias>
+    @InjectRepository(VirtualAlias) private readonly virtualAliases: Repository<VirtualAlias>,
+    @InjectRepository(VirtualQuotaUser) private readonly recipientQuotas: Repository<VirtualQuotaUser>
   ) {}
 
   // Resolves each domain-scoped permission's domainId to its FQDN, server-side,
@@ -120,9 +122,21 @@ export class JwtAuthController {
       this.virtualUsers.find({ where: { ownerId: req.user.id }, order: { email: "ASC" } }),
       this.virtualAliases.find({ where: { ownerId: req.user.id }, order: { source: "ASC" } }),
     ]);
+    const usedByEmail = new Map<string, string>();
+    if (recipients.length) {
+      const rows = await this.recipientQuotas.find({ where: { email: In(recipients.map((r) => r.email)) } });
+      rows.forEach((row) => usedByEmail.set(row.email, row.bytes));
+    }
     return {
       domains: domains.map((d) => ({ id: d.id, domain: d.domain, active: d.active === 1, quota: d.quota })),
-      recipients: recipients.map((r) => ({ id: r.id, email: r.email, domain: r.domain, active: r.active === 1, quota: r.quota })),
+      recipients: recipients.map((r) => ({
+        id: r.id,
+        email: r.email,
+        domain: r.domain,
+        active: r.active === 1,
+        quota: r.quota,
+        usedBytes: usedByEmail.get(r.email) ?? "0",
+      })),
       aliases: aliases.map((a) => ({ id: a.id, source: a.source, destination: a.destination, domain: a.domain })),
     };
   }

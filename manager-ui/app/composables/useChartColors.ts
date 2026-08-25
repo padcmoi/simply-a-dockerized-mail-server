@@ -7,6 +7,7 @@ export function useChartColors() {
       error: dark ? "#f87171" : "#ef4444",
       warning: dark ? "#fbbf24" : "#f59e0b",
       success: dark ? "#4ade80" : "#22c55e",
+      info: dark ? "#38bdf8" : "#0ea5e9",
       primary: dark ? "#60a5fa" : "#3b82f6",
       primaryBg: dark ? "rgba(96,165,250,0.35)" : "rgba(59,130,246,0.35)",
       errorBg: dark ? "rgba(248,113,113,0.35)" : "rgba(239,68,68,0.35)",

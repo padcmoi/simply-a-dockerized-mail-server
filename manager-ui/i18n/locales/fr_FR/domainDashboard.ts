@@ -7,6 +7,7 @@ export default {
     free: "Libre",
     allocated: "Alloué",
     reserved: "Réservé par les destinataires",
+    reservedForAccounts: "Réservé aux délégations",
     assignable: "Encore assignable",
     unlimited: "Illimité",
   },

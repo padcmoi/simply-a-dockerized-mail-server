@@ -24,6 +24,7 @@ export interface QuotaDomain {
 }
 export interface QuotaPayload {
   domain: QuotaDomain | null;
+  reservedForAccountsBytes: string;
   recipients: { id: number; email: string; bytes: string; quota: string }[];
 }
 export interface DomainRspamdStats {
@@ -86,6 +87,7 @@ interface MainData {
   recipients: Recipient[];
   aliases: Alias[];
   quota: QuotaDomain | null;
+  reservedForAccountsBytes: string;
   topMailboxes: MailboxEntry[];
 }
 
@@ -114,7 +116,8 @@ export function useDomainDashboard() {
     async () => {
       const domains = await call<Domain[]>("/domains");
       const found = domains.find((d) => d.domain === domainFqdn.value) ?? null;
-      if (!found) return { domain: null, recipients: [], aliases: [], quota: null, topMailboxes: [] };
+      if (!found)
+        return { domain: null, recipients: [], aliases: [], quota: null, reservedForAccountsBytes: "0", topMailboxes: [] };
       domainStore.select(found);
       const [recs, als, quotaData] = await Promise.all([
         call<Recipient[]>(`/domains/${found.id}/recipients`),
@@ -127,12 +130,26 @@ export function useDomainDashboard() {
         quota: quotaByEmail.get(q.email) ?? "0",
       }));
       const topMailboxes = [...enriched].sort((a, b) => occupancyRate(b) - occupancyRate(a)).slice(0, TOP_MAILBOXES);
-      return { domain: found, recipients: recs, aliases: als, quota: quotaData.domain, topMailboxes };
+      return {
+        domain: found,
+        recipients: recs,
+        aliases: als,
+        quota: quotaData.domain,
+        reservedForAccountsBytes: quotaData.reservedForAccountsBytes ?? "0",
+        topMailboxes,
+      };
     },
     {
       server: false,
       watch: [tick],
-      default: () => ({ domain: null, recipients: [], aliases: [], quota: null, topMailboxes: [] }),
+      default: () => ({
+        domain: null,
+        recipients: [],
+        aliases: [],
+        quota: null,
+        reservedForAccountsBytes: "0",
+        topMailboxes: [],
+      }),
     }
   );
 
@@ -262,7 +279,14 @@ export function useDomainDashboard() {
   // ceiling RecipientsService enforces. `recipients` is the unpaginated list,
   // so this sum covers the whole domain, not a page of it.
   const reservedBytes = computed(() => recipients.value.reduce((sum, r) => sum + Number(r.quota), 0));
-  const assignableBytes = computed(() => (isUnlimited.value ? 0 : Math.max(0, allocatedBytes.value - reservedBytes.value)));
+  // Quota promised to delegated accounts and not yet spent on a mailbox,
+  // pending invitations and open links included: committed against the domain,
+  // so it is neither assignable nor double-counted with the mailboxes it will
+  // one day become.
+  const reservedForAccountsBytes = computed(() => Number(mainData.value?.reservedForAccountsBytes ?? 0));
+  const assignableBytes = computed(() =>
+    isUnlimited.value ? 0 : Math.max(0, allocatedBytes.value - reservedBytes.value - reservedForAccountsBytes.value)
+  );
 
   const diskChartData = computed<ChartData<"doughnut">>(() => {
     if (isUnlimited.value) {
@@ -277,17 +301,24 @@ export function useDomainDashboard() {
         ],
       };
     }
-    // The three slices add up to the domain's allocated quota. The middle one
-    // is the part the recipients' quotas have claimed but never written to:
-    // showing only used-vs-free would suggest space is available for a new
-    // mailbox when it is in fact already spoken for.
+    // The four slices add up to the domain's allocated quota: what mailboxes
+    // actually hold (used), what their quotas claim but have not written
+    // (reserved), what delegations promise to accounts (reservedForAccounts,
+    // pending links included) and what is still free to hand out (assignable).
+    // Showing only used-vs-free would suggest space is available when it is in
+    // fact already spoken for.
     const reservedUnused = Math.max(0, Math.min(reservedBytes.value, allocatedBytes.value) - usedBytes.value);
     return {
-      labels: [t("domainDashboard.disk.used"), t("domainDashboard.disk.reserved"), t("domainDashboard.disk.assignable")],
+      labels: [
+        t("domainDashboard.disk.used"),
+        t("domainDashboard.disk.reserved"),
+        t("domainDashboard.disk.reservedForAccounts"),
+        t("domainDashboard.disk.assignable"),
+      ],
       datasets: [
         {
-          data: [usedBytes.value, reservedUnused, assignableBytes.value],
-          backgroundColor: [colors.value.error, colors.value.warning, colors.value.success],
+          data: [usedBytes.value, reservedUnused, reservedForAccountsBytes.value, assignableBytes.value],
+          backgroundColor: [colors.value.error, colors.value.warning, colors.value.info, colors.value.success],
           borderWidth: 0,
           hoverOffset: 6,
         },
@@ -443,6 +474,7 @@ export function useDomainDashboard() {
     allocatedBytes,
     freeBytes,
     reservedBytes,
+    reservedForAccountsBytes,
     assignableBytes,
     isUnlimited,
     messagesCount,

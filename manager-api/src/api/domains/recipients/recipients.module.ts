@@ -6,6 +6,7 @@ import { VirtualQuotaUser } from "../../../core/entities/virtual-quota-user.enti
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { MailStorageModule } from "../../../core/mail-storage/mail-storage.module";
 import { CustomPermissionGuardModule } from "../../../core/custom-permission-guard/custom-permission-guard.module";
+import { DomainsDelegationsModule } from "../delegations/delegations.module";
 import { RecipientsController } from "./recipients.controller";
 import { RecipientsService } from "./recipients.service";
 
@@ -14,6 +15,7 @@ import { RecipientsService } from "./recipients.service";
     TypeOrmModule.forFeature([VirtualUser, VirtualDomain, VirtualQuotaUser, Account]),
     CustomPermissionGuardModule,
     MailStorageModule,
+    DomainsDelegationsModule,
   ],
   providers: [RecipientsService],
   controllers: [RecipientsController],

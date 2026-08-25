@@ -21,4 +21,13 @@ export default {
     otpInvalid: "Invalid or expired verification code",
     sendFailed: "Sending failed: {detail}",
   },
+  delegations: {
+    quotaExceedsDomain: "Cannot grant {requestedMb} MB on {domain}: only {grantableMb} MB can still be committed",
+    ownerNotDelegable: "The domain owner already manages everything and needs no delegation",
+    noDelegation: "You have no delegation on this domain",
+    recipientCapReached: "You've reached your mailbox cap ({max})",
+    aliasCapReached: "You've reached your alias cap ({max})",
+    reserveExceeded:
+      "That mailbox wouldn't fit your granted quota ({usedMb} of {reservedMb} MB used, {requestedMb} MB requested)",
+  },
 } satisfies Locales["apiErrors"];

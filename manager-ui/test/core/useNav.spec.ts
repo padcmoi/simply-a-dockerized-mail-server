@@ -172,6 +172,7 @@ describe("useNav domain nav items", () => {
     const { domainNavItems } = useNav(noop);
     expect(domainNavItems.value.map((i) => i.to)).toEqual([
       "/admin/domains/example.com",
+      "/admin/domains/example.com/delegations",
       "/admin/domains/example.com/recipients",
       "/admin/domains/example.com/aliases",
       "/admin/domains/example.com/quotas",

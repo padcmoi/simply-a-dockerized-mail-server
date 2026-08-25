@@ -11,6 +11,7 @@ import { GeneralController } from "../../src/api/config/general.controller";
 import { SupervisionRetentionController } from "../../src/api/config/supervision-retention.controller";
 import { AdminDomainsController } from "../../src/api/domains/admin-domains/admin-domains.controller";
 import { AliasesController } from "../../src/api/domains/aliases/aliases.controller";
+import { DelegationsController } from "../../src/api/domains/delegations/delegations.controller";
 import { DkimCheckController } from "../../src/api/domains/dkim-check/dkim-check.controller";
 import { DkimController } from "../../src/api/domains/dkim/dkim.controller";
 import { DomainsController } from "../../src/api/domains/domains.controller";
@@ -41,6 +42,7 @@ export const ALL_CONTROLLERS = [
   SupervisionRetentionController,
   AdminDomainsController,
   AliasesController,
+  DelegationsController,
   DkimCheckController,
   DkimController,
   DomainsController,

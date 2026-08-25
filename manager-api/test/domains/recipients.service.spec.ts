@@ -10,6 +10,7 @@ import { Account } from "../../src/core/entities/account.entity";
 import { VirtualQuotaUser } from "../../src/core/entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import type { MailStorageService } from "../../src/core/mail-storage/mail-storage.service";
+import type { DelegationsService } from "../../src/api/domains/delegations/delegations.service";
 import { type Loose, providerMock, repoMock } from "../helpers/mocks";
 
 // No openssl process is spawned: the crypt helper is replaced with a
@@ -54,6 +55,7 @@ describe("RecipientsService", () => {
   let recipientQuotas: Loose<Repository<VirtualQuotaUser>>;
   let accounts: Loose<Repository<Account>>;
   let storage: Loose<MailStorageService>;
+  let delegations: Loose<DelegationsService>;
   let qb: ReturnType<typeof makeQb>;
   let svc: RecipientsService;
 
@@ -72,7 +74,8 @@ describe("RecipientsService", () => {
     recipientQuotas = repoMock<VirtualQuotaUser>();
     accounts = repoMock<Account>();
     storage = providerMock<MailStorageService>({ removeRecipient: vi.fn() });
-    svc = new RecipientsService(recipients, domains, recipientQuotas, accounts, storage);
+    delegations = providerMock<DelegationsService>({ reservedForAccountsBytes: vi.fn(async () => 0) });
+    svc = new RecipientsService(recipients, domains, recipientQuotas, accounts, storage, delegations);
   });
 
   describe("resolveDomain", () => {

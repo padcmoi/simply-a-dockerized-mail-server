@@ -27,6 +27,12 @@ export const API_ERROR_CODES = [
   "mail.notConfigured",
   "mail.otpInvalid",
   "mail.sendFailed",
+  "delegations.quotaExceedsDomain",
+  "delegations.ownerNotDelegable",
+  "delegations.noDelegation",
+  "delegations.recipientCapReached",
+  "delegations.aliasCapReached",
+  "delegations.reserveExceeded",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

@@ -7,6 +7,8 @@ import { MySpaceService } from "../../src/api/my-space/my-space.service";
 import { RecipientsService } from "../../src/api/domains/recipients/recipients.service";
 import { AliasesService } from "../../src/api/domains/aliases/aliases.service";
 import { MailStorageService } from "../../src/core/mail-storage/mail-storage.service";
+import { DelegationsService } from "../../src/api/domains/delegations/delegations.service";
+import { MailerService } from "../../src/core/mailer/mailer.service";
 
 @Global()
 @Module({
@@ -30,11 +32,14 @@ describe("MySpaceModule (DI wiring / boot)", () => {
     })
       .overrideProvider(MailStorageService)
       .useValue({})
+      .overrideProvider(MailerService)
+      .useValue({})
       .compile();
 
     expect(moduleRef.get(MySpaceService, { strict: false })).toBeInstanceOf(MySpaceService);
     expect(moduleRef.get(RecipientsService, { strict: false })).toBeInstanceOf(RecipientsService);
     expect(moduleRef.get(AliasesService, { strict: false })).toBeInstanceOf(AliasesService);
+    expect(moduleRef.get(DelegationsService, { strict: false })).toBeInstanceOf(DelegationsService);
     await moduleRef.close();
   });
 });

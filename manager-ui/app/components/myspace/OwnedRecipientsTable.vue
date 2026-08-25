@@ -7,6 +7,7 @@ interface OwnedRecipient {
   domain: string;
   active: boolean;
   quota: string;
+  usedBytes: string;
 }
 
 const { recipients } = defineProps<{
@@ -25,8 +26,13 @@ const { t } = useI18n();
 const columns = computed<DataTableColumn<OwnedRecipient>[]>(() => [
   { key: "email", label: t("myspace.table.address"), value: (row) => row.email, primary: true },
   { key: "domain", label: t("myspace.table.domain"), value: (row) => row.domain },
+  { key: "quota", label: t("myspace.table.quota"), value: (row) => Number(row.usedBytes) },
   { key: "active", label: t("myspace.table.status"), value: (row) => row.active },
 ]);
+
+function occupancy(r: OwnedRecipient) {
+  return occupancyPercent(Number(r.quota), Number(r.usedBytes));
+}
 </script>
 
 <template>
@@ -59,6 +65,13 @@ const columns = computed<DataTableColumn<OwnedRecipient>[]>(() => [
         <FullTooltip :text="row.domain">
           <span class="text-muted">{{ truncateChars(row.domain, 30) }}</span>
         </FullTooltip>
+      </template>
+
+      <template #quota="{ row }">
+        <div class="min-w-[130px]">
+          <p>{{ formatBytes(Number(row.usedBytes)) }} / {{ formatBytes(Number(row.quota)) }}</p>
+          <UProgress :model-value="occupancy(row)" :color="occupancyColor(occupancy(row))" size="xs" class="mt-1" />
+        </div>
       </template>
 
       <template #active="{ row }">

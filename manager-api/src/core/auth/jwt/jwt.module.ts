@@ -9,6 +9,7 @@ import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
 import { VirtualAlias } from "../../entities/virtual-alias.entity";
 import { VirtualDomain } from "../../entities/virtual-domain.entity";
+import { VirtualQuotaUser } from "../../entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../entities/virtual-user.entity";
 import { CustomPermissionGuardModule } from "../../custom-permission-guard/custom-permission-guard.module";
 import { GeocodingModule } from "../../geocoding/geocoding.module";
@@ -29,6 +30,7 @@ import { JwtStrategy } from "./jwt.strategy";
       RefreshToken,
       VirtualAlias,
       VirtualDomain,
+      VirtualQuotaUser,
       VirtualUser,
     ]),
     CustomPermissionGuardModule,

@@ -1,11 +1,16 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
+import { CreateAliasDto, createAliasSchema } from "../domains/aliases/aliases.validation";
+import { CreateRecipientDto, createRecipientSchema } from "../domains/recipients/recipients.validation";
 import {
+  CreateMyAliasDocs,
+  CreateMyRecipientDocs,
   DeleteMyAliasDocs,
   DeleteMyRecipientDocs,
   GetMyAliasDocs,
   GetMyRecipientDocs,
+  ListMyDelegationsDocs,
   MySpaceApi,
   UpdateMyAliasDocs,
   UpdateMyRecipientDocs,
@@ -23,6 +28,32 @@ type AuthedRequest = Request & {
 @Controller({ path: "my-space", version: "1" })
 export class MySpaceController {
   constructor(private readonly svc: MySpaceService) {}
+
+  @Get("delegations")
+  @ListMyDelegationsDocs()
+  myDelegations(@Req() req: AuthedRequest) {
+    return this.svc.myDelegations(req.user.id);
+  }
+
+  @Post("domains/:domainId/recipients")
+  @CreateMyRecipientDocs()
+  createRecipient(
+    @Req() req: AuthedRequest,
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Body(new ZodValidationPipe(createRecipientSchema)) body: CreateRecipientDto
+  ) {
+    return this.svc.createRecipient(req.user.id, domainId, body);
+  }
+
+  @Post("domains/:domainId/aliases")
+  @CreateMyAliasDocs()
+  createAlias(
+    @Req() req: AuthedRequest,
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Body(new ZodValidationPipe(createAliasSchema)) body: CreateAliasDto
+  ) {
+    return this.svc.createAlias(req.user.id, domainId, body);
+  }
 
   @Get("recipients/:id")
   @GetMyRecipientDocs()

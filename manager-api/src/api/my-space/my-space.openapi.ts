@@ -26,3 +26,21 @@ export const DeleteMyRecipientDocs = () =>
 
 export const DeleteMyAliasDocs = () =>
   applyDecorators(aliasIdParam(), ApiOperation({ summary: "Delete an alias the caller owns" }));
+
+const domainIdParam = () =>
+  ApiParam({ name: "domainId", type: Number, example: 1, description: "Id of a domain the caller is delegated on" });
+
+export const ListMyDelegationsDocs = () =>
+  applyDecorators(ApiOperation({ summary: "List the delegations the caller holds, with usage against each cap" }));
+
+export const CreateMyRecipientDocs = () =>
+  applyDecorators(
+    domainIdParam(),
+    ApiOperation({ summary: "Create an owned recipient within the caller's delegation on the domain" })
+  );
+
+export const CreateMyAliasDocs = () =>
+  applyDecorators(
+    domainIdParam(),
+    ApiOperation({ summary: "Create an owned alias within the caller's delegation on the domain" })
+  );

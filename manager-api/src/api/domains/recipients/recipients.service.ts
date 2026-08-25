@@ -9,6 +9,7 @@ import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualQuotaUser } from "../../../core/entities/virtual-quota-user.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { MailStorageService } from "../../../core/mail-storage/mail-storage.service";
+import { DelegationsService } from "../delegations/delegations.service";
 import { CreateRecipientDto, UpdateRecipientDto } from "./recipients.validation";
 
 // postmaster@<domain> is provisioned automatically by DomainsService.reservePostmaster
@@ -46,7 +47,8 @@ export class RecipientsService {
     private readonly recipientQuotas: Repository<VirtualQuotaUser>,
     @InjectRepository(Account)
     private readonly accounts: Repository<Account>,
-    private readonly storage: MailStorageService
+    private readonly storage: MailStorageService,
+    private readonly delegations: DelegationsService
   ) {}
 
   // Assign this recipient to an account. A recipient belongs to at most one
@@ -189,7 +191,11 @@ export class RecipientsService {
     const row = await qb.getRawOne<{ allocated: string }>();
     const domainQuota = Number(parent.quota);
     const allocated = Number(row?.allocated ?? 0);
-    return { domainQuota, allocated, available: domainQuota - allocated };
+    // Delegation grants immobilize their unused quota against the domain from
+    // the moment they exist, so what a new mailbox may take is what is left
+    // after the mailboxes already reserved AND those pending grants.
+    const reserved = domainQuota > 0 ? await this.delegations.reservedForAccountsBytes(parent.id) : 0;
+    return { domainQuota, allocated, available: domainQuota - allocated - reserved };
   }
 
   // Shrinking a mailbox below what it already stores would leave it instantly
@@ -234,7 +240,11 @@ export class RecipientsService {
     );
   }
 
-  async create(input: CreateRecipientDto, domain: string) {
+  // `opts.ownerId` stamps the mailbox as belonging to an account (the delegated
+  // self-service path). `opts.skipDomainQuota` goes with it: the delegate's
+  // grant was already immobilized against the domain, so the domain-level check
+  // would count that space twice.
+  async create(input: CreateRecipientDto, domain: string, opts: { ownerId?: string; skipDomainQuota?: boolean } = {}) {
     if (input.localPart.toLowerCase() === "postmaster") {
       throw new ApiError(
         HttpStatus.CONFLICT,
@@ -246,7 +256,7 @@ export class RecipientsService {
     if (await this.recipients.findOne({ where: { email } })) {
       throw new ApiError(HttpStatus.CONFLICT, "recipients.alreadyExists", `Recipient ${email} already exists`, { email });
     }
-    await this.assertQuotaFitsDomain(domain, input.quota);
+    if (!opts.skipDomainQuota) await this.assertQuotaFitsDomain(domain, input.quota);
     return this.recipients.save(
       this.recipients.create({
         email,
@@ -257,13 +267,17 @@ export class RecipientsService {
         active: input.active === false ? 0 : 1,
         uid: "vmail",
         gid: "vmail",
+        ownerId: opts.ownerId ?? null,
         userStartDate: new Date().toISOString().slice(0, 10),
         userEndDate: input.userEndDate ?? null,
       })
     );
   }
 
-  async update(id: number, input: UpdateRecipientDto, domain: string) {
+  // `opts.skipDomainQuota` mirrors create's: a delegate raising one of their
+  // mailboxes spends a reserve already immobilized against the domain, so the
+  // domain-level check would count that space twice.
+  async update(id: number, input: UpdateRecipientDto, domain: string, opts: { skipDomainQuota?: boolean } = {}) {
     const current = await this.get(id, domain);
     if (isPostmaster(current.email, domain)) {
       throw new ApiError(
@@ -275,7 +289,7 @@ export class RecipientsService {
     if (input.password) current.password = await sha512crypt(input.password);
     if (input.quota !== undefined) {
       await this.assertQuotaCoversUsage(current.email, input.quota);
-      await this.assertQuotaFitsDomain(domain, input.quota, { id, quota: Number(current.quota) });
+      if (!opts.skipDomainQuota) await this.assertQuotaFitsDomain(domain, input.quota, { id, quota: Number(current.quota) });
       current.quota = String(input.quota);
     }
     if (input.active !== undefined) current.active = input.active ? 1 : 0;

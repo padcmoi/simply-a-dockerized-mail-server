@@ -31,12 +31,30 @@ export const sendInvitationSchema = z.object({
   useDomainGroup: z.boolean().default(false),
 });
 
-// Identity comes from the invitation's email; accepting only sets the password
-// and an optional display name (stored on the profile).
+// Identity comes from the invitation's email when pinned; an open registration
+// token (email NULL) takes the visitor's own address instead. Password plus an
+// optional display name (stored on the profile) complete the account.
 export const acceptInvitationSchema = z.object({
+  email: z
+    .string()
+    .email()
+    .max(255)
+    .transform((v) => v.toLowerCase())
+    .optional(),
   password: z.string().min(8),
   displayName: z.string().max(255).optional(),
 });
 
 export type SendInvitationDto = z.infer<typeof sendInvitationSchema>;
 export type AcceptInvitationDto = z.infer<typeof acceptInvitationSchema>;
+
+// Query of GET invite/:token/email-exists.
+export const emailExistsQuerySchema = z.object({
+  email: z
+    .string()
+    .email()
+    .max(255)
+    .transform((v) => v.toLowerCase()),
+});
+
+export type EmailExistsQueryDto = z.infer<typeof emailExistsQuerySchema>;

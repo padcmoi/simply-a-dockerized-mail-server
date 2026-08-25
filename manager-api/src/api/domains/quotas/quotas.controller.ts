@@ -10,6 +10,7 @@ import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
 import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/global-permission.guard";
 import { RequireDomainPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
+import { DelegationsService } from "../delegations/delegations.service";
 import { GetDomainQuotasDocs, QUOTAS_SORTABLE_COLUMNS, QuotasApi } from "./quotas.openapi";
 
 @QuotasApi()
@@ -22,7 +23,8 @@ export class QuotasController {
     @InjectRepository(VirtualQuotaDomain)
     private readonly domainQuotas: Repository<VirtualQuotaDomain>,
     @InjectRepository(VirtualQuotaUser)
-    private readonly recipientQuotas: Repository<VirtualQuotaUser>
+    private readonly recipientQuotas: Repository<VirtualQuotaUser>,
+    private readonly delegations: DelegationsService
   ) {}
 
   // Returns the row, not just its FQDN: the aggregate below needs its `quota`
@@ -69,10 +71,14 @@ export class QuotasController {
     // Null until dovecot writes its first aggregate row; the quota is known
     // either way, but there is no row to hang it on.
     const aggregate = counters ? { ...counters, quota: String(parent.quota) } : null;
+    // Domain quota promised to delegated accounts and not yet spent on a
+    // mailbox (pending invitations and open links included): the donut's
+    // fourth slice. Present even before dovecot writes its first aggregate row.
+    const reservedForAccountsBytes = String(await this.delegations.reservedForAccountsBytes(domainId));
 
     if (query.limit === undefined) {
       const { entities, raw } = await this.recipientsQuery(domain).orderBy("q.email", "ASC").getRawAndEntities();
-      return { domain: aggregate, recipients: QuotasController.withQuota(entities, raw) };
+      return { domain: aggregate, reservedForAccountsBytes, recipients: QuotasController.withQuota(entities, raw) };
     }
 
     const qb = this.recipientsQuery(domain);
@@ -85,6 +91,10 @@ export class QuotasController {
     else qb.orderBy(`q.${sortBy}`, dir);
 
     const { entities, raw } = await qb.skip(query.offset).take(query.limit).getRawAndEntities();
-    return { domain: aggregate, recipients: { items: QuotasController.withQuota(entities, raw), total } };
+    return {
+      domain: aggregate,
+      reservedForAccountsBytes,
+      recipients: { items: QuotasController.withQuota(entities, raw), total },
+    };
   }
 }

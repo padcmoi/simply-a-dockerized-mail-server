@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vites
 import request from "supertest";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { QuotasController } from "../../src/api/domains/quotas/quotas.controller";
+import { DelegationsService } from "../../src/api/domains/delegations/delegations.service";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import { VirtualQuotaDomain } from "../../src/core/entities/virtual-quota-domain.entity";
 import { VirtualQuotaUser } from "../../src/core/entities/virtual-quota-user.entity";
@@ -50,6 +51,7 @@ describe("QuotasController (e2e: auth + ACL + behavior)", () => {
         { provide: getRepositoryToken(VirtualDomain), useValue: domainRepo },
         { provide: getRepositoryToken(VirtualQuotaDomain), useValue: domainQuotasRepo },
         { provide: getRepositoryToken(VirtualQuotaUser), useValue: recipientQuotasRepo },
+        { provide: DelegationsService, useValue: { reservedForAccountsBytes: vi.fn(async () => 0) } },
       ],
     });
   });

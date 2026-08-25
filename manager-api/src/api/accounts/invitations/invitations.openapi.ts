@@ -38,6 +38,20 @@ export const GetInvitationDocs = () =>
     ApiResponse({ status: 404, description: "Invitation not found" })
   );
 
+export const EmailExistsDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "token", type: String }),
+    ApiOperation({ summary: "Whether the given email already has an account, gated by a valid pending open link" })
+  );
+
+export const ClaimInvitationDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "token", type: String }),
+    ApiOperation({
+      summary: "Consume an open registration link with the caller's existing account, taking its staged delegation",
+    })
+  );
+
 export const AcceptInvitationDocs = () =>
   applyDecorators(
     ApiParam({ name: "token", type: String, description: "Invitation token from the invite link" }),

@@ -128,6 +128,16 @@ export function useNav(onSignOut: () => Promise<void>) {
       ...(canAccessDomain(domainId, "domain")
         ? [{ label: t("nav.dashboard"), icon: "i-lucide-layout-dashboard", to: domainHome, active: route.path === domainHome }]
         : []),
+      ...(canAccessDomain(domainId, "recipients") && canAccessDomain(domainId, "aliases")
+        ? [
+            {
+              label: t("nav.delegations"),
+              icon: "i-lucide-user-plus",
+              to: `${domainHome}/delegations`,
+              active: isActive(`${domainHome}/delegations`),
+            },
+          ]
+        : []),
       ...(canAccessDomain(domainId, "recipients")
         ? [
             {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { In, IsNull } from "typeorm";
 import { AccountsInvitationsService } from "../../src/api/accounts/invitations/invitations.service";
+import type { DelegationsService } from "../../src/api/domains/delegations/delegations.service";
 import { AccountInvitation } from "../../src/core/entities/account-invitation.entity";
 import { Account } from "../../src/core/entities/account.entity";
 import { AccountProfile } from "../../src/core/entities/account-profile.entity";
@@ -38,6 +39,7 @@ function makeMocks() {
     appSettings: providerMock<AppSettingsService>({
       get: vi.fn().mockReturnValue({ offlineNotifyAfterMs: 0, offlineSweepIntervalMs: 0, mailMinIntervalMs: 0, managerUrl: "" }),
     }),
+    delegationsSvc: providerMock<DelegationsService>({ grantFromInvitation: vi.fn(async () => undefined) }),
   };
 }
 
@@ -58,7 +60,8 @@ describe("AccountsInvitationsService", () => {
       m.mailer,
       m.cpg,
       m.antiEscalation,
-      m.appSettings
+      m.appSettings,
+      m.delegationsSvc
     );
   });
 
@@ -430,6 +433,53 @@ describe("AccountsInvitationsService", () => {
     it("throws 400 when expired", async () => {
       m.invitations.findOne.mockResolvedValue({ acceptedAt: null, expiresAt: new Date(Date.now() - 1000) });
       await expect(svc.acceptInvitation("t", { password: "longenough" })).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it("open token (email NULL): 400 without an email in the body, account created with the visitor's own email", async () => {
+      const inv = { email: null, groupId: null, acceptedAt: null, expiresAt: new Date(Date.now() + 1000) };
+      m.invitations.findOne.mockResolvedValue(inv);
+      await expect(svc.acceptInvitation("t", { password: "longenough" })).rejects.toBeInstanceOf(BadRequestException);
+      expect(m.accounts.save).not.toHaveBeenCalled();
+
+      m.accounts.findOne.mockResolvedValue(null);
+      m.accounts.save.mockResolvedValue({ id: "acc-1", email: "visitor@x.io" });
+      m.groups.findOne.mockResolvedValue(null);
+      const res = await svc.acceptInvitation("t", { email: "visitor@x.io", password: "longenough" });
+      expect(res).toEqual({ ok: true, email: "visitor@x.io" });
+      expect(m.accounts.save).toHaveBeenCalledWith(expect.objectContaining({ email: "visitor@x.io" }));
+      expect(m.delegationsSvc.grantFromInvitation).toHaveBeenCalledWith(inv, "acc-1");
+    });
+
+    it("email-exists probe: gated by a valid pending open link, answers for both cases", async () => {
+      m.invitations.findOne.mockResolvedValue(null);
+      await expect(svc.openTokenEmailExists("t", "a@x.io")).rejects.toBeInstanceOf(NotFoundException);
+
+      m.invitations.findOne.mockResolvedValue({ email: "pinned@x.io", acceptedAt: null, expiresAt: null });
+      await expect(svc.openTokenEmailExists("t", "a@x.io")).rejects.toBeInstanceOf(NotFoundException);
+
+      m.invitations.findOne.mockResolvedValue({ email: null, acceptedAt: null, expiresAt: null });
+      m.accounts.findOne.mockResolvedValueOnce({ id: "acc" }).mockResolvedValueOnce(null);
+      await expect(svc.openTokenEmailExists("t", "a@x.io")).resolves.toEqual({ exists: true });
+      await expect(svc.openTokenEmailExists("t", "b@x.io")).resolves.toEqual({ exists: false });
+    });
+
+    it("claim: refused on a pinned invitation, accepted on an open link for an existing account", async () => {
+      m.invitations.findOne.mockResolvedValue({ email: "x@y.com", acceptedAt: null, expiresAt: null });
+      await expect(svc.claimInvitation("t", "acc-1")).rejects.toBeInstanceOf(BadRequestException);
+
+      const inv = { email: null, acceptedAt: null, expiresAt: null, delegationDomainId: 4 };
+      m.invitations.findOne.mockResolvedValue(inv);
+      const res = await svc.claimInvitation("t", "acc-1");
+      expect(res).toEqual({ ok: true, domainId: 4 });
+      expect(m.delegationsSvc.grantFromInvitation).toHaveBeenCalledWith(inv, "acc-1");
+      expect(m.invitations.save).toHaveBeenCalledWith(expect.objectContaining({ acceptedAt: expect.any(Date) }));
+    });
+
+    it("claim: refused when expired or already used", async () => {
+      m.invitations.findOne.mockResolvedValue({ email: null, acceptedAt: null, expiresAt: new Date(0), delegationDomainId: 4 });
+      await expect(svc.claimInvitation("t", "acc-1")).rejects.toBeInstanceOf(BadRequestException);
+      m.invitations.findOne.mockResolvedValue({ email: null, acceptedAt: new Date(), expiresAt: null, delegationDomainId: 4 });
+      await expect(svc.claimInvitation("t", "acc-1")).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it("rejects when an account already owns the invited email (409)", async () => {
