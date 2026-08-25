@@ -3,9 +3,10 @@ import type { Locales } from "../../Locales";
 export default {
   alertTitle: "Tokens API",
   alertDescription:
-    "Les tokens permettent à des outils externes de s'authentifier en votre nom. Envoyez le token dans l'en-tête X-Api-Key (format : sms_clientId.secret). Le secret n'est affiché qu'une seule fois à la création.",
+    "Les tokens permettent à des outils externes de s'authentifier en votre nom. Envoyez le token dans l'en-tête X-Api-Key (format : sms_clientId.secret). La clé est conservée chiffrée et peut être réaffichée quand vous en avez besoin.",
   listTitle: "Vos tokens",
   newToken: "Nouveau token",
+  apiDoc: "Documentation API",
   empty: "Aucun token API pour l'instant",
   active: "Actif",
   expired: "Expiré",
@@ -39,6 +40,39 @@ export default {
     ips: "IPs",
     expires: "Expiration",
     lastUsed: "Dernière utilisation",
+  },
+  confirm: {
+    revokeTitle: "Révoquer ce token ?",
+    revokeDescription:
+      "La clé de {name} cesse de fonctionner immédiatement et définitivement, pour tout ce qui la détient déjà. Aucun retour en arrière : il faudra un nouveau token.",
+    deleteTitle: "Supprimer ce token ?",
+    deleteDescription: "{name} et tout son historique d'accès disparaissent définitivement.",
+    regenerateTitle: "Régénérer ce secret ?",
+    regenerateDescription:
+      "Une nouvelle clé est émise pour {name} et l'actuelle cesse de fonctionner immédiatement, pour tout ce qui la détient déjà.",
+  },
+  secret: {
+    title: "Votre clé d'API",
+    warning: "Conservée chiffrée sur le serveur, consultable par vous autant de fois que nécessaire.",
+    reveal: "Afficher la clé",
+    unavailable: "Cette clé ne peut pas être affichée",
+    unavailableHint: "Elle est antérieure à la conservation des clés. Régénérez-la pour obtenir une clé consultable.",
+    revealFailed: "Impossible de relire la clé",
+  },
+  access: {
+    title: "Historique des accès",
+    crumb: "Historique des accès",
+    alertDescription: "Chaque requête répondue avec ce token, refus compris, la plus récente en premier.",
+    backToList: "Retour aux tokens",
+    empty: "Ce token n'a encore jamais servi",
+    colWhen: "Date",
+    colMethod: "Méthode",
+    colRoute: "Route",
+    colStatus: "Statut",
+    colFrom: "IP source",
+    colOrigin: "Origine",
+    colAgent: "Agent",
+    colDuration: "Durée",
   },
   toast: {
     created: "Token créé",

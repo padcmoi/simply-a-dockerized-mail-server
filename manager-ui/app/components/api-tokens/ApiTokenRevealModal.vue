@@ -6,7 +6,9 @@ const emit = defineEmits<{
   dismissed: [];
 }>();
 
-const props = defineProps<{ open: boolean; token: CreatedToken | null }>();
+const props = withDefaults(defineProps<{ open: boolean; token: CreatedToken | null; mode?: "created" | "stored" }>(), {
+  mode: "created",
+});
 
 const copiedField = ref<string | null>(null);
 const hasCopiedKey = ref(false);
@@ -35,12 +37,12 @@ async function copyField(field: string, value: string) {
 
 function onConfirm() {
   confirmed.value = true;
-  toast.add({ title: t("apiTokens.toast.keySaved"), color: "success" });
+  if (props.mode === "created") toast.add({ title: t("apiTokens.toast.keySaved"), color: "success" });
   emit("update:open", false);
 }
 
 function onModalClose(val: boolean) {
-  if (!val && !confirmed.value) {
+  if (!val && !confirmed.value && props.mode === "created") {
     emit("dismissed");
   }
   emit("update:open", val);
@@ -54,12 +56,19 @@ function onModalClose(val: boolean) {
         <template #header>
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-key" class="text-warning shrink-0" />
-            <h3 class="font-semibold">{{ t("apiTokens.reveal.title") }}</h3>
+            <h3 class="font-semibold">{{ mode === "stored" ? t("apiTokens.secret.title") : t("apiTokens.reveal.title") }}</h3>
           </div>
         </template>
 
         <div class="space-y-4">
-          <UAlert color="warning" variant="subtle" icon="i-lucide-triangle-alert" :title="t('apiTokens.reveal.warning')" />
+          <UAlert
+            v-if="mode === 'created'"
+            color="warning"
+            variant="subtle"
+            icon="i-lucide-triangle-alert"
+            :title="t('apiTokens.reveal.warning')"
+          />
+          <UAlert v-else color="neutral" variant="subtle" icon="i-lucide-shield" :title="t('apiTokens.secret.warning')" />
 
           <div class="flex items-center gap-2 min-w-0">
             <span class="text-sm text-muted shrink-0">{{ t("apiTokens.modal.name") }}</span>
@@ -103,8 +112,8 @@ function onModalClose(val: boolean) {
 
         <template #footer>
           <div class="flex justify-end">
-            <UButton color="primary" :disabled="!hasCopiedKey" @click="onConfirm">
-              {{ t("apiTokens.reveal.done") }}
+            <UButton color="primary" :disabled="mode === 'created' && !hasCopiedKey" @click="onConfirm">
+              {{ mode === "stored" ? t("common.close") : t("apiTokens.reveal.done") }}
             </UButton>
           </div>
         </template>

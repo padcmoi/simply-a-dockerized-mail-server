@@ -22,6 +22,9 @@ export class ApiToken {
   @Column({ name: "secret_hash", type: "varchar", length: 255 })
   secretHash!: string;
 
+  @Column({ name: "secret_cipher", type: "varchar", length: 512, default: "" })
+  secretCipher!: string;
+
   @Column({ name: "allowed_ips", type: "text", nullable: true })
   allowedIps!: string | null;
 

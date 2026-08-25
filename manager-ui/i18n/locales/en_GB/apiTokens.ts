@@ -3,9 +3,10 @@ import type { Locales } from "../../Locales";
 export default {
   alertTitle: "API Tokens",
   alertDescription:
-    "Tokens let external tools authenticate as you. Send the token in the X-Api-Key header (format: sms_clientId.secret). The secret is shown only once on creation.",
+    "Tokens let external tools authenticate as you. Send the token in the X-Api-Key header (format: sms_clientId.secret). A key is kept encrypted and can be shown again whenever you need it.",
   listTitle: "Your tokens",
   newToken: "New token",
+  apiDoc: "API documentation",
   empty: "No API tokens yet",
   active: "Active",
   expired: "Expired",
@@ -39,6 +40,39 @@ export default {
     ips: "IPs",
     expires: "Expires",
     lastUsed: "Last used",
+  },
+  confirm: {
+    revokeTitle: "Revoke this token?",
+    revokeDescription:
+      "The key of {name} stops working at once and for good, for everything already holding it. There is no way back: the only route on is a new token.",
+    deleteTitle: "Delete this token?",
+    deleteDescription: "{name} and its whole access history go away permanently.",
+    regenerateTitle: "Regenerate this secret?",
+    regenerateDescription:
+      "A new key is minted for {name} and the current one stops working at once, for everything already holding it.",
+  },
+  secret: {
+    title: "Your API key",
+    warning: "Kept encrypted on the server, readable back by you as often as needed.",
+    reveal: "Show the key",
+    unavailable: "This key cannot be shown",
+    unavailableHint: "It was created before keys were kept readable. Regenerate it to get a key you can consult.",
+    revealFailed: "Could not read the key back",
+  },
+  access: {
+    title: "Access history",
+    crumb: "Access history",
+    alertDescription: "Every request answered with this token, refusals included, most recent first.",
+    backToList: "Back to tokens",
+    empty: "This token has not been used yet",
+    colWhen: "Date",
+    colMethod: "Method",
+    colRoute: "Route",
+    colStatus: "Status",
+    colFrom: "Source IP",
+    colOrigin: "Origin",
+    colAgent: "Agent",
+    colDuration: "Duration",
   },
   toast: {
     created: "Token created",

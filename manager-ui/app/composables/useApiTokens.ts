@@ -8,6 +8,14 @@ export interface ApiTokenItem {
   lastUsedAt: string | null;
   lastUsedIp: string | null;
   createdAt: string;
+  secretAvailable: boolean;
+}
+
+export interface RevealedToken {
+  id: number;
+  name: string;
+  clientId: string;
+  key: string | null;
 }
 
 export interface CreatedToken {
@@ -51,8 +59,13 @@ export function useApiTokens() {
       lastUsedAt: null,
       lastUsedIp: null,
       createdAt: created.createdAt,
+      secretAvailable: true,
     });
     return created;
+  }
+
+  async function reveal(id: number) {
+    return call<RevealedToken>(`/api-tokens/${id}/secret`);
   }
 
   async function update(id: number, input: { name?: string; allowedIps?: string[] | null; expiresAt?: string | null }) {
@@ -81,12 +94,15 @@ export function useApiTokens() {
   async function regenerate(id: number) {
     const created = await call<CreatedToken>(`/api-tokens/${id}/regenerate`, { method: "POST" });
     const token = tokens.value.find((t) => t.id === id);
-    if (token) token.clientId = created.clientId;
+    if (token) {
+      token.clientId = created.clientId;
+      token.secretAvailable = true;
+    }
     return created;
   }
 
   watch(useDataRefresh().tick, load);
   onMounted(load);
 
-  return { tokens, loading, load, create, update, revoke, deleteToken, abandonToken, regenerate };
+  return { tokens, loading, load, create, update, revoke, deleteToken, abandonToken, regenerate, reveal };
 }

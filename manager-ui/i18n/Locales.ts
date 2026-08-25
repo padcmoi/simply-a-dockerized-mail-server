@@ -1200,6 +1200,7 @@ export interface Locales {
     alertDescription: string;
     listTitle: string;
     newToken: string;
+    apiDoc: string;
     empty: string;
     active: string;
     expired: string;
@@ -1233,6 +1234,37 @@ export interface Locales {
       ips: string;
       expires: string;
       lastUsed: string;
+    };
+    confirm: {
+      revokeTitle: string;
+      revokeDescription: string;
+      deleteTitle: string;
+      deleteDescription: string;
+      regenerateTitle: string;
+      regenerateDescription: string;
+    };
+    secret: {
+      title: string;
+      warning: string;
+      reveal: string;
+      unavailable: string;
+      unavailableHint: string;
+      revealFailed: string;
+    };
+    access: {
+      title: string;
+      crumb: string;
+      alertDescription: string;
+      backToList: string;
+      empty: string;
+      colWhen: string;
+      colMethod: string;
+      colRoute: string;
+      colStatus: string;
+      colFrom: string;
+      colOrigin: string;
+      colAgent: string;
+      colDuration: string;
     };
     toast: {
       created: string;

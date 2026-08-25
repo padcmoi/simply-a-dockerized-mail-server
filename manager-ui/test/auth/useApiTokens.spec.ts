@@ -36,6 +36,7 @@ function tokenItem(over: Record<string, unknown> = {}) {
     lastUsedAt: null,
     lastUsedIp: null,
     createdAt: "2026-01-01",
+    secretAvailable: true,
     ...over,
   };
 }
@@ -88,6 +89,7 @@ describe("useApiTokens.create", () => {
       lastUsedAt: null,
       lastUsedIp: null,
       createdAt: "2026-02-02",
+      secretAvailable: true,
     });
     expect(tokens.value[1]!.id).toBe(1);
     expect(call).toHaveBeenCalledWith("/api-tokens", { method: "POST", body: { name: "deploy", allowedIps: ["10.0.0.1"] } });
@@ -154,10 +156,31 @@ describe("useApiTokens.revoke / delete / abandon / regenerate", () => {
     };
     call.mockResolvedValue(created);
     const { tokens, regenerate } = useApiTokens();
-    tokens.value = [tokenItem({ id: 7, clientId: "cid-old" })];
+    tokens.value = [tokenItem({ id: 7, clientId: "cid-old", secretAvailable: false })];
     const result = await regenerate(7);
     expect(result).toBe(created);
     expect(tokens.value[0]!.clientId).toBe("cid-rotated");
+    expect(tokens.value[0]!.secretAvailable).toBe(true);
     expect(call).toHaveBeenCalledWith("/api-tokens/7/regenerate", { method: "POST" });
+  });
+});
+
+describe("useApiTokens.reveal", () => {
+  it("reads the stored key back without touching the list", async () => {
+    const revealed = { id: 7, name: "ci", clientId: "cid-1", key: "sms_cid-1.s3cret" };
+    call.mockResolvedValue(revealed);
+    const { tokens, reveal } = useApiTokens();
+    tokens.value = [tokenItem({ id: 7 })];
+    const result = await reveal(7);
+
+    expect(result).toBe(revealed);
+    expect(tokens.value[0]!.clientId).toBe("cid-1");
+    expect(call).toHaveBeenCalledWith("/api-tokens/7/secret");
+  });
+
+  it("hands the null key through for the screen to explain", async () => {
+    call.mockResolvedValue({ id: 7, name: "ci", clientId: "cid-1", key: null });
+    const { reveal } = useApiTokens();
+    await expect(reveal(7)).resolves.toMatchObject({ key: null });
   });
 });

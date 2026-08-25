@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
 import { createHmac } from "crypto";
 import { ApiTokenService } from "../../src/core/auth/api-token/api-token.service";
+import { decryptSecret } from "../../src/core/auth/api-token/api-token.cipher";
 import type { ApiToken } from "../../src/core/auth/api-token/api-token.entity";
 import type { Account } from "../../src/core/entities/account.entity";
 import { entity, repoMock } from "../helpers/mocks";
@@ -30,6 +31,7 @@ function tokenFor(secret: string, over: Partial<ApiToken> = {}): ApiToken {
     accountId: "acc-1",
     clientId: "cid",
     secretHash: hashOf(secret),
+    secretCipher: "",
     allowedIps: null,
     expiresAt: null,
     failedAttempts: 0,
@@ -76,6 +78,14 @@ describe("ApiTokenService", () => {
       const rawSecret = res.key.slice(`sms_${res.clientId}.`.length);
       expect(persisted.secretHash).toBe(hashOf(rawSecret));
       expect(res.allowedIps).toBeNull();
+    });
+
+    it("also seals the secret so it can be read back", async () => {
+      const res = await svc.create("acc-1", { name: "ci" });
+      const persisted = repo.create.mock.calls[0][0] as Partial<ApiToken>;
+      const rawSecret = res.key.slice(`sms_${res.clientId}.`.length);
+      expect(persisted.secretCipher).toMatch(/^v1\$/);
+      expect(decryptSecret(persisted.secretCipher!, PEPPER)).toBe(rawSecret);
     });
 
     it("serialises allowedIps and parses expiresAt", async () => {
@@ -143,6 +153,40 @@ describe("ApiTokenService", () => {
       repo.findOne.mockResolvedValueOnce(tokenFor("s"));
       repo.save.mockRejectedValueOnce(new Error("boom"));
       await expect(svc.update("acc-1", 1, { name: "x" })).rejects.toThrow("boom");
+    });
+  });
+
+  describe("reveal", () => {
+    it("404 when the token is not this account's", async () => {
+      repo.findOne.mockResolvedValueOnce(null);
+      await expect(svc.reveal("acc-2", 1)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("hands back the very key that was minted, again and again", async () => {
+      const created = await svc.create("acc-1", { name: "ci" });
+      const persisted = repo.create.mock.calls[0][0] as Partial<ApiToken>;
+      repo.findOne.mockResolvedValue(tokenFor("s", { clientId: created.clientId, secretCipher: persisted.secretCipher! }));
+
+      await expect(svc.reveal("acc-1", 1)).resolves.toMatchObject({ key: created.key });
+      await expect(svc.reveal("acc-1", 1)).resolves.toMatchObject({ key: created.key });
+    });
+
+    it("hands back the key regenerate minted, not the one it replaced", async () => {
+      const row = tokenFor("s", { clientId: "keepme" });
+      repo.findOne.mockResolvedValue(row);
+      const regenerated = await svc.regenerate("acc-1", 1);
+
+      await expect(svc.reveal("acc-1", 1)).resolves.toMatchObject({ key: regenerated.key });
+    });
+
+    it("gives a null key on a token minted before the cipher existed", async () => {
+      repo.findOne.mockResolvedValueOnce(tokenFor("s", { secretCipher: "" }));
+      await expect(svc.reveal("acc-1", 1)).resolves.toMatchObject({ key: null });
+    });
+
+    it("gives a null key when the pepper no longer opens it", async () => {
+      repo.findOne.mockResolvedValueOnce(tokenFor("s", { secretCipher: "v1$aaaa$bbbb$cccc" }));
+      await expect(svc.reveal("acc-1", 1)).resolves.toMatchObject({ key: null });
     });
   });
 

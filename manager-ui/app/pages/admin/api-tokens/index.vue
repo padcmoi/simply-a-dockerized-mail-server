@@ -12,14 +12,20 @@ const modalOpen = ref(false);
 const revealOpen = ref(false);
 const editingToken = ref<ApiTokenItem | null>(null);
 const revealedToken = ref<CreatedToken | null>(null);
+const revealMode = ref<"created" | "stored">("created");
+const revealingId = ref<number | null>(null);
 const saving = ref(false);
+const confirmOpen = ref(false);
+const pending = ref<{ type: "danger" | "warning"; title: string; description: string; run: () => Promise<void> } | null>(null);
 
 const { t } = useI18n();
 const { set: setBreadcrumb } = useBreadcrumb();
 const toast = useToast();
 setBreadcrumb([{ label: t("nav.apiTokens") }]);
 
-const { tokens, loading, create, update, revoke, deleteToken, abandonToken, regenerate } = useApiTokens();
+const { tokens, loading, create, update, revoke, deleteToken, abandonToken, regenerate, reveal } = useApiTokens();
+const { isRoot, hasGlobal } = usePermissions();
+const canReveal = computed(() => isRoot.value || hasGlobal("api-tokens", "regenerate-api-token"));
 
 function openCreate() {
   editingToken.value = null;
@@ -45,6 +51,7 @@ async function onSubmit(data: { name: string; allowedIps?: string[]; expiresAt?:
     } else {
       const created = await create(data);
       modalOpen.value = false;
+      revealMode.value = "created";
       revealedToken.value = created;
       revealOpen.value = true;
       toast.add({ title: t("apiTokens.toast.created"), color: "success" });
@@ -54,6 +61,44 @@ async function onSubmit(data: { name: string; allowedIps?: string[]; expiresAt?:
   } finally {
     saving.value = false;
   }
+}
+
+function ask(action: { type: "danger" | "warning"; title: string; description: string; run: () => Promise<void> }) {
+  pending.value = action;
+  confirmOpen.value = true;
+}
+
+async function onConfirmed() {
+  const action = pending.value;
+  pending.value = null;
+  await action?.run();
+}
+
+function askRevoke(token: ApiTokenItem) {
+  ask({
+    type: "danger",
+    title: t("apiTokens.confirm.revokeTitle"),
+    description: t("apiTokens.confirm.revokeDescription", { name: token.name }),
+    run: () => onRevoke(token),
+  });
+}
+
+function askDelete(token: ApiTokenItem) {
+  ask({
+    type: "danger",
+    title: t("apiTokens.confirm.deleteTitle"),
+    description: t("apiTokens.confirm.deleteDescription", { name: token.name }),
+    run: () => onDeleteToken(token),
+  });
+}
+
+function askRegenerate(token: ApiTokenItem) {
+  ask({
+    type: "warning",
+    title: t("apiTokens.confirm.regenerateTitle"),
+    description: t("apiTokens.confirm.regenerateDescription", { name: token.name }),
+    run: () => onRegenerate(token),
+  });
 }
 
 async function onRevoke(token: ApiTokenItem) {
@@ -74,9 +119,40 @@ async function onDeleteToken(token: ApiTokenItem) {
   }
 }
 
+async function onReveal(token: ApiTokenItem) {
+  revealingId.value = token.id;
+  try {
+    const revealed = await reveal(token.id);
+    if (!revealed.key) {
+      toast.add({
+        title: t("apiTokens.secret.unavailable"),
+        description: t("apiTokens.secret.unavailableHint"),
+        color: "warning",
+      });
+      return;
+    }
+    revealMode.value = "stored";
+    revealedToken.value = {
+      id: revealed.id,
+      name: revealed.name,
+      clientId: revealed.clientId,
+      key: revealed.key,
+      allowedIps: token.allowedIps,
+      expiresAt: token.expiresAt,
+      createdAt: token.createdAt,
+    };
+    revealOpen.value = true;
+  } catch (e) {
+    toast.add({ title: t("apiTokens.secret.revealFailed"), description: (e as Error).message, color: "error" });
+  } finally {
+    revealingId.value = null;
+  }
+}
+
 async function onRegenerate(token: ApiTokenItem) {
   try {
     const created = await regenerate(token.id);
+    revealMode.value = "created";
     revealedToken.value = created;
     revealOpen.value = true;
     toast.add({ title: t("apiTokens.toast.regenerated"), color: "success" });
@@ -95,16 +171,6 @@ async function onRevealDismissed() {
     // silent
   }
 }
-
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
-}
-
-function isExpired(iso: string | null) {
-  if (!iso) return false;
-  return new Date(iso) < new Date();
-}
 </script>
 
 <template>
@@ -119,9 +185,22 @@ function isExpired(iso: string | null) {
 
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-lg">{{ t("apiTokens.listTitle") }}</h2>
-      <UButton icon="i-lucide-plus" color="primary" @click="openCreate">
-        {{ t("apiTokens.newToken") }}
-      </UButton>
+      <div class="flex items-center gap-2">
+        <UButton
+          icon="i-lucide-book-open"
+          color="neutral"
+          variant="subtle"
+          trailing-icon="i-lucide-external-link"
+          to="/api/doc"
+          target="_blank"
+          external
+        >
+          {{ t("apiTokens.apiDoc") }}
+        </UButton>
+        <UButton icon="i-lucide-plus" color="primary" @click="openCreate">
+          {{ t("apiTokens.newToken") }}
+        </UButton>
+      </div>
     </div>
 
     <div v-if="loading" class="flex justify-center py-8">
@@ -134,80 +213,18 @@ function isExpired(iso: string | null) {
     </div>
 
     <div v-else class="space-y-3">
-      <UCard v-for="token in tokens" :key="token.id">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0 flex-1 space-y-1">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span :class="['font-semibold', token.revokedAt ? 'line-through opacity-50' : '']">{{ token.name }}</span>
-              <UBadge v-if="token.revokedAt" color="neutral" variant="subtle" size="xs">{{ t("apiTokens.revoked") }}</UBadge>
-              <UBadge v-else-if="isExpired(token.expiresAt)" color="error" variant="subtle" size="xs">{{
-                t("apiTokens.expired")
-              }}</UBadge>
-              <UBadge v-else color="success" variant="subtle" size="xs">{{ t("apiTokens.active") }}</UBadge>
-            </div>
-
-            <p :class="['font-mono text-xs text-muted truncate', token.revokedAt ? 'line-through opacity-50' : '']">
-              {{ token.clientId }}
-            </p>
-
-            <div class="text-xs text-muted flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
-              <span v-if="token.allowedIps?.length"> {{ t("apiTokens.table.ips") }}: {{ token.allowedIps.join(", ") }} </span>
-              <span v-else>{{ t("apiTokens.allIps") }}</span>
-
-              <span v-if="token.expiresAt"> {{ t("apiTokens.table.expires") }}: {{ formatDate(token.expiresAt) }} </span>
-              <span v-else>{{ t("apiTokens.noExpiry") }}</span>
-
-              <span>
-                {{ t("apiTokens.table.lastUsed") }}:
-                {{ token.lastUsedAt ? formatDate(token.lastUsedAt) : t("apiTokens.never") }}
-              </span>
-            </div>
-          </div>
-
-          <div class="flex gap-1.5 shrink-0">
-            <template v-if="!token.revokedAt">
-              <UButton
-                icon="i-lucide-pencil"
-                size="sm"
-                color="neutral"
-                variant="ghost"
-                square
-                :aria-label="t('common.save')"
-                @click="openEdit(token)"
-              />
-              <UButton
-                icon="i-lucide-refresh-cw"
-                size="sm"
-                color="neutral"
-                variant="ghost"
-                square
-                :aria-label="t('apiTokens.regenerate')"
-                @click="onRegenerate(token)"
-              />
-              <UButton
-                icon="i-lucide-ban"
-                size="sm"
-                color="warning"
-                variant="ghost"
-                square
-                :aria-label="t('apiTokens.revokeToken')"
-                @click="onRevoke(token)"
-              />
-            </template>
-            <template v-else>
-              <UButton
-                icon="i-lucide-trash-2"
-                size="sm"
-                color="error"
-                variant="ghost"
-                square
-                :aria-label="t('apiTokens.deleteToken')"
-                @click="onDeleteToken(token)"
-              />
-            </template>
-          </div>
-        </div>
-      </UCard>
+      <ApiTokenCard
+        v-for="token in tokens"
+        :key="token.id"
+        :token="token"
+        :can-reveal="canReveal"
+        :revealing="revealingId === token.id"
+        @reveal="onReveal"
+        @edit="openEdit"
+        @regenerate="askRegenerate"
+        @revoke="askRevoke"
+        @remove="askDelete"
+      />
     </div>
 
     <ApiTokenModal
@@ -218,9 +235,18 @@ function isExpired(iso: string | null) {
       @submit="onSubmit"
     />
 
+    <ConfirmModal
+      v-model:open="confirmOpen"
+      :type="pending?.type ?? 'danger'"
+      :title="pending?.title"
+      :description="pending?.description"
+      @confirm="onConfirmed"
+    />
+
     <ApiTokenRevealModal
       :open="revealOpen"
       :token="revealedToken"
+      :mode="revealMode"
       @update:open="revealOpen = $event"
       @dismissed="onRevealDismissed"
     />

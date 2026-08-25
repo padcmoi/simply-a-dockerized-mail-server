@@ -109,6 +109,89 @@ export const ListApiTokensDocs = () =>
     })
   );
 
+export const RevealApiTokenDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: Number, description: "API token id" }),
+    ApiOperation({
+      summary: "Read the full key of an API token back, as many times as asked",
+      description:
+        "Self-scoped to the authenticated account (req.user.id): a token id belonging to another account is " +
+        "indistinguishable from a nonexistent one and returns 404, never 403. Handing back a working credential " +
+        "weighs the same as minting one, so it is gated on `regenerate-api-token` rather than on the listing " +
+        "actions. The secret is stored twice: an HMAC digest, which is what authentication compares, and an " +
+        "AES-256-GCM ciphertext sealed with MANAGER_API_TOKEN_PEPPER, which is what this route opens. `key` is " +
+        "null, with no error, when there is nothing to give back: a token minted before the ciphertext column " +
+        "existed, or one sealed under a pepper that has since been rotated. The answer is served with " +
+        "Cache-Control: no-store.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "The full key, or null when it cannot be read back",
+      schema: {
+        example: {
+          id: 7,
+          name: "CI deploy key",
+          clientId: "Zm9vYmFyMTIzNDU2Nzg5MA",
+          key: "sms_Zm9vYmFyMTIzNDU2Nzg5MA.c29tZS1yYW5kb20tc2VjcmV0LXZhbHVl",
+        },
+      },
+    }),
+    ApiResponse({
+      status: 401,
+      description: "Not authenticated",
+      schema: { example: unauthorizedExample },
+    }),
+    ApiResponse({
+      status: 404,
+      description: "No such token for this account",
+      schema: { example: notFoundExample },
+    })
+  );
+
+const accessEntryExample = {
+  id: "5821",
+  tokenId: 7,
+  method: "GET",
+  route: "/api/v1/domains?limit=10&offset=0",
+  statusCode: 200,
+  clientIp: "203.0.113.10",
+  userAgent: "python-requests/2.32.3",
+  origin: "",
+  referer: "",
+  durationMs: 42,
+  createdAt: "2026-08-25T09:12:44.000Z",
+};
+
+export const ListApiTokenAccessDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: Number, description: "API token id" }),
+    ApiOperation({
+      summary: "Access trail of one API token: every request sent with it, refusals included",
+      description:
+        "Self-scoped to the authenticated account (req.user.id): a token id belonging to another account is " +
+        "indistinguishable from a nonexistent one and returns 404, never 403. One row per request that carried " +
+        "this token's key, whatever the answer was, so a rejected key (revoked, expired, IP not allowed, wrong " +
+        "secret) shows up here with its 401. Paginated with limit/offset/search/sortBy/sortDir; sortable columns " +
+        "are createdAt, method, route, statusCode, clientIp and durationMs. Rows older than " +
+        "MANAGER_API_TOKEN_ACCESS_RETENTION_DAYS (90 by default) are swept away.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "One page of the trail, newest first by default",
+      schema: { example: { items: [accessEntryExample], total: 4927 } },
+    }),
+    ApiResponse({
+      status: 401,
+      description: "Not authenticated",
+      schema: { example: unauthorizedExample },
+    }),
+    ApiResponse({
+      status: 404,
+      description: "No such token for this account",
+      schema: { example: notFoundExample },
+    })
+  );
+
 export const UpdateApiTokenDocs = () =>
   applyDecorators(
     ApiParam({ name: "id", type: Number, description: "API token id" }),

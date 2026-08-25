@@ -1,5 +1,20 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  HttpCode,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import type { Request } from "express";
+import { paginationQuerySchema, type PaginationQuery } from "../../common/pagination.validation";
 import { ZodValidationPipe } from "../../common/zod.pipe";
 import { GlobalPermissionGuard } from "../../custom-permission-guard/global-permission.guard";
 import { RequireGlobalPermissions } from "../../custom-permission-guard/require-permissions.decorator";
@@ -8,11 +23,14 @@ import {
   ApiTokensApi,
   CreateApiTokenDocs,
   DeleteApiTokenDocs,
+  ListApiTokenAccessDocs,
   ListApiTokensDocs,
   RegenerateApiTokenDocs,
+  RevealApiTokenDocs,
   RevokeApiTokenDocs,
   UpdateApiTokenDocs,
 } from "./api-token.openapi";
+import { ApiTokenAccessService } from "./api-token-access.service";
 import { ApiTokenService } from "./api-token.service";
 import { CreateApiTokenDto, UpdateApiTokenDto, createApiTokenSchema, updateApiTokenSchema } from "./api-token.validation";
 
@@ -28,7 +46,10 @@ type AuthedRequest = Request & { user: { id: string; email: string; isRoot: bool
 @Controller({ path: "api-tokens", version: "1" })
 @UseGuards(GlobalPermissionGuard)
 export class ApiTokenController {
-  constructor(private readonly svc: ApiTokenService) {}
+  constructor(
+    private readonly svc: ApiTokenService,
+    private readonly access: ApiTokenAccessService
+  ) {}
 
   @Post()
   @RequireGlobalPermissions([{ resource: "api-tokens", actions: ["access", "create-api-token"] }])
@@ -42,6 +63,25 @@ export class ApiTokenController {
   @ListApiTokensDocs()
   list(@Req() req: AuthedRequest) {
     return this.svc.list(req.user.id);
+  }
+
+  @Get(":id/access")
+  @RequireGlobalPermissions([{ resource: "api-tokens", actions: ["access", "list-api-tokens"] }])
+  @ListApiTokenAccessDocs()
+  listAccess(
+    @Req() req: AuthedRequest,
+    @Param("id", ParseIntPipe) id: number,
+    @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery
+  ) {
+    return this.access.list(req.user.id, id, query);
+  }
+
+  @Get(":id/secret")
+  @RequireGlobalPermissions([{ resource: "api-tokens", actions: ["access", "regenerate-api-token"] }])
+  @Header("Cache-Control", "no-store")
+  @RevealApiTokenDocs()
+  reveal(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
+    return this.svc.reveal(req.user.id, id);
   }
 
   @Patch(":id")

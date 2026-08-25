@@ -3,9 +3,10 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { Repository } from "typeorm";
 import { ApiToken } from "./api-token.entity";
+import { decryptSecret, encryptSecret } from "./api-token.cipher";
+import { KEY_PREFIX, normalizeIp, parseApiKey } from "./api-token.request";
 import type { CreateApiTokenDto, UpdateApiTokenDto } from "./api-token.validation";
 
-const KEY_PREFIX = "sms_";
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 
@@ -33,10 +34,6 @@ export class ApiTokenService {
     return timingSafeEqual(computed, stored);
   }
 
-  private normalizeIp(ip: string): string {
-    return /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(ip)?.[1] ?? ip;
-  }
-
   private toSafe(t: ApiToken) {
     return {
       id: t.id,
@@ -48,6 +45,7 @@ export class ApiTokenService {
       lastUsedAt: t.lastUsedAt,
       lastUsedIp: t.lastUsedIp,
       createdAt: t.createdAt,
+      secretAvailable: t.secretCipher.length > 0,
     };
   }
 
@@ -60,6 +58,7 @@ export class ApiTokenService {
       name: input.name,
       clientId,
       secretHash: this.hashSecret(rawSecret),
+      secretCipher: encryptSecret(rawSecret, this.pepper),
       allowedIps: input.allowedIps?.length ? JSON.stringify(input.allowedIps) : null,
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
     });
@@ -102,6 +101,20 @@ export class ApiTokenService {
     return this.toSafe(token);
   }
 
+  async reveal(accountId: string, id: number) {
+    const token = await this.repo.findOne({ where: { id, accountId } });
+    if (!token) throw new NotFoundException("Token not found");
+    if (!token.secretCipher) return { id: token.id, name: token.name, clientId: token.clientId, key: null };
+
+    const secret = decryptSecret(token.secretCipher, this.pepper);
+    return {
+      id: token.id,
+      name: token.name,
+      clientId: token.clientId,
+      key: secret === null ? null : `${KEY_PREFIX}${token.clientId}.${secret}`,
+    };
+  }
+
   async revoke(accountId: string, id: number) {
     const token = await this.repo.findOne({ where: { id, accountId } });
     if (!token) throw new NotFoundException("Token not found");
@@ -124,6 +137,7 @@ export class ApiTokenService {
     if (token.revokedAt) throw new BadRequestException("Cannot regenerate a revoked token");
     const rawSecret = randomBytes(32).toString("base64url");
     token.secretHash = this.hashSecret(rawSecret);
+    token.secretCipher = encryptSecret(rawSecret, this.pepper);
     token.failedAttempts = 0;
     token.lockedUntil = null;
     await this.repo.save(token);
@@ -139,14 +153,10 @@ export class ApiTokenService {
   }
 
   async validate(rawKey: string, requestIp: string): Promise<{ id: string; email: string; isRoot: boolean } | null> {
-    if (!rawKey.startsWith(KEY_PREFIX)) return null;
+    const parsed = parseApiKey(rawKey);
+    if (!parsed) return null;
 
-    const body = rawKey.slice(KEY_PREFIX.length);
-    const dot = body.indexOf(".");
-    if (dot === -1) return null;
-
-    const clientId = body.slice(0, dot);
-    const rawSecret = body.slice(dot + 1);
+    const { clientId, secret: rawSecret } = parsed;
 
     const token = await this.repo.findOne({ where: { clientId }, relations: ["account"] });
     if (!token) return null;
@@ -165,7 +175,7 @@ export class ApiTokenService {
       return null;
     }
 
-    const ip = this.normalizeIp(requestIp);
+    const ip = normalizeIp(requestIp);
     if (token.allowedIps) {
       const allowed = JSON.parse(token.allowedIps) satisfies string[];
       if (allowed.length > 0 && !allowed.includes(ip)) return null;

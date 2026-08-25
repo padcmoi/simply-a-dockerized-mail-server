@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vites
 import request from "supertest";
 import { ApiTokenController } from "../../src/core/auth/api-token/api-token.controller";
 import { ApiTokenService } from "../../src/core/auth/api-token/api-token.service";
+import { ApiTokenAccessService } from "../../src/core/auth/api-token/api-token-access.service";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
 
 // api-token routes are all gated on the global "api-tokens" resource
@@ -17,14 +18,19 @@ describe("ApiTokenController (e2e: auth + ACL + behavior)", () => {
     update: vi.fn(),
     revoke: vi.fn(),
     regenerate: vi.fn(),
+    reveal: vi.fn(),
     delete: vi.fn(),
     validate: vi.fn().mockResolvedValue(null),
   };
+  const access = { list: vi.fn(), record: vi.fn() };
 
   beforeAll(async () => {
     h = await buildHarness({
       controllers: [ApiTokenController],
-      providers: [{ provide: ApiTokenService, useValue: svc }],
+      providers: [
+        { provide: ApiTokenService, useValue: svc },
+        { provide: ApiTokenAccessService, useValue: access },
+      ],
     });
   });
   afterAll(() => h.close());
@@ -87,6 +93,63 @@ describe("ApiTokenController (e2e: auth + ACL + behavior)", () => {
         .set(asUser(h.token(ROOT)))
         .send({ name: "x", allowedIps: ["not-an-ip"] })
         .expect(400);
+    });
+  });
+
+  describe("GET /:id/secret (reveal)", () => {
+    it("403 for a user without the permission", async () => {
+      await api().get("/api/v1/api-tokens/1/secret").set(asUser(h.token(USER))).expect(403);
+    });
+    it("403 for a user who may only list, reading a key back being handing one out", async () => {
+      h.cpg.grantGlobal("api-tokens", "access", "list-api-tokens");
+      await api().get("/api/v1/api-tokens/1/secret").set(asUser(h.token(USER))).expect(403);
+    });
+    it("200 for a user granted the exact permission", async () => {
+      h.cpg.grantGlobal("api-tokens", "access", "regenerate-api-token");
+      svc.reveal.mockResolvedValueOnce({ id: 1, key: "sms_a.b" });
+      await api().get("/api/v1/api-tokens/1/secret").set(asUser(h.token(USER))).expect(200);
+    });
+    it("200 for root, forwards (callerId, id) and is never cached", async () => {
+      svc.reveal.mockResolvedValueOnce({ id: 7, name: "ci", clientId: "cid", key: "sms_cid.s3cret" });
+      const res = await api().get("/api/v1/api-tokens/7/secret").set(asUser(h.token(ROOT))).expect(200);
+      expect(res.body.key).toBe("sms_cid.s3cret");
+      expect(res.headers["cache-control"]).toBe("no-store");
+      expect(svc.reveal).toHaveBeenCalledWith(ROOT.id, 7);
+    });
+    it("400 when :id is not an integer", async () => {
+      await api().get("/api/v1/api-tokens/abc/secret").set(asUser(h.token(ROOT))).expect(400);
+    });
+  });
+
+  describe("GET /:id/access (access trail)", () => {
+    it("403 for a user without the permission", async () => {
+      await api().get("/api/v1/api-tokens/1/access").set(asUser(h.token(USER))).expect(403);
+    });
+    it("200 for a user granted the exact permission", async () => {
+      h.cpg.grantGlobal("api-tokens", "access", "list-api-tokens");
+      access.list.mockResolvedValueOnce({ items: [], total: 0 });
+      await api().get("/api/v1/api-tokens/1/access").set(asUser(h.token(USER))).expect(200);
+    });
+    it("200 for root and forwards (callerId, id, pagination)", async () => {
+      access.list.mockResolvedValueOnce({ items: [{ id: "1" }], total: 4927 });
+      const res = await api()
+        .get("/api/v1/api-tokens/7/access?limit=25&offset=50&sortBy=durationMs&sortDir=asc&search=domains")
+        .set(asUser(h.token(ROOT)))
+        .expect(200);
+      expect(res.body.total).toBe(4927);
+      expect(access.list).toHaveBeenCalledWith(ROOT.id, 7, {
+        limit: 25,
+        offset: 50,
+        sortBy: "durationMs",
+        sortDir: "asc",
+        search: "domains",
+      });
+    });
+    it("400 when :id is not an integer", async () => {
+      await api().get("/api/v1/api-tokens/abc/access").set(asUser(h.token(ROOT))).expect(400);
+    });
+    it("400 on a page size the API does not serve (zod)", async () => {
+      await api().get("/api/v1/api-tokens/1/access?limit=999").set(asUser(h.token(ROOT))).expect(400);
     });
   });
 
