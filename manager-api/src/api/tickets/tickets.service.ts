@@ -8,7 +8,10 @@ import { AccountProfile } from "../../core/entities/account-profile.entity";
 import { SupportTicket } from "../../core/entities/support-ticket.entity";
 import { SupportTicketMessage } from "../../core/entities/support-ticket-message.entity";
 import { SupportTicketRead } from "../../core/entities/support-ticket-read.entity";
+import { DomainDelegation } from "../../core/entities/domain-delegation.entity";
+import { VirtualAlias } from "../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
+import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { NotificationsService } from "../../core/notifications/notifications.service";
 import { TopicPresenceService } from "../../core/websocket/presence.service";
 import { CreateTicketDto, ReplyTicketDto, TicketListQuery } from "./tickets.validation";
@@ -42,6 +45,9 @@ export class TicketsService {
     @InjectRepository(SupportTicketMessage) private readonly messages: Repository<SupportTicketMessage>,
     @InjectRepository(SupportTicketRead) private readonly reads: Repository<SupportTicketRead>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
+    @InjectRepository(VirtualUser) private readonly recipients: Repository<VirtualUser>,
+    @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>,
+    @InjectRepository(DomainDelegation) private readonly delegations: Repository<DomainDelegation>,
     @InjectRepository(Account) private readonly accounts: Repository<Account>,
     @InjectRepository(AccountProfile) private readonly profiles: Repository<AccountProfile>,
     private readonly cpg: CustomPermissionGuardService,
@@ -108,12 +114,54 @@ export class TicketsService {
     return this.cpg.guard.utils.check.global(caller.userId, "tickets", "handle-ticket");
   }
 
+  // Who reaches a PRIVATE ticket they did not open: root and the support role
+  // (handle-ticket) alone. reply-ticket deliberately does NOT open privates:
+  // it lets one answer someone else's PUBLIC thread, nothing more. The
+  // ticket's domain owner is checked per ticket in canSeePrivate.
+  private privateReach(caller: TicketCaller): Promise<boolean> {
+    return this.isSupport(caller);
+  }
+
+  private async canSeePrivate(caller: TicketCaller, ticket: SupportTicket): Promise<boolean> {
+    if (ticket.createdBy === caller.userId) return true;
+    if (await this.privateReach(caller)) return true;
+    return (await this.domains.count({ where: { id: ticket.domainId, ownerId: caller.userId } })) > 0;
+  }
+
+  // A foothold on a domain opens its support desk too: owning a mailbox or an
+  // alias there, or holding a delegation, counts like a domain permission even
+  // without owning the domain. The global tickets ACL stays the gate in front.
   async visibleDomainIds(caller: TicketCaller): Promise<number[] | null> {
     if (caller.isRoot) return null;
     const effective = await this.cpg.guard.getEffectivePermissions(caller.userId);
     if (effective.global.some((p) => p.resource === "domains" && p.action === "list-all-domains")) return null;
     const owned = await this.domains.find({ where: { ownerId: caller.userId }, select: { id: true } });
-    return [...new Set([...effective.domain.map((p) => p.domainId), ...owned.map((d) => d.id)])];
+    const delegated = await this.delegations.find({ where: { accountId: caller.userId }, select: { domainId: true } });
+    const ownedRecipients = await this.recipients.find({ where: { ownerId: caller.userId }, select: { domain: true } });
+    const ownedAliases = await this.aliases.find({ where: { ownerId: caller.userId }, select: { domain: true } });
+    const fqdns = [...new Set([...ownedRecipients.map((r) => r.domain), ...ownedAliases.map((a) => a.domain)])];
+    const footholds = fqdns.length ? await this.domains.find({ where: { domain: In(fqdns) }, select: { id: true } }) : [];
+    return [
+      ...new Set([
+        ...effective.domain.map((p) => p.domainId),
+        ...owned.map((d) => d.id),
+        ...delegated.map((d) => d.domainId),
+        ...footholds.map((d) => d.id),
+      ]),
+    ];
+  }
+
+  // The domains the caller may open a ticket about, resolved to names for the
+  // creation form's selector. Null from visibleDomainIds = every domain.
+  async ticketableDomains(caller: TicketCaller) {
+    const ids = await this.visibleDomainIds(caller);
+    const rows =
+      ids === null
+        ? await this.domains.find({ select: { id: true, domain: true }, order: { domain: "ASC" } })
+        : ids.length
+          ? await this.domains.find({ where: { id: In(ids) }, select: { id: true, domain: true }, order: { domain: "ASC" } })
+          : [];
+    return rows.map((d) => ({ id: d.id, domain: d.domain }));
   }
 
   // `tickets:notification` is the trigger: no action, no notification at all.
@@ -144,7 +192,7 @@ export class TicketsService {
       if (!(await this.mayBeNotified(caller))) continue;
       const domainIds = await this.visibleDomainIds(caller);
       if (domainIds && !domainIds.includes(ticket.domainId)) continue;
-      if (ticket.visibility !== "public" && ticket.createdBy !== account.id && !(await this.isSupport(caller))) continue;
+      if (ticket.visibility !== "public" && !(await this.canSeePrivate(caller, ticket))) continue;
       recipients.push(account.id);
     }
     return recipients;
@@ -174,7 +222,7 @@ export class TicketsService {
   }
 
   async list(query: TicketListQuery, caller: TicketCaller) {
-    const support = await this.isSupport(caller);
+    const reach = await this.privateReach(caller);
     const domainIds = await this.visibleDomainIds(caller);
     if (domainIds?.length === 0) {
       return query.limit === undefined ? [] : ({ items: [], total: 0 } satisfies PaginatedResult<unknown>);
@@ -182,8 +230,17 @@ export class TicketsService {
 
     const qb = this.tickets.createQueryBuilder("t");
     if (domainIds) qb.andWhere("t.domainId IN (:...domainIds)", { domainIds });
-    if (!support) {
-      qb.andWhere("(t.visibility = :public OR t.createdBy = :uid)", { public: "public", uid: caller.userId });
+    if (!reach) {
+      const owned = await this.domains.find({ where: { ownerId: caller.userId }, select: { id: true } });
+      if (owned.length) {
+        qb.andWhere("(t.visibility = :public OR t.createdBy = :uid OR t.domainId IN (:...ownedDomainIds))", {
+          public: "public",
+          uid: caller.userId,
+          ownedDomainIds: owned.map((d) => d.id),
+        });
+      } else {
+        qb.andWhere("(t.visibility = :public OR t.createdBy = :uid)", { public: "public", uid: caller.userId });
+      }
     }
     if (query.mine === "true") qb.andWhere("t.assignedTo = :me", { me: caller.userId });
     if (query.search) qb.andWhere("t.subject LIKE :search", { search: `%${query.search}%` });
@@ -240,8 +297,7 @@ export class TicketsService {
     if (domainIds && !domainIds.includes(ticket.domainId)) {
       throw new NotFoundException(`Ticket #${id} not found`);
     }
-    const support = await this.isSupport(caller);
-    if (!support && ticket.visibility !== "public" && ticket.createdBy !== caller.userId) {
+    if (ticket.visibility !== "public" && !(await this.canSeePrivate(caller, ticket))) {
       throw new NotFoundException(`Ticket #${id} not found`);
     }
     return ticket;

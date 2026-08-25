@@ -14,6 +14,7 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
   const svc = {
     list: vi.fn(),
     create: vi.fn(),
+    ticketableDomains: vi.fn(),
     get: vi.fn(),
     messagesPage: vi.fn(),
     markRead: vi.fn(),
@@ -45,6 +46,7 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
 
   const routes: { name: string; method: Method; path: string }[] = [
     { name: "GET list", method: "get", path: base },
+    { name: "GET domains", method: "get", path: `${base}/domains` },
     { name: "POST create", method: "post", path: base },
     { name: "GET :id", method: "get", path: `${base}/5` },
     { name: "GET :id/messages", method: "get", path: `${base}/5/messages` },
@@ -95,6 +97,16 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
     it("400 on an invalid pagination query (limit not 10/25/50)", async () => {
       await api().get(`${base}?limit=7`).set("Authorization", root()).expect(400);
       expect(svc.list).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("GET /domains (ticketable domains)", () => {
+    it("200 for a non-root user granted create-ticket, forwards the caller", async () => {
+      grant("create-ticket");
+      svc.ticketableDomains.mockResolvedValueOnce([{ id: DOMAIN_ID, domain: "example.com" }]);
+      const res = await api().get(`${base}/domains`).set("Authorization", user()).expect(200);
+      expect(res.body).toEqual([{ id: DOMAIN_ID, domain: "example.com" }]);
+      expect(svc.ticketableDomains).toHaveBeenCalledWith({ userId: USER.id, isRoot: false });
     });
   });
 

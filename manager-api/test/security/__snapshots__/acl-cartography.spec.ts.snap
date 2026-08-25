@@ -88,6 +88,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "GET /api/v1/tickets  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,list-tickets]",
   "GET /api/v1/tickets/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,view-ticket]",
   "GET /api/v1/tickets/:id/messages  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,view-ticket]",
+  "GET /api/v1/tickets/domains  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,create-ticket]",
   "PATCH /api/v1/accounts/:id/edit  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,edit-account]",
   "PATCH /api/v1/admin/domains/:domainId/quota  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:domains[access] superadmin[access,resize-any-domain-quota]",
   "PATCH /api/v1/api-tokens/:id  ::  auth=JWT+ApiToken guards=[GlobalPermissionGuard] global:api-tokens[access,edit-api-token]",

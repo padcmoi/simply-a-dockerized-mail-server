@@ -8,7 +8,10 @@ import type { AccountProfile } from "../../src/core/entities/account-profile.ent
 import type { SupportTicket } from "../../src/core/entities/support-ticket.entity";
 import type { SupportTicketMessage } from "../../src/core/entities/support-ticket-message.entity";
 import type { SupportTicketRead } from "../../src/core/entities/support-ticket-read.entity";
+import type { DomainDelegation } from "../../src/core/entities/domain-delegation.entity";
+import type { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import type { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
+import type { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { cpgMock, entity, providerMock, qbMock, repoMock, type CpgMock, type Loose } from "../helpers/mocks";
 
 const DOMAIN_ID = 12;
@@ -22,6 +25,9 @@ describe("TicketsService (row-level visibility)", () => {
   let messages: ReturnType<typeof repoMock<SupportTicketMessage>>;
   let reads: ReturnType<typeof repoMock<SupportTicketRead>>;
   let domains: ReturnType<typeof repoMock<VirtualDomain>>;
+  let recipients: ReturnType<typeof repoMock<VirtualUser>>;
+  let aliases: ReturnType<typeof repoMock<VirtualAlias>>;
+  let delegations: ReturnType<typeof repoMock<DomainDelegation>>;
   let accounts: ReturnType<typeof repoMock<Account>>;
   let profiles: ReturnType<typeof repoMock<AccountProfile>>;
   let cpg: CpgMock;
@@ -36,6 +42,12 @@ describe("TicketsService (row-level visibility)", () => {
     reads.find.mockResolvedValue([]);
     reads.findOne.mockResolvedValue(null);
     domains = repoMock<VirtualDomain>();
+    recipients = repoMock<VirtualUser>();
+    aliases = repoMock<VirtualAlias>();
+    delegations = repoMock<DomainDelegation>();
+    recipients.find.mockResolvedValue([]);
+    aliases.find.mockResolvedValue([]);
+    delegations.find.mockResolvedValue([]);
     accounts = repoMock<Account>();
     profiles = repoMock<AccountProfile>();
     profiles.find.mockResolvedValue([]);
@@ -52,7 +64,7 @@ describe("TicketsService (row-level visibility)", () => {
     cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [{ domainId: DOMAIN_ID }] });
     notifications = providerMock<NotificationsService>({ dispatch: vi.fn().mockResolvedValue(undefined) });
     presence = new TopicPresenceService();
-    svc = new TicketsService(tickets, messages, reads, domains, accounts, profiles, cpg, notifications, presence);
+    svc = new TicketsService(tickets, messages, reads, domains, recipients, aliases, delegations, accounts, profiles, cpg, notifications, presence);
   });
 
   const caller = (userId: string, isRoot = false): TicketCaller => ({ userId, isRoot });
@@ -90,6 +102,43 @@ describe("TicketsService (row-level visibility)", () => {
       tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private" }));
       await expect(svc.get(5, caller(SUPPORT))).resolves.toMatchObject({ id: 5 });
       expect(cpg.guard.utils.check.global).toHaveBeenCalledWith(SUPPORT, "tickets", "handle-ticket");
+    });
+
+    it("keeps a private ticket hidden from a reply-ticket holder (that right covers public threads only)", async () => {
+      cpg.guard.utils.check.global.mockImplementation(async (_u: string, _r: string, action: string) => action === "reply-ticket");
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      await expect(svc.get(5, caller(STRANGER))).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("shows a private ticket to a handle-ticket holder", async () => {
+      cpg.guard.utils.check.global.mockImplementation(async (_u: string, _r: string, action: string) => action === "handle-ticket");
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("shows a private ticket to the owner of its domain", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private" }));
+      domains.count.mockResolvedValue(1);
+      await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+      expect(domains.count).toHaveBeenCalledWith({ where: { id: DOMAIN_ID, ownerId: STRANGER } });
+    });
+
+    it("still hides a private ticket from a mere foothold (no right, no ownership)", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
+      delegations.find.mockResolvedValue([entity<DomainDelegation>({ domainId: DOMAIN_ID })]);
+      domains.count.mockResolvedValue(0);
+      await expect(svc.get(5, caller(STRANGER))).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("lists an owned domain's private tickets through a dedicated clause", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [{ domainId: DOMAIN_ID }] });
+      domains.find.mockResolvedValue([entity<VirtualDomain>({ id: DOMAIN_ID })]);
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      await svc.list({ offset: 0, sortDir: "desc" }, caller(STRANGER));
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c) => c.includes("ownedDomainIds"))).toBe(true);
     });
 
     it("shows any ticket to root without consulting the guard", async () => {
@@ -317,6 +366,44 @@ describe("TicketsService (row-level visibility)", () => {
       domains.find.mockResolvedValue([entity<VirtualDomain>({ id: DOMAIN_ID })]);
       tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
       await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("counts a domain where the caller merely owns a mailbox as accessible", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [] });
+      recipients.find.mockResolvedValue([entity<VirtualUser>({ domain: "example.com" })]);
+      domains.find.mockResolvedValueOnce([]).mockResolvedValueOnce([entity<VirtualDomain>({ id: DOMAIN_ID })]);
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("counts a domain where the caller merely owns an alias as accessible", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [] });
+      aliases.find.mockResolvedValue([entity<VirtualAlias>({ domain: "example.com" })]);
+      domains.find.mockResolvedValueOnce([]).mockResolvedValueOnce([entity<VirtualDomain>({ id: DOMAIN_ID })]);
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("counts a domain where the caller holds a delegation as accessible", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [] });
+      delegations.find.mockResolvedValue([entity<DomainDelegation>({ domainId: DOMAIN_ID })]);
+      tickets.findOne.mockResolvedValue(ticketRow({ visibility: "public" }));
+      await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
+    });
+
+    it("ticketableDomains resolves the reachable domains to names for the creation form", async () => {
+      cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [] });
+      delegations.find.mockResolvedValue([entity<DomainDelegation>({ domainId: DOMAIN_ID })]);
+      domains.find.mockResolvedValueOnce([]).mockResolvedValueOnce([entity<VirtualDomain>({ id: DOMAIN_ID, domain: "example.com" })]);
+      await expect(svc.ticketableDomains(caller(STRANGER))).resolves.toEqual([{ id: DOMAIN_ID, domain: "example.com" }]);
+    });
+
+    it("ticketableDomains lists every domain for root", async () => {
+      domains.find.mockResolvedValue([entity<VirtualDomain>({ id: 1, domain: "a.io" }), entity<VirtualDomain>({ id: 2, domain: "b.io" })]);
+      await expect(svc.ticketableDomains(caller(ROOT_ID, true))).resolves.toEqual([
+        { id: 1, domain: "a.io" },
+        { id: 2, domain: "b.io" },
+      ]);
     });
 
     it("lets domains:list-all-domains see every domain's tickets", async () => {

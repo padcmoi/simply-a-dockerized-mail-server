@@ -15,6 +15,11 @@ export const ListTicketsDocs = () =>
 
 export const CreateTicketDocs = () => applyDecorators(ApiOperation({ summary: "Open a support ticket about a domain" }));
 
+export const TicketableDomainsDocs = () =>
+  applyDecorators(
+    ApiOperation({ summary: "List the domains the caller may open a ticket about (permission, ownership or any foothold)" })
+  );
+
 export const GetTicketDocs = () => applyDecorators(idParam(), ApiOperation({ summary: "Read a ticket and its message thread" }));
 
 export const ListTicketMessagesDocs = () =>

@@ -6,6 +6,7 @@ import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global
 import { RequireGlobalPermissions } from "../../core/custom-permission-guard/require-permissions.decorator";
 import {
   CreateTicketDocs,
+  TicketableDomainsDocs,
   EditMessageDocs,
   GetTicketDocs,
   ListTicketMessagesDocs,
@@ -56,6 +57,14 @@ export class TicketsController {
   @CreateTicketDocs()
   create(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(createTicketSchema)) body: CreateTicketDto) {
     return this.svc.create(body, caller(req));
+  }
+
+  // Declared before ":id" so "tickets/domains" is not captured by the int pipe.
+  @Get("domains")
+  @RequireGlobalPermissions([{ resource: "tickets", actions: ["access", "create-ticket"] }])
+  @TicketableDomainsDocs()
+  ticketableDomains(@Req() req: AuthedRequest) {
+    return this.svc.ticketableDomains(caller(req));
   }
 
   @Get(":id")

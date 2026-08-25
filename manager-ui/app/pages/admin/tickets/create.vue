@@ -37,7 +37,7 @@ const visibilityHint = computed(() =>
 
 setBreadcrumb([{ label: t("nav.tickets"), to: "/admin/tickets" }, { label: t("tickets.form.title") }]);
 
-const { data: domains } = useAsyncData<DomainOption[]>("tickets-domains", () => call<DomainOption[]>("/domains"), {
+const { data: domains } = useAsyncData<DomainOption[]>("tickets-domains", () => call<DomainOption[]>("/tickets/domains"), {
   server: false,
   default: () => [],
 });
