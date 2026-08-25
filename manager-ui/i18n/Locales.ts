@@ -63,6 +63,8 @@ export interface Locales {
     sectionMail: string;
     sectionAccess: string;
     sectionSystem: string;
+    sectionServer: string;
+    closeDomain: string;
   };
   myspace: {
     alertTitle: string;

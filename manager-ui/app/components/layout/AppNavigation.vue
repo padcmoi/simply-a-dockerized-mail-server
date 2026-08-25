@@ -12,6 +12,13 @@ const route = useRoute();
 const { t } = useI18n();
 const isMobile = useMediaQuery("(max-width: 1023px)");
 
+// With a domain selected the sidebar folds into two exclusive panels: the
+// domain's own menu and the server-wide one (Administration to System). One is
+// visible at a time, accordion-style; the panel holding the page on screen is
+// opened on navigation, a manual switch stands until the next one. Without a
+// selected domain (or on the icon rail) both render as before, no folding.
+const accordion = ref<"domain" | "server">("domain");
+
 const userAvatar = computed(() => {
   const url = auth.session?.avatarUrl;
   if (url) return { src: url, alt: auth.session?.displayName ?? auth.session?.email ?? "user" };
@@ -37,14 +44,19 @@ watch(
   }
 );
 
+watch(
+  () => [route.path, domainStore.selected?.domain] as const,
+  ([path, fqdn]) => {
+    if (!fqdn) return;
+    if (path.startsWith(`/admin/domains/${fqdn}`)) accordion.value = "domain";
+    else if (path.startsWith("/admin")) accordion.value = "server";
+  },
+  { immediate: true }
+);
+
 async function onSignOut() {
   await auth.logout();
   await navigateTo("/login");
-}
-
-function closeDomain() {
-  domainStore.clear();
-  navigateTo("/admin/domains");
 }
 </script>
 
@@ -90,32 +102,22 @@ function closeDomain() {
 
           <template v-if="domainStore.selected">
             <USeparator class="my-2" />
-            <div class="flex items-center gap-1.5 px-1.5 py-1 min-w-0">
-              <NuxtLink
-                :to="`/admin/domains/${domainStore.selected.domain}`"
-                class="flex items-center gap-1.5 min-w-0 flex-1 group"
-              >
-                <UIcon name="i-lucide-folder-open" class="text-primary shrink-0 size-4" />
-                <div v-if="open" class="min-w-0 flex-1">
-                  <TruncatedText
-                    :text="domainStore.selected.domain"
-                    :limit="22"
-                    text-class="text-xs font-semibold text-muted group-hover:text-primary transition-colors"
-                  />
-                </div>
-              </NuxtLink>
-              <UButton
+            <button type="button" class="w-full flex items-center gap-1.5 p-1.5 min-w-0 group" @click="accordion = 'domain'">
+              <UIcon name="i-lucide-folder-open" class="text-dimmed shrink-0 size-5" />
+              <div v-if="open" class="min-w-0 flex-1 text-left">
+                <TruncatedText
+                  :text="domainStore.selected.domain"
+                  :limit="22"
+                  text-class="text-sm font-medium text-muted group-hover:text-default transition-colors"
+                />
+              </div>
+              <UIcon
                 v-if="open"
-                icon="i-lucide-x"
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                square
-                class="shrink-0"
-                @click="closeDomain"
+                :name="accordion === 'domain' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                class="text-dimmed shrink-0 size-4"
               />
-            </div>
-            <div :class="open ? 'ml-3 border-l border-default pl-1.5' : ''">
+            </button>
+            <div v-show="accordion === 'domain'" class="mt-1.5">
               <UNavigationMenu
                 :key="`domain-${state}`"
                 :items="domainNavItems"
@@ -125,21 +127,49 @@ function closeDomain() {
                 :ui="{ link: 'p-1.5 overflow-hidden' }"
               />
             </div>
-          </template>
-        </div>
 
-        <div class="shrink-0">
-          <USeparator class="my-2" />
-          <UNavigationMenu
-            :key="`admin-${state}`"
-            v-model="openAdminSections"
-            :items="adminNavItems"
-            orientation="vertical"
-            tooltip
-            popover
-            :collapsed="state === 'collapsed'"
-            :ui="{ link: 'p-1.5 overflow-hidden' }"
-          />
+            <USeparator class="my-2" />
+            <button type="button" class="w-full flex items-center gap-1.5 p-1.5 group" @click="accordion = 'server'">
+              <UIcon name="i-lucide-server" class="text-dimmed shrink-0 size-5" />
+              <span
+                v-if="open"
+                class="text-sm font-medium text-muted group-hover:text-default transition-colors flex-1 text-left truncate"
+              >
+                {{ t("nav.sectionServer") }}
+              </span>
+              <UIcon
+                v-if="open"
+                :name="accordion === 'server' ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
+                class="text-dimmed shrink-0 size-4"
+              />
+            </button>
+            <div v-show="accordion === 'server'" class="mt-1.5">
+              <UNavigationMenu
+                :key="`admin-domain-${state}`"
+                v-model="openAdminSections"
+                :items="adminNavItems"
+                orientation="vertical"
+                tooltip
+                popover
+                :collapsed="state === 'collapsed'"
+                :ui="{ link: 'p-1.5 overflow-hidden' }"
+              />
+            </div>
+          </template>
+
+          <template v-else>
+            <USeparator class="my-2" />
+            <UNavigationMenu
+              :key="`admin-${state}`"
+              v-model="openAdminSections"
+              :items="adminNavItems"
+              orientation="vertical"
+              tooltip
+              popover
+              :collapsed="state === 'collapsed'"
+              :ui="{ link: 'p-1.5 overflow-hidden' }"
+            />
+          </template>
         </div>
       </div>
     </template>

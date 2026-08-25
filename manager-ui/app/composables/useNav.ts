@@ -188,6 +188,16 @@ export function useNav(onSignOut: () => Promise<void>) {
             },
           ]
         : []),
+      // Deselecting the domain is an entry of its own menu, not a cross in the
+      // header: it clears the selection and lands on the domains list.
+      {
+        label: t("nav.closeDomain"),
+        icon: "i-lucide-x",
+        to: "/admin/domains",
+        onSelect: () => {
+          domainStore.clear();
+        },
+      },
     ];
   });
 

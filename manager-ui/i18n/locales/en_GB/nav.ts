@@ -22,4 +22,6 @@ export default {
   sectionMail: "Mail",
   sectionAccess: "Access",
   sectionSystem: "System",
+  sectionServer: "Server",
+  closeDomain: "Deselect",
 } satisfies Locales["nav"];

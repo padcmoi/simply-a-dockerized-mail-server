@@ -178,6 +178,7 @@ describe("useNav domain nav items", () => {
       "/admin/domains/example.com/quotas",
       "/admin/domains/example.com/app",
       "/admin/domains/example.com/rspamd",
+      "/admin/domains",
     ]);
   });
 
@@ -189,7 +190,7 @@ describe("useNav domain nav items", () => {
       domain: [{ domainId: 1, domainName: "example.com", resource: "recipients", action: "access" }],
     };
     const { domainNavItems } = useNav(noop);
-    expect(domainNavItems.value.map((i) => i.to)).toEqual(["/admin/domains/example.com/recipients"]);
+    expect(domainNavItems.value.map((i) => i.to)).toEqual(["/admin/domains/example.com/recipients", "/admin/domains"]);
   });
 
   it("highlights the domain home only on an exact path match", () => {
