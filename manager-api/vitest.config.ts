@@ -31,6 +31,8 @@ export default defineConfig({
         "src/**/*.module.ts",
         "src/**/*.openapi.ts",
         "src/**/*.entity.ts",
+        // Type-only modules: no runtime, so they can only ever report 0%.
+        "src/**/*.types.ts",
         "src/core/database/**",
         "src/**/*.d.ts",
       ],

@@ -57,7 +57,15 @@ export function reverseIp(ip: string): string {
 // diagnostic that turns that refusal into a green tick would be lying.
 export type DnsblVerdict = "listed" | "clean" | "unavailable";
 
-export async function dnsbl(r: Resolver, ip: string, zone: string): Promise<{ verdict: DnsblVerdict; codes: string[] }> {
+// The two lookups a verdict is read from, and nothing more. A `Resolver`
+// satisfies this, so callers pass one unchanged; a test satisfies it with two
+// functions instead of standing in for a class whose overloads it never uses.
+export interface DnsQuery {
+  resolve4(name: string): Promise<string[]>;
+  resolveTxt(name: string): Promise<string[][]>;
+}
+
+export async function dnsbl(r: DnsQuery, ip: string, zone: string): Promise<{ verdict: DnsblVerdict; codes: string[] }> {
   try {
     const answers = await r.resolve4(`${reverseIp(ip)}.${zone}`);
     const refused = answers.some((code) => code.startsWith("127.255.255."));
@@ -92,7 +100,7 @@ export async function authoritativeResolver(domain: string): Promise<Resolver | 
 // ANY dkim selector without guessing selector names.
 export type NodeState = "exists" | "empty" | "unknown";
 
-export async function nodeState(r: Resolver, name: string): Promise<NodeState> {
+export async function nodeState(r: DnsQuery, name: string): Promise<NodeState> {
   try {
     await r.resolveTxt(name);
     return "exists";

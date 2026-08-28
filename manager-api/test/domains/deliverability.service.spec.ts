@@ -1,6 +1,5 @@
-import { describe, it, expect } from "vitest";
-import type { Resolver } from "node:dns/promises";
-import { dnsbl, nodeState, reverseIp } from "../../src/api/domains/deliverability/deliverability.dns";
+import { describe, it, expect, vi } from "vitest";
+import { dnsbl, nodeState, reverseIp, type DnsQuery } from "../../src/api/domains/deliverability/deliverability.dns";
 import { providerMock } from "../helpers/mocks";
 
 // The DNS layer is where a diagnostic tells the truth or lies: these pin the
@@ -9,9 +8,9 @@ import { providerMock } from "../helpers/mocks";
 // below it.
 
 function resolverStub(behaviour: (name: string) => Promise<unknown>) {
-  return providerMock<Resolver>({
-    resolve4: (name: string) => behaviour(name) as Promise<string[]>,
-    resolveTxt: (name: string) => behaviour(name) as Promise<string[][]>,
+  return providerMock<DnsQuery>({
+    resolve4: vi.fn((name: string) => behaviour(name) as Promise<string[]>),
+    resolveTxt: vi.fn((name: string) => behaviour(name) as Promise<string[][]>),
   });
 }
 
