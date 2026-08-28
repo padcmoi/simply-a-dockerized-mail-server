@@ -33,7 +33,14 @@ or test it.
    TLS rotation, cold-start behaviour, fail2ban known issue.
 10. [test/](test/) -- the `./test-mailservers.sh` end-to-end suite that
     pins every feature above.
-11. [api/acl.md](api/acl.md) -- control plane, not mail: manager-api's
+11. [delivery/deliverability.md](delivery/deliverability.md) -- getting
+    accepted by Gmail, Outlook and the rest: the full checklist (network
+    identity, authentication DNS, the server itself, reputation, end-to-end
+    tests), the DKIM selector trap this stack can walk into, and what is
+    honestly left when everything is green and mail still lands in spam.
+    The manager runs most of these checks per domain under
+    Domain > Deliverability.
+12. [api/acl.md](api/acl.md) -- control plane, not mail: manager-api's
     permission model. Resources, the named action each one offers (no
     generic `read`/`create`/`modify`/`delete` anywhere), the root and
     domain-owner bypasses, and a generated table of every API route with

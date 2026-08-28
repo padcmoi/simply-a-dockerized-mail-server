@@ -60,6 +60,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "GET /api/v1/domains/:domainId/aliases  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:aliases[access,list-aliases]",
   "GET /api/v1/domains/:domainId/aliases/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:aliases[access,view-alias]",
   "GET /api/v1/domains/:domainId/delegations  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:recipients[access,create-recipient] aliases[access,create-alias]",
+  "GET /api/v1/domains/:domainId/deliverability  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:deliverability[access,run-diagnostics] domain:domain[access]",
   "GET /api/v1/domains/:domainId/dkim  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:dkim[access,view-dkim] admin[access,view-admin-page]",
   "GET /api/v1/domains/:domainId/dkim-check  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:dkim[access,check-dkim-dns] admin[access,view-admin-page]",
   "GET /api/v1/domains/:domainId/quotas  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:quotas[access,view-quotas]",

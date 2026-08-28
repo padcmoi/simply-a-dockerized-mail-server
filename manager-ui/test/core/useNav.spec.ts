@@ -180,9 +180,29 @@ describe("useNav domain nav items", () => {
       "/admin/domains/example.com/aliases",
       "/admin/domains/example.com/quotas",
       "/admin/domains/example.com/app",
+      "/admin/domains/example.com/deliverability",
       "/admin/domains/example.com/rspamd",
       "/admin/domains",
     ]);
+  });
+
+  // Running the diagnostics is a global right: access to the domain alone does
+  // not put the entry in the menu, and holding the right without the domain
+  // does not either.
+  it("shows the deliverability entry only with the global right AND access to the domain", () => {
+    asUser();
+    useDomainStore().select({ id: 1, domain: "example.com", quota: "0", active: 1 });
+
+    usePermissionsStore().data = { global: [], domain: [{ domainId: 1, domainName: "example.com", resource: "domain", action: "access" }] };
+    const withoutRight = useNav(noop).domainNavItems.value.map((i) => i.to);
+    expect(withoutRight).not.toContain("/admin/domains/example.com/deliverability");
+
+    usePermissionsStore().data = {
+      global: [{ resource: "deliverability", action: "access" }],
+      domain: [{ domainId: 1, domainName: "example.com", resource: "domain", action: "access" }],
+    };
+    const withRight = useNav(noop).domainNavItems.value.map((i) => i.to);
+    expect(withRight).toContain("/admin/domains/example.com/deliverability");
   });
 
   it("filters domain sections by per-domain `access` for a non-root account", () => {

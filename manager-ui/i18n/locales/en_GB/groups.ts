@@ -216,6 +216,10 @@ export default {
           "view-machine-metrics": "View the live figures",
           "view-metrics-history": "View the recorded history",
         },
+        deliverability: {
+          access: "Access",
+          "run-diagnostics": "Run the deliverability checks",
+        },
         superadmin: {
           access: "Access",
           "resize-any-domain-quota": "Resize any domain's quota",

@@ -106,6 +106,13 @@ export const GLOBAL_ACTIONS = {
   // `view-metrics-history` the recorded windows an hour or a week wide, which
   // are read from a table the live feed never touches.
   supervision: ["access", "view-machine-metrics", "view-metrics-history"],
+  // Running the deliverability diagnostics is a global right, not a domain one:
+  // one run opens an SMTP session against the server, fetches an HTTPS policy
+  // and queries half a dozen public blocklists in the deployment's name. Who
+  // may spend that, and be seen doing it from this address, is a decision about
+  // the installation - which domain it is aimed at is the separate, per-domain
+  // question the route also asks.
+  deliverability: ["access", "run-diagnostics"],
   superadmin: ["access", "resize-any-domain-quota", "delete-any-domain"],
 } as const;
 
@@ -161,6 +168,7 @@ export const GLOBAL_RESOURCES_DEPENDS_ON: GlobalDependsOnEntry[] = [
   // `list-accounts`. A group manager has no business reading emails and roles.
   { resource: "groups", dependsOn: [{ resource: "accounts", action: ["access", "list-account-names"] }] },
   { resource: "tickets", dependsOn: [{ resource: "domains", action: ["access"] }] },
+  { resource: "deliverability", dependsOn: [{ resource: "domains", action: ["access"] }] },
 ];
 
 export const DOMAIN_RESOURCE_DEPENDS_ON: DomainDependsOnEntry[] = [

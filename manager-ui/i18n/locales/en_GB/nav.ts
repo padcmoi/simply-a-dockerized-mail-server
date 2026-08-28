@@ -6,6 +6,7 @@ export default {
   myspace: "My space",
   domains: "Domains",
   rspamd: "Rspamd",
+  deliverability: "Deliverability",
   postfix: "Postfix",
   delegations: "Delegations",
   recipients: "Recipients",

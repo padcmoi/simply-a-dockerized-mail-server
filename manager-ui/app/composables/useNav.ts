@@ -179,6 +179,19 @@ export function useNav(onSignOut: () => Promise<void>) {
             },
           ]
         : []),
+      // The diagnostics are a global right (running one costs an SMTP session
+      // and a round of blocklist queries in this installation's name); the
+      // domain only decides what it is aimed at.
+      ...(canAccessGlobal("deliverability") && canAccessDomain(domainId, "domain")
+        ? [
+            {
+              label: t("nav.deliverability"),
+              icon: "i-lucide-mail-check",
+              to: `${domainHome}/deliverability`,
+              active: isActive(`${domainHome}/deliverability`),
+            },
+          ]
+        : []),
       ...(canAccessDomain(domainId, "rspamd")
         ? [
             {

@@ -219,6 +219,10 @@ export default {
           "view-machine-metrics": "Voir les mesures en direct",
           "view-metrics-history": "Voir l'historique des mesures",
         },
+        deliverability: {
+          access: "Accès",
+          "run-diagnostics": "Lancer les contrôles de délivrabilité",
+        },
         superadmin: {
           access: "Accès",
           "resize-any-domain-quota": "Redimensionner le quota de n'importe quel domaine",
