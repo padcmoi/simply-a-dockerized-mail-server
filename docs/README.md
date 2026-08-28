@@ -36,7 +36,9 @@ or test it.
 11. [delivery/deliverability.md](delivery/deliverability.md) -- getting
     accepted by Gmail, Outlook and the rest: the full checklist (network
     identity, authentication DNS, the server itself, reputation, end-to-end
-    tests), the DKIM selector trap this stack can walk into, and what is
+    tests), the DKIM selector trap this stack can walk into, where to register
+    with each provider's postmaster programme and who to write to when blocked,
+    how to warm up an address and when List-Unsubscribe is owed, and what is
     honestly left when everything is green and mail still lands in spam.
     The manager runs most of these checks per domain under
     Domain > Deliverability.

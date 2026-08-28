@@ -119,6 +119,138 @@ from "a reputation problem". If everything is green through 5.3 and the mail
 still lands in spam, the cause is in section 4, and it will not be fixed in a
 configuration file.
 
+## 6. Postmaster programmes, provider by provider
+
+Section 4 says where to look. This one says where to register, and who to write
+to when you are blocked. All four are free, and being registered is itself a
+signal: a sender with a feedback loop configured is a sender who intends to
+remove the people who complain.
+
+### Google
+
+Google Postmaster Tools (`postmaster.google.com`), with the domain verified by
+TXT or CNAME. Two separate curves, IP reputation and domain reputation, plus the
+spam rate, which is the figure their bulk rules are written against. The charts
+stay empty below a few hundred messages a day to Gmail, and an empty chart is not
+a good verdict, it is no verdict at all. When Gmail blocks outright instead of
+filtering, the sender contact form linked from the Postmaster Tools help is the
+escalation path; mail that merely lands in spam is not a case they open.
+
+### Microsoft (Outlook, Hotmail, Live)
+
+SNDS for what they see coming from your IP, JMRP for the complaints themselves,
+both from `sendersupport.olc.protection.outlook.com`. Microsoft blocks by ranges
+rather than by single addresses, and their sender information form grants
+temporary mitigations that are withdrawn again if the reputation does not follow.
+
+### Yahoo and AOL
+
+AOL has had no postmaster of its own since it moved under Yahoo: the old
+`postmaster.aol.com` forms are gone, and both providers are handled from the
+Yahoo Sender Hub (`senders.yahooinc.com`). Create an account, add and verify your
+domains, then:
+
+- **Complaint Feedback Loop (CFL)**, under Contact, "Complaint Feedback Loop: Set
+  up and Manage". A complaint arrives as an ARF report at the address you
+  register, which is what lets you suppress a recipient before they complain
+  twice.
+- **Enrolment is on the DKIM domain, not on the IP.** The CFL only supports
+  DKIM-signed mail and identifies you by the `d=` of the signature. So the domain
+  has to be signing before enrolling is possible at all, and a change of signing
+  domain needs a new enrolment.
+- **Insights**, the Sender Hub dashboard, for volume, spam rate and reputation.
+- **Sender support**, on the same Contact page, for a delisting or a block.
+
+Yahoo has applied the same bulk requirements as Gmail since February 2024, which
+is section 7 below.
+
+### Apple (iCloud, me.com, mac.com)
+
+Apple runs no dashboard, no feedback loop and no reputation portal. There is one
+page, [Postmaster information for iCloud Mail](https://support.apple.com/en-us/102322),
+and one address, `icloudadmin@apple.com`. What they publish as requirements is
+short, and every line of it is already covered above:
+
+- SPF, DKIM, and a published DMARC policy for the sending domain,
+- reverse DNS published for the sending addresses,
+- explicit opt-in only, with an unsubscribe link that takes effect immediately,
+- consistent sending IPs and domains, marketing separated from transactional,
+- a consistent `From:` name and address,
+- temporary (4xx) and permanent (5xx) SMTP errors actually acted on, bounces
+  handled, inactive recipients removed from the list.
+
+Write to `icloudadmin@apple.com` with the company name, the sending domain, the
+IP addresses, the exact SMTP errors received and a description of the problem.
+Note what that address is for: a block that shows itself as an SMTP error. Mail
+silently sorted into Junk is not a case they take, which makes iCloud the
+provider where sections 1 to 3 have to be perfect, because there is nobody to
+ask.
+
+## 7. Sending in volume: warm-up, rhythm, and unsubscribe
+
+Everything above is about being let in. This section is about not losing it
+afterwards, and it applies only if you send more than personal mail.
+
+### 7.1 Warm-up
+
+A new IP has no history, and no history reads as suspicious. Reputation is built
+from accepted mail over time, so the volume has to climb slowly enough for each
+step to be judged before the next one is taken.
+
+| Period | Daily volume | What to watch |
+| --- | --- | --- |
+| Days 1 to 3 | 10 to 20 | send to people who will actually reply |
+| Week 1 | up to 50 | deferrals (4xx): any of them means hold |
+| Week 2 | up to 100 | the spam rate in Postmaster Tools |
+| Week 3 | up to 250 | the classification, not just the acceptance |
+| Week 4 | up to 500 | domain reputation starting to appear |
+| Afterwards | double weekly | stop doubling the moment 4xx appear |
+
+Three rules matter more than the figures:
+
+- **Never more than double from one day to the next.** A tenfold jump is what a
+  compromised server looks like from the outside.
+- **Regularity beats volume.** Fifty messages a day, every day, builds more
+  reputation than two thousand once a month, which starts again from nothing
+  every time.
+- **Warm up per provider.** Gmail, Outlook and Yahoo score you separately, so
+  split the ramp roughly the way your recipients are split, rather than sending
+  the first week entirely to one of them.
+
+A deferral is not a failure to retry harder against. Hold the level for a few
+days, let the queue drain, then resume the climb.
+
+### 7.2 List-Unsubscribe
+
+Above roughly 5000 messages a day to a single provider, Gmail and Yahoo require
+one-click unsubscribe (RFC 8058) and expect the request honoured within two days.
+It is two headers:
+
+```
+List-Unsubscribe: <https://example.org/unsubscribe?u=abc123>, <mailto:unsubscribe@example.org?subject=abc123>
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+```
+
+- The HTTPS URL must accept a `POST` and unsubscribe on the spot: no login, no
+  confirmation page, no landing page asking which list.
+- The `mailto:` alone is not enough for bulk mail to those providers, but keep
+  it: it is what the clients that ignore the HTTPS form will use.
+- The token in the URL identifies the recipient. It must not be guessable, and it
+  must not be the address in clear.
+- Honour it within 48 hours, and hold the complaint rate under 0.3%, aiming at
+  0.1%.
+
+**None of this applies to transactional mail**, which is worth saying because the
+temptation is to add the header everywhere. A password reset, an invitation, a
+delivery notice: there is nothing to unsubscribe from, and offering it invites a
+recipient to switch off mail they asked for. The manager's own outbound mail,
+account invitations and notifications sent by `MailerService`, is transactional
+for that reason and deliberately carries no such header.
+
+If you relay a newsletter through this server, the headers belong to whatever
+composes the newsletter, since only it knows the recipient and the list. Postfix
+will not add them for you, and no DNS record stands in for them.
+
 ## When everything is done and it still goes to spam
 
 This is a real situation, not a hypothetical, and a self-hosting guide owes its
@@ -143,7 +275,7 @@ Three honest ways out, in order of effect:
    IP reputation rather than "no data".
 3. **Engagement and rhythm.** Have your regular correspondents mark "not spam",
    add the address to their contacts and reply; send regularly rather than in
-   bursts; register with dnswl.org.
+   bursts (section 7.1); register with dnswl.org.
 
 Choosing a relay is not an admission of failure. It is the difference between a
 server that authenticates correctly and a server whose mail is read.
