@@ -11,6 +11,7 @@ export function useNav(onSignOut: () => Promise<void>) {
   const { t } = useI18n();
   const { preference: localePreference, options: localeOptions, setPreference: setLocalePreference } = useLocalePreference();
   const colorMode = useColorMode();
+  const { unread } = useNotifications();
 
   // Nested account/group detail routes (e.g. /accounts/3/groups) are separate
   // leaf pages, not children of /accounts in the router's matched chain, so
@@ -204,6 +205,14 @@ export function useNav(onSignOut: () => Promise<void>) {
   const userItems = computed<DropdownMenuItem[][]>(() => [
     [
       { label: t("layout.profile"), icon: "i-lucide-user", to: "/profile" },
+      // The bell shows the twenty latest; this is the way to the whole history.
+      // The count rides in the label rather than in a badge: a dropdown item
+      // has no badge slot, and the number is what the entry is read for.
+      {
+        label: unread.value > 0 ? `${t("notifications.title")} (${unread.value})` : t("notifications.title"),
+        icon: "i-lucide-bell",
+        to: "/notifications",
+      },
       { label: t("layout.preferences"), icon: "i-lucide-settings", to: "/preferences" },
     ],
     [

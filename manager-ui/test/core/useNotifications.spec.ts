@@ -126,6 +126,29 @@ describe("useNotifications actions", () => {
     await remove(9);
     expect(call).toHaveBeenCalledWith("/notifications/9", { method: "DELETE" });
   });
+
+  it("marks one notification unread again", async () => {
+    const { markUnread } = useNotifications();
+    call.mockResolvedValue(feed({ unread: 1 }));
+    await markUnread(9);
+    expect(call).toHaveBeenCalledWith("/notifications/9/unread", { method: "POST" });
+  });
+
+  it("purges the read ones, and the counter follows the feed it answers with", async () => {
+    const { purge, unread } = useNotifications();
+    call.mockResolvedValue(feed({ unread: 3 }));
+    await purge("read");
+    expect(call).toHaveBeenCalledWith("/notifications?scope=read", { method: "DELETE" });
+    expect(unread.value).toBe(3);
+  });
+
+  it("purges everything when asked for all, counter back to zero", async () => {
+    const { purge, unread } = useNotifications();
+    call.mockResolvedValue(feed({ unread: 0 }));
+    await purge("all");
+    expect(call).toHaveBeenCalledWith("/notifications?scope=all", { method: "DELETE" });
+    expect(unread.value).toBe(0);
+  });
 });
 
 describe("useNotificationPreferences", () => {

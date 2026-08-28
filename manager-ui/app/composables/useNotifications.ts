@@ -69,8 +69,18 @@ export function useNotifications() {
     fetched.value = await call<NotificationFeed>("/notifications/read-all", { method: "POST" });
   }
 
+  async function markUnread(id: number) {
+    fetched.value = await call<NotificationFeed>(`/notifications/${id}/unread`, { method: "POST" });
+  }
+
   async function remove(id: number) {
     fetched.value = await call<NotificationFeed>(`/notifications/${id}`, { method: "DELETE" });
+  }
+
+  // Every write route answers with the feed, so the bell's counter follows a
+  // purge without a second call and without waiting for the realtime push.
+  async function purge(scope: "all" | "read") {
+    fetched.value = await call<NotificationFeed>(`/notifications?scope=${scope}`, { method: "DELETE" });
   }
 
   const safeRefresh = () => refresh().catch(() => undefined);
@@ -81,7 +91,7 @@ export function useNotifications() {
   );
   watch(tick, safeRefresh);
 
-  return { feed, unread, items, refresh, markRead, markAllRead, remove };
+  return { feed, unread, items, refresh, markRead, markUnread, markAllRead, remove, purge };
 }
 
 export function useNotificationPreferences() {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { IsNull } from "typeorm";
+import { IsNull, Like, Not } from "typeorm";
 import { NotificationsService } from "../../src/core/notifications/notifications.service";
 import type { Account } from "../../src/core/entities/account.entity";
 import type { Notification } from "../../src/core/entities/notification.entity";
@@ -144,6 +144,107 @@ describe("NotificationsService", () => {
     it("deletes only within the caller's own rows", async () => {
       await svc.remove(ALICE, 9);
       expect(notifications.delete).toHaveBeenCalledWith({ id: 9, accountId: ALICE });
+    });
+
+    it("marks one row unread again, scoped to its owner and to what was read", async () => {
+      await svc.markUnread(ALICE, 9);
+      expect(notifications.update).toHaveBeenCalledWith({ id: 9, accountId: ALICE, readAt: Not(IsNull()) }, { readAt: null });
+    });
+
+    it("purges what was read, and only that, by default", async () => {
+      await svc.purge(ALICE, "read");
+      expect(notifications.delete).toHaveBeenCalledWith({ accountId: ALICE, readAt: Not(IsNull()) });
+    });
+
+    it("purges the whole history of that one account when asked for all", async () => {
+      await svc.purge(ALICE, "all");
+      expect(notifications.delete).toHaveBeenCalledWith({ accountId: ALICE });
+    });
+
+    it("answers a purge with the caller's refreshed feed", async () => {
+      notifications.count.mockResolvedValue(0);
+      await expect(svc.purge(ALICE, "all")).resolves.toEqual({ unread: 0, items: [] });
+    });
+  });
+
+  describe("list", () => {
+    const query = (over: Record<string, unknown> = {}) => ({ offset: 0, sortDir: "desc" as const, ...over });
+
+    beforeEach(() => {
+      notifications.findAndCount.mockResolvedValue([[], 0]);
+    });
+
+    it("hands back the unpaginated array when no limit is asked for", async () => {
+      notifications.find.mockResolvedValue([entity<Notification>({ id: 1 })]);
+      await expect(svc.list(ALICE, query())).resolves.toEqual([{ id: 1 }]);
+      expect(notifications.findAndCount).not.toHaveBeenCalled();
+    });
+
+    it("pages, and never past the caller's own rows", async () => {
+      notifications.findAndCount.mockResolvedValue([[entity<Notification>({ id: 1 })], 7]);
+      await expect(svc.list(ALICE, query({ limit: 10, offset: 10 }))).resolves.toEqual({ items: [{ id: 1 }], total: 7 });
+      expect(notifications.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { accountId: ALICE }, skip: 10, take: 10 })
+      );
+    });
+
+    it("keeps only the unread ones, or only the read ones", async () => {
+      await svc.list(ALICE, query({ limit: 10, read: "unread" }));
+      expect(notifications.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { accountId: ALICE, readAt: IsNull() } })
+      );
+
+      await svc.list(ALICE, query({ limit: 10, read: "read" }));
+      expect(notifications.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { accountId: ALICE, readAt: Not(IsNull()) } })
+      );
+    });
+
+    it("searches the payload too, every branch still scoped to the account", async () => {
+      await svc.list(ALICE, query({ limit: 10, search: "ovh" }));
+      const where = notifications.findAndCount.mock.calls[0]![0]!.where as Record<string, unknown>[];
+      expect(where.map((clause) => Object.keys(clause).filter((k) => k !== "accountId")[0])).toEqual([
+        "source",
+        "type",
+        "payload",
+        "link",
+      ]);
+      expect(where.every((clause) => clause.accountId === ALICE)).toBe(true);
+      expect(where[2]).toMatchObject({ payload: Like("%ovh%") });
+    });
+
+    it("keeps only what one source raised", async () => {
+      await svc.list(ALICE, query({ limit: 10, source: "supervision" }));
+      expect(notifications.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { accountId: ALICE, source: "supervision" } })
+      );
+    });
+
+    it("drops the source branch of a search rather than widening it to the whole source", async () => {
+      await svc.list(ALICE, query({ limit: 10, search: "ovh", source: "support" }));
+      const where = notifications.findAndCount.mock.calls[0]![0]!.where as Record<string, unknown>[];
+      expect(where.map((clause) => Object.keys(clause).filter((k) => k !== "accountId" && k !== "source")[0])).toEqual([
+        "type",
+        "payload",
+        "link",
+      ]);
+      // every branch still narrows on the chosen source, and none of them
+      // matches a row merely for being in it
+      for (const clause of where) expect(clause.source).toBe("support");
+    });
+
+    it("combines the read filter with the search", async () => {
+      await svc.list(ALICE, query({ limit: 10, search: "ovh", read: "unread" }));
+      const where = notifications.findAndCount.mock.calls[0]![0]!.where as Record<string, unknown>[];
+      for (const clause of where) expect(clause).toMatchObject({ accountId: ALICE, readAt: IsNull() });
+    });
+
+    it("sorts on a column it knows and falls back to the date on anything else", async () => {
+      await svc.list(ALICE, query({ limit: 10, sortBy: "source", sortDir: "asc" }));
+      expect(notifications.findAndCount).toHaveBeenCalledWith(expect.objectContaining({ order: { source: "ASC" } }));
+
+      await svc.list(ALICE, query({ limit: 10, sortBy: "payload; DROP TABLE" }));
+      expect(notifications.findAndCount).toHaveBeenCalledWith(expect.objectContaining({ order: { createdAt: "DESC" } }));
     });
   });
 });

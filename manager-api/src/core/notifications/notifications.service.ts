@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, IsNull, Repository } from "typeorm";
-import { PaginatedResult, PaginationQuery } from "../common/pagination.validation";
+import { In, IsNull, Like, Not, Repository } from "typeorm";
+import type { NotificationListQuery } from "../../api/notifications/notifications.validation";
+import { PaginatedResult, resolveSortColumn } from "../common/pagination.validation";
 import { Account } from "../entities/account.entity";
 import { Notification } from "../entities/notification.entity";
 import { NotificationPreference } from "../entities/notification-preference.entity";
@@ -32,6 +33,7 @@ const DEFAULT_CHANNELS: Record<NotificationSource, NotificationChannels> = {
   supervision: { inApp: false, email: false },
 };
 const FEED_LIMIT = 20;
+export const NOTIFICATION_SORTABLE_COLUMNS = ["createdAt", "source", "type", "readAt"] as const;
 
 @Injectable()
 export class NotificationsService {
@@ -100,9 +102,21 @@ export class NotificationsService {
     if (rows.length) await this.notifications.save(rows);
   }
 
-  async list(accountId: string, query: PaginationQuery) {
-    const where = { accountId };
-    const order = { createdAt: query.sortDir === "asc" ? ("ASC" as const) : ("DESC" as const) };
+  async list(accountId: string, query: NotificationListQuery) {
+    const sortBy = resolveSortColumn(query.sortBy, NOTIFICATION_SORTABLE_COLUMNS, "createdAt");
+    const order = { [sortBy]: query.sortDir === "asc" ? ("ASC" as const) : ("DESC" as const) };
+    const read = query.read === "read" ? Not(IsNull()) : query.read === "unread" ? IsNull() : undefined;
+    const base = { accountId, ...(read ? { readAt: read } : {}), ...(query.source ? { source: query.source } : {}) };
+    // The payload carries what a notification is ABOUT (a ticket's subject, a
+    // domain, the figure that went red), so a search that skipped it would only
+    // ever match the machine words in `source` and `type`.
+    const term = query.search ? Like(`%${query.search}%`) : null;
+    // The `source` branch is dropped, not neutralised, when a source is already
+    // filtered on: left in it would widen to "every row of that source", which
+    // is the search answering with rows that do not match it.
+    const searchable = query.source ? ["type", "payload", "link"] : ["source", "type", "payload", "link"];
+    const where = term ? searchable.map((field) => ({ ...base, [field]: term })) : base;
+
     if (query.limit === undefined) return this.notifications.find({ where, order });
     const [items, total] = await this.notifications.findAndCount({
       where,
@@ -135,8 +149,21 @@ export class NotificationsService {
     return this.feed(accountId);
   }
 
+  async markUnread(accountId: string, id: number) {
+    await this.notifications.update({ id, accountId, readAt: Not(IsNull()) }, { readAt: null });
+    return this.feed(accountId);
+  }
+
   async remove(accountId: string, id: number) {
     await this.notifications.delete({ id, accountId });
+    return this.feed(accountId);
+  }
+
+  // "read" and not "all" is the default at the schema, and the screen says which
+  // of the two it is about to do: emptying the whole history is a way to lose a
+  // notification that was never opened.
+  async purge(accountId: string, scope: "all" | "read") {
+    await this.notifications.delete(scope === "all" ? { accountId } : { accountId, readAt: Not(IsNull()) });
     return this.feed(accountId);
   }
 }

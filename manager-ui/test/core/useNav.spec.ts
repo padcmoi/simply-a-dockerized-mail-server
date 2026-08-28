@@ -8,6 +8,7 @@ import { usePermissionsStore } from "~/stores/permissions";
 // useNav statically imports the domain store, whose module calls the bare
 // `defineStore` auto-import at eval time -- stub it before the dynamic import.
 vi.stubGlobal("defineStore", defineStore);
+const unread = ref(0);
 const { useNav } = await import("~/composables/useNav");
 const { useDomainStore } = await import("~/stores/domain");
 
@@ -46,6 +47,8 @@ beforeEach(() => {
   }));
   vi.stubGlobal("useColorMode", () => colorMode);
   vi.stubGlobal("useRoute", () => ({ path: "/" }));
+  unread.value = 0;
+  vi.stubGlobal("useNotifications", () => ({ unread }));
 });
 
 function asRoot() {
@@ -214,6 +217,22 @@ describe("useNav user menu", () => {
     expect(signOut.label).toBe("layout.signOut");
     signOut.onSelect();
     expect(onSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers a shortcut to the notification history, next to the profile", () => {
+    asRoot();
+    const { userItems } = useNav(noop);
+    const entry = userItems.value[0]![1] as { label: string; to: string; icon: string };
+    expect(entry.to).toBe("/notifications");
+    expect(entry.icon).toBe("i-lucide-bell");
+    expect(entry.label).toBe("notifications.title");
+  });
+
+  it("carries the unread count in that entry's own label", () => {
+    asRoot();
+    unread.value = 3;
+    const { userItems } = useNav(noop);
+    expect((userItems.value[0]![1] as { label: string }).label).toBe("notifications.title (3)");
   });
 
   it("builds a language sub-menu from the locale options, checked on the preference", () => {
