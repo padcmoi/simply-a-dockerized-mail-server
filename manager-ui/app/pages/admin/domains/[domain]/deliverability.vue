@@ -20,6 +20,7 @@ const { run } = useDeliverability(() => domainId.value);
 const report = ref<DeliverabilityReport | null>(null);
 const running = ref(false);
 const failed = ref(false);
+const rerunOpen = ref(false);
 
 const bySection = computed(() => {
   const groups = {} as Record<CheckSection, DeliverabilityReport["checks"]>;
@@ -92,6 +93,10 @@ function saveReport(format: "txt" | "json") {
 // Opening the page costs nothing: the API answers the report it kept, and runs
 // the checks only when it has none. `refresh` is the button, and the only thing
 // that spends an SMTP session and a round of blocklist queries.
+function askRerun() {
+  rerunOpen.value = true;
+}
+
 async function execute(refresh = false) {
   if (!domainId.value) return;
   running.value = true;
@@ -133,7 +138,7 @@ async function execute(refresh = false) {
             {{ t("deliverability.export") }}
           </UButton>
         </UDropdownMenu>
-        <UButton icon="i-lucide-refresh-cw" color="primary" :loading="running" @click="execute(true)">
+        <UButton icon="i-lucide-refresh-cw" color="primary" :loading="running" @click="askRerun">
           {{ t("deliverability.rerun") }}
         </UButton>
       </div>
@@ -203,5 +208,20 @@ async function execute(refresh = false) {
         <p>{{ t("deliverability.docHint") }}</p>
       </template>
     </UAlert>
+
+    <!--
+      Running again is not destructive, but it is not free either: it opens an
+      SMTP session against the server, fetches an HTTPS policy and queries the
+      public blocklists in this installation's name, then throws away the report
+      that was kept. Warning rather than danger, and the ten clicks make it a
+      decision rather than a reflex on a button sitting next to the export.
+    -->
+    <ConfirmModal
+      v-model:open="rerunOpen"
+      type="warning"
+      :title="t('deliverability.rerunTitle')"
+      :description="t('deliverability.rerunDescription', { domain: domainFqdn ?? '' })"
+      @confirm="execute(true)"
+    />
   </div>
 </template>

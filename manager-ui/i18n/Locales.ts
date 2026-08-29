@@ -288,6 +288,8 @@ export interface Locales {
     title: string;
     description: string;
     rerun: string;
+    rerunTitle: string;
+    rerunDescription: string;
     export: string;
     exportText: string;
     exportJson: string;

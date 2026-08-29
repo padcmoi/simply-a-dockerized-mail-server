@@ -5,6 +5,9 @@ export default {
   description:
     "Tous les contrôles qui décident si le courrier de ce domaine atteint une boite de réception, exécutés contre le DNS, le port SMTP de ce serveur et les listes noires publiques depuis l'extérieur de ses réseaux de confiance. Le dernier rapport est conservé et affiché ici ; relancer le remplace.",
   rerun: "Relancer",
+  rerunTitle: "Relancer les contrôles ?",
+  rerunDescription:
+    "Cela ouvre une session SMTP contre le serveur, va chercher sa politique MTA-STS et interroge les listes noires publiques au nom de cette installation, puis remplace le rapport conservé pour {domain}. Celui affiché est perdu.",
   export: "Exporter",
   exportText: "Rapport lisible (.txt)",
   exportJson: "Données brutes (.json)",

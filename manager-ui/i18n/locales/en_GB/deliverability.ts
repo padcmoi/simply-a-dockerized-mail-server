@@ -5,6 +5,9 @@ export default {
   description:
     "Every check that decides whether this domain's mail reaches an inbox, run against DNS, this server's own SMTP port and the public blocklists from outside its trusted networks. The last report is kept and shown here; running again replaces it.",
   rerun: "Run again",
+  rerunTitle: "Run the checks again?",
+  rerunDescription:
+    "This opens an SMTP session against the server, fetches its MTA-STS policy and queries the public blocklists in this installation's name, then replaces the report kept for {domain}. The one on screen is lost.",
   export: "Export",
   exportText: "Readable report (.txt)",
   exportJson: "Raw data (.json)",
