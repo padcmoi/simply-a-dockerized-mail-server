@@ -297,7 +297,7 @@ export interface Locales {
     failed: string;
     docTitle: string;
     docHint: string;
-    status: { pass: string; warn: string; fail: string; skip: string };
+    status: { pass: string; warn: string; fail: string };
     sections: { identity: string; dns: string; server: string; reputation: string };
     verdict: {
       passTitle: string;
@@ -317,7 +317,8 @@ export interface Locales {
       "smtp-reachable": string;
       "helo-matches-ptr": string;
       starttls: string;
-      "tls-certificate": string;
+      "tls-certificate-name": string;
+      "tls-certificate-expiry": string;
       "open-relay": string;
       "role-postmaster": string;
       "role-abuse": string;
@@ -353,7 +354,8 @@ export interface Locales {
       "smtp-reachable": string;
       "helo-matches-ptr": string;
       starttls: string;
-      "tls-certificate": string;
+      "tls-certificate-name": string;
+      "tls-certificate-expiry": string;
       "open-relay": string;
       "role-postmaster": string;
       "role-abuse": string;

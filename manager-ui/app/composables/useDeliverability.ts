@@ -1,4 +1,4 @@
-export type CheckStatus = "pass" | "warn" | "fail" | "skip";
+export type CheckStatus = "pass" | "warn" | "fail";
 export type CheckSection = "identity" | "dns" | "server" | "reputation";
 
 export interface DeliverabilityCheck {
@@ -14,6 +14,8 @@ export interface DeliverabilityReport {
   checkedAt: string;
   mxHost: string | null;
   mailIp: string | null;
+  // The address the probe spoke from, outside every docker network.
+  probedFrom: string;
   counts: Record<CheckStatus, number>;
   checks: DeliverabilityCheck[];
 }
@@ -27,14 +29,12 @@ export const STATUS_COLOR: Record<CheckStatus, "success" | "warning" | "error" |
   pass: "success",
   warn: "warning",
   fail: "error",
-  skip: "neutral",
 };
 
 export const STATUS_ICON: Record<CheckStatus, string> = {
   pass: "i-lucide-check",
   warn: "i-lucide-triangle-alert",
   fail: "i-lucide-x",
-  skip: "i-lucide-minus",
 };
 
 export function useDeliverability(domainId: () => number | null) {

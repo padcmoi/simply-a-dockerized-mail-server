@@ -74,9 +74,7 @@ function saveReport(format: "txt" | "json") {
           title: t("deliverability.title"),
           checkedAt: t("deliverability.checkedAt", { at: formatDateTime(current.checkedAt) }),
           sections: Object.fromEntries(DELIVERABILITY_SECTIONS.map((s) => [s, t(`deliverability.sections.${s}`)])),
-          status: Object.fromEntries(
-            (["pass", "warn", "fail", "skip"] as const).map((s) => [s, t(`deliverability.status.${s}`)])
-          ),
+          status: Object.fromEntries((["pass", "warn", "fail"] as const).map((s) => [s, t(`deliverability.status.${s}`)])),
           label: (id: string) => translated("checks")(id) ?? id,
           hint: translated("hints"),
         });
@@ -162,8 +160,8 @@ async function execute() {
       :description="t('deliverability.verdict.failHint')"
     />
 
-    <div v-if="report" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <UCard v-for="status in ['pass', 'warn', 'fail', 'skip'] as const" :key="status" :ui="{ body: 'p-3 sm:p-3' }">
+    <div v-if="report" class="grid grid-cols-3 gap-3">
+      <UCard v-for="status in ['pass', 'warn', 'fail'] as const" :key="status" :ui="{ body: 'p-3 sm:p-3' }">
         <p class="text-xs text-muted">{{ t(`deliverability.status.${status}`) }}</p>
         <p class="text-2xl font-semibold tabular-nums" :class="`text-${STATUS_COLOR[status]}`">{{ report.counts[status] }}</p>
       </UCard>
@@ -187,12 +185,20 @@ async function execute() {
       :title="t('deliverability.failed')"
     />
 
-    <div v-else-if="report" class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+    <!--
+      Columns rather than a grid: the four sections have wildly different
+      heights (DNS carries seventeen checks, network identity six), and a grid
+      aligns them in rows, so the short one leaves a hole as tall as the long
+      one beside it. A column flow packs them and balances the two sides on its
+      own, `break-inside-avoid` keeping each card whole.
+    -->
+    <div v-else-if="report" class="columns-1 xl:columns-2 gap-4">
       <DeliverabilitySection
         v-for="section in DELIVERABILITY_SECTIONS"
         :key="section"
         :section="section"
         :checks="bySection[section]"
+        class="break-inside-avoid mb-4"
       />
     </div>
 

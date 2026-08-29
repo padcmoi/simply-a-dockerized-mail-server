@@ -33,6 +33,7 @@ export const API_ERROR_CODES = [
   "delegations.recipientCapReached",
   "delegations.aliasCapReached",
   "delegations.reserveExceeded",
+  "deliverability.probeUnavailable",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

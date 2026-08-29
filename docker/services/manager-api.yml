@@ -12,6 +12,10 @@ services:
       OPENDKIM_API_URL: http://mail-opendkim:8080
       MAIL_VOLUME_PATH: /var/mail
       HOST_PROC: /host/proc
+      # The deliverability engine runs outside every docker network, on the
+      # host stack, and listens on the bridge gateway. See
+      # docker/services/deliverability-probe.yml.
+      DELIVERABILITY_PROBE_URL: http://172.200.0.1:8080
     volumes:
       # Read-write, unlike the spool below: deleting a domain or a recipient has
       # to take its maildir with it (MailStorageService), otherwise the mail of

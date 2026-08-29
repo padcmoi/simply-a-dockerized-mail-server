@@ -1,0 +1,21 @@
+services:
+  deliverability-probe:
+    container_name: mail-deliverability-probe
+    restart: unless-stopped
+    build:
+      context: ../../images/deliverability-probe
+    env_file: ../../.env
+    environment:
+      # Listens on the docker bridge gateway: the manager reaches it there, the
+      # internet cannot, and no port is published.
+      PROBE_BIND: 172.200.0.1
+      PROBE_PORT: 8080
+    # OUT of the docker networks entirely, which is the whole point of this
+    # container. Postfix trusts `mynetworks`, the `mail` subnet, so a check run
+    # from there is answered by a server that has been told to trust the asker.
+    # Another bridge would not help either: reaching postfix through its
+    # published port makes docker rewrite the source to the `mail` gateway,
+    # 172.200.0.1, which is inside `mynetworks` again. On the host stack the
+    # packets carry the machine's public address, and every answer is the answer
+    # a stranger gets.
+    network_mode: host

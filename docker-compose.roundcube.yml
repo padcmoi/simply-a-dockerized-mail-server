@@ -63,6 +63,11 @@ services:
       file: ./docker/services/manager-api.yml
       service: manager-api
 
+  deliverability-probe:
+    extends:
+      file: ./docker/services/deliverability-probe.yml
+      service: deliverability-probe
+
   manager-ui:
     extends:
       file: ./docker/services/manager-ui.yml

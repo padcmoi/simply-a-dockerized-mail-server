@@ -52,11 +52,10 @@ function labelOf(check: DeliverabilityCheck) {
             'text-success': check.status === 'pass',
             'text-warning': check.status === 'warn',
             'text-error': check.status === 'fail',
-            'text-dimmed': check.status === 'skip',
           }"
         />
         <div class="min-w-0 flex-1 space-y-0.5">
-          <p class="text-sm" :class="check.status === 'skip' ? 'text-muted' : 'text-default'">{{ labelOf(check) }}</p>
+          <p class="text-sm text-default">{{ labelOf(check) }}</p>
           <p v-if="check.evidence" class="font-mono text-xs text-muted break-all">{{ check.evidence }}</p>
           <p v-if="hintOf(check)" class="text-xs text-toned">{{ hintOf(check) }}</p>
         </div>
