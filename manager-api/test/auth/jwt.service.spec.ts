@@ -242,6 +242,19 @@ describe("JwtAuthService", () => {
       expect(qb.take).toHaveBeenCalledWith(10);
     });
 
+    // `limit` is optional across the API, its absence meaning "the whole list".
+    // This endpoint has no such mode, and left unhandled the chain became
+    // `.skip(0).take(undefined)`, which TypeORM refuses: calling the history
+    // with no query string answered 500 rather than its first page.
+    it("falls back to a page size when no limit is given, rather than asking for an offset without one", async () => {
+      const qb = makeQb([], 0);
+      m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb);
+
+      await svc.listSessionHistory("a1", { offset: 0, sortDir: "desc" });
+      expect(qb.take).toHaveBeenCalledWith(25);
+      expect(qb.take).not.toHaveBeenCalledWith(undefined);
+    });
+
     it("adds a search filter (user agent or IP) when provided", async () => {
       const qb = makeQb([], 0);
       m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb);

@@ -82,7 +82,9 @@ describe("ApiTokenController (e2e: auth + ACL + behavior)", () => {
         .send({ name: "deploy", allowedIps: ["10.0.0.1"] })
         .expect(201);
       expect(res.body.key).toBe("sms_x.y");
-      expect(svc.create).toHaveBeenCalledWith(ROOT.id, { name: "deploy", allowedIps: ["10.0.0.1"] });
+      // The caller's own rootness travels with the call: it is the ceiling a
+      // requested scope is checked against.
+      expect(svc.create).toHaveBeenCalledWith(ROOT.id, true, { name: "deploy", allowedIps: ["10.0.0.1"] });
     });
     it("400 on a missing name (zod)", async () => {
       await api().post("/api/v1/api-tokens").set(asUser(h.token(ROOT))).send({}).expect(400);
@@ -165,7 +167,7 @@ describe("ApiTokenController (e2e: auth + ACL + behavior)", () => {
     it("200 for root and forwards (callerId, id, body)", async () => {
       svc.update.mockResolvedValueOnce({ id: 7, name: "renamed" });
       await api().patch("/api/v1/api-tokens/7").set(asUser(h.token(ROOT))).send({ name: "renamed" }).expect(200);
-      expect(svc.update).toHaveBeenCalledWith(ROOT.id, 7, { name: "renamed" });
+      expect(svc.update).toHaveBeenCalledWith(ROOT.id, true, 7, { name: "renamed" });
     });
     it("400 when :id is not an integer", async () => {
       await api().patch("/api/v1/api-tokens/abc").set(asUser(h.token(ROOT))).send({ name: "n" }).expect(400);

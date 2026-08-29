@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
 import { createHmac } from "crypto";
+import type { CustomPermissionGuardService } from "../../src/core/custom-permission-guard/custom-permission-guard.service";
 import { ApiTokenService } from "../../src/core/auth/api-token/api-token.service";
 import { decryptSecret } from "../../src/core/auth/api-token/api-token.cipher";
 import type { ApiToken } from "../../src/core/auth/api-token/api-token.entity";
 import type { Account } from "../../src/core/entities/account.entity";
-import { entity, repoMock } from "../helpers/mocks";
+import { entity, repoMock, providerMock } from "../helpers/mocks";
 
 const PEPPER = "test-pepper";
 process.env.MANAGER_API_TOKEN_PEPPER = PEPPER;
@@ -48,10 +49,16 @@ function tokenFor(secret: string, over: Partial<ApiToken> = {}): ApiToken {
 describe("ApiTokenService", () => {
   let repo: ReturnType<typeof makeRepo>;
   let svc: ApiTokenService;
+  let cpg: CustomPermissionGuardService;
 
   beforeEach(() => {
     repo = makeRepo();
-    svc = new ApiTokenService(repo);
+    // Scopes are refused when their author does not hold them, so the service
+    // now asks the permission library. These specs mint unscoped keys, where it
+    // is never consulted.
+    cpg = providerMock<CustomPermissionGuardService>({});
+    (cpg as { guard?: unknown }).guard = { assertOne: { global: vi.fn(), domain: vi.fn() } };
+    svc = new ApiTokenService(repo, cpg);
   });
 
   describe("pepper", () => {
@@ -59,7 +66,7 @@ describe("ApiTokenService", () => {
       const saved = process.env.MANAGER_API_TOKEN_PEPPER;
       delete process.env.MANAGER_API_TOKEN_PEPPER;
       try {
-        await expect(svc.create("acc-1", { name: "x" })).rejects.toThrow("MANAGER_API_TOKEN_PEPPER");
+        await expect(svc.create("acc-1", false, { name: "x" })).rejects.toThrow("MANAGER_API_TOKEN_PEPPER");
       } finally {
         process.env.MANAGER_API_TOKEN_PEPPER = saved;
       }
@@ -68,7 +75,7 @@ describe("ApiTokenService", () => {
 
   describe("create", () => {
     it("mints a sms_<clientId>.<secret> key and hashes the secret", async () => {
-      const res = await svc.create("acc-1", { name: "ci" });
+      const res = await svc.create("acc-1", false, { name: "ci" });
       expect(res.key).toMatch(/^sms_[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
       // the clientId embedded in the key is the one returned to the caller
       expect(res.key.startsWith(`sms_${res.clientId}.`)).toBe(true);
@@ -81,7 +88,7 @@ describe("ApiTokenService", () => {
     });
 
     it("also seals the secret so it can be read back", async () => {
-      const res = await svc.create("acc-1", { name: "ci" });
+      const res = await svc.create("acc-1", false, { name: "ci" });
       const persisted = repo.create.mock.calls[0][0] as Partial<ApiToken>;
       const rawSecret = res.key.slice(`sms_${res.clientId}.`.length);
       expect(persisted.secretCipher).toMatch(/^v1\$/);
@@ -89,7 +96,7 @@ describe("ApiTokenService", () => {
     });
 
     it("serialises allowedIps and parses expiresAt", async () => {
-      const res = await svc.create("acc-1", { name: "ci", allowedIps: ["10.0.0.1"], expiresAt: "2030-01-01T00:00:00.000Z" });
+      const res = await svc.create("acc-1", false, { name: "ci", allowedIps: ["10.0.0.1"], expiresAt: "2030-01-01T00:00:00.000Z" });
       const persisted = repo.create.mock.calls[0][0] as Partial<ApiToken>;
       expect(persisted.allowedIps).toBe(JSON.stringify(["10.0.0.1"]));
       expect(persisted.expiresAt).toBeInstanceOf(Date);
@@ -98,12 +105,12 @@ describe("ApiTokenService", () => {
 
     it("maps a duplicate-name DB error to 409", async () => {
       repo.save.mockRejectedValueOnce({ code: "ER_DUP_ENTRY" });
-      await expect(svc.create("acc-1", { name: "dup" })).rejects.toBeInstanceOf(ConflictException);
+      await expect(svc.create("acc-1", false, { name: "dup" })).rejects.toBeInstanceOf(ConflictException);
     });
 
     it("rethrows an unexpected DB error", async () => {
       repo.save.mockRejectedValueOnce(new Error("boom"));
-      await expect(svc.create("acc-1", { name: "x" })).rejects.toThrow("boom");
+      await expect(svc.create("acc-1", false, { name: "x" })).rejects.toThrow("boom");
     });
   });
 
@@ -125,20 +132,20 @@ describe("ApiTokenService", () => {
   describe("update", () => {
     it("404 when the token is not owned / absent", async () => {
       repo.findOne.mockResolvedValueOnce(null);
-      await expect(svc.update("acc-1", 1, { name: "n" })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(svc.update("acc-1", false, 1, { name: "n" })).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("applies name, allowedIps and expiresAt (set and cleared)", async () => {
       const row = tokenFor("s", { allowedIps: JSON.stringify(["9.9.9.9"]) });
       repo.findOne.mockResolvedValueOnce(row);
-      await svc.update("acc-1", 1, { name: "renamed", allowedIps: null, expiresAt: null });
+      await svc.update("acc-1", false, 1, { name: "renamed", allowedIps: null, expiresAt: null });
       expect(row.name).toBe("renamed");
       expect(row.allowedIps).toBeNull();
       expect(row.expiresAt).toBeNull();
 
       const row2 = tokenFor("s");
       repo.findOne.mockResolvedValueOnce(row2);
-      await svc.update("acc-1", 1, { allowedIps: ["8.8.8.8"], expiresAt: "2031-01-01T00:00:00.000Z" });
+      await svc.update("acc-1", false, 1, { allowedIps: ["8.8.8.8"], expiresAt: "2031-01-01T00:00:00.000Z" });
       expect(row2.allowedIps).toBe(JSON.stringify(["8.8.8.8"]));
       expect(row2.expiresAt).toBeInstanceOf(Date);
     });
@@ -146,13 +153,13 @@ describe("ApiTokenService", () => {
     it("maps a duplicate-name DB error to 409", async () => {
       repo.findOne.mockResolvedValueOnce(tokenFor("s"));
       repo.save.mockRejectedValueOnce({ code: "ER_DUP_ENTRY" });
-      await expect(svc.update("acc-1", 1, { name: "dup" })).rejects.toBeInstanceOf(ConflictException);
+      await expect(svc.update("acc-1", false, 1, { name: "dup" })).rejects.toBeInstanceOf(ConflictException);
     });
 
     it("rethrows an unexpected DB error", async () => {
       repo.findOne.mockResolvedValueOnce(tokenFor("s"));
       repo.save.mockRejectedValueOnce(new Error("boom"));
-      await expect(svc.update("acc-1", 1, { name: "x" })).rejects.toThrow("boom");
+      await expect(svc.update("acc-1", false, 1, { name: "x" })).rejects.toThrow("boom");
     });
   });
 
@@ -163,7 +170,7 @@ describe("ApiTokenService", () => {
     });
 
     it("hands back the very key that was minted, again and again", async () => {
-      const created = await svc.create("acc-1", { name: "ci" });
+      const created = await svc.create("acc-1", false, { name: "ci" });
       const persisted = repo.create.mock.calls[0][0] as Partial<ApiToken>;
       repo.findOne.mockResolvedValue(tokenFor("s", { clientId: created.clientId, secretCipher: persisted.secretCipher! }));
 
@@ -311,7 +318,8 @@ describe("ApiTokenService", () => {
       repo.findOne.mockResolvedValueOnce(row);
       // IPv4-mapped IPv6 must normalise to 1.2.3.4 so the allow-list matches
       const res = await svc.validate("sms_cid.s3cret", "::ffff:1.2.3.4");
-      expect(res).toEqual({ id: "acc-1", email: "a@b.com", isRoot: true });
+      // A key with no scope carries the account's whole reach, which is what null says.
+      expect(res).toEqual({ id: "acc-1", email: "a@b.com", isRoot: true, scopes: null });
       expect(row.lastUsedIp).toBe("1.2.3.4");
       expect(row.lastUsedAt).toBeInstanceOf(Date);
       expect(row.failedAttempts).toBe(0);
@@ -321,7 +329,7 @@ describe("ApiTokenService", () => {
       const row = tokenFor("s3cret", { allowedIps: JSON.stringify([]) });
       repo.findOne.mockResolvedValueOnce(row);
       const res = await svc.validate("sms_cid.s3cret", "1.2.3.4");
-      expect(res).toEqual({ id: "acc-1", email: "a@b.com", isRoot: false });
+      expect(res).toEqual({ id: "acc-1", email: "a@b.com", isRoot: false, scopes: null });
     });
   });
 });

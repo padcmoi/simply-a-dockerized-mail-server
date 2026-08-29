@@ -28,6 +28,12 @@ export class ApiToken {
   @Column({ name: "allowed_ips", type: "text", nullable: true })
   allowedIps!: string | null;
 
+  // NULL means "everything the account may do", which is what every key minted
+  // before scoping existed carries. A value narrows the key to what it names,
+  // the account staying the ceiling either way.
+  @Column({ name: "scopes", type: "text", nullable: true })
+  scopes!: string | null;
+
   @Column({ name: "expires_at", type: "datetime", nullable: true })
   expiresAt!: Date | null;
 

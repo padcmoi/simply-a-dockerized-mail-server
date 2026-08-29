@@ -16,6 +16,9 @@ import { UpdateProfileDto } from "./jwt.validation";
 
 // Columns the session-history list may sort by, mapped to their real SQL
 // expressions (never interpolate the raw request value -- see resolveSortColumn).
+// Matches api-token-access.service.ts, the other list that is always a page.
+const DEFAULT_PAGE_SIZE = 25;
+
 export const SESSIONS_SORTABLE_COLUMNS = ["createdAt", "expiresAt", "revokedAt"] as const;
 const SESSIONS_SORT_EXPR: Record<(typeof SESSIONS_SORTABLE_COLUMNS)[number], string> = {
   createdAt: "t.created_at",
@@ -164,7 +167,13 @@ export class JwtAuthService {
     const sortBy = resolveSortColumn(query.sortBy, SESSIONS_SORTABLE_COLUMNS, "createdAt");
     qb.orderBy(SESSIONS_SORT_EXPR[sortBy], query.sortDir === "asc" ? "ASC" : "DESC")
       .skip(query.offset)
-      .take(query.limit);
+      // `limit` is optional across the API, where its absence means "the whole
+      // list". This endpoint has no such mode: it answers { items, total }, and
+      // its own comment above says the set must never be returned whole. Without
+      // a fallback the call was `.skip(0).take(undefined)`, which TypeORM
+      // refuses outright, so asking for the history with no query string
+      // answered 500 instead of its first page.
+      .take(query.limit ?? DEFAULT_PAGE_SIZE);
     const [rows, total] = await qb.getManyAndCount();
     return { items: rows.map((r) => this.toSessionDto(r, false)), total };
   }

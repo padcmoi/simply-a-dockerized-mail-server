@@ -1,10 +1,12 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { Repository } from "typeorm";
 import { ApiToken } from "./api-token.entity";
 import { decryptSecret, encryptSecret } from "./api-token.cipher";
 import { KEY_PREFIX, normalizeIp, parseApiKey } from "./api-token.request";
+import { parseScopes, refuseScopesBeyondAccount, serialiseScopes, type TokenScopes } from "./api-token.scopes";
+import { CustomPermissionGuardService } from "../../custom-permission-guard/custom-permission-guard.service";
 import type { CreateApiTokenDto, UpdateApiTokenDto } from "./api-token.validation";
 
 const MAX_FAILED = 5;
@@ -12,7 +14,10 @@ const LOCK_MINUTES = 15;
 
 @Injectable()
 export class ApiTokenService {
-  constructor(@InjectRepository(ApiToken) private readonly repo: Repository<ApiToken>) {}
+  constructor(
+    @InjectRepository(ApiToken) private readonly repo: Repository<ApiToken>,
+    private readonly cpg: CustomPermissionGuardService
+  ) {}
 
   private get pepper(): string {
     const p = process.env.MANAGER_API_TOKEN_PEPPER;
@@ -40,6 +45,8 @@ export class ApiTokenService {
       name: t.name,
       clientId: t.clientId,
       allowedIps: t.allowedIps ? (JSON.parse(t.allowedIps) satisfies string[]) : null,
+      // Null is not "no rights": it is a key that was never narrowed.
+      scopes: parseScopes(t.scopes),
       expiresAt: t.expiresAt,
       revokedAt: t.revokedAt,
       lastUsedAt: t.lastUsedAt,
@@ -49,7 +56,18 @@ export class ApiTokenService {
     };
   }
 
-  async create(accountId: string, input: CreateApiTokenDto) {
+  // Nothing may be put in a scope that its author does not hold, or a key would
+  // be a way to mint rights instead of a way to narrow them.
+  private async assertScopesWithinAccount(accountId: string, isRoot: boolean, scopes: CreateApiTokenDto["scopes"]) {
+    if (!scopes) return;
+    const refused = await refuseScopesBeyondAccount(this.cpg.guard.assertOne, accountId, isRoot, scopes);
+    if (refused.length) {
+      throw new ForbiddenException(`You do not hold ${refused.join(", ")}, so a key of yours cannot either`);
+    }
+  }
+
+  async create(accountId: string, isRoot: boolean, input: CreateApiTokenDto) {
+    await this.assertScopesWithinAccount(accountId, isRoot, input.scopes);
     const clientId = randomBytes(16).toString("base64url");
     const rawSecret = randomBytes(32).toString("base64url");
 
@@ -60,6 +78,7 @@ export class ApiTokenService {
       secretHash: this.hashSecret(rawSecret),
       secretCipher: encryptSecret(rawSecret, this.pepper),
       allowedIps: input.allowedIps?.length ? JSON.stringify(input.allowedIps) : null,
+      scopes: serialiseScopes(input.scopes),
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
     });
     try {
@@ -70,6 +89,7 @@ export class ApiTokenService {
         clientId,
         key: `${KEY_PREFIX}${clientId}.${rawSecret}`,
         allowedIps: input.allowedIps ?? null,
+        scopes: parseScopes(saved.scopes),
         expiresAt: saved.expiresAt,
         createdAt: saved.createdAt,
       };
@@ -84,13 +104,15 @@ export class ApiTokenService {
     return tokens.map((t) => this.toSafe(t));
   }
 
-  async update(accountId: string, id: number, input: UpdateApiTokenDto) {
+  async update(accountId: string, isRoot: boolean, id: number, input: UpdateApiTokenDto) {
     const token = await this.repo.findOne({ where: { id, accountId } });
     if (!token) throw new NotFoundException("Token not found");
+    await this.assertScopesWithinAccount(accountId, isRoot, input.scopes);
     if (input.name !== undefined) token.name = input.name;
     if (input.allowedIps !== undefined) {
       token.allowedIps = input.allowedIps?.length ? JSON.stringify(input.allowedIps) : null;
     }
+    if ("scopes" in input) token.scopes = serialiseScopes(input.scopes);
     if ("expiresAt" in input) token.expiresAt = input.expiresAt ? new Date(input.expiresAt) : null;
     try {
       await this.repo.save(token);
@@ -152,7 +174,10 @@ export class ApiTokenService {
     };
   }
 
-  async validate(rawKey: string, requestIp: string): Promise<{ id: string; email: string; isRoot: boolean } | null> {
+  async validate(
+    rawKey: string,
+    requestIp: string
+  ): Promise<{ id: string; email: string; isRoot: boolean; scopes: TokenScopes | null } | null> {
     const parsed = parseApiKey(rawKey);
     if (!parsed) return null;
 
@@ -193,6 +218,10 @@ export class ApiTokenService {
       id: token.account.id,
       email: token.account.email,
       isRoot: token.account.isRoot === 1,
+      // The key's own ceiling, carried to the auth guard: the permission guards
+      // resolve the account's rights and know nothing of keys, so the narrowing
+      // is applied before them.
+      scopes: parseScopes(token.scopes),
     };
   }
 }

@@ -55,7 +55,7 @@ export class ApiTokenController {
   @RequireGlobalPermissions([{ resource: "api-tokens", actions: ["access", "create-api-token"] }])
   @CreateApiTokenDocs()
   create(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(createApiTokenSchema)) body: CreateApiTokenDto) {
-    return this.svc.create(req.user.id, body);
+    return this.svc.create(req.user.id, req.user.isRoot === true, body);
   }
 
   @Get()
@@ -92,7 +92,7 @@ export class ApiTokenController {
     @Param("id", ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(updateApiTokenSchema)) body: UpdateApiTokenDto
   ) {
-    return this.svc.update(req.user.id, id, body);
+    return this.svc.update(req.user.id, req.user.isRoot === true, id, body);
   }
 
   // Revoking leaves the row (and its audit trail) in place; deleting removes it.
