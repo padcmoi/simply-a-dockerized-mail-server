@@ -287,9 +287,7 @@ export interface Locales {
   deliverability: {
     title: string;
     description: string;
-    run: string;
     rerun: string;
-    idle: string;
     export: string;
     exportText: string;
     exportJson: string;
@@ -344,6 +342,8 @@ export interface Locales {
       dnswl: string;
       "ip-neighbourhood": string;
     };
+    // Optional: only the checks that have a second, cheaper answer carry one.
+    alternatives: Partial<Record<string, string>>;
     hints: {
       "mx-present": string;
       "mx-resolves": string;

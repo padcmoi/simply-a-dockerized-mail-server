@@ -1,4 +1,4 @@
-import { Controller, Get, NotFoundException, Param, ParseIntPipe, UseGuards } from "@nestjs/common";
+import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query, UseGuards } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
@@ -30,9 +30,13 @@ export class DeliverabilityController {
   @RequireGlobalPermissions([{ resource: "deliverability", actions: ["access", "run-diagnostics"] }])
   @RequireDomainPermissions([{ resource: "domain", actions: ["access"] }])
   @RunDeliverabilityDocs()
-  async run(@Param("domainId", ParseIntPipe) domainId: number) {
+  // One route, because reading the stored report and producing a new one are the
+  // same question asked twice: what is the state of this domain. `refresh=true`
+  // is what the re-run button sends, and it is the only thing that spends an
+  // SMTP session and a round of blocklist queries.
+  async run(@Param("domainId", ParseIntPipe) domainId: number, @Query("refresh") refresh?: string) {
     const found = await this.domains.findOne({ where: { id: domainId } });
     if (!found) throw new NotFoundException(`Domain #${domainId} not found`);
-    return this.deliverability.run(found.domain.toLowerCase());
+    return this.deliverability.report(found.domain.toLowerCase(), refresh === "true");
   }
 }

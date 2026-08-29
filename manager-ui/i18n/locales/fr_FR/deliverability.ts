@@ -3,10 +3,8 @@ import type { Locales } from "../../Locales";
 export default {
   title: "Délivrabilité",
   description:
-    "Tous les contrôles qui décident si le courrier de ce domaine atteint une boite de réception, exécutés en direct contre le DNS, le port SMTP de ce serveur et les listes noires publiques. Rien n'est stocké.",
-  run: "Lancer les contrôles",
+    "Tous les contrôles qui décident si le courrier de ce domaine atteint une boite de réception, exécutés contre le DNS, le port SMTP de ce serveur et les listes noires publiques depuis l'extérieur de ses réseaux de confiance. Le dernier rapport est conservé et affiché ici ; relancer le remplace.",
   rerun: "Relancer",
-  idle: "Rien n'est mesuré tant que vous ne le demandez pas : un lancement ouvre une session SMTP contre ce serveur, va chercher sa politique MTA-STS et interroge les listes noires publiques au nom de cette installation.",
   export: "Exporter",
   exportText: "Rapport lisible (.txt)",
   exportJson: "Données brutes (.json)",
@@ -67,6 +65,14 @@ export default {
     dnswl: "L'adresse est sur la liste blanche dnswl",
     "ip-neighbourhood": "L'adresse n'est pas dans un pool jetable",
   },
+  // La seconde réponse, en couleur d'accent parce que c'est la moins chère et
+  // celle qu'on ne voit pas.
+  alternatives: {
+    "role-postmaster":
+      "Un alias postmaster{'@'} vers un destinataire que vous lisez vraiment tient l'adresse tout aussi bien, et compte ici comme une réponse pleine.",
+    "role-abuse":
+      "Un alias abuse{'@'} vers un destinataire que vous lisez vraiment tient l'adresse tout aussi bien, et compte ici comme une réponse pleine.",
+  },
   hints: {
     "mx-present": "Sans MX, personne ne sait où remettre le courrier de ce domaine.",
     "mx-resolves": "Le nom du MX ne pointe sur rien : publiez un enregistrement A pour lui.",
@@ -80,8 +86,8 @@ export default {
     "tls-certificate-name": "Le certificat ne porte pas {missing}. Un destinataire qui vérifie le nom tombe sur une discordance, et le TLS retombe en non authentifié.",
     "tls-certificate-expiry": "Il expire dans {days} jours. Le renouvellement se déclenche d'ordinaire à 30 jours : si près, c'est qu'il ne tourne pas.",
     "open-relay": "Un relais ouvert est blacklisté en quelques heures. C'est mesuré par une vraie transaction depuis l'extérieur des réseaux de confiance du serveur : expéditeur étranger, destinataire étranger, et rien n'est jamais envoyé.",
-    "role-postmaster": "La RFC 2142 attend cette adresse. Certains filtres la testent, et un rebond se lit comme un domaine que personne ne surveille.",
-    "role-abuse": "La RFC 2142 attend cette adresse, et c'est là qu'arrivent les plaintes. Un rebond dessus coute de la réputation.",
+    "role-postmaster": "La RFC 5321 exige que cette adresse accepte le courrier. La création du domaine fabrique la boite désactivée et non supprimable, et c'est voulu : l'envoi n'en dépend pas, le serveur émet ce que dit le From sans consulter aucune boite. Ce qui manque, c'est la réception : les réponses et les avis de non-remise rebondissent.",
+    "role-abuse": "La RFC 2142 attend cette adresse, et c'est là qu'arrivent les plaintes et les avis de listes noires : un opérateur qui ne peut pas vous joindre vous bloque sans prévenir.",
     "spf-present": "Sans SPF, rien ne dit quels serveurs ont le droit d'envoyer pour ce domaine.",
     "spf-single": "Deux enregistrements SPF rendent l'évaluation permerror, un échec dur chez tous les destinataires. Fusionnez-les.",
     "spf-covers-ip": "L'adresse d'envoi n'est pas autorisée par cet enregistrement. Ajoutez-la en ip4: ou couvrez-la par mx.",

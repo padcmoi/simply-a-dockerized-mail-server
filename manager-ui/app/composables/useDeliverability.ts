@@ -40,10 +40,14 @@ export const STATUS_ICON: Record<CheckStatus, string> = {
 export function useDeliverability(domainId: () => number | null) {
   const { call } = useApi();
 
-  function run() {
+  // Without `refresh` the API answers the report it has kept in redis, and
+  // produces one only when there is none. With it, a new run replaces the
+  // stored one: that is what the re-run button spends.
+  function run(refresh = false) {
     const id = domainId();
     if (!id) return Promise.resolve(null);
-    return call<DeliverabilityReport>(`/domains/${id}/deliverability`);
+    const query = refresh ? "?refresh=true" : "";
+    return call<DeliverabilityReport>(`/domains/${id}/deliverability${query}`);
   }
 
   return { run };

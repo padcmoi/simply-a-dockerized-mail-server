@@ -44,6 +44,10 @@ const verdict = computed(() => {
   return "pass" as const;
 });
 
+// Opening the page reads the stored report, and produces one only when there is
+// none: nothing here spends an SMTP session unless the button is pressed.
+watch(domainId, (id) => id && execute(), { immediate: true });
+
 watch(
   domainFqdn,
   (fqdn) => {
@@ -85,15 +89,15 @@ function saveReport(format: "txt" | "json") {
   );
 }
 
-// Every check is a live network probe, so it runs on demand and on arrival,
-// never on a timer: DNS, an SMTP session and a handful of blocklists is not
-// something to fire on every render.
-async function execute() {
+// Opening the page costs nothing: the API answers the report it kept, and runs
+// the checks only when it has none. `refresh` is the button, and the only thing
+// that spends an SMTP session and a round of blocklist queries.
+async function execute(refresh = false) {
   if (!domainId.value) return;
   running.value = true;
   failed.value = false;
   try {
-    report.value = await run();
+    report.value = await run(refresh);
   } catch (e) {
     failed.value = true;
     toast.add({ title: t("deliverability.failed"), description: apiErrorMessage(e), color: "error" });
@@ -129,8 +133,8 @@ async function execute() {
             {{ t("deliverability.export") }}
           </UButton>
         </UDropdownMenu>
-        <UButton icon="i-lucide-refresh-cw" color="primary" :loading="running" @click="execute">
-          {{ report ? t("deliverability.rerun") : t("deliverability.run") }}
+        <UButton icon="i-lucide-refresh-cw" color="primary" :loading="running" @click="execute(true)">
+          {{ t("deliverability.rerun") }}
         </UButton>
       </div>
     </div>
@@ -167,15 +171,7 @@ async function execute() {
       </UCard>
     </div>
 
-    <UCard v-if="!report && !running" :ui="{ body: 'p-8 sm:p-8' }">
-      <div class="flex flex-col items-center gap-3 text-center">
-        <UIcon name="i-lucide-radar" class="size-8 text-dimmed" />
-        <p class="text-sm text-muted max-w-prose">{{ t("deliverability.idle") }}</p>
-        <UButton icon="i-lucide-play" color="primary" @click="execute">{{ t("deliverability.run") }}</UButton>
-      </div>
-    </UCard>
-
-    <ListSkeleton v-else-if="running && !report" :columns="4" />
+    <ListSkeleton v-if="running && !report" :columns="4" />
 
     <UAlert
       v-else-if="failed && !report"

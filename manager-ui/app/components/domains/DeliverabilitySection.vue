@@ -25,6 +25,16 @@ function hintOf(check: DeliverabilityCheck) {
   return text === key ? null : text;
 }
 
+// The way out that is easy to miss: a check often has a second, cheaper answer
+// than the obvious one, and buried at the end of a paragraph nobody reads it.
+// It carries the accent colour for that reason, and only where it exists.
+function alternativeOf(check: DeliverabilityCheck) {
+  if (check.status === "pass") return null;
+  const key = `deliverability.alternatives.${check.id}`;
+  const text = t(key, check.params ?? {});
+  return text === key ? null : text;
+}
+
 function labelOf(check: DeliverabilityCheck) {
   const key = `deliverability.checks.${check.id}`;
   const text = t(key, check.params ?? {});
@@ -58,6 +68,7 @@ function labelOf(check: DeliverabilityCheck) {
           <p class="text-sm text-default">{{ labelOf(check) }}</p>
           <p v-if="check.evidence" class="font-mono text-xs text-muted break-all">{{ check.evidence }}</p>
           <p v-if="hintOf(check)" class="text-xs text-toned">{{ hintOf(check) }}</p>
+          <p v-if="alternativeOf(check)" class="text-xs text-primary">{{ alternativeOf(check) }}</p>
         </div>
         <UBadge :color="STATUS_COLOR[check.status]" variant="subtle" size="sm" class="shrink-0">
           {{ t(`deliverability.status.${check.status}`) }}

@@ -3,10 +3,8 @@ import type { Locales } from "../../Locales";
 export default {
   title: "Deliverability",
   description:
-    "Every check that decides whether this domain's mail reaches an inbox, run live against DNS, this server's own SMTP port and the public blocklists. Nothing is stored.",
-  run: "Run the checks",
+    "Every check that decides whether this domain's mail reaches an inbox, run against DNS, this server's own SMTP port and the public blocklists from outside its trusted networks. The last report is kept and shown here; running again replaces it.",
   rerun: "Run again",
-  idle: "Nothing is measured until you ask: one run opens an SMTP session against this server, fetches its MTA-STS policy and queries the public blocklists in this installation's name.",
   export: "Export",
   exportText: "Readable report (.txt)",
   exportJson: "Raw data (.json)",
@@ -67,6 +65,14 @@ export default {
     dnswl: "The address is on the dnswl whitelist",
     "ip-neighbourhood": "The address is not in a throwaway pool",
   },
+  // The second answer, painted in the accent colour because it is the cheap one
+  // and it is the one readers miss.
+  alternatives: {
+    "role-postmaster":
+      "An alias postmaster{'@'} pointing at a recipient you actually read holds the address just as well, and counts here as a full answer.",
+    "role-abuse":
+      "An alias abuse{'@'} pointing at a recipient you actually read holds the address just as well, and counts here as a full answer.",
+  },
   hints: {
     "mx-present": "Without an MX, nobody knows where to deliver this domain's mail.",
     "mx-resolves": "The MX name points to nothing: publish an A record for it.",
@@ -80,8 +86,8 @@ export default {
     "tls-certificate-name": "The certificate does not carry {missing}. A receiver checking the name gets a mismatch, and TLS falls back to unauthenticated.",
     "tls-certificate-expiry": "It expires in {days} days. Renewal usually runs at 30 days, so this close means it is not running.",
     "open-relay": "An open relay is blacklisted within hours. This is measured by a real transaction from outside the server's trusted networks: a foreign sender, a foreign recipient, and nothing ever sent.",
-    "role-postmaster": "RFC 2142 expects this address. Some filters probe it, and a bounce reads as an unattended domain.",
-    "role-abuse": "RFC 2142 expects this address, and it is where complaints arrive. A bounce there costs reputation.",
+    "role-postmaster": "RFC 5321 requires this address to accept mail. Creating a domain provisions the mailbox disabled and undeletable, which is deliberate: sending is unaffected, since the server sends whatever the From says without consulting a mailbox. What is missing is reception, so replies and delivery failures bounce.",
+    "role-abuse": "RFC 2142 expects this address, and it is where complaints and blocklist notices arrive: an operator who cannot reach you blocks you without warning.",
     "spf-present": "Without SPF, nothing states which servers may send for this domain.",
     "spf-single": "Two SPF records make evaluation a permerror, which is a hard failure for every receiver. Merge them into one.",
     "spf-covers-ip": "The sending address is not authorised by this record. Add it as ip4: or cover it with mx.",
