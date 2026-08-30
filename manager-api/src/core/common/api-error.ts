@@ -34,6 +34,7 @@ export const API_ERROR_CODES = [
   "delegations.aliasCapReached",
   "delegations.reserveExceeded",
   "deliverability.probeUnavailable",
+  "auth.wrongPassword",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

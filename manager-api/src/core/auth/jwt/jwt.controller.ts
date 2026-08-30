@@ -28,6 +28,7 @@ import { VirtualUser } from "../../entities/virtual-user.entity";
 import { Public } from "../auth.decorator";
 import {
   JwtAuthApi,
+  JwtChangePasswordDocs,
   JwtLoginDocs,
   JwtLogoutDocs,
   JwtMeDocs,
@@ -41,7 +42,16 @@ import {
   JwtUpdateProfileDocs,
 } from "./jwt.openapi";
 import { JwtAuthService } from "./jwt.service";
-import { LoginDto, RefreshDto, UpdateProfileDto, loginSchema, refreshSchema, updateProfileSchema } from "./jwt.validation";
+import {
+  ChangeMyPasswordDto,
+  LoginDto,
+  RefreshDto,
+  UpdateProfileDto,
+  changeMyPasswordSchema,
+  loginSchema,
+  refreshSchema,
+  updateProfileSchema,
+} from "./jwt.validation";
 
 type AuthedRequest = Request & {
   user: { id: string; email: string; isRoot: boolean };
@@ -145,6 +155,12 @@ export class JwtAuthController {
   @JwtUpdateProfileDocs()
   updateProfile(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(updateProfileSchema)) body: UpdateProfileDto) {
     return this.auth.updateProfile(req.user.id, body);
+  }
+
+  @Patch("me/password")
+  @JwtChangePasswordDocs()
+  changePassword(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(changeMyPasswordSchema)) body: ChangeMyPasswordDto) {
+    return this.auth.changePassword(req.user.id, body);
   }
 
   @Get("me/sessions")

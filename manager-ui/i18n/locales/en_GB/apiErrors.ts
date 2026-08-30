@@ -30,4 +30,7 @@ export default {
     reserveExceeded:
       "That mailbox wouldn't fit your granted quota ({usedMb} of {reservedMb} MB used, {requestedMb} MB requested)",
   },
+  auth: {
+    wrongPassword: "The current password is incorrect",
+  },
 } satisfies Locales["apiErrors"];

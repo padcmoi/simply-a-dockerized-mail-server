@@ -61,6 +61,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/notifications/feed",
   "GET /api/v1/notifications/preferences",
   "PATCH /api/v1/auth/jwt/me",
+  "PATCH /api/v1/auth/jwt/me/password",
   "PATCH /api/v1/my-space/aliases/:id",
   "PATCH /api/v1/my-space/recipients/:id",
   "POST /api/v1/config/mail/disable",

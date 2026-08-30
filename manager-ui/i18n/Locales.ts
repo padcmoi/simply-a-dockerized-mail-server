@@ -24,6 +24,9 @@ export interface Locales {
       otpInvalid: string;
       sendFailed: string;
     };
+    auth: {
+      wrongPassword: string;
+    };
     delegations: {
       quotaExceedsDomain: string;
       ownerNotDelegable: string;
@@ -909,6 +912,19 @@ export interface Locales {
     soon: string;
     changePassword: string;
     changePasswordHint: string;
+    passwordPage: {
+      breadcrumb: string;
+      alertTitle: string;
+      alertDescription: string;
+      current: string;
+      new: string;
+      confirm: string;
+      min: string;
+      mismatch: string;
+      submit: string;
+      changed: string;
+      failed: string;
+    };
     twoFactor: string;
     twoFactorHint: string;
     sessions: string;

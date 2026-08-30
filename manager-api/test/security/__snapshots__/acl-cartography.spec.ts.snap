@@ -97,6 +97,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "PATCH /api/v1/admin/domains/:domainId/quota  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:domains[access] superadmin[access,resize-any-domain-quota]",
   "PATCH /api/v1/api-tokens/:id  ::  auth=JWT+ApiToken guards=[GlobalPermissionGuard] global:api-tokens[access,edit-api-token]",
   "PATCH /api/v1/auth/jwt/me  ::  auth=ApiToken+JWT guards=[]",
+  "PATCH /api/v1/auth/jwt/me/password  ::  auth=ApiToken+JWT guards=[]",
   "PATCH /api/v1/domains/:domainId/active  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:admin[access,toggle-domain-active] domain[access,toggle-domain-active]",
   "PATCH /api/v1/domains/:domainId/aliases/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:aliases[access,edit-alias]",
   "PATCH /api/v1/domains/:domainId/owner  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:domain_owner_elevated[transfer-domain-ownership] domain:domain[access,transfer-domain-ownership]",

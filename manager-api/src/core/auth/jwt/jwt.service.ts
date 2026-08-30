@@ -1,10 +1,11 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { ConflictException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { createHash, randomBytes } from "crypto";
 import { In, IsNull, MoreThan, Not, Repository } from "typeorm";
 import { PaginationQuery, resolveSortColumn } from "../../common/pagination.validation";
-import { scryptVerify } from "../../common/scrypt";
+import { scryptHash, scryptVerify } from "../../common/scrypt";
+import { ApiError } from "../../common/api-error";
 import { Account } from "../../entities/account.entity";
 import { AccountProfile } from "../../entities/account-profile.entity";
 import { GroupMember } from "../../entities/group-member.entity";
@@ -12,7 +13,7 @@ import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
 import { GeocodingService } from "../../geocoding/geocoding.service";
 import { MailSettingsService } from "../../mailer/mail-settings.service";
-import { UpdateProfileDto } from "./jwt.validation";
+import { ChangeMyPasswordDto, UpdateProfileDto } from "./jwt.validation";
 
 // Columns the session-history list may sort by, mapped to their real SQL
 // expressions (never interpolate the raw request value -- see resolveSortColumn).
@@ -289,6 +290,21 @@ export class JwtAuthService {
       { revokedAt: new Date() }
     );
     return { ok: true, revoked: res.affected ?? 0 };
+  }
+
+  // The current password is verified before anything is written: possessing a
+  // session is not possessing the account. 400 with a code rather than 401,
+  // because manager-ui answers a 401 by refreshing the session, and a mistyped
+  // password must land on the field, not sign anyone out.
+  async changePassword(accountId: string, input: ChangeMyPasswordDto) {
+    const account = await this.accounts.findOne({ where: { id: accountId } });
+    if (!account || !account.password) throw new NotFoundException("Account not found");
+    if (!(await scryptVerify(input.currentPassword, account.password))) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, "auth.wrongPassword", "Current password is incorrect");
+    }
+    account.password = await scryptHash(input.newPassword);
+    await this.accounts.save(account);
+    return { changed: true };
   }
 
   async updateProfile(accountId: string, input: UpdateProfileDto): Promise<ProfileResponse> {

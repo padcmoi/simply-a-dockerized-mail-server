@@ -29,4 +29,7 @@ export default {
     aliasCapReached: "Vous avez atteint votre plafond d'alias ({max})",
     reserveExceeded: "Cette boîte dépasserait votre quota octroyé ({usedMb} sur {reservedMb} Mo utilisés, {requestedMb} Mo demandés)",
   },
+  auth: {
+    wrongPassword: "Le mot de passe actuel est incorrect",
+  },
 } satisfies Locales["apiErrors"];

@@ -324,6 +324,39 @@ export const JwtMyGroupPermissionsDocs = () =>
     })
   );
 
+export const JwtChangePasswordDocs = () =>
+  applyDecorators(
+    ApiSecurity("apiToken"),
+    ApiOperation({
+      summary: "Change the authenticated account's own password",
+      description:
+        "Self-scoped: always changes the caller's own password (req.user.id). The current password is verified " +
+        "first, so holding a session is not enough to take the account over. Existing sessions stay valid.",
+    }),
+    ApiBody({
+      schema: {
+        example: { currentPassword: "old-password", newPassword: "a-longer-new-password" },
+      },
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Password changed",
+      schema: { example: { changed: true } },
+    }),
+    ApiResponse({
+      status: 400,
+      description: "Current password incorrect (code auth.wrongPassword), or new password shorter than 8 characters",
+      schema: {
+        example: { statusCode: 400, code: "auth.wrongPassword", params: {}, message: "Current password is incorrect" },
+      },
+    }),
+    ApiResponse({
+      status: 401,
+      description: "Missing/invalid token",
+      schema: { example: { message: "Unauthorized", statusCode: 401 } },
+    })
+  );
+
 export const JwtUpdateProfileDocs = () =>
   applyDecorators(
     ApiSecurity("apiToken"),
