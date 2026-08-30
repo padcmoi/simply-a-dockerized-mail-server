@@ -23,7 +23,7 @@ export const createDomainSchema = z.object({
   domain: fqdn,
   quota: z.number().int().min(MIN_DOMAIN_QUOTA_BYTES, `Domain quota must be at least ${MIN_DOMAIN_QUOTA_BYTES} bytes (10 MB)`),
   active: z.boolean().optional(),
-  userEndDate: z.string().date().nullable().optional(),
+  userEndDate: z.iso.date().nullable().optional(),
 });
 
 // `domain` is deliberately omitted, and no rename route exists anywhere: a
@@ -34,7 +34,7 @@ export const createDomainSchema = z.object({
 export const updateDomainSchema = createDomainSchema.omit({ domain: true }).partial();
 
 export const transferDomainOwnerSchema = z.object({
-  newOwnerId: z.string().uuid(),
+  newOwnerId: z.guid(),
 });
 
 // Dedicated route + schema for just this one field, gated by the "admin"

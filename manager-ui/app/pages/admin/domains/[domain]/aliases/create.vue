@@ -9,7 +9,7 @@ definePageMeta({
 // Mirrors the local-part regex of aliases.validation.ts, which has no "@" in
 // it on purpose: the domain comes from the route, never from this field.
 const LOCAL_PART_PATTERN = /^[a-z0-9._+-]+$/i;
-// Loose on purpose: the API's `z.string().email()` is the authority. This only
+// Loose on purpose: the API's `z.email()` is the authority. This only
 // catches the obvious before a round-trip.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

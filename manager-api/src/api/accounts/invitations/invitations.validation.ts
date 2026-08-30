@@ -8,12 +8,9 @@ export const sendInvitationSchema = z.object({
   // Lowercased before it ever reaches the DB: this becomes the account's login
   // identity (accounts.email) on acceptance, and a mixed-case value would let
   // "Dodo@x.com" and "dodo@x.com" exist as two different accounts.
-  email: z
-    .string()
-    .email()
-    .transform((v) => v.toLowerCase()),
+  email: z.email().transform((v) => v.toLowerCase()),
   domainId: z.coerce.number().int().positive(),
-  groupIds: z.array(z.string().uuid()).default([]),
+  groupIds: z.array(z.guid()).default([]),
   // Existing, unassigned recipients/aliases of the chosen domain to hand to the
   // invitee on acceptance (0..N of each). Pure ownership assignment: no password
   // is generated or changed.
@@ -36,7 +33,6 @@ export const sendInvitationSchema = z.object({
 // optional display name (stored on the profile) complete the account.
 export const acceptInvitationSchema = z.object({
   email: z
-    .string()
     .email()
     .max(255)
     .transform((v) => v.toLowerCase())
@@ -51,7 +47,6 @@ export type AcceptInvitationDto = z.infer<typeof acceptInvitationSchema>;
 // Query of GET invite/:token/email-exists.
 export const emailExistsQuerySchema = z.object({
   email: z
-    .string()
     .email()
     .max(255)
     .transform((v) => v.toLowerCase()),

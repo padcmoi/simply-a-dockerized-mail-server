@@ -21,18 +21,21 @@ export const tokenScopesSchema = z.object({
   domain: z.array(domainScopeEntrySchema).max(256).default([]),
 });
 
+// zod 4 dropped `.ip()`: the union is the same contract, either family.
+const ipAddress = z.union([z.ipv4(), z.ipv6()]);
+
 export const createApiTokenSchema = z.object({
   name: z.string().min(1).max(255),
-  allowedIps: z.array(z.string().ip()).max(50).optional(),
+  allowedIps: z.array(ipAddress).max(50).optional(),
   scopes: tokenScopesSchema.nullable().optional(),
-  expiresAt: z.string().datetime().optional(),
+  expiresAt: z.iso.datetime().optional(),
 });
 
 export const updateApiTokenSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  allowedIps: z.array(z.string().ip()).max(50).nullable().optional(),
+  allowedIps: z.array(ipAddress).max(50).nullable().optional(),
   scopes: tokenScopesSchema.nullable().optional(),
-  expiresAt: z.string().datetime().nullable().optional(),
+  expiresAt: z.iso.datetime().nullable().optional(),
 });
 
 export type CreateApiTokenDto = z.infer<typeof createApiTokenSchema>;

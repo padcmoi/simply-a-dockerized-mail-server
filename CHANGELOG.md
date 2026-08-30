@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- chore(zod): version four on both sides, the v3 contract measured intact (30-08-2026)
 - refactor(manager-ui): pages shed their business logic into composables and every type lives in one tree (30-08-2026)
 
 - A key may be narrower than the account that owns it _(api-tokens)_ [d853e7d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d853e7d8a8813b2494a6d2a9aa2c348ab463f27d) (29-08-2026)

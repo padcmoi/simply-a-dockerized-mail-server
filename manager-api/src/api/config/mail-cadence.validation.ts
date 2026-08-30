@@ -9,14 +9,14 @@ export const updateMailCadenceSchema = z
   .superRefine((v, ctx) => {
     if (v.mailMinIntervalMs > v.offlineNotifyAfterMs) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["mailMinIntervalMs"],
         message: "The anti-spam interval cannot exceed the pending-notification delay",
       });
     }
     if (v.offlineSweepIntervalMs > v.offlineNotifyAfterMs) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         path: ["offlineSweepIntervalMs"],
         message: "The check frequency cannot exceed the pending-notification delay",
       });

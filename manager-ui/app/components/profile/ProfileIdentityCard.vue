@@ -26,8 +26,8 @@ const avatarAlt = computed(() => form.displayName || auth.session?.email || "?")
 
 const schema = z.object({
   displayName: z.string().max(255).optional(),
-  email: z.string().email(t("profile.emailInvalid")).max(255).or(z.literal("")).optional(),
-  avatarUrl: z.string().url(t("profile.urlInvalid")).max(1024).or(z.literal("")).optional(),
+  email: z.email(t("profile.emailInvalid")).max(255).or(z.literal("")).optional(),
+  avatarUrl: z.url(t("profile.urlInvalid")).max(1024).or(z.literal("")).optional(),
   phone: z.string().max(32).optional(),
   addressLine: z.string().max(255).optional(),
   city: z.string().max(255).optional(),

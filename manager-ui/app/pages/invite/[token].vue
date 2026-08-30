@@ -26,7 +26,7 @@ const openToken = computed(() => info.value !== null && info.value.email === nul
 const emailValid = computed(() => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim()));
 const schema = computed(() =>
   z.object({
-    email: openToken.value ? z.string().email(t("invite.emailInvalid")) : z.string().optional(),
+    email: openToken.value ? z.email(t("invite.emailInvalid")) : z.string().optional(),
     displayName: z.string().max(255).optional(),
     password: z.string().min(8, t("invite.passwordMin")),
   })

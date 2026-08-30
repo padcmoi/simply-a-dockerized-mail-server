@@ -25,11 +25,10 @@ export const createAliasSchema = z
   .object({
     localPart,
     destination: z
-      .string()
       .email()
       .max(255)
       .transform((v) => v.toLowerCase()),
-    userEndDate: z.string().date().nullable().optional(),
+    userEndDate: z.iso.date().nullable().optional(),
   })
   .strict();
 
@@ -40,17 +39,16 @@ export const updateAliasSchema = z
   .object({
     localPart: localPart.optional(),
     destination: z
-      .string()
       .email()
       .max(255)
       .transform((v) => v.toLowerCase())
       .optional(),
-    userEndDate: z.string().date().nullable().optional(),
+    userEndDate: z.iso.date().nullable().optional(),
   })
   .strict();
 
 // Body of PUT :id/owner: the account (uuid) to hand this alias to.
-export const assignAliasOwnerSchema = z.object({ ownerId: z.string().uuid() }).strict();
+export const assignAliasOwnerSchema = z.object({ ownerId: z.guid() }).strict();
 
 export type CreateAliasDto = z.infer<typeof createAliasSchema>;
 export type UpdateAliasDto = z.infer<typeof updateAliasSchema>;

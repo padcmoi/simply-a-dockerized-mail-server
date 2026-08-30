@@ -7,9 +7,9 @@ import { z } from "zod";
 // (the self-service PATCH /auth/jwt/me) so an administrator can edit the same
 // fields the owner can, plus enabled.
 export const updateAccountSchema = z.object({
-  email: z.string().email().max(255).optional(),
+  email: z.email().max(255).optional(),
   displayName: z.string().max(255).nullable().optional(),
-  avatarUrl: z.string().url().max(1024).nullable().optional(),
+  avatarUrl: z.url().max(1024).nullable().optional(),
   phone: z.string().max(32).nullable().optional(),
   addressLine: z.string().max(255).nullable().optional(),
   addressComplement: z.string().max(255).nullable().optional(),

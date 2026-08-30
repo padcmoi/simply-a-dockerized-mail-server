@@ -14,7 +14,7 @@ const { resolve: resolveLastRoute } = useLastRoute();
 const { persist: persistLocale } = useLocalePreference();
 
 const schema = z.object({
-  email: z.string().email(t("login.emailInvalid")),
+  email: z.email(t("login.emailInvalid")),
   password: z.string().min(1, t("common.required")),
 });
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().email().max(255),
+  email: z.email().max(255),
   password: z.string().min(1).max(255),
 });
 
@@ -13,9 +13,9 @@ export const refreshSchema = z.object({
 // `.nullable()`). Every other field is a personal profile attribute stored on
 // account_profiles; `city` drives geocoding into latitude/longitude.
 export const updateProfileSchema = z.object({
-  email: z.string().email().max(255).optional(),
+  email: z.email().max(255).optional(),
   displayName: z.string().max(255).nullable().optional(),
-  avatarUrl: z.string().url().max(1024).nullable().optional(),
+  avatarUrl: z.url().max(1024).nullable().optional(),
   phone: z.string().max(32).nullable().optional(),
   addressLine: z.string().max(255).nullable().optional(),
   addressComplement: z.string().max(255).nullable().optional(),

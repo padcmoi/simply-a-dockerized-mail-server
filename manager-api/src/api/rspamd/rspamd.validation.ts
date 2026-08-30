@@ -17,7 +17,7 @@ export const saveRspamdActionsSchema = z
       const ordered = [v.reject, v.rewriteSubject, v.addHeader, v.greylist].filter((n): n is number => n !== null);
       return ordered.every((n, i) => i === 0 || n < ordered[i - 1]);
     },
-    { message: "Thresholds must be strictly descending: reject > rewrite subject > add header > greylist" }
+    { error: "Thresholds must be strictly descending: reject > rewrite subject > add header > greylist" }
   );
 
 export type SaveRspamdActionsDto = z.infer<typeof saveRspamdActionsSchema>;

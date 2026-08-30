@@ -12,7 +12,7 @@ export const saveMailConfigSchema = z
     secure: z.boolean().optional(),
     username: z.string().max(255).nullable().optional(),
     password: z.string().max(255).optional(),
-    fromAddress: z.string().email().max(255).nullable().optional(),
+    fromAddress: z.email().max(255).nullable().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.provider === "smtp") refineSmtp(value, ctx);

@@ -29,7 +29,6 @@ export const createDelegationTokenSchema = z.object({ ...caps, expiresDays, note
 export const inviteDelegationSchema = z
   .object({
     email: z
-      .string()
       .email()
       .max(255)
       .transform((v) => v.toLowerCase()),

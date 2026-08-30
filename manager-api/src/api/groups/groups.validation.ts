@@ -77,16 +77,16 @@ export const setDomainPermissionsSchema = z.object({
 });
 
 export const updateOwnerSchema = z.object({
-  newOwnerId: z.string().uuid(),
+  newOwnerId: z.guid(),
 });
 
 export const addMemberSchema = z.object({
-  accountId: z.string().uuid(),
+  accountId: z.guid(),
 });
 
 // Bulk add: several accounts in one call (the members picker's multi-select).
 export const addMembersSchema = z.object({
-  accountIds: z.array(z.string().uuid()).min(1).max(500),
+  accountIds: z.array(z.guid()).min(1).max(500),
 });
 
 export type CreateGroupDto = z.infer<typeof createGroupSchema>;

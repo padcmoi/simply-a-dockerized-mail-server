@@ -27,7 +27,7 @@ export const createRecipientSchema = z
       .int()
       .min(MIN_RECIPIENT_QUOTA_BYTES, `Recipient quota must be at least ${MIN_RECIPIENT_QUOTA_BYTES} bytes (1 MB)`),
     active: z.boolean().optional(),
-    userEndDate: z.string().date().nullable().optional(),
+    userEndDate: z.iso.date().nullable().optional(),
   })
   .strict();
 
@@ -47,12 +47,12 @@ export const updateRecipientSchema = z
       .min(MIN_RECIPIENT_QUOTA_BYTES, `Recipient quota must be at least ${MIN_RECIPIENT_QUOTA_BYTES} bytes (1 MB)`)
       .optional(),
     active: z.boolean().optional(),
-    userEndDate: z.string().date().nullable().optional(),
+    userEndDate: z.iso.date().nullable().optional(),
   })
   .strict();
 
 // Body of PUT :id/owner: the account (uuid) to hand this recipient to.
-export const assignRecipientOwnerSchema = z.object({ ownerId: z.string().uuid() }).strict();
+export const assignRecipientOwnerSchema = z.object({ ownerId: z.guid() }).strict();
 
 export type CreateRecipientDto = z.infer<typeof createRecipientSchema>;
 export type UpdateRecipientDto = z.infer<typeof updateRecipientSchema>;

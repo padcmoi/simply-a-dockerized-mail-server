@@ -27,7 +27,6 @@ export const updateMyRecipientSchema = z
 export const updateMyAliasSchema = z
   .object({
     destination: z
-      .string()
       .email()
       .max(255)
       .transform((v) => v.toLowerCase()),

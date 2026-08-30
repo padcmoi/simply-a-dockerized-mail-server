@@ -6,9 +6,12 @@ import { THEME_TOKENS } from "../../core/theme/theme.catalog";
 // into every page of the interface from a form.
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
-const token = z.enum(THEME_TOKENS as unknown as [string, ...string[]]);
+const token = z.enum(THEME_TOKENS);
 
-const palette = z.record(token, z.string().regex(HEX)).default({});
+// Partial on purpose: zod 4's `z.record` over an enum key demands every key,
+// and a palette carries only the tokens the operator actually overrode. Every
+// token left out keeps its built-in colour.
+const palette = z.partialRecord(token, z.string().regex(HEX)).default({});
 
 // Strict rather than stripping: a mode this API does not know is a caller
 // believing in a theme that will never be painted, and silence would let it

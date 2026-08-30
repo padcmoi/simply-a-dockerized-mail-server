@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({});
 
-// Loose on purpose: the API's `z.string().email()` is the authority, this only
+// Loose on purpose: the API's `z.email()` is the authority, this only
 // catches the obvious before a round-trip.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
