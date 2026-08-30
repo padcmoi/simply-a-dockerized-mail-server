@@ -1,15 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { ThemeMode } from "~/utils/theme";
-import {
-  emptyTheme,
-  mergeThemes,
-  parseThemeFile,
-  pruneTheme,
-  themeCss,
-  themeRamp,
-  themeSelector,
-  shadeOf,
-} from "~/utils/theme";
+import { emptyTheme, mergeThemes, parseThemeFile, pruneTheme, themeCss, themeRamp, themeSelector, shadeOf } from "~/utils/theme";
 
 describe("themeCss", () => {
   it("writes nothing at all for a theme nobody touched", () => {

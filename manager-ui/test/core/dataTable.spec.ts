@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { DataTableColumn } from "~/types/data-table";
+import type { DataTableColumn } from "~/types/ui/data-table";
 import { dataTableText } from "~/utils/dataTable";
 
 interface Row {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "tickets", action: "access" },

@@ -1,38 +1,4 @@
 <script setup lang="ts">
-interface OwnedDomain {
-  id: number;
-  domain: string;
-  active: boolean;
-  quota: string;
-}
-interface OwnedRecipient {
-  id: number;
-  email: string;
-  domain: string;
-  active: boolean;
-  quota: string;
-}
-interface OwnedAlias {
-  id: number;
-  source: string;
-  destination: string;
-  domain: string;
-}
-interface AccountOverview {
-  account: {
-    id: string;
-    email: string;
-    displayName: string | null;
-    avatarUrl: string | null;
-    isRoot: boolean;
-    enabled: boolean;
-    groups: { id: string; name: string }[];
-  };
-  domains: OwnedDomain[];
-  recipients: OwnedRecipient[];
-  aliases: OwnedAlias[];
-}
-
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },

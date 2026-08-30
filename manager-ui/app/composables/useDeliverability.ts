@@ -1,25 +1,3 @@
-export type CheckStatus = "pass" | "warn" | "fail";
-export type CheckSection = "identity" | "dns" | "server" | "reputation";
-
-export interface DeliverabilityCheck {
-  id: string;
-  section: CheckSection;
-  status: CheckStatus;
-  evidence: string;
-  params?: Record<string, string | number>;
-}
-
-export interface DeliverabilityReport {
-  domain: string;
-  checkedAt: string;
-  mxHost: string | null;
-  mailIp: string | null;
-  // The address the probe spoke from, outside every docker network.
-  probedFrom: string;
-  counts: Record<CheckStatus, number>;
-  checks: DeliverabilityCheck[];
-}
-
 // The sections in reading order: identity first, DNS next, the server itself,
 // and reputation last - the same order docs/delivery/deliverability.md uses,
 // because a red check high up makes everything below it meaningless.

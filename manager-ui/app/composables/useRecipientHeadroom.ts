@@ -1,11 +1,5 @@
 const MB = 1024 * 1024;
 
-export interface RecipientHeadroom {
-  domainQuota: number;
-  allocated: number;
-  available: number;
-}
-
 // What the domain has left to grant its recipients, read from the API rather
 // than summed client-side: the recipients list is paginated, so the browser
 // never holds every recipient of the domain at once.

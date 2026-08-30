@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { HistoryPoint, SystemSnapshot } from "~/composables/useSystemMetrics";
-import type { MetricRange } from "~/composables/useMetricWindow";
-
 // The window is the panel's, not this card's: the four of them are read against
 // each other, so they cover the same period and the tags set it for all four.
 const range = defineModel<MetricRange>("range", { required: true });

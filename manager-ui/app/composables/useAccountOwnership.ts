@@ -1,19 +1,5 @@
 import type { Ref } from "vue";
 
-export interface OwnedResource {
-  id: number;
-  domain: string;
-  domainId: number | null;
-  email?: string;
-  source?: string;
-  destination?: string;
-}
-
-interface AssignableResponse {
-  domains: { id: number; domain: string }[];
-  items: OwnedResource[];
-}
-
 // Drives one account's ownership of a single kind (recipients or aliases):
 // the resources it owns, the unassigned ones it may attach (optionally filtered
 // to a domain), and the attach/detach calls. The account side manages ownership

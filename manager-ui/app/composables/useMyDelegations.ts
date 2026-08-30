@@ -1,14 +1,3 @@
-export interface MyDelegation {
-  domainId: number;
-  domain: string;
-  maxRecipients: number | null;
-  maxAliases: number | null;
-  quotaMb: number;
-  usedRecipients: number;
-  usedAliases: number;
-  usedBytes: string;
-}
-
 // The personal space's delegation card and its dedicated creation pages all
 // read the same snapshot of the delegations the caller holds.
 export function useMyDelegations() {

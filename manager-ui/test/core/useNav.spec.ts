@@ -193,7 +193,10 @@ describe("useNav domain nav items", () => {
     asUser();
     useDomainStore().select({ id: 1, domain: "example.com", quota: "0", active: 1 });
 
-    usePermissionsStore().data = { global: [], domain: [{ domainId: 1, domainName: "example.com", resource: "domain", action: "access" }] };
+    usePermissionsStore().data = {
+      global: [],
+      domain: [{ domainId: 1, domainName: "example.com", resource: "domain", action: "access" }],
+    };
     const withoutRight = useNav(noop).domainNavItems.value.map((i) => i.to);
     expect(withoutRight).not.toContain("/admin/domains/example.com/deliverability");
 

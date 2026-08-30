@@ -1,26 +1,10 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-
 definePageMeta({
   requiredGlobal: [
     { resource: "api-tokens", action: "access" },
     { resource: "api-tokens", action: "list-api-tokens" },
   ],
 });
-
-interface AccessEntry {
-  id: string;
-  method: string;
-  route: string;
-  statusCode: number;
-  clientIp: string;
-  country: string;
-  userAgent: string;
-  origin: string;
-  referer: string;
-  durationMs: number;
-  createdAt: string;
-}
 
 const route = useRoute();
 const { t, locale } = useI18n();

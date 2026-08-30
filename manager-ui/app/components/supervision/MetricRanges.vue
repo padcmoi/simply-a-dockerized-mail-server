@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { MetricRange } from "~/composables/useMetricWindow";
-
 // The window a card is drawn over. The minute comes from the socket and the
 // three others from what the recorder has kept, which is a month of samples.
 const model = defineModel<MetricRange>({ required: true });

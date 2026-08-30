@@ -1,5 +1,3 @@
-import type { NotificationRow } from "~/composables/useNotifications";
-
 // One icon per source, so a machine alert is not read as a ticket at a glance.
 const ICONS: Record<string, string> = {
   support: "i-lucide-life-buoy",

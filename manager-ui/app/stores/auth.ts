@@ -1,45 +1,5 @@
 import { defineStore } from "pinia";
 
-interface Session {
-  accountId?: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
-  // Email is the login identity now; displayName is the friendly label (from the
-  // profile) shown in the sidebar, falling back to the email when unset.
-  email: string;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-  isRoot?: boolean;
-  mailEnabled?: boolean;
-  groups?: { id: string; name: string }[];
-}
-
-// The subset of GET /auth/jwt/me the store keeps in the session (the endpoint
-// also returns phone/address/geo, consumed only by the profile page).
-interface Profile {
-  id: string;
-  email: string;
-  displayName: string | null;
-  avatarUrl: string | null;
-  isRoot: boolean;
-  mailEnabled: boolean;
-  groups: { id: string; name: string }[];
-}
-
-// PATCH /auth/jwt/me payload: the login email plus every editable profile field.
-export interface UpdateProfileInput {
-  email?: string;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-  phone?: string | null;
-  addressLine?: string | null;
-  addressComplement?: string | null;
-  city?: string | null;
-  postalCode?: string | null;
-  country?: string | null;
-}
-
 // Single-flight guard for token refresh (client-only). The refresh token rotates
 // in place (single-use), so when several triggers -- the useApi 401 retry, window
 // focus, the visibility change, the focus heartbeat -- call refresh() at once, the

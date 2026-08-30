@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { OwnedResource } from "~/composables/useAccountOwnership";
-
 const props = defineProps<{
   accountId: string;
   kind: "recipients" | "aliases";

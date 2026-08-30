@@ -5,7 +5,7 @@
 //
 // The email channel is carried through untouched on every write: this switch
 // says whether the interface warns, and nothing about what lands in a mailbox.
-import { useNotificationPreferences, type NotificationChannels } from "~/composables/useNotifications";
+import { useNotificationPreferences } from "~/composables/useNotifications";
 
 export function useMachineAlerts() {
   const { load, save } = useNotificationPreferences();

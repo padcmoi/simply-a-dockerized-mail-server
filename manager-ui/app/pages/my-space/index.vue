@@ -1,33 +1,5 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-
 definePageMeta({});
-
-interface OwnedDomain {
-  id: number;
-  domain: string;
-  active: boolean;
-  quota: string;
-}
-interface OwnedRecipient {
-  id: number;
-  email: string;
-  domain: string;
-  active: boolean;
-  quota: string;
-  usedBytes: string;
-}
-interface OwnedAlias {
-  id: number;
-  source: string;
-  destination: string;
-  domain: string;
-}
-interface Overview {
-  domains: OwnedDomain[];
-  recipients: OwnedRecipient[];
-  aliases: OwnedAlias[];
-}
 
 const { t } = useI18n();
 const { call } = useApi();
@@ -37,7 +9,7 @@ const route = useRoute();
 
 setBreadcrumb([{ label: t("nav.myspace") }]);
 
-const { data, status } = useAsyncData<Overview>("myspace-overview", () => call<Overview>("/auth/jwt/me/overview"), {
+const { data, status } = useAsyncData<MySpaceOverview>("myspace-overview", () => call<MySpaceOverview>("/auth/jwt/me/overview"), {
   server: false,
   watch: [tick],
   default: () => ({ domains: [], recipients: [], aliases: [] }),

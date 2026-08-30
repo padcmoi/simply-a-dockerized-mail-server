@@ -6,14 +6,6 @@ definePageMeta({
   ],
 });
 
-interface Alias {
-  id: number;
-  source: string;
-  destination: string;
-  domain: string;
-  ownerEmail: string | null;
-}
-
 // Mirrors the local-part regex of aliases.validation.ts, which has no "@" in
 // it on purpose: the domain comes from the route, never from this field.
 const LOCAL_PART_PATTERN = /^[a-z0-9._+-]+$/i;
@@ -21,7 +13,7 @@ const LOCAL_PART_PATTERN = /^[a-z0-9._+-]+$/i;
 // catches the obvious before a round-trip.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const alias = ref<Alias | null>(null);
+const alias = ref<AliasDetail | null>(null);
 const loading = ref(true);
 const saving = ref(false);
 
@@ -105,7 +97,7 @@ async function load() {
   if (!domainId.value) return;
   loading.value = true;
   try {
-    const found = await call<Alias>(`/domains/${domainId.value}/aliases/${aliasId.value}`);
+    const found = await call<AliasDetail>(`/domains/${domainId.value}/aliases/${aliasId.value}`);
     alias.value = found;
     // The stored source carries the domain; the field must not. Splitting on
     // the last "@" is what the API's own composition implies.

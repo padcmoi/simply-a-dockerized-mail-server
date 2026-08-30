@@ -35,20 +35,6 @@ const schema = z.object({
   country: z.string().max(255).optional(),
 });
 
-interface MeProfile {
-  email: string;
-  displayName: string | null;
-  avatarUrl: string | null;
-  phone: string | null;
-  addressLine: string | null;
-  addressComplement: string | null;
-  city: string | null;
-  postalCode: string | null;
-  country: string | null;
-  latitude: string | null;
-  longitude: string | null;
-}
-
 // Populates the form from the full /me profile (the session only keeps a subset).
 async function fetchProfileForm() {
   const me = await call<MeProfile>("/auth/jwt/me");

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { PostfixQueueStats } from "~/composables/useDomainDashboard";
-
 defineProps<{
   queue: PostfixQueueStats | null;
   loading?: boolean;

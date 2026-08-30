@@ -1,6 +1,4 @@
 <script setup lang="ts" generic="T">
-import type { DataTableColumn } from "~/types/data-table";
-
 defineSlots<Record<string, (_props: { row: T }) => unknown>>();
 
 const props = defineProps<{

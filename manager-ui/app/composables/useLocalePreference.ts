@@ -14,15 +14,6 @@ const LOCALE_FLAG_CODE: Record<string, string> = {
   fr_FR: "FR",
 };
 
-export interface LocaleOption {
-  value: string;
-  // Flag emoji. For "system" it is the flag of the browser-detected locale, so
-  // the option shows what it currently resolves to (like the trigger button).
-  flag: string;
-  // Display name for a concrete locale; null for "system" (caller localizes it).
-  name: string | null;
-}
-
 export function useLocalePreference() {
   // The global i18n instance off nuxtApp, NOT useI18n(): this composable is also
   // called from the locale-preference plugin (to apply the saved choice on

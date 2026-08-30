@@ -1,18 +1,3 @@
-export interface RspamdActionThresholds {
-  reject: number | null;
-  softReject: number | null;
-  rewriteSubject: number | null;
-  addHeader: number | null;
-  greylist: number | null;
-}
-
-export interface SaveRspamdActionsInput {
-  reject: number | null;
-  rewriteSubject: number | null;
-  addHeader: number | null;
-  greylist: number | null;
-}
-
 // Server-wide config, not domain-scoped -- only ever used from the global
 // /rspamd admin page, gated by the "rspamd" resource's modify+delete
 // actions (stricter than every other rspamd endpoint, see the API side).

@@ -1,26 +1,6 @@
 import { defineStore } from "pinia";
 import { useAuthStore } from "~/stores/auth";
 
-interface GlobalPermission {
-  resource: string;
-  action: string;
-}
-
-interface DomainPermission {
-  domainId: number;
-  // Resolved server-side (see JwtAuthController.withDomainNames); "#<id>" when
-  // the domain was deleted. Lets the UI show the FQDN even for a domain the
-  // caller does not own.
-  domainName: string;
-  resource: string;
-  action: string;
-}
-
-interface PermissionsData {
-  global: GlobalPermission[];
-  domain: DomainPermission[];
-}
-
 export const usePermissionsStore = defineStore("permissions", {
   // `loaded` tracks whether a fetch has completed at least once for the current
   // session; see `app/middleware/permissions.global.ts`, which uses it to force

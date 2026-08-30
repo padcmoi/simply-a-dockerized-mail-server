@@ -4,38 +4,6 @@ import { useAuthStore } from "~/stores/auth";
 // with every source and the defaults it applies to each: the page reads its rows
 // from that answer, so this is a type and never a second catalogue.
 export const NOTIFICATION_SOURCES = ["support", "supervision"] as const;
-export type NotificationSource = (typeof NOTIFICATION_SOURCES)[number];
-
-export interface NotificationRow {
-  id: number;
-  source: string;
-  type: string;
-  payload: {
-    ticketId?: number;
-    subject?: string;
-    domainName?: string | null;
-    actor?: string | null;
-    status?: string;
-    /** Machine alerts: which figure went red, and how far it went. */
-    metric?: string;
-    percent?: number;
-  } | null;
-  link: string | null;
-  readAt: string | null;
-  createdAt: string;
-}
-
-export interface NotificationFeed {
-  unread: number;
-  items: NotificationRow[];
-}
-
-export interface NotificationChannels {
-  inApp: boolean;
-  email: boolean;
-}
-
-export type NotificationPreferences = Record<NotificationSource, NotificationChannels>;
 
 const EMPTY: NotificationFeed = { unread: 0, items: [] };
 

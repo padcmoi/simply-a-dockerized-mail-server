@@ -1,6 +1,4 @@
 <script setup lang="ts" generic="T">
-import type { DataTableColumn } from "~/types/data-table";
-
 // One list, two renderings, one set of cell templates. This file is the wrapper and owns neither
 // rendering: it holds what they SHARE and hands the rows to whichever one fits.
 //
@@ -88,7 +86,6 @@ const props = withDefaults(
   }
 );
 
-const ALL_COLUMNS = "*";
 // Both selects need a value standing for "no column", and neither may spell it
 // as the empty string: the underlying Reka UI `SelectItem` reserves that for
 // clearing a selection and THROWS on an item carrying it. The assertion runs on
@@ -97,7 +94,7 @@ const ALL_COLUMNS = "*";
 const NO_SORT = "__none__";
 const SEARCH_DEBOUNCE_MS = 300;
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 
 const root = useTemplateRef<HTMLElement>("root");
 const { asTable } = useTableLayout(root);
@@ -111,14 +108,22 @@ const scope = ref(ALL_COLUMNS);
 // a held-down key would do it per repeat.
 const searchTerm = refDebounced(search, SEARCH_DEBOUNCE_MS);
 
-// Which rows the caller cut itself. In server mode `data` IS the page, so
-// searching and sorting it here would only ever reach the rows already on
-// screen: both are handed up through their models and answered by a fetch.
-const serverPaged = computed(() => props.total !== null);
-
 const sort = computed(() => (sortKey.value ? { key: sortKey.value, direction: sortDirection.value } : null));
 
-const searchableColumns = computed(() => props.columns.filter((column) => column.searchable !== false));
+// Search, sort and paging live in a composable of their own: they are the half
+// of this component that has nothing to do with rendering, and both renderings
+// answer the same state.
+const { serverPaged, searchableColumns, paged, totalRows, pageCount } = useDataTableRows<T>({
+  data: () => props.data,
+  columns: () => props.columns,
+  searchTerm: () => searchTerm.value,
+  scope: () => scope.value,
+  sort: () => sort.value,
+  page,
+  limit: () => limit.value,
+  total: () => props.total,
+});
+
 const sortableColumns = computed(() => props.columns.filter((column) => column.sortable !== false));
 
 const scopeItems = computed(() => [
@@ -130,71 +135,6 @@ const sortItems = computed(() => [
   { label: t("table.noSort"), value: NO_SORT },
   ...sortableColumns.value.map((column) => ({ label: column.label, value: column.key })),
 ]);
-
-const filtered = computed(() => {
-  const term = searchTerm.value.trim().toLowerCase();
-  if (serverPaged.value || !term) return props.data;
-
-  const scoped =
-    scope.value === ALL_COLUMNS
-      ? searchableColumns.value
-      : searchableColumns.value.filter((column) => column.key === scope.value);
-
-  return props.data.filter((row) => scoped.some((column) => dataTableText(column, row).toLowerCase().includes(term)));
-});
-
-// Sorted after filtering and over a copy: `props.data` belongs to the caller.
-const sorted = computed(() => {
-  if (serverPaged.value) return filtered.value;
-
-  const active = sort.value;
-  const column = active ? props.columns.find((candidate) => candidate.key === active.key) : undefined;
-  if (!active || !column) return filtered.value;
-
-  const direction = active.direction === "asc" ? 1 : -1;
-  return [...filtered.value].sort((left, right) => {
-    const a = column.value(left);
-    const b = column.value(right);
-    // Blanks sink whichever way the column is sorted: they are an absence, not a
-    // value that happens to come first alphabetically.
-    const aBlank = isBlank(a);
-    const bBlank = isBlank(b);
-    if (aBlank || bBlank) return aBlank && bBlank ? 0 : aBlank ? 1 : -1;
-    return compare(a, b) * direction;
-  });
-});
-
-// In server mode the caller already cut the page, so cutting it again would show the first ten rows
-// of a window of twenty-five and hide the rest behind a pager that cannot reach them.
-const paged = computed(() =>
-  serverPaged.value ? sorted.value : sorted.value.slice((page.value - 1) * limit.value, page.value * limit.value)
-);
-const totalRows = computed(() => props.total ?? sorted.value.length);
-const pageCount = computed(() => Math.max(1, Math.ceil(totalRows.value / Math.max(limit.value, 1))));
-
-// A narrowed result can leave the current page past the end of it, which paints
-// an empty list over one that has matches.
-//
-// `data.length` is watched only in local mode. In server mode every page arrives as a new array and
-// often a different length, so resetting on it would send the reader back to page one at the moment
-// the page they asked for lands.
-watch([searchTerm, scope, limit, () => (serverPaged.value ? 0 : props.data.length)], () => {
-  page.value = 1;
-});
-
-function isBlank(value: unknown) {
-  return value === null || value === undefined || value === "";
-}
-
-function compare(a: unknown, b: unknown) {
-  if (typeof a === "number" && typeof b === "number") return a - b;
-  if (typeof a === "boolean" && typeof b === "boolean") return Number(a) - Number(b);
-  if (a instanceof Date && b instanceof Date) return a.getTime() - b.getTime();
-  // The active locale and not the runtime's: Node and the browser would
-  // otherwise be free to order the same two names differently, and the server's
-  // markup has to survive hydration untouched.
-  return String(a).localeCompare(String(b), locale.value.replace("_", "-"), { numeric: true, sensitivity: "base" });
-}
 
 function applySort(next: { key: string; direction: "asc" | "desc" } | null) {
   sortKey.value = next?.key ?? "";

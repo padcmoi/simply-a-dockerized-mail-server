@@ -42,15 +42,11 @@ describe("usePermissionLabels.actionLabel", () => {
   it("builds the tiered key, camelCasing api-tokens and domain_owner_elevated", () => {
     stubI18n(() => true);
     const { actionLabel } = usePermissionLabels();
-    expect(actionLabel("global", "api-tokens", "create")).toBe(
-      "groups.permissions.actionsLabel.global.apiTokens.create"
-    );
+    expect(actionLabel("global", "api-tokens", "create")).toBe("groups.permissions.actionsLabel.global.apiTokens.create");
     expect(actionLabel("global", "domain_owner_elevated", "grant")).toBe(
       "groups.permissions.actionsLabel.global.domainOwnerElevated.grant"
     );
-    expect(actionLabel("domain", "recipients", "modify")).toBe(
-      "groups.permissions.actionsLabel.domain.recipients.modify"
-    );
+    expect(actionLabel("domain", "recipients", "modify")).toBe("groups.permissions.actionsLabel.domain.recipients.modify");
   });
 
   it("returns the raw action name when the key is untranslated", () => {

@@ -3,16 +3,6 @@ import { CHART } from "~/utils/metricChart";
 /** Past this cadence a chart is not being watched arriving, it is being read. */
 const WALKABLE_MS = 4_000;
 
-interface Walking {
-  /** The moments the points cover, newest last. */
-  at: () => number[];
-  count: () => number;
-  /** Points still arriving, which is the only case there is anything to walk. */
-  live: () => boolean;
-  /** Reading a figure rather than watching the curve: the walk lands at once. */
-  frozen: () => boolean;
-}
-
 // A curve that gains a point a second and is redrawn in place jumps a step a
 // second, which reads as a stutter rather than as a machine being watched.
 //

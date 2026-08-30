@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { AccountOption } from "~/composables/useAccountOptions";
-
 const emit = defineEmits<{ changed: [] }>();
 
 const props = defineProps<{

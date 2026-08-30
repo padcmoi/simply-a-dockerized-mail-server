@@ -1,8 +1,3 @@
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-}
-
 // Shared across every list on the site -- a single "items per page"
 // preference the user sets once (in DataTable's toolbar) and keeps everywhere,
 // persisted with VueUse's useLocalStorage (SSR-safe, syncs from

@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-import type { GroupMember } from "~/composables/useGroups";
-
 const emit = defineEmits<{
   add: [string[]];
   remove: [string];

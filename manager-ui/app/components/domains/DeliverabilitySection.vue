@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { CheckSection, DeliverabilityCheck } from "~/composables/useDeliverability";
-
 const props = defineProps<{ section: CheckSection; checks: DeliverabilityCheck[] }>();
 
 const { t } = useI18n();

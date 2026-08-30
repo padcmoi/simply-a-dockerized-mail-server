@@ -1,26 +1,10 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
     { resource: "accounts", action: "view-account-sessions" },
   ],
 });
-
-interface AccountSessionSummary {
-  accountId: string;
-  email: string | null;
-  displayName: string | null;
-  activeCount: number;
-  expiredCount: number;
-  online: boolean;
-  // Last-seen among the account's active sessions: the active section's
-  // "seen X ago" once it is no longer online.
-  lastSeenAt: string | null;
-  // Last-seen among the account's expired sessions: the expired table's column.
-  // Kept distinct so an expired row never borrows the active session's time.
-  expiredLastSeenAt: string | null;
-}
 
 const { t } = useI18n();
 const { call } = useApi();

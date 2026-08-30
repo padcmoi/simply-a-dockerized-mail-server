@@ -61,9 +61,7 @@ describe("useApiError.apiErrorMessage", () => {
       (k) => k
     );
     const { apiErrorMessage } = useApiError();
-    expect(apiErrorMessage({ data: { code: "NEVER_SEEN", message: "Something went wrong" } })).toBe(
-      "Something went wrong"
-    );
+    expect(apiErrorMessage({ data: { code: "NEVER_SEEN", message: "Something went wrong" } })).toBe("Something went wrong");
   });
 
   it("joins a Nest validation message array with the code unresolved", () => {

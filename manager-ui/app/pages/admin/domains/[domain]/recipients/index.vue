@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredDomain: [
     { resource: "recipients", action: "access" },
@@ -7,23 +6,12 @@ definePageMeta({
   ],
 });
 
-interface Recipient {
-  id: number;
-  email: string;
-  quota: string;
-  usedBytes: string;
-  active: number;
-  // `virtual_users.last_activity` carries `ON UPDATE current_timestamp()`: it
-  // stamps the row's last edit, not mail traffic. Postfix-legacy name, kept.
-  lastActivity: string | null;
-}
-
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
 // Declared once for both renderings, which DataTable chooses between on its own
 // width rather than this page carrying one of each.
-const columns = computed<DataTableColumn<Recipient>[]>(() => [
+const columns = computed<DataTableColumn<RecipientRow>[]>(() => [
   { key: "email", label: t("recipients.table.address"), value: (row) => row.email, primary: true },
   { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota) },
   { key: "usedBytes", label: t("recipients.table.used"), value: (row) => Number(row.usedBytes) },
@@ -69,26 +57,26 @@ watchEffect(() => {
   ]);
 });
 
-const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<Recipient>(
+const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<RecipientRow>(
   "recipients-list",
   () => (domainId.value ? `/domains/${domainId.value}/recipients` : null),
   "id",
   [domainId]
 );
 
-function isPostmaster(item: Recipient) {
+function isPostmaster(item: RecipientRow) {
   return item.email.toLowerCase().startsWith("postmaster@");
 }
 
-function editTo(item: Recipient) {
+function editTo(item: RecipientRow) {
   return `/admin/domains/${domainFqdn.value}/recipients/${item.id}/edit`;
 }
 
-function occupancy(r: Recipient) {
+function occupancy(r: RecipientRow) {
   return occupancyPercent(Number(r.quota), Number(r.usedBytes));
 }
 
-async function remove(row: Recipient) {
+async function remove(row: RecipientRow) {
   if (!domainId.value) return;
   await call(`/domains/${domainId.value}/recipients/${row.id}`, {
     method: "DELETE",
@@ -145,7 +133,7 @@ async function onDeleteConfirmed() {
       :columns="columns"
       :total="total"
       :loading="loading"
-      :row-key="(row: Recipient) => row.id"
+      :row-key="(row: RecipientRow) => row.id"
       :empty-label="t('common.noResults')"
     >
       <template #email="{ row }">

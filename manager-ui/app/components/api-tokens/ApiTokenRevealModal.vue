@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { CreatedToken } from "~/composables/useApiTokens";
-
 const emit = defineEmits<{
   "update:open": [boolean];
   dismissed: [];

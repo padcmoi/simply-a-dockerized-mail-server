@@ -6,6 +6,10 @@ export default defineNuxtConfig({
   // prefixing -- pathPrefix: false keeps every component's registered tag
   // the same regardless of which subfolder it's filed under.
   components: [{ path: "~/components", pathPrefix: false }],
+  // Every type lives under app/types/** and nothing else declares one: the
+  // whole tree is fed to the auto-import so components and composables use a
+  // shared type by name, without an import line at the top of each file.
+  imports: { dirs: ["types/**"] },
   modules: [
     "@nuxt/ui",
     "@nuxt/eslint",

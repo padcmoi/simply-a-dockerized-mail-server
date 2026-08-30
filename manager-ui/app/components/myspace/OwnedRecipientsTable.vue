@@ -1,15 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-
-interface OwnedRecipient {
-  id: number;
-  email: string;
-  domain: string;
-  active: boolean;
-  quota: string;
-  usedBytes: string;
-}
-
 const { recipients } = defineProps<{
   recipients: OwnedRecipient[];
   loading: boolean;

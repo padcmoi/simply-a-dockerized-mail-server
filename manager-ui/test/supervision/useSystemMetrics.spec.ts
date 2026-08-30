@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ref, nextTick } from "vue";
-import type { SystemSnapshot } from "~/composables/useSystemMetrics";
+import type { SystemSnapshot } from "~/types/system/metrics";
 import { SHIPPED_THRESHOLDS } from "~/utils/metrics";
 
 // `onMounted(load)` is a deliberate no-op here (no component instance), so the

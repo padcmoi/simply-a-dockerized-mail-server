@@ -1,10 +1,3 @@
-interface DomainInfo {
-  id: number;
-  domain: string;
-  quota: string;
-  active: number;
-}
-
 export const useDomainStore = defineStore(
   "domain",
   () => {

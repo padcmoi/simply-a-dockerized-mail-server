@@ -1,95 +1,9 @@
 import type { ChartData, ChartOptions } from "chart.js";
 
-export interface Domain {
-  id: number;
-  domain: string;
-  quota: string;
-  active: number;
-  ownerId?: number | null;
-  ownerEmail?: string | null;
-}
-export interface Recipient {
-  id: number;
-  active: number;
-  email: string;
-  quota: string;
-}
-export interface Alias {
-  id: number;
-}
-export interface QuotaDomain {
-  bytes: string;
-  messages: string;
-  lastActivity: string;
-}
-export interface QuotaPayload {
-  domain: QuotaDomain | null;
-  reservedForAccountsBytes: string;
-  recipients: { id: number; email: string; bytes: string; quota: string }[];
-}
-export interface DomainRspamdStats {
-  scanned: number;
-  actions: { reject: number; greylist: number; "no action": number } & Record<string, number>;
-}
-export interface MailboxEntry {
-  id: number;
-  email: string;
-  bytes: string;
-  quota: string;
-}
-export interface DkimKey {
-  domain: string;
-  selector: string;
-  dnsName: string;
-  txtRecord: string;
-}
-export interface DkimCheckResult {
-  domain: string;
-  hasKeyInDatabase: boolean;
-  match: boolean;
-  checkedAt: string;
-  error: string | null;
-  staleSelectorFound: { selector: string; queriedName: string; txtRecord: string } | null;
-  expected: { selector: string; queriedName: string; value: string } | null;
-  found: { value: string } | null;
-}
-export interface RspamdHistoryRow {
-  "message-id": string;
-  ip: string;
-  action: string;
-  score: number;
-  required_score: number;
-  size: number;
-  unix_time: number;
-  sender_smtp: string;
-  rcpt_smtp: string[];
-  subject: string;
-}
-export interface QueueDirStats {
-  active: number;
-  deferred: number;
-  hold: number;
-  incoming: number;
-}
-export interface PostfixQueueStats {
-  total: QueueDirStats;
-  domain?: QueueDirStats;
-  available: boolean;
-}
-
 // How many mailboxes the "fullest mailboxes" chart lists. Kept in step with
 // the `{count}` the i18n title interpolates, so the heading can never promise
 // more rows than the chart draws.
 export const TOP_MAILBOXES = 5;
-
-interface MainData {
-  domain: Domain | null;
-  recipients: Recipient[];
-  aliases: Alias[];
-  quota: QuotaDomain | null;
-  reservedForAccountsBytes: string;
-  topMailboxes: MailboxEntry[];
-}
 
 function occupancyRate(m: MailboxEntry) {
   const q = Number(m.quota);
@@ -111,7 +25,7 @@ export function useDomainDashboard() {
   // Main waterfall: resolve the domain by fqdn, then its recipients/aliases/quota
   // in parallel. `loading` (derived from `status`, see below) drives the
   // page's stat-card/disk/top-mailboxes skeletons.
-  const { data: mainData, status: mainStatus } = useAsyncData<MainData>(
+  const { data: mainData, status: mainStatus } = useAsyncData<DomainDashboardData>(
     "domain-dashboard-main",
     async () => {
       const domains = await call<Domain[]>("/domains");

@@ -1,22 +1,10 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
     { resource: "accounts", action: "list-accounts" },
   ],
 });
-
-interface ManagerAccount {
-  id: string;
-  email: string;
-  displayName: string | null;
-  isRoot: boolean;
-  enabled: boolean;
-  lastLogin: string | null;
-  createdAt: string;
-  groups: { id: string; name: string }[];
-}
 
 const {
   items: accounts,

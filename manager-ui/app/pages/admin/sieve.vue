@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "sieve", action: "access" },
@@ -7,21 +6,13 @@ definePageMeta({
   ],
 });
 
-interface Reject {
-  id: number;
-  sender: string;
-  enabled: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 const form = reactive({ sender: "" });
 
 // Declared once for both renderings, which DataTable chooses between on its own
 // width rather than this page carrying one of each.
-const columns = computed<DataTableColumn<Reject>[]>(() => [
+const columns = computed<DataTableColumn<RejectedSender>[]>(() => [
   { key: "sender", label: t("sieve.table.sender"), value: (row) => row.sender, primary: true },
   { key: "enabled", label: t("sieve.table.enabled"), value: (row) => row.enabled === 1 },
   { key: "createdAt", label: t("sieve.table.created"), value: (row) => row.createdAt },
@@ -36,7 +27,7 @@ const { formatDateTime } = useDateTime();
 
 setBreadcrumb([{ label: t("layout.sieveLong") }]);
 
-const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<Reject>(
+const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<RejectedSender>(
   "sieve-reject-senders-list",
   "/sieve/reject-senders",
   "createdAt"
@@ -117,7 +108,7 @@ async function onDeleteConfirmed() {
       :columns="columns"
       :total="total"
       :loading="loading"
-      :row-key="(row: Reject) => row.id"
+      :row-key="(row: RejectedSender) => row.id"
       :empty-label="t('common.noResults')"
     >
       <template #enabled="{ row }">

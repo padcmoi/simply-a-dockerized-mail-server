@@ -70,11 +70,7 @@ describe("useDiskChartData", () => {
     const ds = chartData.value.datasets[0]!;
     expect(ds.data).toEqual([600, 100, 300]);
     expect(ds.backgroundColor).toEqual(["#f87171", "#fbbf24", "#4ade80"]);
-    expect(chartData.value.labels).toEqual([
-      "dashboard.disk.used",
-      "dashboard.disk.reserved",
-      "dashboard.disk.free",
-    ]);
+    expect(chartData.value.labels).toEqual(["dashboard.disk.used", "dashboard.disk.reserved", "dashboard.disk.free"]);
   });
 
   it("formats tooltip values through formatBytes", () => {

@@ -1,33 +1,3 @@
-export interface DelegationRow {
-  accountId: string;
-  accountEmail: string | null;
-  maxRecipients: number | null;
-  maxAliases: number | null;
-  quotaMb: number;
-  usedRecipients: number;
-  usedAliases: number;
-  usedBytes: string;
-  grantableMb: number | null;
-}
-
-export interface DelegationPendingRow {
-  id: number;
-  email: string | null;
-  note: string | null;
-  token: string | null;
-  maxRecipients: number | null;
-  maxAliases: number | null;
-  quotaMb: number;
-  expiresAt: string | null;
-  grantableMb: number | null;
-}
-
-interface Payload {
-  grantableMb: number | null;
-  delegations: DelegationRow[];
-  pendingInvitations: DelegationPendingRow[];
-}
-
 // The delegation pages of a domain all read the same snapshot: the active
 // grants, the pending invitations and open links, and the flags the tables need.
 export function useDomainDelegations() {
@@ -35,11 +5,11 @@ export function useDomainDelegations() {
   const { domainId, domainFqdn } = useCurrentDomain();
   const { tick } = useDataRefresh();
 
-  const { data, status, refresh } = useAsyncData<Payload | null>(
+  const { data, status, refresh } = useAsyncData<DelegationsPayload | null>(
     "domain-delegations",
     async () => {
       if (!domainId.value) return null;
-      return call<Payload>(`/domains/${domainId.value}/delegations`);
+      return call<DelegationsPayload>(`/domains/${domainId.value}/delegations`);
     },
     { server: false, watch: [domainId, tick], default: () => null }
   );

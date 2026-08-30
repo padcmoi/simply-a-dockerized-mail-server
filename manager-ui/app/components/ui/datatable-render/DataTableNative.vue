@@ -1,6 +1,5 @@
 <script setup lang="ts" generic="T">
 import type { TableColumn } from "@nuxt/ui";
-import type { DataTableColumn } from "~/types/data-table";
 
 const emit = defineEmits<{ toggleSort: [key: string] }>();
 

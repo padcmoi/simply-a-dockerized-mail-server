@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 import { useAuthStore } from "~/stores/auth";
 import { usePermissionsStore } from "~/stores/permissions";
 
@@ -10,14 +9,6 @@ import { usePermissionsStore } from "~/stores/permissions";
 definePageMeta({
   requiredGlobal: [{ resource: "domains", action: "access" }],
 });
-
-interface Domain {
-  id: number;
-  domain: string;
-  quota: string;
-  usedBytes: string;
-  active: number;
-}
 
 const MB = 1024 * 1024;
 const MIN_QUOTA_MB = 10;
@@ -51,7 +42,7 @@ const adminMaxQuotaMb = computed(() => {
 });
 // Declared once: DataTable decides on its own width whether this is a table or
 // a block per row, so the page no longer carries one of each.
-const columns = computed<DataTableColumn<Domain>[]>(() => [
+const columns = computed<DataTableColumn<DomainRow>[]>(() => [
   { key: "id", label: t("domains.table.id"), value: (row) => row.id, hideOnCard: true },
   { key: "domain", label: t("domains.table.domain"), value: (row) => row.domain, primary: true },
   { key: "active", label: t("domains.table.active"), value: (row) => row.active === 1 },
@@ -78,7 +69,7 @@ const {
   sortBy,
   sortDir,
   load: loadDomains,
-} = usePaginatedList<Domain>("domains-list", () => "/domains", "id");
+} = usePaginatedList<DomainRow>("domains-list", () => "/domains", "id");
 
 watch(useDataRefresh().tick, refreshDisk);
 
@@ -94,16 +85,16 @@ async function load() {
   await Promise.all([refreshDisk(), loadDomains()]);
 }
 
-function openDomain(d: Domain) {
+function openDomain(d: DomainRow) {
   domainStore.select(d);
   navigateTo(`/admin/domains/${d.domain}`);
 }
 
-function occupancy(d: Domain) {
+function occupancy(d: DomainRow) {
   return occupancyPercent(Number(d.quota), Number(d.usedBytes));
 }
 
-function occupancyLabel(d: Domain) {
+function occupancyLabel(d: DomainRow) {
   return `${formatBytes(Number(d.usedBytes))} / ${formatBytes(Number(d.quota))}`;
 }
 
@@ -147,7 +138,7 @@ onMounted(refreshDisk);
       :columns="columns"
       :total="total"
       :loading="loading"
-      :row-key="(row: Domain) => row.id"
+      :row-key="(row: DomainRow) => row.id"
       :empty-label="t('common.noResults')"
     >
       <template #domain="{ row }">

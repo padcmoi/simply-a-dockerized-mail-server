@@ -7,7 +7,6 @@
 // covering four different periods cannot be read against each other, which is
 // most of what a row of them is for. The figures on the header lines are always
 // live, whatever window the curves below are set to.
-import type { MetricRange } from "~/composables/useMetricWindow";
 
 const { t } = useI18n();
 const { snapshot, history, status, thresholds } = useSystemMetrics();

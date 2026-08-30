@@ -1,9 +1,7 @@
 <script setup lang="ts">
-type Section = "info" | "owner" | "members" | "application" | "domain";
-
 const props = defineProps<{
   groupId: string;
-  active: Section;
+  active: GroupDetailSection;
   // The "info" card shows the group's own name instead of a generic label
   // -- it's the group's identity, not just a settings section.
   groupName: string;
@@ -33,7 +31,7 @@ const items = computed(() => [
 // segment); owner/members sit directly under it; the 2 permission sections
 // are namespaced under /acl to keep them visually grouped and distinct from
 // the group's own settings.
-function targetFor(section: Section) {
+function targetFor(section: GroupDetailSection) {
   const base = `/admin/groups/${props.groupId}`;
   if (section === "info") return base;
   if (section === "application") return `${base}/acl/app`;

@@ -1,13 +1,6 @@
 <script setup lang="ts">
 definePageMeta({});
 
-interface MyAlias {
-  id: number;
-  source: string;
-  destination: string;
-  domain: string;
-}
-
 // Loose on purpose: the API's `z.string().email()` is the authority, this only
 // catches the obvious before a round-trip.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,7 +12,7 @@ const { apiErrorMessage, apiErrorStatus } = useApiError();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 
-const alias = ref<MyAlias | null>(null);
+const alias = ref<OwnedAlias | null>(null);
 const loading = ref(true);
 const loadError = ref<"notFound" | "failed" | null>(null);
 const saving = ref(false);
@@ -42,7 +35,7 @@ async function load() {
   loading.value = true;
   loadError.value = null;
   try {
-    const found = await call<MyAlias>(`/my-space/aliases/${aliasId.value}`);
+    const found = await call<OwnedAlias>(`/my-space/aliases/${aliasId.value}`);
     alias.value = found;
     form.destination = found.destination;
   } catch (err) {
@@ -56,7 +49,7 @@ async function save() {
   if (!canSave.value) return;
   saving.value = true;
   try {
-    const updated = await call<MyAlias>(`/my-space/aliases/${aliasId.value}`, {
+    const updated = await call<OwnedAlias>(`/my-space/aliases/${aliasId.value}`, {
       method: "PATCH",
       body: { destination: form.destination },
     });

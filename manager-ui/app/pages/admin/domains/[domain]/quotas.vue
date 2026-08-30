@@ -1,23 +1,10 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredDomain: [
     { resource: "quotas", action: "access" },
     { resource: "quotas", action: "view-quotas" },
   ],
 });
-
-interface QuotaRow {
-  id: number;
-  domain: string;
-  email?: string;
-  // Absent on the domain aggregate row (virtual_quota_domains holds counters
-  // only); joined from virtual_users on every recipient row.
-  quota?: string;
-  bytes: string;
-  messages: string;
-  lastActivity: string;
-}
 
 const page = ref(1);
 const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);

@@ -1,32 +1,10 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
     { resource: "accounts", action: "view-account-sessions" },
   ],
 });
-
-interface Session {
-  id: number;
-  userAgent: string | null;
-  ip: string | null;
-  createdAt: string;
-  expiresAt: string;
-  revokedAt: string | null;
-  lastSeenAt: string | null;
-  active: boolean;
-  online: boolean;
-}
-
-interface AccountSummary {
-  accountId: string;
-  email: string | null;
-  displayName: string | null;
-  activeCount: number;
-  expiredCount: number;
-  online: boolean;
-}
 
 const route = useRoute();
 const { t, locale } = useI18n();
@@ -37,7 +15,7 @@ const { bump } = useDataRefresh();
 const { isRoot, hasGlobal } = usePermissions();
 const toast = useToast();
 
-const account = ref<AccountSummary | null>(null);
+const account = ref<SessionAccountSummary | null>(null);
 const confirmOpen = ref(false);
 const purging = ref(false);
 
@@ -60,7 +38,7 @@ const {
   sortBy,
   sortDir,
   load,
-} = usePaginatedList<Session>(
+} = usePaginatedList<SessionRow>(
   `account-sessions-history-${userId.value}`,
   `/accounts/${userId.value}/sessions/history`,
   "createdAt"
@@ -69,7 +47,7 @@ const {
 // Declared once for both renderings, which DataTable chooses between on its own
 // width. The device is read out of a user agent string and the status out of two
 // dates: neither is a column the API can order by.
-const columns = computed<DataTableColumn<Session>[]>(() => [
+const columns = computed<DataTableColumn<SessionRow>[]>(() => [
   {
     key: "device",
     label: t("profile.sessionsPage.colDevice"),
@@ -120,7 +98,7 @@ function deviceIcon(ua: string | null) {
 
 async function loadAccount() {
   try {
-    const overview = await call<AccountSummary[]>("/accounts/sessions/overview");
+    const overview = await call<SessionAccountSummary[]>("/accounts/sessions/overview");
     account.value = overview.find((a) => a.accountId === userId.value) ?? null;
   } catch {
     account.value = null;
@@ -185,7 +163,7 @@ onMounted(loadAccount);
       :columns="columns"
       :total="total"
       :loading="historyLoading"
-      :row-key="(row: Session) => row.id"
+      :row-key="(row: SessionRow) => row.id"
       :empty-label="t('common.noResults')"
     >
       <template #device="{ row }">

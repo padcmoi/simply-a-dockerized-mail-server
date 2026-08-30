@@ -6,27 +6,6 @@ definePageMeta({
   ],
 });
 
-interface Session {
-  id: number;
-  userAgent: string | null;
-  ip: string | null;
-  createdAt: string;
-  expiresAt: string;
-  revokedAt: string | null;
-  lastSeenAt: string | null;
-  active: boolean;
-  online: boolean;
-}
-
-interface AccountSummary {
-  accountId: string;
-  email: string | null;
-  displayName: string | null;
-  activeCount: number;
-  expiredCount: number;
-  online: boolean;
-}
-
 const route = useRoute();
 const { t, locale } = useI18n();
 const { call } = useApi();
@@ -35,8 +14,8 @@ const { bump } = useDataRefresh();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { isRoot, hasGlobal } = usePermissions();
 
-const account = ref<AccountSummary | null>(null);
-const sessions = ref<Session[]>([]);
+const account = ref<SessionAccountSummary | null>(null);
+const sessions = ref<SessionRow[]>([]);
 const loading = ref(false);
 const loaded = ref(false);
 const revokingId = ref<number | null>(null);
@@ -69,8 +48,8 @@ async function load() {
   loading.value = true;
   try {
     const [overview, list] = await Promise.all([
-      call<AccountSummary[]>("/accounts/sessions/overview"),
-      call<Session[]>(`/accounts/${userId.value}/sessions/active`),
+      call<SessionAccountSummary[]>("/accounts/sessions/overview"),
+      call<SessionRow[]>(`/accounts/${userId.value}/sessions/active`),
     ]);
     account.value = overview.find((a) => a.accountId === userId.value) ?? null;
     sessions.value = list;

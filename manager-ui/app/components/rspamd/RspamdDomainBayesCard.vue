@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { RspamdDomainBayes } from "~/composables/useRspamdPage";
-
 const props = defineProps<{
   bayes: RspamdDomainBayes | null | undefined;
   loading: boolean;

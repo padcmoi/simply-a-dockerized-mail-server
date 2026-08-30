@@ -3,20 +3,6 @@ import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({});
 
-interface OwnedDomain {
-  id: number;
-  domain: string;
-  active: boolean;
-  quota: string;
-}
-interface OwnedRecipient {
-  id: number;
-  email: string;
-  domain: string;
-  active: boolean;
-  quota: string;
-}
-
 const { t } = useI18n();
 const auth = useAuthStore();
 const toast = useToast();
@@ -27,7 +13,7 @@ const permModalOpen = ref(false);
 const effectiveModalOpen = ref(false);
 const selectedGroup = ref<{ id: string; name: string } | null>(null);
 const ownedDomains = ref<OwnedDomain[]>([]);
-const ownedRecipients = ref<OwnedRecipient[]>([]);
+const ownedRecipients = ref<OwnedRecipientSummary[]>([]);
 
 const { isOnline } = usePresence();
 const avatarAlt = computed(() => auth.session?.displayName || auth.session?.email || "?");
@@ -52,7 +38,7 @@ useAsyncData(
   async () => {
     try {
       await auth.fetchProfile();
-      const overview = await call<{ domains: OwnedDomain[]; recipients: OwnedRecipient[] }>("/auth/jwt/me/overview");
+      const overview = await call<{ domains: OwnedDomain[]; recipients: OwnedRecipientSummary[] }>("/auth/jwt/me/overview");
       ownedDomains.value = overview.domains;
       ownedRecipients.value = overview.recipients;
     } catch {

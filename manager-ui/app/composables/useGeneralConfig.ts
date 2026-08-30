@@ -1,7 +1,3 @@
-interface GeneralView {
-  managerUrl: string;
-}
-
 const HOST = /^https?:\/\/((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63})(?::\d{1,5})?$/i;
 
 export function useGeneralConfig() {

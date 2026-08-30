@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-
-interface OwnedAlias {
-  id: number;
-  source: string;
-  destination: string;
-  domain: string;
-}
-
 const { aliases } = defineProps<{
   aliases: OwnedAlias[];
   loading: boolean;

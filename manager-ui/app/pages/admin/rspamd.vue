@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-import type { RspamdHistoryItem } from "~/composables/useRspamdPage";
 definePageMeta({
   requiredGlobal: [
     { resource: "rspamd", action: "access" },

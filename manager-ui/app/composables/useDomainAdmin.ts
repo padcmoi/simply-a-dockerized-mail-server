@@ -4,13 +4,6 @@ import { usePermissionsStore } from "~/stores/permissions";
 
 const MB = 1024 * 1024;
 
-export interface DomainAdminItem {
-  id: number;
-  domain: string;
-  quota: string;
-  active: number;
-}
-
 // Quota/delete from the domains list -- gated more strictly than the rest of
 // the Administration surface (see admin-domains.controller.ts): root or the
 // global "superadmin" resource's own "access" action only. Deliberately NOT
@@ -26,7 +19,7 @@ export function useDomainAdmin(onSaved: () => Promise<void>) {
   const domainStore = useDomainStore();
 
   const adminModalOpen = ref(false);
-  const adminModalItem = ref<DomainAdminItem | null>(null);
+  const adminModalItem = ref<DomainInfo | null>(null);
   const adminSaving = ref(false);
 
   function canAdminister() {
@@ -37,7 +30,7 @@ export function useDomainAdmin(onSaved: () => Promise<void>) {
     return auth.session?.isRoot === true || perms.hasGlobal("superadmin", "access");
   }
 
-  function openAdminModal(item: DomainAdminItem) {
+  function openAdminModal(item: DomainInfo) {
     adminModalItem.value = item;
     adminModalOpen.value = true;
   }

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { GroupMember } from "~/composables/useGroups";
-
 definePageMeta({
   requiredGlobal: [
     { resource: "groups", action: "access" },

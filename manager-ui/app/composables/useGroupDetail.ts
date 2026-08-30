@@ -1,5 +1,3 @@
-import type { GroupDetail } from "./useGroups";
-
 // Shared loader for every /groups/:id/* sub-page (info, owner, members,
 // application, domain) -- each page pulls whichever GroupDetail fields it
 // needs and sets its own last breadcrumb crumb; this composable only owns

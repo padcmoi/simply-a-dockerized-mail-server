@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RSPAMD_ACTION_STYLE, type RspamdStats } from "~/composables/useRspamdPage";
+import { RSPAMD_ACTION_STYLE } from "~/composables/useRspamdPage";
 
 const props = defineProps<{
   stats: RspamdStats | null;

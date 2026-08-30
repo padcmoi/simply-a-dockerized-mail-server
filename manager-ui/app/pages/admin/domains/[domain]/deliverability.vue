@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { CheckSection, DeliverabilityReport } from "~/composables/useDeliverability";
-
 definePageMeta({
   requiredGlobal: [
     { resource: "deliverability", action: "access" },

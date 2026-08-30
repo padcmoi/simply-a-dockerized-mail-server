@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { GroupItem } from "~/composables/useGroups";
-import type { DataTableColumn } from "~/types/data-table";
 import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({

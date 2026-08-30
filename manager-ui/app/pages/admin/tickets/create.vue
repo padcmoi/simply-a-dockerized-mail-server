@@ -6,11 +6,6 @@ definePageMeta({
   ],
 });
 
-interface DomainOption {
-  id: number;
-  domain: string;
-}
-
 const saving = ref(false);
 const form = reactive({
   domainId: undefined as number | undefined,

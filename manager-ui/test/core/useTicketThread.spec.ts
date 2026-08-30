@@ -18,7 +18,18 @@ let fetchError: ReturnType<typeof ref<unknown>>;
 let shown: unknown[];
 
 function message(over: Record<string, unknown> = {}) {
-  return { id: 1, authorId: PEER, authorEmail: "peer@x.io", authorName: null, authorAvatarUrl: null, body: "hi", createdAt: "2026-07-22T10:00:00Z", updatedAt: null, editCount: 0, ...over };
+  return {
+    id: 1,
+    authorId: PEER,
+    authorEmail: "peer@x.io",
+    authorName: null,
+    authorAvatarUrl: null,
+    body: "hi",
+    createdAt: "2026-07-22T10:00:00Z",
+    updatedAt: null,
+    editCount: 0,
+    ...over,
+  };
 }
 
 function detail(over: Record<string, unknown> = {}) {

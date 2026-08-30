@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ref, nextTick } from "vue";
-import type { HistoryPoint } from "~/composables/useSystemMetrics";
-import type { MetricRange } from "~/composables/useMetricWindow";
+import type { HistoryPoint, MetricRange } from "~/types/system/metrics";
 
 // `onMounted(load)` is a deliberate no-op here (no component instance): every
 // load below is the one the range switch triggers.

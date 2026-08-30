@@ -1,8 +1,3 @@
-export interface AccountOption {
-  value: string;
-  label: string;
-}
-
 // Typeahead over GET /accounts/names for an account picker (e.g. the domain-side
 // owner field). Reads only id/email/displayName, which is what list-account-names
 // exposes; the caller needs accounts:list-account-names.

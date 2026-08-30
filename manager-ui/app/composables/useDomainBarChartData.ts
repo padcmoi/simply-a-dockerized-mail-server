@@ -1,10 +1,5 @@
 import type { ChartData, ChartOptions } from "chart.js";
 
-interface BarItem {
-  domain: string;
-  count: number;
-}
-
 export function useDomainBarChartData(items: Readonly<Ref<BarItem[]>>) {
   const { colors } = useChartColors();
 

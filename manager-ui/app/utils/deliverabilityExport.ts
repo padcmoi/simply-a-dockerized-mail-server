@@ -1,5 +1,3 @@
-import type { DeliverabilityReport } from "~/composables/useDeliverability";
-
 // Two shapes, because two readers. JSON keeps every field for a script, a
 // ticket attachment or a diff between two runs; the text report is what a human
 // pastes into a mail to a host or a registrar - it carries the evidence and the

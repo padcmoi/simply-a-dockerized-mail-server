@@ -1,31 +1,5 @@
 import { SHIPPED_THRESHOLDS, type MetricThresholds } from "~/utils/metrics";
 
-export interface SystemSnapshot {
-  /** Epoch milliseconds, read on the host that sampled it. */
-  at: number;
-  cores: number;
-  cpu: number | null;
-  load: { one: number; five: number; fifteen: number };
-  memory: { total: number; used: number };
-  network: { interface: string; in: number | null; out: number | null } | null;
-}
-
-// One point's worth of what the curves draw, as percentages except the load.
-// Every figure can be null and each null means something different: a CPU that
-// needs two readings and has had one, a network the host will not report, or, on
-// the recorded windows, a moment nothing was written for. They are kept rather
-// than dropped so that a point stays where its moment is.
-export interface HistoryPoint {
-  at: number;
-  cpu: number | null;
-  memory: number | null;
-  load: [number, number, number] | null;
-  /** Bytes per second, in then out. */
-  network: [number, number] | null;
-}
-
-export type MetricsStatus = "connecting" | "live" | "offline";
-
 // Sixty-one points at one a second is sixty intervals, so the axis reads exactly
 // 60 s and not the 70 s of a list sized by eye. One list for all the curves
 // rather than one each, so they cannot drift apart.

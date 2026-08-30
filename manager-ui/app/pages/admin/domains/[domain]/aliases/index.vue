@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
 definePageMeta({
   requiredDomain: [
     { resource: "aliases", action: "access" },
@@ -7,22 +6,12 @@ definePageMeta({
   ],
 });
 
-interface Alias {
-  id: number;
-  source: string;
-  destination: string;
-  domain: string;
-  // `virtual_aliases.last_activity` carries `ON UPDATE current_timestamp()`:
-  // it stamps the row's last edit, not mail traffic. Postfix-legacy name.
-  lastActivity: string | null;
-}
-
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
 // Declared once for both renderings, which DataTable chooses between on its own
 // width rather than this page carrying one of each.
-const columns = computed<DataTableColumn<Alias>[]>(() => [
+const columns = computed<DataTableColumn<AliasRow>[]>(() => [
   { key: "source", label: t("aliases.table.from"), value: (row) => row.source, primary: true },
   { key: "destination", label: t("aliases.table.to"), value: (row) => row.destination },
   { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity },
@@ -55,14 +44,14 @@ watchEffect(() => {
   ]);
 });
 
-const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<Alias>(
+const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<AliasRow>(
   "aliases-list",
   () => (domainId.value ? `/domains/${domainId.value}/aliases` : null),
   "id",
   [domainId]
 );
 
-async function remove(row: Alias) {
+async function remove(row: AliasRow) {
   if (!domainId.value) return;
   await call(`/domains/${domainId.value}/aliases/${row.id}`, {
     method: "DELETE",
@@ -80,7 +69,7 @@ async function onDeleteConfirmed() {
   pendingDeleteFn.value = null;
 }
 
-function editAlias(alias: Alias) {
+function editAlias(alias: AliasRow) {
   navigateTo(`/admin/domains/${domainFqdn.value}/aliases/edit/${alias.id}`);
 }
 </script>
@@ -117,7 +106,7 @@ function editAlias(alias: Alias) {
       :columns="columns"
       :total="total"
       :loading="loading"
-      :row-key="(row: Alias) => row.id"
+      :row-key="(row: AliasRow) => row.id"
       :empty-label="t('common.noResults')"
     >
       <template #source="{ row }">

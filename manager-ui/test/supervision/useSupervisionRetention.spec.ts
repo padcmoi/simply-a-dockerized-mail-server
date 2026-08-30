@@ -33,7 +33,10 @@ describe("useSupervisionRetention", () => {
     retention.days.value = 90;
     await retention.save();
 
-    expect(call).toHaveBeenCalledWith("/config/supervision", { method: "PUT", body: { supervisionRetentionMs: 90 * 86_400_000 } });
+    expect(call).toHaveBeenCalledWith("/config/supervision", {
+      method: "PUT",
+      body: { supervisionRetentionMs: 90 * 86_400_000 },
+    });
     expect(add).toHaveBeenCalledWith(expect.objectContaining({ color: "success" }));
   });
 

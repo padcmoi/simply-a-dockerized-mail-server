@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-import type { RspamdBayesStatfile } from "~/composables/useRspamdPage";
-
 defineProps<{
   statfiles: RspamdBayesStatfile[];
   loading: boolean;

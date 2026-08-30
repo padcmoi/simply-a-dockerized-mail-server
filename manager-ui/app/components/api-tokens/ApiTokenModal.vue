@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { ApiTokenItem } from "~/composables/useApiTokens";
-
 const emit = defineEmits<{
   "update:open": [boolean];
   submit: [{ name: string; allowedIps?: string[]; expiresAt?: string }];

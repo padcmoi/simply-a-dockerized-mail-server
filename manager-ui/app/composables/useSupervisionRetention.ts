@@ -1,7 +1,3 @@
-interface RetentionView {
-  supervisionRetentionMs: number;
-}
-
 const DAY_MS = 86_400_000;
 /** One row per ten seconds, which is what a day of history costs in rows. */
 const ROWS_PER_DAY = 8_640;

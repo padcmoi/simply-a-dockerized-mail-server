@@ -1,14 +1,4 @@
 <script setup lang="ts">
-export interface DelegationCapsForm {
-  unlimitedRecipients: boolean;
-  maxRecipients: number;
-  unlimitedAliases: boolean;
-  maxAliases: number;
-  quotaMb: number;
-  noExpiry: boolean;
-  expiresDays: number;
-}
-
 const form = defineModel<DelegationCapsForm>({ required: true });
 
 const props = defineProps<{ withExpiry: boolean; maxQuotaMb?: number | null }>();

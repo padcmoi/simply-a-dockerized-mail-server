@@ -1,9 +1,3 @@
-interface CadenceView {
-  offlineNotifyAfterMs: number;
-  offlineSweepIntervalMs: number;
-  mailMinIntervalMs: number;
-}
-
 export function useMailCadence() {
   const { t } = useI18n();
   const { call } = useApi();

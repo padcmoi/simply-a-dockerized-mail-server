@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { DomainRspamdStats } from "~/composables/useDomainDashboard";
-
 const props = defineProps<{
   stats: DomainRspamdStats;
   loading: boolean;

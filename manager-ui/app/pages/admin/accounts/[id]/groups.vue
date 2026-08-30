@@ -1,13 +1,4 @@
 <script setup lang="ts">
-interface AccountDetail {
-  id: string;
-  email: string;
-  displayName: string | null;
-  isRoot: boolean;
-  enabled: boolean;
-  groups: { id: string; name: string }[];
-}
-
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },

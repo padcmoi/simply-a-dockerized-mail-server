@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { DkimCheckResult, DkimKey } from "~/composables/useDomainDashboard";
-
 const emit = defineEmits<{
   rotate: [];
   delete: [selector: string];

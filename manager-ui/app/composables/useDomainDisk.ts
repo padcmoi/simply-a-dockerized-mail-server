@@ -1,12 +1,5 @@
 const MB = 1024 * 1024;
 
-export interface DomainDisk {
-  totalBytes: number;
-  freeBytes: number;
-  reservedBytes: number;
-  assignableBytes: number;
-}
-
 // What the mail volume still has to hand out to a new domain. Shared by the
 // domains list (capacity card) and the create page (quota ceiling + donut).
 //

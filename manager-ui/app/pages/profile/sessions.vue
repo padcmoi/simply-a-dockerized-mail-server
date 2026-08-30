@@ -1,18 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-interface Session {
-  id: number;
-  userAgent: string | null;
-  ip: string | null;
-  createdAt: string;
-  expiresAt: string;
-  revokedAt: string | null;
-  lastSeenAt: string | null;
-  active: boolean;
-  // Seen within the last minute: currently in use, not just valid.
-  online: boolean;
-}
-
 definePageMeta({});
 
 const { t, locale } = useI18n();
@@ -23,7 +9,7 @@ const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("layout.profile"), to: "/profile" }, { label: t("profile.sessionsPage.breadcrumb") }]);
 
 // Active sessions: a small live set (one per device), fetched as a plain array.
-const active = ref<Session[]>([]);
+const active = ref<SessionRow[]>([]);
 const activeLoading = ref(false);
 const activeLoaded = ref(false);
 const revokingId = ref<number | null>(null);
@@ -41,12 +27,12 @@ const {
   sortBy,
   sortDir,
   load: loadHistory,
-} = usePaginatedList<Session>("sessions-history", "/auth/jwt/me/sessions/history", "createdAt");
+} = usePaginatedList<SessionRow>("sessions-history", "/auth/jwt/me/sessions/history", "createdAt");
 
 // Declared once for both renderings, which DataTable chooses between on its own
 // width. The device is read out of a user agent string and the status out of two
 // dates: neither is a column the API can order by.
-const columns = computed<DataTableColumn<Session>[]>(() => [
+const columns = computed<DataTableColumn<SessionRow>[]>(() => [
   {
     key: "device",
     label: t("profile.sessionsPage.colDevice"),
@@ -86,7 +72,7 @@ function deviceIcon(ua: string | null) {
 async function loadActive() {
   activeLoading.value = true;
   try {
-    active.value = await call<Session[]>("/auth/jwt/me/sessions");
+    active.value = await call<SessionRow[]>("/auth/jwt/me/sessions");
   } catch (e) {
     toast.add({ title: t("profile.sessionsPage.toast.loadFailed"), description: (e as Error).message, color: "error" });
   } finally {
@@ -182,7 +168,7 @@ onMounted(loadActive);
         :columns="columns"
         :total="total"
         :loading="historyLoading"
-        :row-key="(row: Session) => row.id"
+        :row-key="(row: SessionRow) => row.id"
         :empty-label="t('common.noResults')"
       >
         <template #device="{ row }">

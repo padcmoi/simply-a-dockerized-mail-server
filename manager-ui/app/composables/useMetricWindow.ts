@@ -1,7 +1,3 @@
-import type { HistoryPoint } from "./useSystemMetrics";
-
-export type MetricRange = "minute" | "hour" | "day" | "week";
-
 // How often a window is asked for again. It is the width of one of its own
 // points: an hour is drawn in minutes, so a request a minute is exactly one new
 // column, and asking a week every minute would be eighty-four identical answers

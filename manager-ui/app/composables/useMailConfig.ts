@@ -1,21 +1,5 @@
 import { useAuthStore } from "~/stores/auth";
 
-interface ConfigView {
-  provider: string;
-  host: string | null;
-  port: number | null;
-  secure: boolean;
-  username: string | null;
-  fromAddress: string | null;
-  hasPassword: boolean;
-  validated: boolean;
-}
-interface ListView {
-  configs: ConfigView[];
-  selected: string | null;
-}
-type Provider = "brevo" | "smtp" | "off";
-
 export function useMailConfig() {
   const { t } = useI18n();
   const { call } = useApi();
@@ -38,7 +22,7 @@ export function useMailConfig() {
   const hasPassword = ref(false);
   const editing = ref(false);
   const form = reactive({
-    provider: "brevo" as Provider,
+    provider: "brevo" as MailProvider,
     host: "",
     port: null as number | null,
     secure: false,
@@ -125,7 +109,7 @@ export function useMailConfig() {
     otpSent.value = false;
   }
 
-  function selectProvider(p: Provider) {
+  function selectProvider(p: MailProvider) {
     if (p === "off") {
       if (selected.value !== null) disable();
       return;

@@ -1,24 +1,6 @@
 <script setup lang="ts">
 import { z } from "zod";
 
-interface AccountDetail {
-  id: string;
-  email: string;
-  displayName: string | null;
-  avatarUrl: string | null;
-  phone: string | null;
-  addressLine: string | null;
-  addressComplement: string | null;
-  city: string | null;
-  postalCode: string | null;
-  country: string | null;
-  latitude: string | null;
-  longitude: string | null;
-  isRoot: boolean;
-  enabled: boolean;
-  groups: { id: string; name: string }[];
-}
-
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
@@ -32,7 +14,7 @@ const { call } = useApi();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 
-const account = ref<AccountDetail | null>(null);
+const account = ref<AccountEditView | null>(null);
 const loading = ref(false);
 const saving = ref(false);
 // Read-only: geocoded from the city server-side (see GeocodingService).
@@ -73,7 +55,7 @@ const schema = z.object({
   country: z.string().max(255).optional(),
 });
 
-function fillForm(a: AccountDetail) {
+function fillForm(a: AccountEditView) {
   form.email = a.email ?? "";
   form.displayName = a.displayName ?? "";
   form.avatarUrl = a.avatarUrl ?? "";
@@ -90,7 +72,7 @@ function fillForm(a: AccountDetail) {
 async function load() {
   loading.value = true;
   try {
-    account.value = await call<AccountDetail>(`/accounts/${accountId.value}`);
+    account.value = await call<AccountEditView>(`/accounts/${accountId.value}`);
     fillForm(account.value);
   } catch (e) {
     toast.add({ title: t("accounts.editPage.toast.loadFailed"), description: (e as Error).message, color: "error" });
@@ -103,7 +85,7 @@ async function save() {
   saving.value = true;
   try {
     // email is the login identity and cannot be cleared: only send it when set.
-    account.value = await call<AccountDetail>(`/accounts/${accountId.value}/edit`, {
+    account.value = await call<AccountEditView>(`/accounts/${accountId.value}/edit`, {
       method: "PATCH",
       body: {
         email: form.email.trim() || undefined,

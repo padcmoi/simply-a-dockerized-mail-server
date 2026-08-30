@@ -6,17 +6,6 @@ definePageMeta({
   ],
 });
 
-interface QueueDirStats {
-  active: number;
-  deferred: number;
-  hold: number;
-  incoming: number;
-}
-interface PostfixQueueStats {
-  total: QueueDirStats;
-  available: boolean;
-}
-
 const QUEUE_DIRS = ["active", "deferred", "hold", "incoming"] as const;
 
 const stats = ref<PostfixQueueStats | null>(null);

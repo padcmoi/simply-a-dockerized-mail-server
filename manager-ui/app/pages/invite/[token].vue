@@ -4,13 +4,6 @@ import { useAuthStore } from "~/stores/auth";
 
 definePageMeta({ layout: "auth" });
 
-interface InviteInfo {
-  // Null = open registration token: the visitor chooses their own address.
-  email: string | null;
-  groups: string[];
-  expiresAt: string | null;
-}
-
 const route = useRoute();
 const { t } = useI18n();
 const toast = useToast();

@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-import type { MyDelegation } from "~/composables/useMyDelegations";
-
 const MB = 1024 * 1024;
 
 const { t } = useI18n();

@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { DataTableColumn } from "~/types/data-table";
-import type { DelegationRow } from "~/composables/useDomainDelegations";
-
 definePageMeta({
   requiredDomain: [
     { resource: "recipients", action: "access" },

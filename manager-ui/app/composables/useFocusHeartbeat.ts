@@ -4,8 +4,6 @@ import { useDataRefresh } from "~/composables/useDataRefresh";
 const FAST_MS = 15_000;
 const SLOW_MS = 30_000;
 
-type NetworkInformation = { effectiveType?: string; saveData?: boolean };
-
 function intervalMs() {
   const conn = (navigator as Navigator & { connection?: NetworkInformation }).connection;
   if (!conn) return FAST_MS;

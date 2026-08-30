@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { HistoryPoint, SystemSnapshot } from "~/composables/useSystemMetrics";
-import type { MetricRange } from "~/composables/useMetricWindow";
-
 const range = defineModel<MetricRange>("range", { required: true });
 
 const { snapshot, points, thresholds } = defineProps<{

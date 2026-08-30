@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { RspamdActionThresholds, SaveRspamdActionsInput } from "~/composables/useRspamdActions";
-
 const emit = defineEmits<{ save: [SaveRspamdActionsInput]; reset: [] }>();
 // Two distinct permissions, not one: `canEdit` writes arbitrary thresholds,
 // `canReset` only restores the shipped baseline (see rspamd.controller.ts).

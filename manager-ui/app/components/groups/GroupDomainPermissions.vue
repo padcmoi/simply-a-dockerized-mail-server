@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useDebounceFn } from "@vueuse/core";
-import type { DependsOnEntry, GroupDomainPermission, PermissionsCatalog } from "~/composables/useGroups";
 
 const emit = defineEmits<{ save: [{ domainId: number; resource: string; action: string }[]] }>();
 

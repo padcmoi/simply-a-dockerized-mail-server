@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { DelegationCapsForm } from "~/components/domains/DelegationCapsFields.vue";
-
 definePageMeta({
   requiredDomain: [
     { resource: "recipients", action: "access" },

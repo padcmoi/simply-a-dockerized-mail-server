@@ -1,24 +1,7 @@
 <script setup lang="ts">
-// Two list cards: the domains and recipients an account owns. Shared by the admin
-// account dashboard (/accounts/:id) and the self-service profile (/profile), both
-// fed the same shape (from GET /accounts/:id/overview and GET /auth/jwt/me/overview).
-interface OwnedDomain {
-  id: number;
-  domain: string;
-  active: boolean;
-  quota: string;
-}
-interface OwnedRecipient {
-  id: number;
-  email: string;
-  domain: string;
-  active: boolean;
-  quota: string;
-}
-
 defineProps<{
   domains: OwnedDomain[];
-  recipients: OwnedRecipient[];
+  recipients: OwnedRecipientSummary[];
 }>();
 
 const { t } = useI18n();

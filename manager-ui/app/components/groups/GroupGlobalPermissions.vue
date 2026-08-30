@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useDebounceFn } from "@vueuse/core";
-import type { DependsOnEntry, GroupPermission, PermissionsCatalog } from "~/composables/useGroups";
 
 const emit = defineEmits<{ save: [{ resource: string; action: string }[]] }>();
 

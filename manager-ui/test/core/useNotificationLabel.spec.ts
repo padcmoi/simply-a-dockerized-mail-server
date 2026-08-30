@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { NotificationRow } from "~/composables/useNotifications";
+import type { NotificationRow } from "~/types/app/notification";
 
 const { useNotificationLabel } = await import("~/composables/useNotificationLabel");
 
