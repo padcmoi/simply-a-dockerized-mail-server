@@ -14,13 +14,13 @@ export class AccountTheme {
   accountId!: string;
 
   @ManyToOne(() => Account, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "account_id" })
+  @JoinColumn({ name: "account_id", foreignKeyConstraintName: "FK_account_themes_account" })
   account!: Account;
 
   @PrimaryColumn({ name: "key", type: "varchar", length: 64 })
   key!: string;
 
-  @Column({ name: "type_field", type: "enum", enum: ["number", "string"] })
+  @Column({ name: "type_field", type: "enum", enum: ["number", "string"], default: "string" })
   typeField!: AccountThemeType;
 
   @PrimaryColumn({ name: "mode", type: "enum", enum: ["dark", "light"] })

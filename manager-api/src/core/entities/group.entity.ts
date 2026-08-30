@@ -1,6 +1,8 @@
-import { BeforeInsert, Column, Entity, PrimaryColumn } from "typeorm";
+import { BeforeInsert, Column, Entity, JoinColumn, ManyToOne, PrimaryColumn, Unique } from "typeorm";
+import { Account } from "./account.entity";
 import { randomUUID } from "crypto";
 
+@Unique("uq_groups_name", ["name"])
 @Entity({ name: "groups" })
 export class Group {
   // Opaque, same reasoning as Account.id: it travels in /groups/:id.
@@ -12,11 +14,15 @@ export class Group {
     if (!this.id) this.id = randomUUID();
   }
 
-  @Column({ name: "name", type: "varchar", length: 255, unique: true })
+  @Column({ name: "name", type: "varchar", length: 255 })
   name!: string;
 
   @Column({ name: "description", type: "varchar", length: 1024, nullable: true })
   description!: string | null;
+
+  @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "RESTRICT" })
+  @JoinColumn({ name: "owner_id", foreignKeyConstraintName: "fk_groups_owner" })
+  owner!: Account | null;
 
   @Column({ name: "owner_id", type: "char", length: 36, nullable: true })
   ownerId!: string | null;

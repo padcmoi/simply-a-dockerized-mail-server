@@ -1,11 +1,15 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
+import { Account } from "./account.entity";
+import { Group } from "./group.entity";
+import { VirtualDomain } from "./virtual-domain.entity";
 
+@Unique("uq_invitation_token", ["token"])
 @Entity({ name: "account_invitations" })
 export class AccountInvitation {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;
 
-  @Column({ name: "token", type: "varchar", length: 128, unique: true })
+  @Column({ name: "token", type: "varchar", length: 128 })
   token!: string;
 
   // NULL = open registration token: the visitor chooses their own email at
@@ -16,8 +20,16 @@ export class AccountInvitation {
   @Column({ name: "invited_by", type: "char", length: 36, nullable: true })
   invitedBy!: string | null;
 
+  @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "RESTRICT" })
+  @JoinColumn({ name: "invited_by", foreignKeyConstraintName: "fk_account_invitations_invited_by" })
+  inviter!: Account | null;
+
   @Column({ name: "group_id", type: "char", length: 36, nullable: true })
   groupId!: string | null;
+
+  @ManyToOne(() => Group, { onDelete: "SET NULL", onUpdate: "RESTRICT" })
+  @JoinColumn({ name: "group_id", foreignKeyConstraintName: "fk_account_invitations_group" })
+  group!: Group | null;
 
   @Column({ name: "group_ids", type: "text", nullable: true })
   groupIds!: string | null;
@@ -40,6 +52,10 @@ export class AccountInvitation {
   // domain can still commit).
   @Column({ name: "delegation_domain_id", type: "int", nullable: true })
   delegationDomainId!: number | null;
+
+  @ManyToOne(() => VirtualDomain, { onDelete: "SET NULL", onUpdate: "CASCADE" })
+  @JoinColumn({ name: "delegation_domain_id", foreignKeyConstraintName: "fk_account_invitations_delegation_domain" })
+  delegationDomain!: VirtualDomain | null;
 
   @Column({ name: "delegation_max_recipients", type: "int", nullable: true })
   delegationMaxRecipients!: number | null;

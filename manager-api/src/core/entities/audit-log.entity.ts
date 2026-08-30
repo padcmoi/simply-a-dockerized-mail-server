@@ -1,5 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Account } from "./account.entity";
 
+@Index("idx_audit_log_actor", ["actorId"])
+@Index("idx_audit_log_entity", ["entityType", "entityId"])
 @Entity({ name: "audit_log" })
 export class AuditLog {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
@@ -7,6 +10,10 @@ export class AuditLog {
 
   @Column({ name: "actor_id", type: "char", length: 36, nullable: true })
   actorId!: string | null;
+
+  @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "RESTRICT" })
+  @JoinColumn({ name: "actor_id", foreignKeyConstraintName: "fk_audit_log_actor" })
+  actor!: Account | null;
 
   @Column({ name: "action", type: "varchar", length: 64 })
   action!: string;

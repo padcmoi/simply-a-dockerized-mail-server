@@ -17,6 +17,15 @@ import { SupportTicketRead } from "../entities/support-ticket-read.entity";
 import { MailSetting } from "../entities/mail-setting.entity";
 import { AppSetting } from "../entities/app-setting.entity";
 import { DomainDelegation } from "../entities/domain-delegation.entity";
+import { AccountInvitation } from "../entities/account-invitation.entity";
+import { AccountTheme } from "../entities/account-theme.entity";
+import { AppTheme } from "../entities/app-theme.entity";
+import { AuditLog } from "../entities/audit-log.entity";
+import { Group } from "../entities/group.entity";
+import { GroupDomainPermission } from "../entities/group-domain-permission.entity";
+import { GroupGlobalPermission } from "../entities/group-global-permission.entity";
+import { GroupMember } from "../entities/group-member.entity";
+import { MetricsHistory } from "../entities/metrics-history.entity";
 
 // Stand-alone DataSource used exclusively by the TypeORM CLI (migration:generate,
 // migration:run, migration:revert, migration:show). The Nest runtime keeps its
@@ -52,6 +61,15 @@ export default new DataSource({
     MailSetting,
     AppSetting,
     DomainDelegation,
+    AccountInvitation,
+    AccountTheme,
+    AppTheme,
+    AuditLog,
+    Group,
+    GroupDomainPermission,
+    GroupGlobalPermission,
+    GroupMember,
+    MetricsHistory,
   ],
   migrations: ["src/core/database/migrations/*.ts"],
   migrationsTableName: "migrations",

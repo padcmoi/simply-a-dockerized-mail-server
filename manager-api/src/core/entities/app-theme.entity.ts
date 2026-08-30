@@ -16,7 +16,7 @@ export class AppTheme {
   @PrimaryColumn({ name: "key", type: "varchar", length: 64 })
   key!: string;
 
-  @Column({ name: "type_field", type: "enum", enum: ["number", "string"] })
+  @Column({ name: "type_field", type: "enum", enum: ["number", "string"], default: "string" })
   typeField!: AppThemeType;
 
   @PrimaryColumn({ name: "mode", type: "enum", enum: ["dark", "light"] })
