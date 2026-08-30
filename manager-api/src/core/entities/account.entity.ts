@@ -1,4 +1,4 @@
-import { BeforeInsert, Column, Entity, Index, PrimaryColumn, Unique } from "typeorm";
+import { BeforeInsert, Column, Entity, PrimaryColumn, Unique } from "typeorm";
 import { randomUUID } from "crypto";
 
 @Unique("uq_accounts_email", ["email"])
