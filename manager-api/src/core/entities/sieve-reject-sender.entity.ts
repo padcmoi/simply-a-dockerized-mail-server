@@ -1,11 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
 
+@Unique("uq_sieve_reject_senders_sender", ["sender"])
 @Entity({ name: "sieve_reject_senders" })
 export class SieveRejectSender {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
   id!: number;
 
-  @Column({ name: "sender", type: "varchar", length: 255, unique: true })
+  @Column({ name: "sender", type: "varchar", length: 255 })
   sender!: string;
 
   @Column({ name: "enabled", type: "int", default: 1 })

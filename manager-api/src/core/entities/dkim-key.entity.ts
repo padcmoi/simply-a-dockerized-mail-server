@@ -12,7 +12,7 @@ export class DkimKeyEntity {
   domain!: string;
 
   @ManyToOne(() => VirtualDomain, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "domain", referencedColumnName: "domain" })
+  @JoinColumn({ name: "domain", referencedColumnName: "domain", foreignKeyConstraintName: "fk_dkim_keys_domain" })
   domainRef!: VirtualDomain;
 
   @Column({ name: "selector", type: "varchar", length: 255 })

@@ -1,7 +1,8 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryColumn } from "typeorm";
 import { Account } from "./account.entity";
 import { SupportTicket } from "./support-ticket.entity";
 
+@Index("idx_support_ticket_reads_account_id", ["accountId"])
 @Entity({ name: "support_ticket_reads" })
 export class SupportTicketRead {
   @PrimaryColumn({ name: "ticket_id", type: "int" })
@@ -11,11 +12,11 @@ export class SupportTicketRead {
   accountId!: string;
 
   @ManyToOne(() => SupportTicket, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "ticket_id" })
+  @JoinColumn({ name: "ticket_id", foreignKeyConstraintName: "fk_support_ticket_reads_ticket_id" })
   ticket!: SupportTicket;
 
   @ManyToOne(() => Account, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "account_id" })
+  @JoinColumn({ name: "account_id", foreignKeyConstraintName: "fk_support_ticket_reads_account_id" })
   account!: Account;
 
   @Column({ name: "last_read_message_id", type: "int", default: 0 })

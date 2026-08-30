@@ -12,7 +12,7 @@ export class Notification {
   accountId!: string;
 
   @ManyToOne(() => Account, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "account_id" })
+  @JoinColumn({ name: "account_id", foreignKeyConstraintName: "fk_notifications_account_id" })
   account!: Account;
 
   @Column({ name: "source", type: "varchar", length: 32 })

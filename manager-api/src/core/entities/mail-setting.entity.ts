@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
+import { Column, Entity, PrimaryColumn, Unique } from "typeorm";
 
+@Unique("uq_mail_settings_selected", ["selected"])
 @Entity({ name: "mail_settings" })
 export class MailSetting {
   @PrimaryColumn({ name: "provider", type: "varchar", length: 20 })
@@ -23,7 +24,7 @@ export class MailSetting {
   @Column({ name: "from_address", type: "varchar", length: 255, nullable: true })
   fromAddress!: string | null;
 
-  @Column({ name: "selected", type: "tinyint", width: 1, nullable: true, unique: true })
+  @Column({ name: "selected", type: "tinyint", width: 1, nullable: true })
   selected!: number | null;
 
   @Column({ name: "validated", type: "tinyint", width: 1, default: 0 })

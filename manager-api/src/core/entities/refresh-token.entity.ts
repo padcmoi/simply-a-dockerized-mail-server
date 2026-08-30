@@ -1,7 +1,8 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
 import { Account } from "./account.entity";
 
-@Index("account_id", ["accountId"])
+@Index("idx_refresh_tokens_account_id", ["accountId"])
+@Unique("uq_refresh_tokens_token_hash", ["tokenHash"])
 @Entity({ name: "refresh_tokens" })
 export class RefreshToken {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
@@ -11,10 +12,10 @@ export class RefreshToken {
   accountId!: string;
 
   @ManyToOne(() => Account, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "account_id" })
+  @JoinColumn({ name: "account_id", foreignKeyConstraintName: "fk_refresh_tokens_account_id" })
   account!: Account;
 
-  @Column({ name: "token_hash", type: "varchar", length: 255, unique: true })
+  @Column({ name: "token_hash", type: "varchar", length: 255 })
   tokenHash!: string;
 
   @Column({ name: "user_agent", type: "varchar", length: 255, nullable: true })

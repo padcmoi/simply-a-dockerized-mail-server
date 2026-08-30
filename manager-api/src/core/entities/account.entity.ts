@@ -1,6 +1,7 @@
-import { BeforeInsert, Column, Entity, PrimaryColumn } from "typeorm";
+import { BeforeInsert, Column, Entity, Index, PrimaryColumn, Unique } from "typeorm";
 import { randomUUID } from "crypto";
 
+@Unique("uq_accounts_email", ["email"])
 @Entity({ name: "accounts" })
 export class Account {
   // Opaque on purpose: this id is the JWT `sub` and the /accounts/:id path
@@ -19,7 +20,7 @@ export class Account {
 
   // The login identity. Personal/display attributes (name, avatar, address...)
   // live on the 1-1 account_profiles table; `accounts` is auth-only.
-  @Column({ name: "email", type: "varchar", length: 255, unique: true })
+  @Column({ name: "email", type: "varchar", length: 255 })
   email!: string;
 
   @Column({ name: "password", type: "varchar", length: 255, nullable: true })

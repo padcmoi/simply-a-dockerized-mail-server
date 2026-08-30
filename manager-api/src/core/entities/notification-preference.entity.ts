@@ -10,7 +10,7 @@ export class NotificationPreference {
   source!: string;
 
   @ManyToOne(() => Account, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "account_id" })
+  @JoinColumn({ name: "account_id", foreignKeyConstraintName: "fk_notification_preferences_account_id" })
   account!: Account;
 
   @Column({ name: "in_app", type: "tinyint", width: 1, default: 1 })

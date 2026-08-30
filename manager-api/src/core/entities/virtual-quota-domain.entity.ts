@@ -1,6 +1,7 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { VirtualDomain } from "./virtual-domain.entity";
 
+@Index("idx_virtual_quota_domains_domain", ["domain"])
 @Entity({ name: "virtual_quota_domains" })
 export class VirtualQuotaDomain {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
@@ -10,7 +11,7 @@ export class VirtualQuotaDomain {
   domain!: string;
 
   @ManyToOne(() => VirtualDomain, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "domain", referencedColumnName: "domain" })
+  @JoinColumn({ name: "domain", referencedColumnName: "domain", foreignKeyConstraintName: "fk_virtual_quota_domains_domain" })
   domainRef!: VirtualDomain;
 
   @Column({ name: "bytes", type: "bigint", width: 20, default: 0 })

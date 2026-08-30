@@ -12,14 +12,14 @@ export class SupportTicketMessage {
   ticketId!: number;
 
   @ManyToOne(() => SupportTicket, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "ticket_id" })
+  @JoinColumn({ name: "ticket_id", foreignKeyConstraintName: "fk_support_ticket_messages_ticket_id" })
   ticket!: SupportTicket;
 
   @Column({ name: "author_id", type: "char", length: 36, nullable: true })
   authorId!: string | null;
 
   @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "author_id" })
+  @JoinColumn({ name: "author_id", foreignKeyConstraintName: "fk_support_ticket_messages_author_id" })
   author!: Account | null;
 
   @Column({ name: "body", type: "text" })

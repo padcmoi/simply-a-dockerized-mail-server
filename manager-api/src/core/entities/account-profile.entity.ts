@@ -1,17 +1,18 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, OneToOne, PrimaryColumn } from "typeorm";
 import { Account } from "./account.entity";
 
 // One-to-one profile for an account: every personal / non-auth attribute lives
 // here, keeping `accounts` to strictly what authentication needs (id, email,
 // password, is_root, enabled). Shares the account id as its primary key, no
 // surrogate, and cascades away with the account.
+@Index("idx_account_profiles_presence", ["presence"])
 @Entity({ name: "account_profiles" })
 export class AccountProfile {
   @PrimaryColumn({ name: "account_id", type: "char", length: 36 })
   accountId!: string;
 
   @OneToOne(() => Account, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "account_id" })
+  @JoinColumn({ name: "account_id", foreignKeyConstraintName: "fk_account_profiles_account_id" })
   account!: Account;
 
   // Whether someone is behind the screen right now. Deliberately not derived

@@ -1,7 +1,9 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
+import { Account } from "./account.entity";
 
-@Index("domain_2", ["domain"])
-@Index("owner_id", ["ownerId"])
+@Index("idx_virtual_domains_domain", ["domain"])
+@Index("idx_virtual_domains_owner_id", ["ownerId"])
+@Unique("uq_virtual_domains_domain", ["domain"])
 @Entity({ name: "virtual_domains" })
 export class VirtualDomain {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
@@ -10,7 +12,11 @@ export class VirtualDomain {
   @Column({ name: "owner_id", type: "char", length: 36, nullable: true })
   ownerId!: string | null;
 
-  @Column({ name: "domain", type: "varchar", length: 255, unique: true })
+  @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "RESTRICT" })
+  @JoinColumn({ name: "owner_id", foreignKeyConstraintName: "fk_virtual_domains_owner" })
+  owner!: Account | null;
+
+  @Column({ name: "domain", type: "varchar", length: 255 })
   domain!: string;
 
   @Column({ name: "quota", type: "bigint", width: 20, default: 0 })

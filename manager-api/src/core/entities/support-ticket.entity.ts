@@ -3,6 +3,8 @@ import { Account } from "./account.entity";
 import { VirtualDomain } from "./virtual-domain.entity";
 
 @Index("idx_support_tickets_domain_id", ["domainId"])
+@Index("idx_support_tickets_created_by", ["createdBy"])
+@Index("idx_support_tickets_assigned_to", ["assignedTo"])
 @Entity({ name: "support_tickets" })
 export class SupportTicket {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
@@ -12,21 +14,21 @@ export class SupportTicket {
   domainId!: number;
 
   @ManyToOne(() => VirtualDomain, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "domain_id" })
+  @JoinColumn({ name: "domain_id", foreignKeyConstraintName: "fk_support_tickets_domain_id" })
   domain!: VirtualDomain;
 
   @Column({ name: "created_by", type: "char", length: 36, nullable: true })
   createdBy!: string | null;
 
   @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "created_by" })
+  @JoinColumn({ name: "created_by", foreignKeyConstraintName: "fk_support_tickets_created_by" })
   creator!: Account | null;
 
   @Column({ name: "assigned_to", type: "char", length: 36, nullable: true })
   assignedTo!: string | null;
 
   @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "assigned_to" })
+  @JoinColumn({ name: "assigned_to", foreignKeyConstraintName: "fk_support_tickets_assigned_to" })
   assignee!: Account | null;
 
   @Column({ name: "subject", type: "varchar", length: 255 })

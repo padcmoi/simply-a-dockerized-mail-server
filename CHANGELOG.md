@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- refactor(manager-api): entities pin every constraint name so generate detects only real drift (30-08-2026)
 - A key may be narrower than the account that owns it _(api-tokens)_ [d853e7d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d853e7d8a8813b2494a6d2a9aa2c348ab463f27d) (29-08-2026)
 - Running the checks again asks first, ten clicks _(deliverability)_ [c73da27](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c73da27ff902783478b051542bc4613428de8858) (29-08-2026)
 - The report is kept, and only the button replaces it _(deliverability)_ [9f15e27](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9f15e272edcf162b6436f6c9d1605a735bbdcb98) (29-08-2026)

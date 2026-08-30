@@ -1,7 +1,10 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
+import { Account } from "./account.entity";
 import { VirtualDomain } from "./virtual-domain.entity";
 
-@Index("owner_id", ["ownerId"])
+@Index("idx_virtual_users_domain", ["domain"])
+@Index("idx_virtual_users_owner_id", ["ownerId"])
+@Unique("uq_virtual_users_email", ["email"])
 @Entity({ name: "virtual_users" })
 export class VirtualUser {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
@@ -10,14 +13,18 @@ export class VirtualUser {
   @Column({ name: "owner_id", type: "char", length: 36, nullable: true })
   ownerId!: string | null;
 
+  @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "CASCADE" })
+  @JoinColumn({ name: "owner_id", foreignKeyConstraintName: "fk_virtual_users_owner" })
+  owner!: Account | null;
+
   @Column({ name: "domain", type: "varchar", length: 255 })
   domain!: string;
 
   @ManyToOne(() => VirtualDomain, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "domain", referencedColumnName: "domain" })
+  @JoinColumn({ name: "domain", referencedColumnName: "domain", foreignKeyConstraintName: "fk_virtual_users_domain" })
   domainRef!: VirtualDomain;
 
-  @Column({ name: "email", type: "varchar", length: 255, unique: true })
+  @Column({ name: "email", type: "varchar", length: 255 })
   email!: string;
 
   @Column({ name: "password", type: "varchar", length: 128 })

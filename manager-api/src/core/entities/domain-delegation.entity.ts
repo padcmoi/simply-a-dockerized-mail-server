@@ -7,6 +7,7 @@ import { VirtualDomain } from "./virtual-domain.entity";
 // mailboxes may reserve together (quota_mb, never unlimited: every grant is
 // bounded by what the domain really has).
 @Index("idx_domain_delegations_domain_id", ["domainId"])
+@Index("idx_domain_delegations_created_by", ["createdBy"])
 @Index("uq_domain_delegations_account_domain", ["accountId", "domainId"], { unique: true })
 @Entity({ name: "domain_delegations" })
 export class DomainDelegation {
@@ -17,14 +18,14 @@ export class DomainDelegation {
   accountId!: string;
 
   @ManyToOne(() => Account, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "account_id" })
+  @JoinColumn({ name: "account_id", foreignKeyConstraintName: "fk_domain_delegations_account_id" })
   account!: Account;
 
   @Column({ name: "domain_id", type: "int" })
   domainId!: number;
 
   @ManyToOne(() => VirtualDomain, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "domain_id" })
+  @JoinColumn({ name: "domain_id", foreignKeyConstraintName: "fk_domain_delegations_domain_id" })
   domain!: VirtualDomain;
 
   @Column({ name: "max_recipients", type: "int", nullable: true })
@@ -51,6 +52,10 @@ export class DomainDelegation {
 
   @Column({ name: "created_by", type: "char", length: 36, nullable: true })
   createdBy!: string | null;
+
+  @ManyToOne(() => Account, { onDelete: "SET NULL", onUpdate: "CASCADE" })
+  @JoinColumn({ name: "created_by", foreignKeyConstraintName: "fk_domain_delegations_created_by" })
+  creator!: Account | null;
 
   @Column({ name: "created_at", type: "datetime", default: () => "CURRENT_TIMESTAMP" })
   createdAt!: Date;

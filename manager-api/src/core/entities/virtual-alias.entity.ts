@@ -1,7 +1,9 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
 import { VirtualDomain } from "./virtual-domain.entity";
 
-@Index("owner_id", ["ownerId"])
+@Index("idx_virtual_aliases_domain", ["domain"])
+@Index("idx_virtual_aliases_owner_id", ["ownerId"])
+@Unique("uq_virtual_aliases_source", ["source"])
 @Entity({ name: "virtual_aliases" })
 export class VirtualAlias {
   @PrimaryGeneratedColumn({ name: "id", type: "int" })
@@ -14,10 +16,10 @@ export class VirtualAlias {
   domain!: string;
 
   @ManyToOne(() => VirtualDomain, { onDelete: "CASCADE", onUpdate: "CASCADE" })
-  @JoinColumn({ name: "domain", referencedColumnName: "domain" })
+  @JoinColumn({ name: "domain", referencedColumnName: "domain", foreignKeyConstraintName: "fk_virtual_aliases_domain" })
   domainRef!: VirtualDomain;
 
-  @Column({ name: "source", type: "varchar", length: 255, unique: true })
+  @Column({ name: "source", type: "varchar", length: 255 })
   source!: string;
 
   @Column({ name: "destination", type: "varchar", length: 255 })
