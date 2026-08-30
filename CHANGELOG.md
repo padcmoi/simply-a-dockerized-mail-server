@@ -9,9 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- chore(zod): version four on both sides, the v3 contract measured intact (30-08-2026)
-- refactor(manager-ui): pages shed their business logic into composables and every type lives in one tree (30-08-2026)
-
 - A key may be narrower than the account that owns it _(api-tokens)_ [d853e7d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d853e7d8a8813b2494a6d2a9aa2c348ab463f27d) (29-08-2026)
 - Running the checks again asks first, ten clicks _(deliverability)_ [c73da27](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c73da27ff902783478b051542bc4613428de8858) (29-08-2026)
 - The report is kept, and only the button replaces it _(deliverability)_ [9f15e27](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9f15e272edcf162b6436f6c9d1605a735bbdcb98) (29-08-2026)
@@ -180,6 +177,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Version four on both sides, the v3 contract measured intact _(zod)_ [bfdd86b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bfdd86bc381ae602d497ff0e50b90e4b60738569) (30-08-2026)
+- Pages shed their logic into composables, types into one tree _(manager-ui)_ [db75fe4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/db75fe4dd32c44f4090a40bd92ec201030094823) (30-08-2026)
+- The history splits by major version, and an entry is one line _(changelog)_ [2251ecd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2251ecdf3bfc06e216773d0136caaa661df43526) (29-08-2026)
 - The checks move to where their answers mean something _(deliverability)_ [9a9d86a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9a9d86ade4fd91ec68356c41cc7badb905585034) (29-08-2026)
 - The guide closes on what no probe can measure _(deliverability)_ [a142a88](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a142a8819147ec19544aa68c4f9a8645f3f01346) (28-08-2026)
 - Cover the engine where it decides _(deliverability)_ [c0f9b02](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c0f9b0248c5f1fa8a163bea66e7a764c2ff6de80) (28-08-2026)
