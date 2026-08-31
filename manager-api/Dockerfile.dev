@@ -7,7 +7,6 @@ COPY package.json pnpm-lock.yaml* VERSION* ./
 # service.sh writes VERSION from `git describe --tags --abbrev=0`. The dev
 # compose also mounts it, so a new tag shows without rebuilding.
 RUN [ -f VERSION ] || echo unknown > VERSION
-COPY libs ./libs
 RUN pnpm install --frozen-lockfile || pnpm install
 COPY tsconfig.json nest-cli.json ./
 # src/ is provided by volume mount at runtime

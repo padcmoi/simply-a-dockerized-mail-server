@@ -1,9 +1,6 @@
-# The Dockerfile only copies package.json, libs, the two configs and src, but
-# the whole directory is still handed to the daemon as the build context: without
-# this file every build ships node_modules and dist for nothing.
-#
-# `libs` is deliberately not here: the vendored permission-guard tarball is what
-# `pnpm install` resolves from.
+# The Dockerfile only copies package.json, the two configs and src, but the whole
+# directory is still handed to the daemon as the build context: without this file
+# every build ships node_modules and dist for nothing.
 node_modules
 dist
 

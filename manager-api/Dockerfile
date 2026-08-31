@@ -5,7 +5,6 @@ COPY package.json pnpm-lock.yaml* VERSION* ./
 # service.sh writes VERSION from `git describe --tags --abbrev=0` before building.
 # A build started without it still succeeds, and says so.
 RUN [ -f VERSION ] || echo unknown > VERSION
-COPY libs ./libs
 RUN pnpm install --frozen-lockfile || pnpm install
 COPY tsconfig.json nest-cli.json ./
 COPY src ./src

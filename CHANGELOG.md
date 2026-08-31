@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - The permission guard comes from npm, instead of a tarball carried in the repository _(manager-api)_ (31-08-2026)
 
+### Fixed
+
+- The manager-api image builds again, now that nothing copies the deleted libs directory _(manager-api)_ (31-08-2026)
+
 ## [2.0.0-rc.2] - 31-08-2026
 
 ### Fixed
