@@ -13,8 +13,12 @@ const { isOnline } = usePresence();
 const { set: setBreadcrumb } = useBreadcrumb();
 
 // Only meaningful for someone who can take a ticket in charge; anyone else has
-// nothing assigned, so the filter would just hide their whole list.
-const onlyMine = ref(true);
+// nothing assigned, so the filter would just hide their whole list. Kept in
+// localStorage: whoever works the queue reads it the same way every day, and
+// having to press the filter again on every visit is the annoyance. On by
+// default, so a first visit still opens on one's own tickets.
+const ONLY_MINE_STORAGE_KEY = "manager-tickets-only-mine";
+const onlyMine = useLocalStorage(ONLY_MINE_STORAGE_KEY, true);
 // A ticket whose last message is not the account's own reads like an unread
 // message: the row is tinted rather than carrying yet another icon. Handed to
 // DataTable, so the table row and the block are marked the same way.
