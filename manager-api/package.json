@@ -69,5 +69,10 @@
     "unplugin-swc": "^1.5.9",
     "vitest": "^3"
   },
+  "pnpm": {
+    "overrides": {
+      "glob": "^13.0.6"
+    }
+  },
   "packageManager": "pnpm@9.15.0"
 }
