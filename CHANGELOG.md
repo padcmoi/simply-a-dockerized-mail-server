@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- The login screen names the release it is running, and opens it on GitHub _(ui)_ (31-08-2026)
+
 ## [2.0.0-rc.2] - 31-08-2026
 
 ### Fixed

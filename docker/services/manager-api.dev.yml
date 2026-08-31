@@ -28,6 +28,8 @@ services:
       # instead of the NIC, and it reports nothing at all rather than that.
       - /proc:/host/proc:ro
       - ../../manager-api/src:/app/src
+      # Written by service.sh from the last git tag, served by GET /api/v1.
+      - ../../manager-api/VERSION:/app/VERSION:ro
     networks:
       mail:
         ipv4_address: 172.200.0.19

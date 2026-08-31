@@ -18,6 +18,11 @@ if [[ ! -f .env ]]; then
 	exit 1
 fi
 
+# The project's last git tag, written where the manager-api image can bake it in.
+# The containers carry no git and no repository, so it is captured here, once,
+# before anything is built. Served by GET /api/v1 as code_version.
+git describe --tags --abbrev=0 > manager-api/VERSION 2>/dev/null || echo unknown > manager-api/VERSION
+
 CMD="${1:-help}"
 shift || true
 

@@ -20,3 +20,6 @@ coverage/
 
 # test-mailservers.sh outputs (regenerated on every run)
 test-results.md
+
+# Written by service.sh from the last git tag, baked into the manager-api image.
+manager-api/VERSION

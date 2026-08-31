@@ -23,6 +23,7 @@ const EXPECTED_PUBLIC = [
   "GET /api/v1/accounts/invite/:token/email-exists",
   "GET /api/v1/config/theme",
   "GET /api/v1/health",
+  "GET /api/v1",
   "POST /api/v1/accounts/invite/:token/accept",
   "POST /api/v1/auth/jwt/login",
   "POST /api/v1/auth/jwt/logout",

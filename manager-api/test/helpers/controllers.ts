@@ -23,6 +23,7 @@ import { DomainsRspamdController } from "../../src/api/domains/rspamd/rspamd.con
 import { TicketsController } from "../../src/api/tickets/tickets.controller";
 import { GroupsController } from "../../src/api/groups/groups.controller";
 import { HealthController } from "../../src/api/health/health.controller";
+import { InfoController } from "../../src/api/info/info.controller";
 import { MySpaceController } from "../../src/api/my-space/my-space.controller";
 import { NotificationsController } from "../../src/api/notifications/notifications.controller";
 import { PostfixController } from "../../src/api/postfix/postfix.controller";
@@ -56,6 +57,7 @@ export const ALL_CONTROLLERS = [
   TicketsController,
   GroupsController,
   HealthController,
+  InfoController,
   MySpaceController,
   NotificationsController,
   PostfixController,

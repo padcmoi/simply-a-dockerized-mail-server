@@ -27,6 +27,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "DELETE /api/v1/notifications/:id  ::  auth=ApiToken+JWT guards=[]",
   "DELETE /api/v1/rspamd/actions  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:rspamd[access,reset-rspamd-thresholds]",
   "DELETE /api/v1/sieve/reject-senders/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:sieve[access,delete-reject-sender]",
+  "GET /api/v1  ::  auth=PUBLIC guards=[]",
   "GET /api/v1/accounts  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,list-accounts]",
   "GET /api/v1/accounts/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,view-account]",
   "GET /api/v1/accounts/:id/aliases  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:accounts[access,assign-alias-owner]",
