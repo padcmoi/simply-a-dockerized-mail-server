@@ -167,7 +167,12 @@ export const GLOBAL_RESOURCES_DEPENDS_ON: GlobalDependsOnEntry[] = [
   // names -- `list-account-names` (GET /accounts/names), not the full
   // `list-accounts`. A group manager has no business reading emails and roles.
   { resource: "groups", dependsOn: [{ resource: "accounts", action: ["access", "list-account-names"] }] },
-  { resource: "domain_owner_elevated", dependsOn: [{ resource: "domains", action: ["access", ...GLOBAL_ACTIONS["domains"]] }] },
+  // Acting on one's OWN domain still means reaching the domains section and
+  // reading a domain, and nothing beyond: depending on the whole of `domains`
+  // would have ticking "delete a DKIM key on my own domain" also hand out
+  // creating domains and listing everyone else's, which is the opposite of what
+  // this resource is for.
+  { resource: "domain_owner_elevated", dependsOn: [{ resource: "domains", action: ["access", "view-domain"] }] },
   { resource: "deliverability", dependsOn: [{ resource: "domains", action: ["access"] }] },
 ];
 
