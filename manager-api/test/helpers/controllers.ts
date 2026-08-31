@@ -9,6 +9,7 @@ import { MailConfigController } from "../../src/api/config/mail-config.controlle
 import { MailCadenceController } from "../../src/api/config/mail-cadence.controller";
 import { GeneralController } from "../../src/api/config/general.controller";
 import { SupervisionRetentionController } from "../../src/api/config/supervision-retention.controller";
+import { TicketsConfigController } from "../../src/api/config/tickets-config.controller";
 import { AdminDomainsController } from "../../src/api/domains/admin-domains/admin-domains.controller";
 import { AliasesController } from "../../src/api/domains/aliases/aliases.controller";
 import { DelegationsController } from "../../src/api/domains/delegations/delegations.controller";
@@ -41,6 +42,7 @@ export const ALL_CONTROLLERS = [
   MailCadenceController,
   GeneralController,
   SupervisionRetentionController,
+  TicketsConfigController,
   AdminDomainsController,
   AliasesController,
   DelegationsController,

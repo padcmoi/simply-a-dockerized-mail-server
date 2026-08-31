@@ -7,6 +7,7 @@ import { RequireGlobalPermissions } from "../../core/custom-permission-guard/req
 import {
   CreateTicketDocs,
   TicketableDomainsDocs,
+  TicketableResourcesDocs,
   EditMessageDocs,
   GetTicketDocs,
   ListTicketMessagesDocs,
@@ -65,6 +66,14 @@ export class TicketsController {
   @TicketableDomainsDocs()
   ticketableDomains(@Req() req: AuthedRequest) {
     return this.svc.ticketableDomains(caller(req));
+  }
+
+  // Same reason as "tickets/domains": declared before ":id".
+  @Get("domains/:domainId/resources")
+  @RequireGlobalPermissions([{ resource: "tickets", actions: ["access", "create-ticket"] }])
+  @TicketableResourcesDocs()
+  ticketableResources(@Req() req: AuthedRequest, @Param("domainId", ParseIntPipe) domainId: number) {
+    return this.svc.ticketableResources(domainId, caller(req));
   }
 
   @Get(":id")

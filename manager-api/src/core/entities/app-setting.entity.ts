@@ -1,6 +1,6 @@
 import { Column, Entity, PrimaryColumn } from "typeorm";
 
-export type AppSettingType = "number" | "string";
+export type AppSettingType = "number" | "string" | "boolean";
 
 // Generic key/value settings store: one row per setting, `type_field` says how to
 // read `value`. Adding a setting is a new row, never a schema change, which is
@@ -10,7 +10,7 @@ export class AppSetting {
   @PrimaryColumn({ name: "key", type: "varchar", length: 64 })
   key!: string;
 
-  @Column({ name: "type_field", type: "enum", enum: ["number", "string"] })
+  @Column({ name: "type_field", type: "enum", enum: ["number", "string", "boolean"] })
   typeField!: AppSettingType;
 
   @Column({ name: "value", type: "varchar", length: 512, default: "" })

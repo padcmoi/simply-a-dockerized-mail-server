@@ -1,5 +1,16 @@
 // Support tickets, in the shapes the API answers with.
 
+export interface TicketRecipientRef {
+  id: number;
+  email: string;
+}
+
+export interface TicketAliasRef {
+  id: number;
+  source: string;
+  destination: string;
+}
+
 export interface TicketRow {
   id: number;
   createdBy: string | null;
@@ -15,6 +26,8 @@ export interface TicketRow {
   creatorName: string | null;
   creatorAvatarUrl: string | null;
   awaitingMyReply: boolean;
+  recipients: TicketRecipientRef[];
+  aliases: TicketAliasRef[];
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +42,14 @@ export interface TicketMessage {
   createdAt: string;
   updatedAt: string | null;
   editCount: number;
+}
+
+// What a domain still offers to name. `required` is the server setting, so the
+// creation form gates its submit on the same rule POST /tickets enforces.
+export interface TicketDomainResources {
+  required: boolean;
+  recipients: TicketRecipientRef[];
+  aliases: TicketAliasRef[];
 }
 
 export interface TicketReader {

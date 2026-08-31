@@ -13,6 +13,8 @@ export default {
   generalCardHint: "Public interface address",
   supervisionCardLabel: "Supervision",
   supervisionCardHint: "Machine history retention",
+  ticketsCardLabel: "Support",
+  ticketsCardHint: "What a ticket must name",
   themeCardLabel: "Theme",
   themeCardHint: "Interface colours for everyone",
   mail: {
@@ -114,6 +116,20 @@ export default {
     saveFailed: "Save failed",
     loadFailed: "Load failed",
     reset: "Factory value",
+  },
+  tickets: {
+    cardTitle: "Opening a ticket",
+    alertTitle: "Support tickets.",
+    alertDescription: "What an account must fill in to open a ticket. The domain stays mandatory either way.",
+    required: "Name a mailbox or an alias",
+    requiredHint:
+      "On, a ticket must name at least one mailbox or alias of its domain, without which support searches the whole domain. A domain with nothing in it yet still takes a ticket: it has nothing to name.",
+    on: "Mandatory",
+    off: "Optional",
+    save: "Save",
+    saved: "Setting saved",
+    saveFailed: "Could not save",
+    loadFailed: "Could not load",
   },
   general: {
     cardTitle: "General",

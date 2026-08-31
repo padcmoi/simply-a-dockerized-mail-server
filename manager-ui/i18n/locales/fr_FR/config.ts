@@ -15,6 +15,8 @@ export default {
   supervisionCardHint: "Rétention des mesures machine",
   themeCardLabel: "Thème",
   themeCardHint: "Couleurs de l'interface pour tout le monde",
+  ticketsCardLabel: "Support",
+  ticketsCardHint: "Ce qu'un ticket doit désigner",
   mail: {
     alertTitle: "Serveur de mail sortant.",
     alertDescription: "Comment le manager envoie tous ses e-mails (invitations, notifications, codes...). Stocké en base, pas dans l'environnement.",
@@ -113,6 +115,20 @@ export default {
     saveFailed: "Échec de l'enregistrement",
     loadFailed: "Échec du chargement",
     reset: "Valeur d'usine",
+  },
+  tickets: {
+    cardTitle: "Ouverture d'un ticket",
+    alertTitle: "Tickets de support.",
+    alertDescription: "Ce qu'un compte doit renseigner pour ouvrir un ticket. Le domaine reste obligatoire dans tous les cas.",
+    required: "Désigner une boîte ou un alias",
+    requiredHint:
+      "Activé, un ticket doit nommer au moins une boîte ou un alias de son domaine, sans quoi le support cherche dans tout le domaine. Un domaine encore vide reste ouvert au ticket : il n'a rien à désigner.",
+    on: "Obligatoire",
+    off: "Facultatif",
+    save: "Enregistrer",
+    saved: "Réglage enregistré",
+    saveFailed: "Échec de l'enregistrement",
+    loadFailed: "Échec du chargement",
   },
   general: {
     cardTitle: "Général",

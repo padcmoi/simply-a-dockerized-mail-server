@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { ForbiddenException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
 import { MESSAGE_PAGE, TicketsService, type TicketCaller } from "../../src/api/tickets/tickets.service";
 import type { NotificationsService } from "../../src/core/notifications/notifications.service";
+import { APP_SETTINGS_DEFAULTS, type AppSettingsService } from "../../src/core/settings/app-settings.service";
 import { TopicPresenceService } from "../../src/core/websocket/presence.service";
 import type { Account } from "../../src/core/entities/account.entity";
 import type { AccountProfile } from "../../src/core/entities/account-profile.entity";
 import type { SupportTicket } from "../../src/core/entities/support-ticket.entity";
 import type { SupportTicketMessage } from "../../src/core/entities/support-ticket-message.entity";
 import type { SupportTicketRead } from "../../src/core/entities/support-ticket-read.entity";
+import type { SupportTicketRecipient } from "../../src/core/entities/support-ticket-recipient.entity";
+import type { SupportTicketAlias } from "../../src/core/entities/support-ticket-alias.entity";
 import type { DomainDelegation } from "../../src/core/entities/domain-delegation.entity";
 import type { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import type { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
@@ -24,6 +27,8 @@ describe("TicketsService (row-level visibility)", () => {
   let tickets: ReturnType<typeof repoMock<SupportTicket>>;
   let messages: ReturnType<typeof repoMock<SupportTicketMessage>>;
   let reads: ReturnType<typeof repoMock<SupportTicketRead>>;
+  let ticketRecipients: ReturnType<typeof repoMock<SupportTicketRecipient>>;
+  let ticketAliases: ReturnType<typeof repoMock<SupportTicketAlias>>;
   let domains: ReturnType<typeof repoMock<VirtualDomain>>;
   let recipients: ReturnType<typeof repoMock<VirtualUser>>;
   let aliases: ReturnType<typeof repoMock<VirtualAlias>>;
@@ -32,6 +37,7 @@ describe("TicketsService (row-level visibility)", () => {
   let profiles: ReturnType<typeof repoMock<AccountProfile>>;
   let cpg: CpgMock;
   let notifications: Loose<NotificationsService>;
+  let appSettings: Loose<AppSettingsService>;
   let presence: TopicPresenceService;
   let svc: TicketsService;
 
@@ -41,6 +47,10 @@ describe("TicketsService (row-level visibility)", () => {
     reads = repoMock<SupportTicketRead>();
     reads.find.mockResolvedValue([]);
     reads.findOne.mockResolvedValue(null);
+    ticketRecipients = repoMock<SupportTicketRecipient>();
+    ticketAliases = repoMock<SupportTicketAlias>();
+    ticketRecipients.find.mockResolvedValue([]);
+    ticketAliases.find.mockResolvedValue([]);
     domains = repoMock<VirtualDomain>();
     recipients = repoMock<VirtualUser>();
     aliases = repoMock<VirtualAlias>();
@@ -63,8 +73,29 @@ describe("TicketsService (row-level visibility)", () => {
     cpg.guard.utils.check.global.mockResolvedValue(false);
     cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [{ domainId: DOMAIN_ID }] });
     notifications = providerMock<NotificationsService>({ dispatch: vi.fn().mockResolvedValue(undefined) });
+    // These cases are about visibility, domain access and notifications, not
+    // about naming a mailbox, so the server-wide requirement is off here.
+    appSettings = providerMock<AppSettingsService>({
+      get: vi.fn().mockReturnValue({ ...APP_SETTINGS_DEFAULTS, ticketResourcesRequired: false }),
+    });
     presence = new TopicPresenceService();
-    svc = new TicketsService(tickets, messages, reads, domains, recipients, aliases, delegations, accounts, profiles, cpg, notifications, presence);
+    svc = new TicketsService(
+      tickets,
+      messages,
+      reads,
+      ticketRecipients,
+      ticketAliases,
+      domains,
+      recipients,
+      aliases,
+      delegations,
+      accounts,
+      profiles,
+      cpg,
+      notifications,
+      presence,
+      appSettings
+    );
   });
 
   const caller = (userId: string, isRoot = false): TicketCaller => ({ userId, isRoot });
@@ -192,6 +223,185 @@ describe("TicketsService (row-level visibility)", () => {
     });
   });
 
+  describe("naming the mailboxes and aliases a ticket is about", () => {
+    const MAILBOX = entity<VirtualUser>({ id: 3, email: "sales@example.com", domain: "example.com" });
+    const ALIAS = entity<VirtualAlias>({ id: 7, source: "info@example.com", destination: "sales@example.com" });
+
+    function offers(mailboxes: VirtualUser[], theAliases: VirtualAlias[]) {
+      recipients.find.mockResolvedValue(mailboxes);
+      aliases.find.mockResolvedValue(theAliases);
+    }
+
+    // What the domain's owner is offered: every address of the domain, which is
+    // what the create cases below name.
+    function asDomainOwner() {
+      domains.findOne.mockResolvedValue(entity<VirtualDomain>({ id: DOMAIN_ID, domain: "example.com", ownerId: CREATOR }));
+    }
+
+    function acceptsSave() {
+      tickets.save.mockImplementation(async (t) => ({ ...(t as object), id: 1 }) as SupportTicket);
+      messages.save.mockResolvedValue(entity<SupportTicketMessage>({ id: 1 }));
+    }
+
+    describe("ticketableResources", () => {
+      // Reaching the domain is not reading its addresses: the domain permission
+      // that puts a ticket within reach here is `domain:access`, which widens
+      // nothing. The caller is offered its own mailbox and nothing else.
+      it("offers only what the caller owns when they merely reach the domain", async () => {
+        offers([MAILBOX], [ALIAS]);
+        await svc.ticketableResources(DOMAIN_ID, caller(CREATOR));
+        expect(recipients.find).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { domain: "example.com", ownerId: CREATOR } })
+        );
+        expect(aliases.find).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { domain: "example.com", ownerId: CREATOR } })
+        );
+      });
+
+      it("offers the whole domain to its owner", async () => {
+        domains.findOne.mockResolvedValue(entity<VirtualDomain>({ id: DOMAIN_ID, domain: "example.com", ownerId: CREATOR }));
+        offers([MAILBOX], [ALIAS]);
+        const res = await svc.ticketableResources(DOMAIN_ID, caller(CREATOR));
+        expect(res.recipients).toEqual([{ id: 3, email: "sales@example.com" }]);
+        expect(res.aliases).toEqual([{ id: 7, source: "info@example.com", destination: "sales@example.com" }]);
+        expect(recipients.find).toHaveBeenCalledWith(expect.objectContaining({ where: { domain: "example.com" } }));
+      });
+
+      // The right that lists that very kind of address, and nothing looser: a
+      // permission over the domain's DKIM is not a right over its mailboxes.
+      it("widens each kind only on the right that lists it", async () => {
+        cpg.guard.getEffectivePermissions.mockResolvedValue({
+          global: [],
+          domain: [
+            { domainId: DOMAIN_ID, resource: "recipients", action: "list-recipients" },
+            { domainId: DOMAIN_ID, resource: "dkim", action: "view-dkim" },
+          ],
+        });
+        offers([MAILBOX], [ALIAS]);
+        await svc.ticketableResources(DOMAIN_ID, caller(CREATOR));
+        expect(recipients.find).toHaveBeenCalledWith(expect.objectContaining({ where: { domain: "example.com" } }));
+        expect(aliases.find).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { domain: "example.com", ownerId: CREATOR } })
+        );
+      });
+
+      it("offers the whole domain to root", async () => {
+        offers([MAILBOX], [ALIAS]);
+        await svc.ticketableResources(DOMAIN_ID, caller(SUPPORT, true));
+        expect(recipients.find).toHaveBeenCalledWith(expect.objectContaining({ where: { domain: "example.com" } }));
+      });
+
+      it("mirrors the server setting so the form gates on the same rule", async () => {
+        offers([], []);
+        appSettings.get.mockReturnValue({ ...APP_SETTINGS_DEFAULTS, ticketResourcesRequired: true });
+        expect((await svc.ticketableResources(DOMAIN_ID, caller(CREATOR))).required).toBe(true);
+      });
+
+      it("404s on a domain that does not exist", async () => {
+        domains.findOne.mockResolvedValue(null);
+        await expect(svc.ticketableResources(999, caller(CREATOR))).rejects.toBeInstanceOf(NotFoundException);
+      });
+
+      // 404 and not 403, like every other ticket route: a domain out of reach is
+      // not announced as existing.
+      it("404s on a domain the caller cannot reach", async () => {
+        cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [] });
+        domains.find.mockResolvedValue([]);
+        await expect(svc.ticketableResources(DOMAIN_ID, caller(STRANGER))).rejects.toBeInstanceOf(NotFoundException);
+      });
+    });
+
+    describe("create", () => {
+      it("refuses a ticket that names nothing while the server asks for one", async () => {
+        appSettings.get.mockReturnValue({ ...APP_SETTINGS_DEFAULTS, ticketResourcesRequired: true });
+        asDomainOwner();
+        offers([MAILBOX], []);
+        await expect(svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b" }, caller(CREATOR))).rejects.toBeInstanceOf(
+          BadRequestException
+        );
+      });
+
+      it("links the named addresses in the pivot tables", async () => {
+        asDomainOwner();
+        offers([MAILBOX], [ALIAS]);
+        acceptsSave();
+        await svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b", recipientIds: [3], aliasIds: [7] }, caller(CREATOR));
+        expect(ticketRecipients.save).toHaveBeenCalledWith([{ ticketId: 1, recipientId: 3 }]);
+        expect(ticketAliases.save).toHaveBeenCalledWith([{ ticketId: 1, aliasId: 7 }]);
+      });
+
+      it("writes no link row at all when the ticket names nothing", async () => {
+        asDomainOwner();
+        offers([], []);
+        acceptsSave();
+        await svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b" }, caller(CREATOR));
+        expect(ticketRecipients.save).not.toHaveBeenCalled();
+        expect(ticketAliases.save).not.toHaveBeenCalled();
+      });
+
+      it("drops a duplicate id rather than linking it twice", async () => {
+        asDomainOwner();
+        offers([MAILBOX], []);
+        acceptsSave();
+        await svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b", recipientIds: [3, 3] }, caller(CREATOR));
+        expect(ticketRecipients.save).toHaveBeenCalledWith([{ ticketId: 1, recipientId: 3 }]);
+      });
+
+      it("refuses a mailbox the caller was never offered", async () => {
+        asDomainOwner();
+        offers([MAILBOX], []);
+        await expect(
+          svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b", recipientIds: [999] }, caller(CREATOR))
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it("refuses an alias the caller was never offered", async () => {
+        asDomainOwner();
+        offers([], [ALIAS]);
+        await expect(
+          svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b", aliasIds: [999] }, caller(CREATOR))
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      // The heart of it: the mailbox exists on the domain, the caller reaches
+      // the domain, but it is not theirs, so it was never offered and naming it
+      // by hand is refused.
+      it("refuses a mailbox of the domain the caller does not own", async () => {
+        offers([], []);
+        await expect(
+          svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b", recipientIds: [3] }, caller(CREATOR))
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+    });
+
+    // A domain with no address at all cannot satisfy the rule, so the rule does
+    // not apply to it: the very domain being set up must stay reachable.
+    it("still takes a ticket on a domain that has no address at all", async () => {
+      appSettings.get.mockReturnValue({ ...APP_SETTINGS_DEFAULTS, ticketResourcesRequired: true });
+      offers([], []);
+      acceptsSave();
+      await expect(svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b" }, caller(CREATOR))).resolves.toMatchObject({ id: 1 });
+    });
+
+    it("resolves the linked rows back to addresses on the ticket", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR }));
+      ticketRecipients.find.mockResolvedValue([entity<SupportTicketRecipient>({ ticketId: 5, recipientId: 3 })]);
+      ticketAliases.find.mockResolvedValue([entity<SupportTicketAlias>({ ticketId: 5, aliasId: 7 })]);
+      recipients.find.mockResolvedValue([MAILBOX]);
+      aliases.find.mockResolvedValue([ALIAS]);
+      const detail = await svc.get(5, caller(CREATOR));
+      expect(detail.recipients).toEqual([{ id: 3, email: "sales@example.com" }]);
+      expect(detail.aliases).toEqual([{ id: 7, source: "info@example.com", destination: "sales@example.com" }]);
+    });
+
+    it("reads a ticket with no link row as naming nothing", async () => {
+      tickets.findOne.mockResolvedValue(ticketRow({ createdBy: CREATOR }));
+      const detail = await svc.get(5, caller(CREATOR));
+      expect(detail.recipients).toEqual([]);
+      expect(detail.aliases).toEqual([]);
+    });
+  });
+
   describe("list rows", () => {
     it("narrows to the tickets the caller took in charge when asked", async () => {
       const qb = qbMock<SupportTicket>();
@@ -200,6 +410,24 @@ describe("TicketsService (row-level visibility)", () => {
       await svc.list({ offset: 0, sortDir: "desc", mine: "true" }, caller(SUPPORT, true));
       const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
       expect(clauses.some((c) => c.includes("assignedTo"))).toBe(true);
+    });
+
+    it("drops the closed tickets when asked", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      await svc.list({ offset: 0, sortDir: "desc", hideClosed: "true" }, caller(SUPPORT, true));
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c) => c.includes("t.status != :closedStatus"))).toBe(true);
+    });
+
+    it("keeps the closed ones when the filter is off", async () => {
+      const qb = qbMock<SupportTicket>();
+      qb.getMany.mockResolvedValue([]);
+      tickets.createQueryBuilder.mockReturnValue(qb);
+      await svc.list({ offset: 0, sortDir: "desc", hideClosed: "false" }, caller(SUPPORT, true));
+      const clauses = qb.andWhere.mock.calls.map((c: unknown[]) => String(c[0]));
+      expect(clauses.some((c) => c.includes("closedStatus"))).toBe(false);
     });
 
     it("keeps the whole list when the filter is off", async () => {

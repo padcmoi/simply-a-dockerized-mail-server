@@ -19,6 +19,14 @@ const statusOptions = computed<{ value: string; label: string }[]>(() =>
 // Without the support role the author still gets one lever on their own
 // ticket: giving up on it. Reopening it stays a support decision.
 const canCloseOwn = computed(() => !props.canHandle && props.isAuthor && props.ticket.status !== "closed");
+
+// The addresses the ticket was opened about, mailboxes then aliases. An older
+// ticket, or one opened while naming one was optional, names none and the row
+// disappears rather than showing an empty label.
+const named = computed(() => [
+  ...(props.ticket.recipients ?? []).map((r) => r.email),
+  ...(props.ticket.aliases ?? []).map((a) => a.source),
+]);
 </script>
 
 <template>
@@ -40,6 +48,13 @@ const canCloseOwn = computed(() => !props.canHandle && props.isAuthor && props.t
           {{ t(`tickets.status.${ticket.status}`) }}
         </UBadge>
       </div>
+    </div>
+
+    <div v-if="named.length" class="mt-3 flex flex-wrap items-center gap-1.5">
+      <span class="text-xs text-muted">{{ t("tickets.detail.about") }}</span>
+      <UBadge v-for="label in named" :key="label" color="neutral" variant="subtle" class="font-mono text-[11px]">
+        {{ label }}
+      </UBadge>
     </div>
 
     <div v-if="canCloseOwn" class="mt-4 flex flex-wrap items-center gap-3 border-t border-default pt-4">

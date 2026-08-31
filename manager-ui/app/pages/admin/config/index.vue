@@ -52,6 +52,13 @@ setBreadcrumb([{ label: t("nav.config") }]);
         :hint="t('config.themeCardHint')"
         to="/admin/config/theme"
       />
+
+      <ProfileActionCard
+        icon="i-lucide-life-buoy"
+        :label="t('config.ticketsCardLabel')"
+        :hint="t('config.ticketsCardHint')"
+        to="/admin/config/tickets"
+      />
     </div>
   </div>
 </template>

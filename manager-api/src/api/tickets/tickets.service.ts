@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { PaginatedResult, PaginationQuery, resolveSortColumn } from "../../core/common/pagination.validation";
@@ -8,11 +8,14 @@ import { AccountProfile } from "../../core/entities/account-profile.entity";
 import { SupportTicket } from "../../core/entities/support-ticket.entity";
 import { SupportTicketMessage } from "../../core/entities/support-ticket-message.entity";
 import { SupportTicketRead } from "../../core/entities/support-ticket-read.entity";
+import { SupportTicketRecipient } from "../../core/entities/support-ticket-recipient.entity";
+import { SupportTicketAlias } from "../../core/entities/support-ticket-alias.entity";
 import { DomainDelegation } from "../../core/entities/domain-delegation.entity";
 import { VirtualAlias } from "../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { NotificationsService } from "../../core/notifications/notifications.service";
+import { AppSettingsService } from "../../core/settings/app-settings.service";
 import { TopicPresenceService } from "../../core/websocket/presence.service";
 import { CreateTicketDto, ReplyTicketDto, TicketListQuery } from "./tickets.validation";
 
@@ -36,6 +39,12 @@ export interface TicketCaller {
   isRoot: boolean;
 }
 
+export interface TicketableResources {
+  required: boolean;
+  recipients: { id: number; email: string }[];
+  aliases: { id: number; source: string; destination: string }[];
+}
+
 @Injectable()
 export class TicketsService {
   private readonly log = new Logger(TicketsService.name);
@@ -44,6 +53,8 @@ export class TicketsService {
     @InjectRepository(SupportTicket) private readonly tickets: Repository<SupportTicket>,
     @InjectRepository(SupportTicketMessage) private readonly messages: Repository<SupportTicketMessage>,
     @InjectRepository(SupportTicketRead) private readonly reads: Repository<SupportTicketRead>,
+    @InjectRepository(SupportTicketRecipient) private readonly ticketRecipients: Repository<SupportTicketRecipient>,
+    @InjectRepository(SupportTicketAlias) private readonly ticketAliases: Repository<SupportTicketAlias>,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(VirtualUser) private readonly recipients: Repository<VirtualUser>,
     @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>,
@@ -52,7 +63,8 @@ export class TicketsService {
     @InjectRepository(AccountProfile) private readonly profiles: Repository<AccountProfile>,
     private readonly cpg: CustomPermissionGuardService,
     private readonly notifications: NotificationsService,
-    private readonly presence: TopicPresenceService
+    private readonly presence: TopicPresenceService,
+    private readonly appSettings: AppSettingsService
   ) {}
 
   // Identity shown next to a message: the display name when the account set
@@ -164,6 +176,120 @@ export class TicketsService {
     return rows.map((d) => ({ id: d.id, domain: d.domain }));
   }
 
+  // Whether the caller may name every address of a domain, or only its own.
+  // Root and the domain's owner read all of it; anyone else needs the very
+  // right that lists that kind of address there. A permission on another corner
+  // of the domain (DKIM, quotas, supervision) is not a right over its mailboxes
+  // and widens nothing, and `domains:list-all-domains` lists domains, not the
+  // addresses inside them. Everything else is offered what it owns, which is
+  // already all it can see anywhere else in the interface.
+  private async readsEveryAddress(caller: TicketCaller, domain: VirtualDomain, resource: "recipients" | "aliases") {
+    if (caller.isRoot) return true;
+    if (domain.ownerId === caller.userId) return true;
+    const action = resource === "recipients" ? "list-recipients" : "list-aliases";
+    const effective = await this.cpg.guard.getEffectivePermissions(caller.userId);
+    return effective.domain.some((p) => p.domainId === domain.id && p.resource === resource && p.action === action);
+  }
+
+  // The addresses of one domain a ticket may name, plus whether naming one is
+  // mandatory. One call feeds both selectors of the creation form and tells it
+  // how to gate its own submit, so the front never guesses the server's rule.
+  async ticketableResources(domainId: number, caller: TicketCaller): Promise<TicketableResources> {
+    const domain = await this.domains.findOne({ where: { id: domainId } });
+    if (!domain) throw new NotFoundException(`Domain #${domainId} not found`);
+    const domainIds = await this.visibleDomainIds(caller);
+    if (domainIds && !domainIds.includes(domainId)) {
+      throw new NotFoundException(`Domain #${domainId} not found`);
+    }
+    const [everyRecipient, everyAlias] = await Promise.all([
+      this.readsEveryAddress(caller, domain, "recipients"),
+      this.readsEveryAddress(caller, domain, "aliases"),
+    ]);
+    const [recipients, aliases] = await Promise.all([
+      this.recipients.find({
+        where: { domain: domain.domain, ...(everyRecipient ? {} : { ownerId: caller.userId }) },
+        select: { id: true, email: true },
+        order: { email: "ASC" },
+      }),
+      this.aliases.find({
+        where: { domain: domain.domain, ...(everyAlias ? {} : { ownerId: caller.userId }) },
+        select: { id: true, source: true, destination: true },
+        order: { source: "ASC" },
+      }),
+    ]);
+    return {
+      required: this.appSettings.get().ticketResourcesRequired,
+      recipients: recipients.map((r) => ({ id: r.id, email: r.email })),
+      aliases: aliases.map((a) => ({ id: a.id, source: a.source, destination: a.destination })),
+    };
+  }
+
+  // A ticket may only name addresses of its own domain that its author was
+  // actually offered, so a hand-written payload cannot attach someone else's
+  // mailbox or an address of another domain.
+  private assertNamedResources(offered: TicketableResources, recipientIds: number[], aliasIds: number[]) {
+    const knownRecipients = new Set(offered.recipients.map((r) => r.id));
+    const knownAliases = new Set(offered.aliases.map((a) => a.id));
+    if (recipientIds.some((id) => !knownRecipients.has(id))) {
+      throw new BadRequestException("A named mailbox does not belong to this domain, or is not yours to name");
+    }
+    if (aliasIds.some((id) => !knownAliases.has(id))) {
+      throw new BadRequestException("A named alias does not belong to this domain, or is not yours to name");
+    }
+  }
+
+  // The named addresses of a batch of tickets, resolved to what they read as.
+  // Four queries for a whole page rather than four per ticket, so the list
+  // costs what the detail of one costs. Nothing filters out a deleted address:
+  // the foreign keys took its rows with it when it went.
+  private async namedResourcesFor(rows: SupportTicket[]) {
+    const ticketIds = rows.map((r) => r.id);
+    if (!ticketIds.length) return () => ({ recipients: [], aliases: [] });
+
+    const [recipientLinks, aliasLinks] = await Promise.all([
+      this.ticketRecipients.find({ where: { ticketId: In(ticketIds) } }),
+      this.ticketAliases.find({ where: { ticketId: In(ticketIds) } }),
+    ]);
+    const recipientIds = [...new Set(recipientLinks.map((l) => l.recipientId))];
+    const aliasIds = [...new Set(aliasLinks.map((l) => l.aliasId))];
+    const [recipients, aliases] = await Promise.all([
+      recipientIds.length
+        ? this.recipients.find({ where: { id: In(recipientIds) }, select: { id: true, email: true }, order: { email: "ASC" } })
+        : Promise.resolve([]),
+      aliasIds.length
+        ? this.aliases.find({
+            where: { id: In(aliasIds) },
+            select: { id: true, source: true, destination: true },
+            order: { source: "ASC" },
+          })
+        : Promise.resolve([]),
+    ]);
+    const recipientById = new Map(recipients.map((r) => [r.id, { id: r.id, email: r.email }]));
+    const aliasById = new Map(aliases.map((a) => [a.id, { id: a.id, source: a.source, destination: a.destination }]));
+
+    const recipientsByTicket = new Map<number, { id: number; email: string }[]>();
+    for (const link of recipientLinks) {
+      const resolved = recipientById.get(link.recipientId);
+      if (!resolved) continue;
+      const list = recipientsByTicket.get(link.ticketId) ?? [];
+      list.push(resolved);
+      recipientsByTicket.set(link.ticketId, list);
+    }
+    const aliasesByTicket = new Map<number, { id: number; source: string; destination: string }[]>();
+    for (const link of aliasLinks) {
+      const resolved = aliasById.get(link.aliasId);
+      if (!resolved) continue;
+      const list = aliasesByTicket.get(link.ticketId) ?? [];
+      list.push(resolved);
+      aliasesByTicket.set(link.ticketId, list);
+    }
+
+    return (ticket: SupportTicket) => ({
+      recipients: recipientsByTicket.get(ticket.id) ?? [],
+      aliases: aliasesByTicket.get(ticket.id) ?? [],
+    });
+  }
+
   // `tickets:notification` is the trigger: no action, no notification at all.
   private mayBeNotified(caller: TicketCaller): Promise<boolean> {
     if (caller.isRoot) return Promise.resolve(true);
@@ -243,6 +369,7 @@ export class TicketsService {
       }
     }
     if (query.mine === "true") qb.andWhere("t.assignedTo = :me", { me: caller.userId });
+    if (query.hideClosed === "true") qb.andWhere("t.status != :closedStatus", { closedStatus: "closed" });
     if (query.search) qb.andWhere("t.subject LIKE :search", { search: `%${query.search}%` });
     const sortBy = resolveSortColumn(query.sortBy, TICKET_SORTABLE_COLUMNS, "createdAt");
     qb.orderBy(`t.${sortBy}`, query.sortDir === "asc" ? "ASC" : "DESC");
@@ -274,6 +401,7 @@ export class TicketsService {
     const authorById = await this.authorsFor([...rows.map((r) => r.assignedTo), ...rows.map((r) => r.createdBy)]);
     const domainById = await this.domainNamesFor(rows.map((r) => r.domainId));
     const lastAuthor = await this.lastAuthorByTicket(rows.map((r) => r.id));
+    const named = await this.namedResourcesFor(rows);
     return rows.map((r) => {
       const assignee = r.assignedTo ? authorById.get(r.assignedTo) : undefined;
       const creator = r.createdBy ? authorById.get(r.createdBy) : undefined;
@@ -286,6 +414,7 @@ export class TicketsService {
         creatorAvatarUrl: creator?.avatarUrl ?? null,
         domainName: domainById.get(r.domainId) ?? null,
         awaitingMyReply: lastAuthor.has(r.id) && lastAuthor.get(r.id) !== callerId,
+        ...named(r),
       };
     });
   }
@@ -370,6 +499,7 @@ export class TicketsService {
       messages: items,
       messagesTotal: total,
       readers: await this.readersOf(id),
+      ...(await this.namedResourcesFor([ticket]))(ticket),
     };
   }
 
@@ -380,6 +510,18 @@ export class TicketsService {
     if (domainIds && !domainIds.includes(input.domainId)) {
       throw new ForbiddenException("You cannot open a ticket about a domain you have no access to");
     }
+    const recipientIds = [...new Set(input.recipientIds ?? [])];
+    const aliasIds = [...new Set(input.aliasIds ?? [])];
+    const offered = await this.ticketableResources(domain.id, caller);
+    const namesSomething = recipientIds.length > 0 || aliasIds.length > 0;
+    const hasSomethingToName = offered.recipients.length > 0 || offered.aliases.length > 0;
+    // A domain with no address at all cannot satisfy the rule, so the rule does
+    // not apply to it: refusing every ticket on an empty domain would lock the
+    // support desk out of the very domain that is being set up.
+    if (offered.required && hasSomethingToName && !namesSomething) {
+      throw new BadRequestException("This server asks a ticket to name at least one mailbox or alias of its domain");
+    }
+    this.assertNamedResources(offered, recipientIds, aliasIds);
     const ticket = await this.tickets.save(
       this.tickets.create({
         domainId: input.domainId,
@@ -389,6 +531,12 @@ export class TicketsService {
         status: "open",
       })
     );
+    if (recipientIds.length) {
+      await this.ticketRecipients.save(recipientIds.map((recipientId) => ({ ticketId: ticket.id, recipientId })));
+    }
+    if (aliasIds.length) {
+      await this.ticketAliases.save(aliasIds.map((aliasId) => ({ ticketId: ticket.id, aliasId })));
+    }
     await this.messages.save(this.messages.create({ ticketId: ticket.id, authorId: caller.userId, body: input.body }));
     await this.notify(ticket, "ticket-created", caller.userId);
     return ticket;

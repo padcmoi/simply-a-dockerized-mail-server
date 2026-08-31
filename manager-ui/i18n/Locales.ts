@@ -179,6 +179,8 @@ export interface Locales {
     generalCardLabel: string;
     generalCardHint: string;
     supervisionCardLabel: string;
+    ticketsCardLabel: string;
+    ticketsCardHint: string;
     supervisionCardHint: string;
     themeCardLabel: string;
     themeCardHint: string;
@@ -273,6 +275,19 @@ export interface Locales {
       saveFailed: string;
       loadFailed: string;
       reset: string;
+    };
+    tickets: {
+      cardTitle: string;
+      alertTitle: string;
+      alertDescription: string;
+      required: string;
+      requiredHint: string;
+      on: string;
+      off: string;
+      save: string;
+      saved: string;
+      saveFailed: string;
+      loadFailed: string;
     };
     general: {
       cardTitle: string;
@@ -448,11 +463,16 @@ export interface Locales {
       subject: string;
       status: string;
       onlyMine: string;
+      hideClosed: string;
       author: string;
       visibility: string;
       assignee: string;
       updated: string;
       unassigned: string;
+      namesNothing: string;
+      noRecipientNamed: string;
+      noAliasNamed: string;
+      namedResources: string;
       closeOwn: string;
     };
     status: { open: string; in_progress: string; resolved: string; closed: string };
@@ -469,6 +489,14 @@ export interface Locales {
       privateHint: string;
       submit: string;
       backToList: string;
+      recipients: string;
+      recipientsPlaceholder: string;
+      aliases: string;
+      aliasesPlaceholder: string;
+      resourcesRequiredHint: string;
+      resourcesOptionalHint: string;
+      noResources: string;
+      resourcesLoadFailed: string;
     };
     editor: {
       undo: string;
@@ -513,6 +541,7 @@ export interface Locales {
       editedAt: string;
       saveEdit: string;
       cancelEdit: string;
+      about: string;
       editableFor: string;
       editExpired: string;
     };

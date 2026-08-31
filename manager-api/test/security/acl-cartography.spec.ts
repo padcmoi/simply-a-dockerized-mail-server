@@ -53,6 +53,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/config/mail",
   "GET /api/v1/config/mail-cadence",
   "GET /api/v1/config/supervision",
+  "GET /api/v1/config/tickets",
   "GET /api/v1/my-space/aliases/:id",
   "GET /api/v1/my-space/delegations",
   "GET /api/v1/my-space/recipients/:id",
@@ -80,6 +81,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "PUT /api/v1/config/mail-cadence",
   "PUT /api/v1/config/supervision",
   "PUT /api/v1/config/theme",
+  "PUT /api/v1/config/tickets",
   "PUT /api/v1/my-space/theme",
   "PUT /api/v1/notifications/preferences",
 ].sort();

@@ -14,6 +14,8 @@ import { NotificationPreference } from "../entities/notification-preference.enti
 import { SupportTicket } from "../entities/support-ticket.entity";
 import { SupportTicketMessage } from "../entities/support-ticket-message.entity";
 import { SupportTicketRead } from "../entities/support-ticket-read.entity";
+import { SupportTicketRecipient } from "../entities/support-ticket-recipient.entity";
+import { SupportTicketAlias } from "../entities/support-ticket-alias.entity";
 import { MailSetting } from "../entities/mail-setting.entity";
 import { AppSetting } from "../entities/app-setting.entity";
 import { DomainDelegation } from "../entities/domain-delegation.entity";
@@ -56,6 +58,8 @@ export default new DataSource({
     SupportTicket,
     SupportTicketMessage,
     SupportTicketRead,
+    SupportTicketRecipient,
+    SupportTicketAlias,
     Notification,
     NotificationPreference,
     MailSetting,

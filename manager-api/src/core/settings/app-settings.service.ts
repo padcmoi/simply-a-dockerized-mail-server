@@ -10,6 +10,8 @@ export interface AppSettingsView {
   /** How far back the recorded machine history is kept before it is pruned. */
   supervisionRetentionMs: number;
   managerUrl: string;
+  /** Whether opening a ticket must name at least one mailbox or alias. */
+  ticketResourcesRequired: boolean;
 }
 
 interface FieldSpec {
@@ -23,6 +25,7 @@ const FIELDS: Record<keyof AppSettingsView, FieldSpec> = {
   mailMinIntervalMs: { key: "mail_min_interval_ms", type: "number" },
   supervisionRetentionMs: { key: "supervision_retention_ms", type: "number" },
   managerUrl: { key: "manager_url", type: "string" },
+  ticketResourcesRequired: { key: "ticket_resources_required", type: "boolean" },
 };
 
 export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
@@ -33,6 +36,9 @@ export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
   // than that costs disk for history nothing on the page can draw.
   supervisionRetentionMs: 7 * 24 * 3_600_000,
   managerUrl: "",
+  // On by default: a ticket that names nothing sends the support desk hunting
+  // through a whole domain. A server that would rather not ask turns it off.
+  ticketResourcesRequired: true,
 };
 
 @Injectable()
@@ -58,12 +64,17 @@ export class AppSettingsService implements OnModuleInit {
       return Number.isFinite(n) ? n : fallback;
     };
     const str = (spec: FieldSpec, fallback: string) => stored.get(spec.key) ?? fallback;
+    const bool = (spec: FieldSpec, fallback: boolean) => {
+      const raw = stored.get(spec.key);
+      return raw === undefined ? fallback : raw === "true";
+    };
     this.cache = {
       offlineNotifyAfterMs: num(FIELDS.offlineNotifyAfterMs, APP_SETTINGS_DEFAULTS.offlineNotifyAfterMs),
       offlineSweepIntervalMs: num(FIELDS.offlineSweepIntervalMs, APP_SETTINGS_DEFAULTS.offlineSweepIntervalMs),
       mailMinIntervalMs: num(FIELDS.mailMinIntervalMs, APP_SETTINGS_DEFAULTS.mailMinIntervalMs),
       supervisionRetentionMs: num(FIELDS.supervisionRetentionMs, APP_SETTINGS_DEFAULTS.supervisionRetentionMs),
       managerUrl: str(FIELDS.managerUrl, APP_SETTINGS_DEFAULTS.managerUrl),
+      ticketResourcesRequired: bool(FIELDS.ticketResourcesRequired, APP_SETTINGS_DEFAULTS.ticketResourcesRequired),
     };
     return this.cache;
   }

@@ -15,6 +15,7 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
     list: vi.fn(),
     create: vi.fn(),
     ticketableDomains: vi.fn(),
+    ticketableResources: vi.fn(),
     get: vi.fn(),
     messagesPage: vi.fn(),
     markRead: vi.fn(),
@@ -47,6 +48,7 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
   const routes: { name: string; method: Method; path: string }[] = [
     { name: "GET list", method: "get", path: base },
     { name: "GET domains", method: "get", path: `${base}/domains` },
+    { name: "GET domains/:domainId/resources", method: "get", path: `${base}/domains/${DOMAIN_ID}/resources` },
     { name: "POST create", method: "post", path: base },
     { name: "GET :id", method: "get", path: `${base}/5` },
     { name: "GET :id/messages", method: "get", path: `${base}/5/messages` },
@@ -107,6 +109,25 @@ describe("TicketsController (e2e: auth + ACL + behavior)", () => {
       const res = await api().get(`${base}/domains`).set("Authorization", user()).expect(200);
       expect(res.body).toEqual([{ id: DOMAIN_ID, domain: "example.com" }]);
       expect(svc.ticketableDomains).toHaveBeenCalledWith({ userId: USER.id, isRoot: false });
+    });
+  });
+
+  describe("GET /domains/:domainId/resources (ticketable resources)", () => {
+    const payload = { required: true, recipients: [{ id: 3, email: "a@example.com" }], aliases: [] };
+
+    it("200 for a non-root user granted create-ticket, forwards the domain id + caller", async () => {
+      grant("create-ticket");
+      svc.ticketableResources.mockResolvedValueOnce(payload);
+      const res = await api().get(`${base}/domains/${DOMAIN_ID}/resources`).set("Authorization", user()).expect(200);
+      expect(res.body).toEqual(payload);
+      expect(svc.ticketableResources).toHaveBeenCalledWith(DOMAIN_ID, { userId: USER.id, isRoot: false });
+    });
+
+    // Declared before ":id", so a domain id never reaches the ticket route.
+    it("400 on a non-numeric domain id rather than falling through to GET /:id", async () => {
+      grant("create-ticket", "view-ticket");
+      await api().get(`${base}/domains/abc/resources`).set("Authorization", user()).expect(400);
+      expect(svc.get).not.toHaveBeenCalled();
     });
   });
 

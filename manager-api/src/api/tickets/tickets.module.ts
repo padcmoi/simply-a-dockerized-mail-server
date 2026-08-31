@@ -6,11 +6,14 @@ import { AccountProfile } from "../../core/entities/account-profile.entity";
 import { SupportTicket } from "../../core/entities/support-ticket.entity";
 import { SupportTicketMessage } from "../../core/entities/support-ticket-message.entity";
 import { SupportTicketRead } from "../../core/entities/support-ticket-read.entity";
+import { SupportTicketRecipient } from "../../core/entities/support-ticket-recipient.entity";
+import { SupportTicketAlias } from "../../core/entities/support-ticket-alias.entity";
 import { DomainDelegation } from "../../core/entities/domain-delegation.entity";
 import { VirtualAlias } from "../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../core/entities/virtual-user.entity";
 import { NotificationsModule } from "../../core/notifications/notifications.module";
+import { SettingsModule } from "../../core/settings/settings.module";
 import { TopicPresenceModule } from "../../core/websocket/presence.module";
 import { TicketsController } from "./tickets.controller";
 import { TicketsService } from "./tickets.service";
@@ -21,6 +24,8 @@ import { TicketsService } from "./tickets.service";
       SupportTicket,
       SupportTicketMessage,
       SupportTicketRead,
+      SupportTicketRecipient,
+      SupportTicketAlias,
       VirtualDomain,
       VirtualUser,
       VirtualAlias,
@@ -30,6 +35,7 @@ import { TicketsService } from "./tickets.service";
     ]),
     CustomPermissionGuardModule,
     NotificationsModule,
+    SettingsModule,
     TopicPresenceModule,
   ],
   providers: [TicketsService],

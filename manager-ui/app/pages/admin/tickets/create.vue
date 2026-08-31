@@ -6,59 +6,34 @@ definePageMeta({
   ],
 });
 
-const saving = ref(false);
-const form = reactive({
-  domainId: undefined as number | undefined,
-  subject: "",
-  body: "",
-  visibility: "private" as "public" | "private",
-});
-
-const formInvalid = computed(() => !form.domainId || form.subject.trim().length === 0 || form.body.trim().length === 0);
-
 const { t } = useI18n();
-const { call } = useApi();
-const { apiErrorMessage } = useApiError();
-const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
 
 const visibilityOptions = computed(() => [
   { value: "private", label: t("tickets.form.private") },
   { value: "public", label: t("tickets.form.public") },
 ]);
-const visibilityHint = computed(() =>
-  form.visibility === "public" ? t("tickets.form.publicHint") : t("tickets.form.privateHint")
-);
 
 setBreadcrumb([{ label: t("nav.tickets"), to: "/admin/tickets" }, { label: t("tickets.form.title") }]);
 
-const { data: domains } = useAsyncData<DomainOption[]>("tickets-domains", () => call<DomainOption[]>("/tickets/domains"), {
-  server: false,
-  default: () => [],
-});
-const domainOptions = computed(() => (domains.value ?? []).map((d) => ({ value: d.id, label: d.domain })));
+const {
+  form,
+  saving,
+  loadingDomains,
+  loadingResources,
+  domainOptions,
+  recipientOptions,
+  aliasOptions,
+  hasResourceOptions,
+  resourcesRequired,
+  resourcesMissing,
+  formInvalid,
+  create,
+} = useTicketCreate();
 
-async function create() {
-  if (formInvalid.value) return;
-  saving.value = true;
-  try {
-    await call("/tickets", {
-      method: "POST",
-      body: {
-        domainId: form.domainId,
-        subject: form.subject.trim(),
-        body: form.body.trim(),
-        visibility: form.visibility,
-      },
-    });
-    toast.add({ title: t("tickets.toast.created"), color: "success" });
-    await navigateTo("/admin/tickets");
-  } catch (err) {
-    toast.add({ title: t("tickets.toast.createFailed"), description: apiErrorMessage(err), color: "error" });
-  } finally {
-    saving.value = false;
-  }
-}
+const visibilityHint = computed(() =>
+  form.visibility === "public" ? t("tickets.form.publicHint") : t("tickets.form.privateHint")
+);
 </script>
 
 <template>
@@ -81,15 +56,65 @@ async function create() {
       </template>
 
       <UForm :state="form" class="space-y-4" @submit="create">
-        <UFormField :label="t('common.domain')" name="domainId">
-          <USelectMenu v-model="form.domainId" value-key="value" :items="domainOptions" class="w-full sm:w-72" />
+        <UFormField :label="t('common.domain')" name="domainId" required>
+          <USkeleton v-if="loadingDomains" class="h-8 w-full sm:w-72" />
+          <USelectMenu v-else v-model="form.domainId" value-key="value" :items="domainOptions" class="w-full sm:w-72" />
         </UFormField>
-        <UFormField :label="t('tickets.form.subject')" name="subject">
+
+        <UFormField :label="t('tickets.form.subject')" name="subject" required>
           <UInput v-model="form.subject" :placeholder="t('tickets.form.subjectPlaceholder')" class="w-full" />
         </UFormField>
-        <UFormField :label="t('tickets.form.body')" name="body">
+
+        <UFormField :label="t('tickets.form.body')" name="body" required>
           <MessageEditor v-model="form.body" framed base-class="min-h-40" />
         </UFormField>
+
+        <div v-if="form.domainId !== undefined" class="space-y-4">
+          <USkeleton v-if="loadingResources" class="h-8 w-full" />
+
+          <template v-else-if="hasResourceOptions">
+            <p class="text-sm" :class="resourcesMissing ? 'text-error' : 'text-muted'">
+              {{ resourcesRequired ? t("tickets.form.resourcesRequiredHint") : t("tickets.form.resourcesOptionalHint") }}
+            </p>
+
+            <UFormField
+              v-if="recipientOptions.length"
+              :label="t('tickets.form.recipients')"
+              name="recipientIds"
+              :required="resourcesRequired"
+            >
+              <USelectMenu
+                v-model="form.recipientIds"
+                multiple
+                value-key="value"
+                icon="i-lucide-users"
+                :items="recipientOptions"
+                :placeholder="t('tickets.form.recipientsPlaceholder')"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField
+              v-if="aliasOptions.length"
+              :label="t('tickets.form.aliases')"
+              name="aliasIds"
+              :required="resourcesRequired"
+            >
+              <USelectMenu
+                v-model="form.aliasIds"
+                multiple
+                value-key="value"
+                icon="i-lucide-at-sign"
+                :items="aliasOptions"
+                :placeholder="t('tickets.form.aliasesPlaceholder')"
+                class="w-full"
+              />
+            </UFormField>
+          </template>
+
+          <p v-else class="text-sm text-muted">{{ t("tickets.form.noResources") }}</p>
+        </div>
+
         <UFormField :label="t('tickets.form.visibility')" name="visibility" :hint="visibilityHint">
           <USelectMenu v-model="form.visibility" value-key="value" :items="visibilityOptions" class="w-full sm:w-56" />
         </UFormField>

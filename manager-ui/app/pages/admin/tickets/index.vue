@@ -19,11 +19,25 @@ const { set: setBreadcrumb } = useBreadcrumb();
 // default, so a first visit still opens on one's own tickets.
 const ONLY_MINE_STORAGE_KEY = "manager-tickets-only-mine";
 const onlyMine = useLocalStorage(ONLY_MINE_STORAGE_KEY, true);
+
+// Kept the same way, and on by default: a closed ticket is a conversation
+// nobody is going to answer again, so the file opens on what is still live.
+// Turning it off brings the closed ones back.
+const HIDE_CLOSED_STORAGE_KEY = "manager-tickets-hide-closed";
+const hideClosed = useLocalStorage(HIDE_CLOSED_STORAGE_KEY, true);
 // A ticket whose last message is not the account's own reads like an unread
 // message: the row is tinted rather than carrying yet another icon. Handed to
 // DataTable, so the table row and the block are marked the same way.
+// Both filters send the reader back to the first page: staying on page 4 of a
+// list that just lost half its rows lands on an empty table.
 function toggleOnlyMine() {
   onlyMine.value = !onlyMine.value;
+  page.value = 1;
+}
+
+function toggleHideClosed() {
+  hideClosed.value = !hideClosed.value;
+  page.value = 1;
 }
 
 function rowClass(row: TicketRow) {
@@ -62,8 +76,11 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortD
   "tickets-list",
   "/tickets",
   "createdAt",
-  [onlyMine],
-  () => ({ mine: canHandle.value && onlyMine.value ? "true" : "false" })
+  [onlyMine, hideClosed],
+  () => ({
+    mine: canHandle.value && onlyMine.value ? "true" : "false",
+    hideClosed: hideClosed.value ? "true" : "false",
+  })
 );
 
 function open(row: TicketRow) {
@@ -108,8 +125,19 @@ function open(row: TicketRow) {
       :row-class="rowClass"
       :empty-label="t('tickets.empty')"
     >
-      <template v-if="canHandle" #filters>
+      <template #filters>
         <UButton
+          :color="hideClosed ? 'primary' : 'neutral'"
+          :variant="hideClosed ? 'subtle' : 'ghost'"
+          icon="i-lucide-eye-off"
+          :title="t('tickets.table.hideClosed')"
+          @click="toggleHideClosed"
+        >
+          {{ t("tickets.table.hideClosed") }}
+        </UButton>
+
+        <UButton
+          v-if="canHandle"
           :color="onlyMine ? 'primary' : 'neutral'"
           :variant="onlyMine ? 'subtle' : 'ghost'"
           icon="i-lucide-user-check"
@@ -130,7 +158,7 @@ function open(row: TicketRow) {
       </template>
 
       <template #domainName="{ row }">
-        <span class="text-muted">{{ row.domainName ?? "-" }}</span>
+        <TicketDomainCell :domain-name="row.domainName" :recipients="row.recipients ?? []" :aliases="row.aliases ?? []" />
       </template>
 
       <template #status="{ row }">

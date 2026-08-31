@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(tickets): the list leaves the closed ones out, and remembers it (31-08-2026)
+- feat(tickets): a ticket names the mailboxes and aliases it is about, mandatory unless root says otherwise (31-08-2026)
 - fix(tickets): the taken-by-me filter is remembered between visits (31-08-2026)
 - fix(tickets): a ticket's first message is written in the same rich editor as every reply (31-08-2026)
 - fix(invitations): the two resource columns the entity always declared now exist in the schema (30-08-2026)

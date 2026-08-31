@@ -3,7 +3,7 @@ import { AppSettingsService, APP_SETTINGS_DEFAULTS } from "../../src/core/settin
 import type { AppSetting } from "../../src/core/entities/app-setting.entity";
 import { entity, repoMock } from "../helpers/mocks";
 
-const row = (key: string, typeField: "number" | "string", value: string) =>
+const row = (key: string, typeField: "number" | "string" | "boolean", value: string) =>
   entity<AppSetting>({ key, typeField, value, updatedAt: new Date(0) });
 
 describe("AppSettingsService", () => {
@@ -28,6 +28,7 @@ describe("AppSettingsService", () => {
       row("mail_min_interval_ms", "number", "5000"),
       row("supervision_retention_ms", "number", "604800000"),
       row("manager_url", "string", "https://mgr.test"),
+      row("ticket_resources_required", "boolean", "false"),
     ]);
     await svc.reload();
     expect(svc.get()).toEqual({
@@ -36,6 +37,7 @@ describe("AppSettingsService", () => {
       mailMinIntervalMs: 5000,
       supervisionRetentionMs: 604800000,
       managerUrl: "https://mgr.test",
+      ticketResourcesRequired: false,
     });
   });
 
