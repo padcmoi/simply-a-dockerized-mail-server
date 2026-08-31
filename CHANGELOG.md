@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(groups): a fresh install lands on a seeded default group instead of an empty ACL (31-08-2026)
 - chore(manager-api): the db scripts run the TypeORM CLI where it can reach the database (31-08-2026)
 - feat(tickets): the list leaves the closed ones out, and remembers it (31-08-2026)
 - feat(tickets): a ticket names the mailboxes and aliases it is about, mandatory unless root says otherwise (31-08-2026)

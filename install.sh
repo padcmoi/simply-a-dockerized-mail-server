@@ -351,7 +351,11 @@ process.stdout.write(`scrypt$${N}$${r}$${p}$${salt.toString("base64")}$${dk.toSt
 	# its own; it stays out of the UPDATE list so a re-run never rotates it, and
 	# the ON DUPLICATE key is the unique email. The second statement gives the
 	# account its 1-1 profile row (empty for now) via a by-email id lookup, so it
-	# works whether the account was just created or already existed.
+	# works whether the account was just created or already existed. The third
+	# hands the seeded default group (created with the schema by
+	# SeedDefaultGroup, before any account existed to own it) to this root
+	# account; `owner_id IS NULL` keeps a re-run from stealing a group whose
+	# ownership was since passed on.
 	NEW_UUID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen)
 	docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
 INSERT INTO accounts (id, email, password, is_root, enabled, created_at, updated_at)
@@ -359,6 +363,8 @@ VALUES ('${NEW_UUID}', '${ADMIN_EMAIL}', '${ADMIN_HASH}', 1, 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE password=VALUES(password), is_root=1, updated_at=NOW();
 INSERT IGNORE INTO account_profiles (account_id, created_at, updated_at)
 SELECT id, NOW(), NOW() FROM accounts WHERE email='${ADMIN_EMAIL}';
+UPDATE \`groups\` SET owner_id = (SELECT id FROM accounts WHERE email='${ADMIN_EMAIL}')
+WHERE is_default = 1 AND owner_id IS NULL;
 SQL
 	ok "root account ready"
 	stage_set admin
