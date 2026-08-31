@@ -26,7 +26,7 @@
     "test:cov": "vitest run --coverage"
   },
   "dependencies": {
-    "@naskot/custom-permission-guard": "file:libs/naskot-custom-permission-guard-1.3.0.tgz",
+    "@naskot/custom-permission-guard": "^1.3.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
