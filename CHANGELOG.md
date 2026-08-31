@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - A mail addressed to an alias is no longer refused before the alias has been read _(postfix)_ (31-08-2026)
+- The SPF policy daemon is spawned from the path its package actually installs _(postfix)_ (31-08-2026)
 
 ## [2.0.0-rc.1] - 31-08-2026
 

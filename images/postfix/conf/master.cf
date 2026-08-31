@@ -72,4 +72,4 @@ postlog     unix-dgram n   -       n       -       1       postlogd
 
 # Policyd-spf (Alpine package postfix-policyd-spf-perl)
 policyd-spf unix  -       n       n       -       0       spawn
-  user=nobody argv=/usr/sbin/postfix-policyd-spf-perl
+  user=nobody argv=/usr/bin/postfix-policyd-spf-perl
