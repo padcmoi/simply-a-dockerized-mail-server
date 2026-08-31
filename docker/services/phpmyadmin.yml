@@ -1,0 +1,18 @@
+services:
+  phpmyadmin:
+    container_name: mail-phpmyadmin
+    restart: unless-stopped
+    image: phpmyadmin:5.2.1-apache
+    environment:
+      PMA_HOST: mail-mariadb
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+      UPLOAD_LIMIT: 256M
+    networks:
+      mail:
+        ipv4_address: 172.200.0.21
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    ports:
+      - "${BINDING_IP_PHPMYADMIN}:${BINDING_PORT_PHPMYADMIN}:80"

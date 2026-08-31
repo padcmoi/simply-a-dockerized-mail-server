@@ -1,0 +1,28 @@
+import type { Locales } from "../../Locales";
+
+export default {
+  dashboard: "Tableau de bord",
+  administration: "Administration",
+  myspace: "Mon espace",
+  domains: "Domaines",
+  rspamd: "Rspamd",
+  deliverability: "Délivrabilité",
+  postfix: "Postfix",
+  delegations: "Délégations",
+  recipients: "Destinataires",
+  aliases: "Alias",
+  quotas: "Quotas",
+  admin: "Administration",
+  tickets: "Support",
+  sieve: "Sieve",
+  accounts: "Comptes",
+  groups: "Groupes",
+  apiTokens: "Tokens API",
+  config: "Configuration",
+  supervision: "Supervision",
+  sectionMail: "Courrier",
+  sectionAccess: "Accès",
+  sectionSystem: "Système",
+  sectionServer: "Serveur",
+  closeDomain: "Désélectionner",
+} satisfies Locales["nav"];

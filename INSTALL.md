@@ -1,170 +1,112 @@
-# Installation
+# Installation guide
 
-End-to-end bootstrap of the v2.0.0 mail server on a fresh host. Migrating from
-1.x.x prod ? Read [MIGRATION.md](MIGRATION.md) first, then come back here.
+## 1. Prerequisites
 
-## Prerequisites
+| Requirement             | Notes |
+| ----------------------- | ----- |
+| Docker Engine 24+       | with the `docker compose` plugin |
+| Public IPv4             | with PTR pointing to `<MAIL_HOSTNAME>` |
+| Open inbound ports      | 25, 465, 587, 993 |
+| TLS certificate         | **mandatory**, must exist at `/etc/letsencrypt/live/<MAIL_HOSTNAME>/{fullchain,privkey}.pem` before running `install.sh` |
+| Host nginx (optional)   | for reverse-proxying the manager UI / roundcube to loopback ports |
 
-- Linux host (Debian 11/12 or Alpine, any distro with Docker works)
-- Docker 24+ and the `docker compose` plugin
-- Ports `25 / 143 / 465 / 587 / 993` reachable from the internet
-- A public IP with a clean reputation (no listing on Spamhaus / Barracuda)
-- Reverse DNS (PTR) on the public IP set to the server's HELO hostname (see
-  [DOMAIN_DNS.md](DOMAIN_DNS.md) for the PTR section)
-- Letsencrypt certificate already issued for the server hostname (optional but
-  recommended ; `install.sh` will pick it up from `/etc/letsencrypt/live/<fqdn>/`)
-
-## 1. Clone and configure
+Get the certificate first:
 
 ```bash
-git clone <repo-url> /var/docker/mail-server
-cd /var/docker/mail-server
-cp .env.sample .env
+sudo certbot certonly --standalone -d mail.example.com
 ```
 
-Edit `.env` and fill at minimum :
-
-```env
-DOMAIN_FQDN=mail.example.com          # the server's HELO hostname, must match the PTR
-ADRESSIP=203.0.113.10                  # the server's public IP
-ADMIN_PASSWORD=YourStrongPass123!      # 12+ chars with upper, lower, digit
-DOCKER_VOLUMES=./volumes                # where docker volumes live on the host
-AUTH0_DOMAIN=                          # leave empty if you don't use Auth0 SSO
-AUTH0_AUDIENCE=
-AUTH0_ISSUER=
-```
-
-Everything else has sensible defaults in `.env.sample`.
+(port 80 must be free) or use your existing nginx with `certbot --nginx`
+or `--webroot`. `install.sh` aborts immediately if the cert is missing.
 
 ## 2. Run the installer
 
+One command. The script asks for the FQDN, the public IPv4 and the primary
+mail domain, fills `.env` with strong random secrets, brings the whole stack
+up so TypeORM creates the schema, seeds the admin account, generates the DKIM
+key and prints the DNS record to publish.
+
+`install.sh` is a one-shot bootstrap: if `.env` already exists, it refuses to
+run to avoid clobbering live secrets. To start over, remove the artifacts:
+
 ```bash
+rm .env INSTALL_INFO.txt
+sudo rm -rf volumes/
+```
+
+```bash
+git clone <this repo> /var/docker/simply-a-dockerized-mail-server
+cd /var/docker/simply-a-dockerized-mail-server
 ./install.sh
 ```
 
-What it does, in order :
+What it does, in order:
 
-1. Validates `.env` (required vars present, `ADMIN_PASSWORD` strong enough).
-2. Generates persistent secrets in `.secrets/` (gitignored) :
-   - `system_password` - MariaDB root, 50 chars
-   - `roundcube_des_key` - Roundcube cookie encryption, 24 chars
-   - `root_jwt_secret` - manager-api HS256 signing key, 64 hex chars
-3. Prompts for the **root account email** (the manager-api super-admin).
-4. Generates a 24-char root password **in memory**, SHA512-CRYPT hashes it,
-   writes the INSERT into `runtime/config/mariadb/init/99_manager_api_auth.sql`
-   so it lands in `Accounts` on first MariaDB boot.
-5. Hydrates `templates/` into `runtime/config/` (sed substitutions of `____PLACEHOLDERS`
-   from `.env`).
-6. Prepares `volumes/` directories with the right permissions.
-7. Syncs Letsencrypt certs from `/etc/letsencrypt/live/<DOMAIN_FQDN>/` into the
-   ssl volume if available.
-8. Prints the root email + password **exactly once** at the end. Copy them
-   immediately, they are not written anywhere on disk.
+1. Prompts for `MAIL_HOSTNAME`, `MAIL_PUBLIC_IP`, `TLS_CERT_NAME` and the
+   primary mail domain. Already-set values are not asked again.
+2. Fills any `change_me_*` placeholder in `.env` with a random secret
+   (DB, JWT and admin passwords).
+3. `docker compose up -d --build` brings up every service. mariadb runs the
+   `04-roundcube.sh` init script (creates `roundcube` and `opendmarc`
+   databases). manager-api boots and TypeORM creates the 7 v1-compatible
+   tables (`VirtualDomains`, `VirtualUsers`, `VirtualAliases`,
+   `VirtualQuotaDomains`, `VirtualQuotaUsers`, `SieveRejectSenders`,
+   `Accounts`) plus `RefreshTokens`, then runs the `QuotaTriggers`
+   migration to install the 5 quota triggers.
+4. Waits for the `Accounts` table to exist, bcrypt-hashes the admin password,
+   upserts the admin row.
+5. Generates the DKIM key inside the opendkim container for the primary
+   domain (selector `dkim_<YYYY_MM>`), updates `key.table` and
+   `signing.table`, restarts opendkim.
+6. Prints the URL of each UI, the admin credentials and the DKIM TXT record
+   ready to paste into your DNS provider.
 
-Sample output :
+Idempotent: re-running keeps existing values, only fills what is missing.
 
-```
-[+] .env loaded - FQDN=mail.example.com IP=203.0.113.10
-[+] Generated SYSTEM_PASSWORD (mariadb root, 50 chars)
-[+] Generated Roundcube DES key (24 chars)
-[+] Generated .secrets/root_jwt_secret (64 hex chars)
-Root account email (Gmail or your personal address) : root@example.com
-[+] Root credentials generated in memory (printed once at end of install)
-[+] Wrote manager-api auth bootstrap SQL (Accounts root row + RefreshTokens table)
-[+] Hydration done - 47 files in runtime/config/
-[+] INSTALLATION done. Next step:
+## 3. Add a domain
 
-[!] Root account password generated this run - save it now, it will NOT be shown again :
-    email    : root@example.com
-    password : T12G9qLdqW7OULcaYzJFTkUa
-```
-
-`install.sh` is **idempotent** : you can re-run it after editing `.env` to
-re-hydrate the templates. The root account bootstrap is skipped on re-runs if
-MariaDB is already initialized (existing `Accounts` row preserved).
-
-## 3. Bring up the stack
-
-The wrapper script handles compose profiles and the common lifecycle :
+Sign in to the manager UI and create the domain. The DKIM key is already
+loaded for the primary domain you entered in step 2. For other domains,
+generate a key inline:
 
 ```bash
-./service.sh up                 # core services
-./service.sh enable clamav      # opt-in : antivirus
-./service.sh enable opendmarc   # opt-in : DMARC milter
-./service.sh enable phpmyadmin  # opt-in : DB explorer on :8082
-./service.sh up                 # apply enabled profiles
+./service.sh exec opendkim sh -c '
+  D=other-domain.com; S=dkim_$(date +%Y_%m)
+  mkdir -p /etc/opendkim/keys/$D
+  opendkim-genkey -b 2048 -d $D -s $S -D /etc/opendkim/keys/$D
+  echo "${S}._domainkey.${D} ${D}:${S}:/etc/opendkim/keys/${D}/${S}.private" >> /etc/opendkim/key.table
+  echo "*@${D} ${S}._domainkey.${D}" >> /etc/opendkim/signing.table
+  cat /etc/opendkim/keys/$D/$S.txt
+'
+./service.sh restart opendkim
 ```
 
-The persistent profile selection lives in `.profiles` (gitignored, one profile
-per line). Every `./service.sh` call applies the enabled profiles automatically.
+Publish the printed TXT record then follow [DOMAIN_DNS.md](DOMAIN_DNS.md) for
+the full DNS record set (MX, SPF, DMARC).
 
-Verify everything is healthy :
+## 4. Migrating from v1
+
+The v2 schema is byte-for-byte identical to v1 (same column names, types,
+defaults, indexes, FK CASCADE rules), so a v1 dump imports without edits.
+TypeORM owns schema creation, so the right import is a `--no-create-info`
+data-only dump.
+
+On the old server:
 
 ```bash
-./service.sh ps                                                 # all containers up
-curl -sSI http://127.0.0.1:4003/api/v1/health                   # 200 OK
-curl http://127.0.0.1:4003/api/doc                              # Swagger UI HTML
+mysqldump --no-create-info --skip-triggers mailserver \
+  VirtualDomains VirtualUsers VirtualAliases \
+  VirtualQuotaDomains VirtualQuotaUsers SieveRejectSenders \
+  > v1-data.sql
 ```
 
-## 4. Reverse proxy (host nginx)
-
-manager-api, manager-ui, roundcube and rspamd-web bind on `127.0.0.1`. Front
-them with a TLS-terminating reverse proxy on the host. Minimal nginx vhost :
-
-```nginx
-server {
-  listen 443 ssl http2;
-  server_name mail.example.com;
-  ssl_certificate     /etc/letsencrypt/live/mail.example.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/mail.example.com/privkey.pem;
-
-  location /api/ {
-    proxy_pass http://127.0.0.1:4003;
-    proxy_set_header Host              $host;
-    proxy_set_header X-Real-IP         $remote_addr;
-    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto https;
-  }
-  location /webmail/ {
-    proxy_pass http://127.0.0.1:4080/;
-    proxy_set_header Host $host;
-  }
-}
-```
-
-`phpmyadmin` is the only web service exposed directly on `0.0.0.0:8082`. Disable
-the profile when you're not actively investigating the DB.
-
-## 5. First login
+On the new server, after `./install.sh` has finished:
 
 ```bash
-curl -s -X POST http://127.0.0.1:4003/api/v1/auth/login \
-  -H 'content-type: application/json' \
-  -d '{"email":"root@example.com","password":"T12G9qLdqW7OULcaYzJFTkUa"}'
+docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT_PASSWORD" mailserver < v1-data.sql
+rsync -aAX /var/mail/vhosts/  ${VOLUMES_PATH}/mail/vhosts/
 ```
 
-Returns `access_token`, `refresh_token`, `principal`. The access token is
-short-lived (15 min by default), the refresh token is persisted in the
-`RefreshTokens` table and can be revoked per session (`/auth/logout`) or all at
-once (`/auth/logout-all`).
-
-You can drive everything from Swagger at `http://127.0.0.1:4003/api/doc` -
-paste the `access_token` once via the "Authorize" button and it persists across
-page reloads.
-
-## 6. Add your first domain
-
-See [DOMAIN_DNS.md](DOMAIN_DNS.md) - covers MX, SPF, DKIM, DMARC and reverse DNS.
-
-## Troubleshooting
-
-- **`install.sh` exits silently** : it shouldn't anymore (ERR trap added), but if
-  it does, run `bash -x install.sh` to trace.
-- **manager-api logs `Required secret missing at /run/secrets/root_jwt_secret`** :
-  the `.secrets/root_jwt_secret` file is missing on the host. Re-run `install.sh`
-  to regenerate it, then `./service.sh restart manager-api`.
-- **Login fails with `Invalid credentials`** : the root row was bootstrapped on a
-  previous MariaDB datadir that no longer exists. Wipe `volumes/mysql/` and
-  re-run `install.sh` (you'll get a new root password).
-- **Mail goes to spam on Gmail / Outlook** : check PTR matches `DOMAIN_FQDN`,
-  DKIM record published, DMARC published, sending IP not on a blocklist (`https://mxtoolbox.com/blacklists.aspx`).
+Dovecot reads/writes the same tables, the Maildir tree keeps its `Maildir++`
+layout (owner `vmail:vmail`, uid/gid 5000), and the triggers maintain the
+quota aggregates as on v1.

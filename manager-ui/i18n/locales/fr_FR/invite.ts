@@ -1,0 +1,32 @@
+import type { Locales } from "../../Locales";
+
+export default {
+  loading: "Vérification de l'invitation...",
+  invalid: "Invitation invalide ou expirée.",
+  title: "Créez votre compte",
+  subtitle: "Vous avez été invité à gérer ce serveur mail.",
+  emailChooseHint: "Ce sera votre adresse de connexion",
+  existingTitle: "Ce compte existe déjà",
+  existingHint: "Connectez-vous avec son mot de passe pour récupérer l'octroi de ce lien sur votre compte.",
+  claimSubmit: "Se connecter et utiliser ce lien",
+  claimed: "Octroi ajouté à votre compte.",
+  claimFailed: "Impossible d'utiliser ce lien.",
+  emailPlaceholder: "vous{'@'}exemple.com",
+  emailInvalid: "Saisissez une adresse email valide",
+  emailLabel: "Email associé",
+  groupLabel: "Groupe",
+  noGroup: "Aucun groupe assigné pour le moment",
+  usernameLabel: "Identifiant",
+  usernameHint: "Lettres minuscules, chiffres, tirets et points. Minimum 3 caractères.",
+  nameLabel: "Nom affiché (optionnel)",
+  nameHint: "Affiché dans la barre latérale.",
+  passwordLabel: "Mot de passe",
+  passwordMin: "Au moins 8 caractères",
+  submit: "Créer mon compte",
+  success: "Compte créé",
+  successHint: "Vous pouvez maintenant vous connecter avec vos identifiants.",
+  goToLogin: "Se connecter",
+  toast: {
+    failed: "Échec de la création",
+  },
+} satisfies Locales["invite"];

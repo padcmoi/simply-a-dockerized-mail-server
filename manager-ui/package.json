@@ -1,52 +1,56 @@
 {
-  "name": "manager-ui",
+  "name": "mail-manager-ui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "build": "nuxt build",
-    "dev": "nuxt dev --host 0.0.0.0 --port 3000",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview --host 0.0.0.0 --port 3000",
-    "postinstall": "nuxt prepare",
-    "typecheck": "nuxt typecheck",
-    "lint": "eslint .",
-    "format": "prettier --write \"**/*.{ts,vue,json}\""
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
+    "format": "prettier --write \"{app,server}/**/*.{ts,vue,js,mjs,css}\" \"*.{ts,vue,js,mjs,json}\"",
+    "format:check": "prettier --check \"{app,server}/**/*.{ts,vue,js,mjs,css}\" \"*.{ts,vue,js,mjs,json}\"",
+    "lint": "nuxt prepare && eslint .",
+    "lint:fix": "nuxt prepare && eslint . --fix",
+    "typecheck": "nuxt prepare && vue-tsc --noEmit",
+    "test": "nuxt prepare && vitest run",
+    "test:watch": "nuxt prepare && vitest",
+    "test:cov": "nuxt prepare && vitest run --coverage"
   },
   "dependencies": {
-    "@auth0/auth0-vue": "^2.4.0",
-    "@nuxtjs/tailwindcss": "^6.12.0",
-    "@pinia/nuxt": "^0.7.0",
-    "@vueuse/nuxt": "^11.0.0",
-    "nuxt": "^3.14.0",
-    "pinia": "^2.2.0",
-    "vue": "^3.5.0",
-    "vue-router": "^4.4.0"
+    "@iconify-json/lucide": "^1.2.115",
+    "@nuxt/ui": "^4.9.0",
+    "@nuxtjs/i18n": "^10.4.0",
+    "@pinia/nuxt": "^0.11.3",
+    "@tailwindcss/vite": "^4.0.0",
+    "@vueuse/core": "^14.0.0",
+    "@vueuse/nuxt": "^14.0.0",
+    "chart.js": "^4.5.1",
+    "nuxt": "^4.4.8",
+    "pinia": "^3.0.4",
+    "pinia-plugin-persistedstate": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "vue": "^3.5.39",
+    "vue-chartjs": "^5.3.3",
+    "vue-router": "^4.6.4",
+    "ws": "^8.18.0",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@nuxt/eslint": "^0.6.0",
-    "@types/node": "^22.0.0",
-    "eslint": "^9.0.0",
-    "prettier": "^3.0.0",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.5.0",
-    "vue-tsc": "^2.1.0"
+    "@nuxt/eslint": "^1.16.0",
+    "@types/node": "^22.20.0",
+    "@types/ws": "^8.5.12",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
+    "@vitest/coverage-v8": "^3",
+    "eslint": "^10.6.0",
+    "eslint-plugin-vue": "^10.9.2",
+    "happy-dom": "^20.10.6",
+    "prettier": "^3.9.4",
+    "typescript": "^5.9.3",
+    "vitest": "^3",
+    "vue-eslint-parser": "^10.4.1",
+    "vue-tsc": "^3.3.6"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@parcel/watcher",
-      "browser-tabs-lock",
-      "esbuild",
-      "unrs-resolver",
-      "vue-demi"
-    ],
-    "ignoredBuiltDependencies": [
-      "@parcel/watcher",
-      "browser-tabs-lock",
-      "esbuild",
-      "unrs-resolver",
-      "vue-demi"
-    ]
-  }
+  "packageManager": "pnpm@9.15.0"
 }

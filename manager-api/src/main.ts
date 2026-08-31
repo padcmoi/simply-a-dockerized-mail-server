@@ -1,54 +1,39 @@
-import 'reflect-metadata';
-import helmet from 'helmet';
-import { NestFactory } from '@nestjs/core';
-import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppModule } from './app.module';
-import { setupOpenApi } from './openapi';
+import { NestFactory } from "@nestjs/core";
+import { VersioningType } from "@nestjs/common";
+import { NestExpressApplication } from "@nestjs/platform-express";
+import { WsAdapter } from "@nestjs/platform-ws";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  const logger = new Logger('Bootstrap');
-  const config = app.get(ConfigService);
-
-  app.use(helmet({ contentSecurityPolicy: false }));
-
-  // Convention : every route is reachable at /api/v<n>/...
-  app.setGlobalPrefix('api');
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ["error", "warn", "log"],
   });
+  // Dedicated internal WS gateway (core/websocket) listens on its own port,
+  // separate from this HTTP server -- see WebsocketGateway.
+  app.useWebSocketAdapter(new WsAdapter(app));
+  // The API only ever runs behind the Nuxt proxy / a reverse proxy, so the raw
+  // socket address is always an internal hop (the Docker gateway). Trust the
+  // proxy chain so `@Ip()` / req.ip reads the real client address from
+  // X-Forwarded-For -- this is what session rows record and show back to the
+  // user. Requires the fronting proxy to forward X-Forwarded-For (Nuxt's nitro
+  // proxy and the public reverse proxy both do).
+  app.set("trust proxy", true);
+  app.setGlobalPrefix("api");
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
+  app.enableCors({ origin: true, credentials: true });
 
-  const corsOrigins = (config.get<string>('CORS_ORIGINS') ?? '*')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-  app.enableCors({
-    origin: corsOrigins.length === 1 && corsOrigins[0] === '*' ? true : corsOrigins,
-    credentials: true,
-  });
+  const swagger = new DocumentBuilder()
+    .setTitle("Simply Mail Server - Manager API")
+    .setDescription("REST API for managing domains, mailboxes, aliases, quotas and sieve rules.")
+    .setVersion("1.0.0")
+    .addApiKey(
+      { type: "apiKey", in: "header", name: "X-Api-Key", description: "Full API token: sms_clientId.secret" },
+      "apiToken"
+    )
+    .build();
+  SwaggerModule.setup("api/doc", app, SwaggerModule.createDocument(app, swagger));
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: { enableImplicitConversion: false },
-    }),
-  );
-
-  setupOpenApi(app);
-
-  app.enableShutdownHooks();
-
-  const port = config.get<number>('PORT', 3000);
-  await app.listen(port, '0.0.0.0');
-  logger.log(`manager-api listening on port ${port}, base /api/v1`);
+  await app.listen(Number(process.env.MANAGER_API_PORT ?? 3000), "0.0.0.0");
 }
-
-bootstrap().catch((err) => {
-  // eslint-disable-next-line no-console
-  console.error('Fatal bootstrap error', err);
-  process.exit(1);
-});
+bootstrap();

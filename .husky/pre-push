@@ -1,0 +1,34 @@
+#!/bin/sh
+
+run_node=0
+run_mail=0
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+	if [ "$local_ref" = "refs/heads/main" ] || [ "$remote_ref" = "refs/heads/main" ]; then
+		continue
+	fi
+
+	if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+		range="$local_sha"
+	else
+		range="$remote_sha..$local_sha"
+	fi
+
+	files=$(git diff --name-only "$range" 2>/dev/null)
+
+	if echo "$files" | grep -qE '^(manager-api|manager-ui)/'; then
+		run_node=1
+	fi
+	if echo "$files" | grep -qE '^(images|tests)/'; then
+		run_mail=1
+	fi
+done
+
+if [ "$run_node" = "1" ]; then
+	./test-node.sh
+fi
+
+# Disabled as too heavy
+# if [ "$run_mail" = "1" ]; then
+#   ./test-mailservers.sh
+# fi

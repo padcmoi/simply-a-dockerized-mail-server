@@ -1,0 +1,25 @@
+services:
+  manager-ui:
+    container_name: mail-manager-ui
+    restart: unless-stopped
+    build:
+      context: ../../manager-ui
+      dockerfile: Dockerfile.dev
+    environment:
+      NUXT_PUBLIC_API_BASE: /api
+      NUXT_API_PROXY_TARGET: http://manager-api:3000
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: "true"
+      CHOKIDAR_INTERVAL: "1000"
+    volumes:
+      - ../../manager-ui/app:/app/app
+      - ../../manager-ui/server:/app/server
+      - ../../manager-ui/i18n:/app/i18n
+      - ../../manager-ui/nuxt.config.ts:/app/nuxt.config.ts
+    networks:
+      mail:
+        ipv4_address: 172.200.0.20
+    depends_on:
+      - manager-api
+    ports:
+      - "${BINDING_IP_MANAGEUI}:${BINDING_PORT_MANAGEUI}:3000"

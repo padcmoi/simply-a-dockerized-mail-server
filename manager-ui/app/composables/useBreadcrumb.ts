@@ -1,0 +1,33 @@
+import type { InjectionKey, Ref } from "vue";
+import type { BreadcrumbItem } from "@nuxt/ui";
+
+const BreadcrumbKey: InjectionKey<{
+  items: Ref<BreadcrumbItem[]>;
+  set: (v: BreadcrumbItem[]) => void;
+}> = Symbol("breadcrumb");
+
+export function provideBreadcrumb() {
+  const { t } = useI18n();
+  const items: Ref<BreadcrumbItem[]> = ref([]);
+  provide(BreadcrumbKey, {
+    items,
+    set: (v) => {
+      items.value = [{ label: t("layout.home"), icon: "i-lucide-house", to: "/" }, ...v];
+    },
+  });
+  return items;
+}
+
+export function useBreadcrumb() {
+  const ctx = inject(BreadcrumbKey);
+  if (!ctx) throw new Error("useBreadcrumb called outside BreadcrumbProvider");
+  return ctx;
+}
+
+// Non-throwing variant for components that may legitimately render without a
+// provider -- notably ErrorBreadcrumb, which error.vue mounts inside whatever
+// layout the errored route used (the `auth` layout has no BreadcrumbProvider).
+// Returns null there instead of throwing and taking the error page down.
+export function useBreadcrumbOptional() {
+  return inject(BreadcrumbKey, null);
+}

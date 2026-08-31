@@ -1,0 +1,22 @@
+# =============================================================================
+# Dict-SQL backend for the dovecot quota plugin.
+# Reads and writes per-user counters directly into virtual_quota_users, so every
+# LMTP delivery / IMAP expunge updates the BDD. virtual_quota_domains is kept in
+# sync by MariaDB triggers (02-quota-triggers.sql).
+# =============================================================================
+
+connect = host=${DB_HOST} dbname=${DB_NAME} user=${DB_USER} password=${DB_PASSWORD}
+
+map {
+  pattern        = priv/quota/storage
+  table          = virtual_quota_users
+  username_field = email
+  value_field    = bytes
+}
+
+map {
+  pattern        = priv/quota/messages
+  table          = virtual_quota_users
+  username_field = email
+  value_field    = messages
+}

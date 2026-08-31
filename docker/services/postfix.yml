@@ -1,0 +1,29 @@
+services:
+  postfix:
+    container_name: mail-postfix
+    restart: unless-stopped
+    build:
+      context: ../../images/postfix
+    env_file: ../../.env
+    volumes:
+      - ${VOLUMES_PATH}/postfix-spool:/var/spool/postfix
+      - ${VOLUMES_PATH}/log:/var/log/mail
+      - ${TLS_LETSENCRYPT_PATH}:/etc/letsencrypt:ro
+    networks:
+      mail:
+        ipv4_address: 172.200.0.17
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      dovecot:
+        condition: service_healthy
+      opendkim:
+        condition: service_started
+      opendmarc:
+        condition: service_started
+      rspamd:
+        condition: service_started
+    ports:
+      - "${BINDING_IP_SMTP}:${BINDING_PORT_SMTP}:25"
+      - "${BINDING_IP_SMTPS}:${BINDING_PORT_SMTPS}:465"
+      - "${BINDING_IP_SUBMISSION}:${BINDING_PORT_SUBMISSION}:587"

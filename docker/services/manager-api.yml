@@ -1,0 +1,38 @@
+services:
+  manager-api:
+    container_name: mail-manager-api
+    restart: unless-stopped
+    build:
+      context: ../../manager-api
+    env_file: ../../.env
+    environment:
+      DB_HOST: mail-mariadb
+      DB_PORT: 3306
+      NODE_ENV: production
+      OPENDKIM_API_URL: http://mail-opendkim:8080
+      MAIL_VOLUME_PATH: /var/mail
+      HOST_PROC: /host/proc
+      # The deliverability engine runs outside every docker network, on the
+      # host stack, and listens on the bridge gateway. See
+      # docker/services/deliverability-probe.yml.
+      DELIVERABILITY_PROBE_URL: http://172.200.0.1:8080
+    volumes:
+      # Read-write, unlike the spool below: deleting a domain or a recipient has
+      # to take its maildir with it (MailStorageService), otherwise the mail of
+      # a mailbox that no longer exists keeps occupying the volume forever.
+      - ${VOLUMES_PATH}/mail:/var/mail
+      - ${VOLUMES_PATH}/postfix-spool:/var/spool/postfix:ro
+      # The machine cards read /proc. Docker does not namespace /proc/stat,
+      # /proc/loadavg or /proc/meminfo, so those are the host's own figures
+      # already, but /proc/net IS namespaced: without the host's own /proc
+      # mounted here, the network card would report this container's veth
+      # instead of the NIC, and it reports nothing at all rather than that.
+      - /proc:/host/proc:ro
+    networks:
+      mail:
+        ipv4_address: 172.200.0.19
+    ports:
+      - "${BINDING_IP_WS}:${BINDING_PORT_WS}:3001"
+    depends_on:
+      mariadb:
+        condition: service_healthy

@@ -1,0 +1,16 @@
+services:
+  redis:
+    container_name: mail-redis
+    restart: unless-stopped
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ${VOLUMES_PATH}/redis:/data
+    networks:
+      mail:
+        ipv4_address: 172.200.0.11
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5

@@ -1,0 +1,201 @@
+import { applyDecorators } from "@nestjs/common";
+import { ApiOperation, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
+import { RSPAMD_FACTORY_ACTIONS, RSPAMD_HISTORY_SORTABLE_COLUMNS } from "../../core/rspamd/rspamd.service";
+
+export const RspamdApi = () => applyDecorators(ApiTags("rspamd"), ApiSecurity("apiToken"));
+
+const RspamdUnreachableResponse = () =>
+  ApiResponse({
+    status: 503,
+    description: "Could not connect to the Rspamd controller at all (e.g. the rspamd container is down)",
+    schema: {
+      example: { statusCode: 503, message: "Rspamd unreachable" },
+    },
+  });
+
+const RspamdBadGatewayResponse = () =>
+  ApiResponse({
+    status: 502,
+    description: "Rspamd answered but with a non-2xx status",
+    schema: {
+      example: { statusCode: 502, message: "Rspamd returned 500" },
+    },
+  });
+
+const RspamdForbiddenResponse = () =>
+  ApiResponse({
+    status: 403,
+    description:
+      "Missing `rspamd:access` and/or this route's own read action (`view-rspamd-stats`, `view-rspamd-history` or " +
+      "`view-rspamd-thresholds`); the message names whichever is missing first",
+    schema: {
+      example: { statusCode: 403, message: "Missing permission rspamd:access", error: "Forbidden" },
+    },
+  });
+
+const RspamdActionsForbiddenResponse = () =>
+  ApiResponse({
+    status: 403,
+    description:
+      "Missing `rspamd:access` and `rspamd:edit-rspamd-thresholds` (PATCH) or `rspamd:reset-rspamd-thresholds` " +
+      "(DELETE). Writing an arbitrary threshold is unbounded and can silently break spam filtering server-wide; " +
+      "resetting only ever restores the shipped baseline, so the two are distinct permissions",
+    schema: {
+      example: { statusCode: 403, message: "Missing permission rspamd:edit-rspamd-thresholds", error: "Forbidden" },
+    },
+  });
+
+export const GetStatsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Proxy Rspamd global stats (scanned, rejected, greylisted, clean)",
+      description: "Directly proxies the JSON returned by Rspamd's own `/stat` controller endpoint.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Rspamd global stats",
+      schema: {
+        example: {
+          version: "3.8.1",
+          uptime: 123456,
+          scanned: 4820,
+          learned: 312,
+          spam_count: 640,
+          ham_count: 4180,
+          connections: 512,
+          actions: {
+            reject: 500,
+            "soft reject": 20,
+            "rewrite subject": 5,
+            "add header": 115,
+            greylist: 40,
+            "no action": 4140,
+          },
+        },
+      },
+    }),
+    RspamdForbiddenResponse(),
+    RspamdUnreachableResponse(),
+    RspamdBadGatewayResponse()
+  );
+
+const historyRowExample = {
+  "message-id": "abc123@example.com",
+  ip: "203.0.113.10",
+  action: "reject",
+  score: 15.2,
+  required_score: 15,
+  size: 4096,
+  time_real: 0.42,
+  unix_time: 1751500000,
+  sender_smtp: "spam@baddomain.example",
+  sender_mime: "spam@baddomain.example",
+  rcpt_smtp: ["user@example.com"],
+  rcpt_mime: ["user@example.com"],
+  subject: "Sample subject",
+  user: "",
+};
+
+export const GetHistoryDocs = () =>
+  applyDecorators(
+    ApiPaginationQuery(RSPAMD_HISTORY_SORTABLE_COLUMNS),
+    ApiOperation({
+      summary: "Rspamd scan history, optionally filtered by recipient domain, paginated",
+      description:
+        "Proxies Rspamd's own `/history` controller endpoint (a ring buffer, `size` rows fetched). When `domain` " +
+        "is given, rows are filtered in-memory to only those whose `rcpt_smtp` list contains an address ending in " +
+        "`@<domain>`. `search`/pagination/`sortDir` are likewise applied in-memory over that same fetched window " +
+        "-- there is no deeper archive to page into, so `total` is bounded by `size`.",
+    }),
+    ApiQuery({
+      name: "domain",
+      required: false,
+      type: String,
+      example: "example.com",
+      description: "Only return rows delivered to a recipient on this FQDN",
+    }),
+    ApiQuery({
+      name: "size",
+      required: false,
+      type: Number,
+      example: 200,
+      description: "Max rows to fetch from Rspamd before any domain filtering (default 200)",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Rspamd scan history rows, newest first",
+      schema: { example: paginatedExample(historyRowExample) },
+    }),
+    ApiResponse({ status: 400, description: "Invalid pagination query (e.g. limit not 10/25/50)" }),
+    RspamdForbiddenResponse(),
+    RspamdUnreachableResponse(),
+    RspamdBadGatewayResponse()
+  );
+
+const actionThresholdsExample = {
+  reject: 15,
+  softReject: null,
+  rewriteSubject: null,
+  addHeader: 5,
+  greylist: null,
+};
+
+export const GetActionsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Current Rspamd action score thresholds",
+      description:
+        "Proxies Rspamd's own `/actions` controller endpoint. `null` means that action has no threshold " +
+        "configured (disabled). `softReject` is read-only here -- Rspamd's own `/saveactions` endpoint does not " +
+        "accept a value for it.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Current thresholds",
+      schema: { example: actionThresholdsExample },
+    }),
+    RspamdForbiddenResponse(),
+    RspamdUnreachableResponse(),
+    RspamdBadGatewayResponse()
+  );
+
+export const SaveActionsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Update Rspamd's action score thresholds",
+      description:
+        "Proxies Rspamd's own `/saveactions` controller endpoint. `reject`/`rewriteSubject`/`addHeader`/`greylist` " +
+        "are each optional (`null` disables that action); whichever are provided must be strictly descending in " +
+        "that order (reject > rewrite subject > add header > greylist) and non-negative -- Rspamd's own endpoint " +
+        "enforces neither, so this API validates before forwarding.",
+    }),
+    ApiResponse({ status: 200, description: "Thresholds saved", schema: { example: { success: true } } }),
+    ApiResponse({
+      status: 400,
+      description: "Validation failed (negative value, or not strictly descending)",
+      schema: {
+        example: {
+          message: "Validation failed",
+          issues: [{ message: "Thresholds must be strictly descending: reject > rewrite subject > add header > greylist" }],
+        },
+      },
+    }),
+    RspamdActionsForbiddenResponse(),
+    RspamdUnreachableResponse(),
+    RspamdBadGatewayResponse()
+  );
+
+export const ResetActionsDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Reset Rspamd's action thresholds to this project's shipped defaults",
+      description:
+        "Re-saves this project's baked-in baseline (images/rspamd/conf/override.d/actions.conf), discarding " +
+        `whatever was set via PATCH. Equivalent to PATCH with ${JSON.stringify(RSPAMD_FACTORY_ACTIONS)}.`,
+    }),
+    ApiResponse({ status: 200, description: "Thresholds reset", schema: { example: { success: true } } }),
+    RspamdActionsForbiddenResponse(),
+    RspamdUnreachableResponse(),
+    RspamdBadGatewayResponse()
+  );

@@ -1,0 +1,15 @@
+{
+  // Type-checks the vitest specs the same way the build type-checks src.
+  // The build tsconfig is src-only (rootDir ./src, emits to ./dist); this one
+  // drops the emit/rootDir constraints and widens the program to test/ so
+  // `tsc --noEmit -p tsconfig.spec.json` fails on a wrong mock shape or a DTO
+  // that does not match the real business type. Run by the `typecheck` script.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

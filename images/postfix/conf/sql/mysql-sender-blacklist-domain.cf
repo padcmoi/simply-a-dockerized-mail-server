@@ -1,0 +1,5 @@
+hosts    = ${DB_HOST}
+user     = ${DB_USER}
+password = ${DB_PASSWORD}
+dbname   = ${DB_NAME}
+query    = SELECT 'REJECT Sender domain blacklisted' FROM sieve_reject_senders WHERE sender=CONCAT('@', SUBSTRING_INDEX('%s', '@', -1)) AND enabled=1

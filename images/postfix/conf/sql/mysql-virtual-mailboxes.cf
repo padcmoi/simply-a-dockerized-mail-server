@@ -1,0 +1,5 @@
+hosts    = ${DB_HOST}
+user     = ${DB_USER}
+password = ${DB_PASSWORD}
+dbname   = ${DB_NAME}
+query    = SELECT maildir FROM virtual_users WHERE email='%s' AND active=1 AND user_start_date <= CURDATE() AND (user_end_date IS NULL OR user_end_date >= CURDATE())

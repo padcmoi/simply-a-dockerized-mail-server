@@ -1,0 +1,38 @@
+[DEFAULT]
+ignoreip = 127.0.0.1/8 ::1 172.200.0.0/24
+bantime  = ${FAIL2BAN_BANTIME}
+findtime = ${FAIL2BAN_FINDTIME}
+maxretry = ${FAIL2BAN_MAXRETRY}
+backend  = polling
+banaction = iptables-multiport
+loglevel  = INFO
+logtarget = STDOUT
+
+# Disable defaults that need /var/log/messages (not present in this
+# container -- no syslog, no sshd, by design). The Alpine fail2ban
+# package ships /etc/fail2ban/jail.d/alpine-ssh.conf which enables BOTH
+# [sshd] and [sshd-ddos] pointing at /var/log/messages; fail2ban refuses
+# to boot if any enabled jail has no log file, so we must turn off both.
+[sshd]
+enabled = false
+
+[sshd-ddos]
+enabled = false
+
+[postfix-sasl]
+enabled  = true
+filter   = postfix[mode=auth]
+port     = smtp,465,587
+logpath  = /var/log/mail/postfix.log
+
+[postfix-relay]
+enabled  = true
+filter   = postfix[mode=normal]
+port     = smtp,465,587
+logpath  = /var/log/mail/postfix.log
+
+[dovecot]
+enabled  = true
+filter   = dovecot
+port     = 993,143
+logpath  = /var/log/mail/dovecot.log

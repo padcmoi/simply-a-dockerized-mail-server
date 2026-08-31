@@ -1,0 +1,21 @@
+services:
+  mariadb:
+    container_name: mail-mariadb
+    restart: unless-stopped
+    build:
+      context: ../../images/mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ${VOLUMES_PATH}/mysql:/var/lib/mysql
+    networks:
+      mail:
+        ipv4_address: 172.200.0.10
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 30

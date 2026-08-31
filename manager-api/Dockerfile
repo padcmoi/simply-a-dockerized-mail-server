@@ -1,37 +1,20 @@
-# syntax=docker/dockerfile:1.7
-
-FROM node:22-alpine AS base
+FROM node:22-alpine AS build
 WORKDIR /app
-# openssl is used by Sha512CryptService to hash webadmin passwords (matches Dovecot scheme).
-RUN corepack enable && apk add --no-cache openssl
+RUN corepack enable
+COPY package.json pnpm-lock.yaml* ./
+COPY libs ./libs
+RUN pnpm install --frozen-lockfile || pnpm install
+COPY tsconfig.json nest-cli.json ./
+COPY src ./src
+RUN pnpm build && pnpm prune --prod
 
-FROM base AS deps
-ENV NPM_CONFIG_MINIMUM_RELEASE_AGE=0
-COPY package.json pnpm-lock.yaml* .npmrc* ./
-RUN pnpm install --frozen-lockfile --ignore-scripts --config.minimum-release-age=0 \
-  || pnpm install --no-frozen-lockfile --ignore-scripts --config.minimum-release-age=0
-
-FROM deps AS dev
-COPY . .
-EXPOSE 3000
-CMD ["pnpm", "run", "start:dev"]
-
-FROM deps AS builder
-COPY . .
-RUN pnpm run build
-
-FROM base AS prod-deps
-ENV NPM_CONFIG_MINIMUM_RELEASE_AGE=0
-COPY package.json pnpm-lock.yaml* .npmrc* ./
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts --config.minimum-release-age=0 \
-  || pnpm install --prod --ignore-scripts --no-frozen-lockfile --config.minimum-release-age=0
-
-FROM node:22-alpine AS production
+FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./package.json
+RUN apk add --no-cache tini openssl
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./package.json
 EXPOSE 3000
-USER node
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "dist/main.js"]

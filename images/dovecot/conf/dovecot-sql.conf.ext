@@ -1,0 +1,30 @@
+driver  = mysql
+connect = host=${DB_HOST} dbname=${DB_NAME} user=${DB_USER} password=${DB_PASSWORD}
+default_pass_scheme = SHA512-CRYPT
+
+# passdb -> credentials check against virtual_users (v1 SHA512-CRYPT preserved).
+# user_start_date / user_end_date act as soft activity bounds and are treated
+# as active=0 outside the window: NULL end = unlimited, start defaults to
+# 1970-01-01 so an unset start is always in the past.
+password_query = SELECT email AS user, password \
+                 FROM virtual_users \
+                 WHERE email='%u' AND active=1 \
+                   AND user_start_date <= CURDATE() \
+                   AND (user_end_date IS NULL OR user_end_date >= CURDATE())
+
+# userdb -> home, uid/gid and per-user quota limit from virtual_users.quota.
+# Dovecot uses quota_rule=*:bytes=N where N=0 means unlimited (v1 behaviour).
+user_query = SELECT \
+               CONCAT('/var/mail/vhosts/', domain, '/', SUBSTRING_INDEX(email,'@',1)) AS home, \
+               5000 AS uid, 5000 AS gid, \
+               CONCAT('*:bytes=', quota) AS quota_rule \
+             FROM virtual_users \
+             WHERE email='%u' AND active=1 \
+               AND user_start_date <= CURDATE() \
+               AND (user_end_date IS NULL OR user_end_date >= CURDATE())
+
+iterate_query = SELECT email AS user \
+                FROM virtual_users \
+                WHERE active=1 \
+                  AND user_start_date <= CURDATE() \
+                  AND (user_end_date IS NULL OR user_end_date >= CURDATE())

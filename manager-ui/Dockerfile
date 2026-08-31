@@ -1,33 +1,16 @@
-# syntax=docker/dockerfile:1.7
-
-FROM node:22-alpine AS base
+FROM node:22-alpine AS build
 WORKDIR /app
 RUN corepack enable
-
-FROM base AS deps
-ENV NPM_CONFIG_MINIMUM_RELEASE_AGE=0
-COPY package.json pnpm-lock.yaml* .npmrc* ./
-# --ignore-scripts skips build scripts of transitive deps (esbuild, parcel/watcher, ...) which
-# pnpm 10 requires explicit approval for. We don't need their native bindings recompiled - the
-# npm packages ship prebuilt binaries. nuxt prepare is re-run in the dev/builder stage.
-RUN pnpm install --frozen-lockfile --ignore-scripts --config.minimum-release-age=0 \
-  || pnpm install --no-frozen-lockfile --ignore-scripts --config.minimum-release-age=0
-
-FROM deps AS dev
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile || pnpm install
 COPY . .
-RUN pnpm exec nuxt prepare
-EXPOSE 3000
-CMD ["pnpm", "run", "dev"]
+RUN pnpm build
 
-FROM deps AS builder
-COPY . .
-RUN pnpm exec nuxt prepare && pnpm run build
-
-FROM node:22-alpine AS production
+FROM node:22-alpine
 WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/.output ./.output
-COPY --from=builder /app/package.json ./package.json
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
+RUN apk add --no-cache tini
+COPY --from=build /app/.output ./.output
 EXPOSE 3000
-USER node
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", ".output/server/index.mjs"]

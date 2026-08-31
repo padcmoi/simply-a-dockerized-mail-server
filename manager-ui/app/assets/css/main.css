@@ -1,0 +1,136 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  /* Inherited, so one declaration covers everything; `select-text` re-allows it. */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+/* Marching ants: a dashed outline that travels around the control, for a value
+   picked by hand rather than inherited from the theme. Four repeating gradients
+   rather than a border, since a dashed border cannot be made to move, and they
+   sit above the background colour rather than replacing it. */
+@keyframes marching-ants {
+  to {
+    background-position:
+      16px 0,
+      -16px 100%,
+      0 -16px,
+      100% 16px;
+  }
+}
+
+.marching-ants {
+  background-image:
+    linear-gradient(90deg, var(--ui-warning) 50%, transparent 0), linear-gradient(90deg, var(--ui-warning) 50%, transparent 0),
+    linear-gradient(0deg, var(--ui-warning) 50%, transparent 0), linear-gradient(0deg, var(--ui-warning) 50%, transparent 0);
+  background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+  background-size:
+    8px 2px,
+    8px 2px,
+    2px 8px,
+    2px 8px;
+  background-position:
+    0 0,
+    0 100%,
+    0 0,
+    100% 0;
+  animation: marching-ants 0.8s linear infinite;
+}
+
+/* Still dashed, no longer walking: the mark has to survive the setting, it is
+   the only thing saying this value was chosen. */
+@media (prefers-reduced-motion: reduce) {
+  .marching-ants {
+    animation: none;
+  }
+}
+
+/* A progress bar bent around the box: a faint rail on the whole perimeter and a short
+   lit segment running along it while the list is busy. For the block rendering of
+   DataTable, which has no header row to hang a straight bar under, and where a spinner
+   dropped in the middle sits on top of what it is about.
+
+   Two pseudo-elements, both absolutely positioned OUTSIDE the box, so turning them on
+   and off costs no height and moves nothing under them. Each fills a rectangle that a
+   two-layer mask cuts down to a 2px frame: the inner layer is clipped to the content
+   box, the outer one to the border box, and excluding one from the other leaves exactly
+   the padding ring.
+
+   Longhands and no `mask` shorthand: the shorthand resets `mask-composite` to `add`, and
+   a browser that then ignores `-webkit-mask-composite` (Firefox does) keeps both layers
+   whole and paints the rectangle instead of the frame, which is a wash of colour over
+   the list rather than a line around it. */
+@property --ring-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes loading-ring {
+  to {
+    --ring-angle: 360deg;
+  }
+}
+
+.loading-ring::before,
+.loading-ring::after {
+  content: "";
+  position: absolute;
+  inset: -0.5rem;
+  border-radius: 0.75rem;
+  padding: 2px;
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-clip: content-box, border-box;
+  -webkit-mask-composite: xor;
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-clip: content-box, border-box;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* The rail. Lit at all times under the segment, so the line reads as one that travels
+   rather than one that appears and vanishes at each corner. */
+.loading-ring::before {
+  background: color-mix(in oklab, var(--ui-primary) 20%, transparent);
+}
+
+/* The segment: a fifth of the perimeter, brightest at its head and fading behind it. */
+.loading-ring::after {
+  background: conic-gradient(
+    from var(--ring-angle),
+    transparent 0deg,
+    transparent 288deg,
+    var(--ui-primary) 352deg,
+    transparent 354deg
+  );
+  animation: loading-ring 1.4s linear infinite;
+}
+
+/* Lit, no longer travelling. The ring is what says the list is being refreshed, so it
+   has to survive the setting that turns the movement off. */
+@media (prefers-reduced-motion: reduce) {
+  .loading-ring::after {
+    animation: none;
+  }
+}

@@ -1,385 +1,420 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Simply Mail Server v2 one-shot installer.
 #
-# v2.0.0 - install.sh
-# Unique entry-point :
-#  - validate .env
-#  - generate persistent secrets (.secrets/)
-#  - hydrate templates/ into runtime/config/ (sed substitutions)
-#  - prepare volumes/
-#  - optionally sync Letsencrypt certs
+# A non-technical user types a hostname, hits enter for everything else, walks
+# away with: full stack running, schema created by TypeORM and one root
+# account seeded into `accounts`. Domains, postmaster reservations, DKIM keys
+# and any subsequent manager account are then created from the manager-ui by
+# that root account (no auto-provisioning at install time). Passwords are
+# auto-generated.
 #
-# Re-run idempotently when .env changes - placeholders are re-substituted
-# from templates/ each time so runtime/config/ always matches .env.
-#
-
+# Idempotent: re-runs only fill what is missing.
 set -euo pipefail
+cd "$(dirname "$0")"
 
-V2_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$V2_DIR"
+SAMPLE=.env.sample
+TARGET=.env
 
-ENV_FILE="$V2_DIR/.env"
-SECRETS_DIR="$V2_DIR/.secrets"
-TEMPLATES_DIR="$V2_DIR/templates"
-RUNTIME_DIR="$V2_DIR/runtime/config"
-
-C_RED=$'\e[31m'; C_GREEN=$'\e[32m'; C_YELLOW=$'\e[33m'; C_BLUE=$'\e[36m'; C_RESET=$'\e[0m'
-log()  { echo "${C_BLUE}[*]${C_RESET} $*"; }
-ok()   { echo "${C_GREEN}[+]${C_RESET} $*"; }
-warn() { echo "${C_YELLOW}[!]${C_RESET} $*"; }
-fail() { echo "${C_RED}[x]${C_RESET} $*" >&2; exit 1; }
-
-# Loud failures - set -e exits silently otherwise, masking SIGPIPE / unset-var bugs
-trap 'rc=$?; echo "${C_RED}[x]${C_RESET} install.sh aborted at line $LINENO (exit $rc, last cmd: $BASH_COMMAND)" >&2' ERR
-
-#
-# 1. .env validation
-#
-[[ -f "$ENV_FILE" ]] || fail "Missing $ENV_FILE - copy .env.sample and edit"
-set -a; . "$ENV_FILE"; set +a
-
-REQUIRED_VARS=(DOMAIN_FQDN ADRESSIP ADMIN_PASSWORD DKIM_MULTIPLE_SIGNATURES DKIM_MUST_BE_SIGNED \
-  DMARC_SELECT DMARC_ENABLE DMARC_ORG_NAME DMARC_REJECT_FAILURES \
-  ANTIVIRUS DISABLE_POSTCREEN_DEEP_PROTOCOL_TESTS \
-  NOTIFY_SPAM_REJECT FAIL2BAN_MAXRETRY FAIL2BAN_FINDTIME FAIL2BAN_BANTIME \
-  POSTFIX_PRIVATE_LOGS DOCKER_VOLUMES)
-for v in "${REQUIRED_VARS[@]}"; do
-  [[ -n "${!v:-}" ]] || fail "Missing required env var: $v"
-done
-
-# ADMIN_PASSWORD strength (mirror of 1.x.x utils.sh _checkPassword)
-if [[ ${#ADMIN_PASSWORD} -lt 12 ]] \
-  || ! [[ "$ADMIN_PASSWORD" =~ [A-Z] ]] \
-  || ! [[ "$ADMIN_PASSWORD" =~ [a-z] ]] \
-  || ! [[ "$ADMIN_PASSWORD" =~ [0-9] ]]; then
-  fail "ADMIN_PASSWORD must be 12+ chars with upper, lower and digit"
-fi
-
-ok ".env loaded - FQDN=$DOMAIN_FQDN IP=$ADRESSIP"
-
-#
-# 2. Secrets generation (persistent, regenerated only if missing)
-#
-mkdir -p "$SECRETS_DIR"
-chmod 700 "$SECRETS_DIR"
-
-# Bounded pipes only : `head -c N` on /dev/urandom races with `set -o pipefail`
-# (tr never reaches EOF, head closes stdin, tr exits 141, pipefail aborts the script
-# silently). openssl emits a finite byte count, tr finishes cleanly, bash slicing
-# takes the prefix - no SIGPIPE possible.
-if [[ ! -f "$SECRETS_DIR/system_password" ]]; then
-  _raw="$(openssl rand -base64 64 | tr -d '/+=\n')"
-  printf '%s' "${_raw:0:50}" > "$SECRETS_DIR/system_password"
-  ok "Generated SYSTEM_PASSWORD (mariadb root, 50 chars)"
-fi
-SYSTEM_PASSWORD="$(cat "$SECRETS_DIR/system_password")"
-
-if [[ ! -f "$SECRETS_DIR/roundcube_des_key" ]]; then
-  _raw="$(openssl rand -base64 32 | tr -d '/+=\n')"
-  printf '%s' "${_raw:0:24}" > "$SECRETS_DIR/roundcube_des_key"
-  ok "Generated Roundcube DES key (24 chars)"
-fi
-ROUNDCUBE_DES_KEY="$(cat "$SECRETS_DIR/roundcube_des_key")"
-
-# Auth0 (RS256 + JWKS) handles all JWT issuance / refresh / SSO Google.
-# manager-api validates tokens via the public JWKS endpoint, no shared secret needed.
-# AUTH0_DOMAIN / AUTH0_AUDIENCE / AUTH0_ISSUER must be set manually in .env (Auth0 dashboard).
-_warn_auth0_missing() {
-  local key="$1"
-  if ! grep -qE "^${key}=" "$ENV_FILE" 2>/dev/null; then
-    warn "$key not set in .env - manager-api will refuse to boot until you fill it from your Auth0 tenant"
-  fi
-}
-_warn_auth0_missing "AUTH0_DOMAIN"
-_warn_auth0_missing "AUTH0_AUDIENCE"
-_warn_auth0_missing "AUTH0_ISSUER"
-
-# manager-api JWT signing secret - independent of the root prompt, generated on every
-# install if missing so the API container always has a /run/secrets/root_jwt_secret to mount.
-if [[ ! -f "$SECRETS_DIR/root_jwt_secret" ]]; then
-  openssl rand -hex 32 > "$SECRETS_DIR/root_jwt_secret"
-  ok "Generated .secrets/root_jwt_secret (64 hex chars)"
-fi
-chmod 600 "$SECRETS_DIR/root_jwt_secret"
-
-# Root account for manager-api : generated ONCE on first install, INSERTed into
-# mailserver.Accounts via bootstrap SQL run on fresh MariaDB datadir. Credentials
-# are printed to TTY exactly once at end of install and NEVER persisted to disk -
-# they live in the DB only, queried back by manager-api for login.
-ROOT_PWD_PRINT=""
-ROOT_EMAIL_VAL=""
-MARIADB_INITIALIZED=false
-[[ -d "$DOCKER_VOLUMES/mysql/mysql" ]] && MARIADB_INITIALIZED=true
-
-if [[ "$MARIADB_INITIALIZED" == "true" ]]; then
-  log "MariaDB already initialized - skipping root bootstrap (existing Accounts row preserved)"
-else
-  [[ -t 0 ]] || fail "No TTY to prompt for root email - run install.sh interactively on first install"
-  read -r -p "Root account email (Gmail or your personal address) : " ROOT_EMAIL_INPUT
-  ROOT_EMAIL_INPUT="${ROOT_EMAIL_INPUT// /}"
-  [[ -z "$ROOT_EMAIL_INPUT" ]] && fail "Root email cannot be empty"
-  ROOT_EMAIL_VAL="$ROOT_EMAIL_INPUT"
-  _raw="$(openssl rand -base64 32 | tr -d '/+=\n')"; ROOT_PWD_PRINT="${_raw:0:24}"
-  ok "Root credentials generated in memory (printed once at end of install)"
-  # SHA512-CRYPT hash with a fresh salt - identical scheme to Dovecot mailbox passwords
-  # so the same verification path (openssl passwd -6 -salt ...) works everywhere.
-  _raw="$(openssl rand -base64 24 | tr -d '/+=\n')"; ROOT_SALT="${_raw:0:16}"
-  ROOT_HASHED="$(openssl passwd -6 -salt "$ROOT_SALT" "$ROOT_PWD_PRINT")"
-  ROOT_EMAIL_ESC="${ROOT_EMAIL_VAL//\'/\'\'}"
-  ROOT_HASHED_ESC="${ROOT_HASHED//\'/\'\'}"
-fi
-
-# Rspamd controller password is written cleartext in worker-controller.inc
-# (rspamadm pw hash needs rspamd binary - we let the container do its own hashing at boot if needed).
-# runtime/ is gitignored so the cleartext doesn't leak to git.
-
-chmod 600 "$SECRETS_DIR"/*
-
-#
-# 3. Boolean -> string mapping (mirrors 1.x.x setup.d/* logic)
-#
-if [[ "${DISABLE_POSTCREEN_DEEP_PROTOCOL_TESTS,,}" == "true" ]]; then
-  POSTSCREEN_DEEP="no"
-else
-  POSTSCREEN_DEEP="yes"
-fi
-
-FAIL2BAN_MAXRETRY_EFF="${FAIL2BAN_MAXRETRY:-30}"
-FAIL2BAN_FINDTIME_EFF="${FAIL2BAN_FINDTIME:-90}"
-FAIL2BAN_BANTIME_EFF="${FAIL2BAN_BANTIME:-3600}"
-[[ "$FAIL2BAN_MAXRETRY_EFF" -gt 0 ]] || FAIL2BAN_MAXRETRY_EFF=30
-[[ "$FAIL2BAN_FINDTIME_EFF" -gt 0 ]] || FAIL2BAN_FINDTIME_EFF=90
-[[ "$FAIL2BAN_BANTIME_EFF" -gt 0 ]] || FAIL2BAN_BANTIME_EFF=3600
-
-#
-# 4. Hydration : templates/ -> runtime/config/ with sed substitutions
-#
-log "Hydrating templates into runtime/config/..."
-rm -rf "$RUNTIME_DIR"
-mkdir -p "$RUNTIME_DIR"
-cp -R "$TEMPLATES_DIR"/. "$RUNTIME_DIR"/
-
-# Order the mariadb init scripts - they run in alphabetical order in /docker-entrypoint-initdb.d/
-# config.sql MUST run first (creates the mailserver DB + mailuser GRANTs).
-if [[ -d "$RUNTIME_DIR/mariadb/init" ]]; then
-  [[ -f "$RUNTIME_DIR/mariadb/init/config.sql" ]] \
-    && mv "$RUNTIME_DIR/mariadb/init/config.sql" "$RUNTIME_DIR/mariadb/init/00_config.sql"
-  [[ -f "$RUNTIME_DIR/mariadb/init/build.sql" ]] \
-    && mv "$RUNTIME_DIR/mariadb/init/build.sql" "$RUNTIME_DIR/mariadb/init/10_mailserver_schema.sql"
-  [[ -f "$RUNTIME_DIR/mariadb/init/opendmarc.sql" ]] \
-    && mv "$RUNTIME_DIR/mariadb/init/opendmarc.sql" "$RUNTIME_DIR/mariadb/init/20_opendmarc_schema.sql"
-  [[ -f "$RUNTIME_DIR/mariadb/init/roundcube.sql" ]] \
-    && mv "$RUNTIME_DIR/mariadb/init/roundcube.sql" "$RUNTIME_DIR/mariadb/init/30_roundcube_schema.sql"
-
-  # Multi-container adaptation : 1.x.x created mailuser@localhost (everything was one container).
-  # In v2 manager-api / dovecot / postfix / roundcube connect across the docker network from
-  # different IPs. Add an additive GRANT for mailuser@'%' so they can authenticate without
-  # touching the 1.x.x config.sql semantics for localhost connections.
-  cat > "$RUNTIME_DIR/mariadb/init/05_mailuser_remote_grant.sql" <<EOF
-CREATE USER IF NOT EXISTS 'mailuser'@'%' IDENTIFIED BY '$ADMIN_PASSWORD';
-GRANT ALL PRIVILEGES ON mailserver.* TO 'mailuser'@'%';
-GRANT ALL PRIVILEGES ON opendmarc.* TO 'mailuser'@'%';
-GRANT ALL PRIVILEGES ON roundcube.* TO 'mailuser'@'%';
-FLUSH PRIVILEGES;
-EOF
-fi
-
-# Use a safe delimiter (|) for sed since DOMAIN_FQDN and paths may contain /
-_sed_in_place() {
-  local needle="$1" value="$2" file="$3"
-  sed -i "s|${needle}|${value}|g" "$file"
+c() { printf '\033[1;34m[install]\033[0m %s\n' "$*"; }
+ok() { printf '\033[1;32m[ok]\033[0m %s\n' "$*"; }
+q() { printf '\033[1;36m[?]\033[0m %s ' "$*"; }
+warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*"; }
+die() {
+	printf '\033[1;31m[fatal]\033[0m %s\n' "$*"
+	exit 1
 }
 
-# Walk all files under runtime/config/ and substitute placeholders
-while IFS= read -r -d '' f; do
-  _sed_in_place "____mailRootPass" "$SYSTEM_PASSWORD" "$f"
-  _sed_in_place "____mailUserPass" "$ADMIN_PASSWORD" "$f"
-  _sed_in_place "____domainFQDN" "$DOMAIN_FQDN" "$f"
-  _sed_in_place "____postscreenDeepProtocolTests" "$POSTSCREEN_DEEP" "$f"
-  _sed_in_place "____fail2BanMaxRetry" "$FAIL2BAN_MAXRETRY_EFF" "$f"
-  _sed_in_place "____fail2BanFindtime" "$FAIL2BAN_FINDTIME_EFF" "$f"
-  _sed_in_place "____fail2BanBantime" "$FAIL2BAN_BANTIME_EFF" "$f"
-  _sed_in_place "____notifySpamRejectTo" "${NOTIFY_SPAM_REJECT_TO:-}" "$f"
-  _sed_in_place "____dkimMultipleSignatures" "$DKIM_MULTIPLE_SIGNATURES" "$f"
-  _sed_in_place "____dkimMustBeSigned" "$DKIM_MUST_BE_SIGNED" "$f"
-  _sed_in_place "____dmarcDomain" "${DMARC_DOMAIN:-}" "$f"
-  _sed_in_place "____dmarcEnable" "$DMARC_ENABLE" "$f"
-  _sed_in_place "____dmarcOrgName" "$DMARC_ORG_NAME" "$f"
-  _sed_in_place "____dmarcReports" "${DMARC_REPORTS:-}" "$f"
-  _sed_in_place "____opendmarcRejectFailures" "$DMARC_REJECT_FAILURES" "$f"
-  _sed_in_place "____opendmarcVarFolder" "/var/opendmarc" "$f"
-  _sed_in_place "____ROUNDCUBE_DES_KEY" "$ROUNDCUBE_DES_KEY" "$f"
-done < <(find "$RUNTIME_DIR" -type f -print0)
-
-# Rspamd controller password (cleartext - mirrors 1.x.x 24-rspamd.sh logic at boot)
-mkdir -p "$RUNTIME_DIR/rspamd/local.d"
-printf 'password = "%s"\n' "$ADMIN_PASSWORD" > "$RUNTIME_DIR/rspamd/local.d/worker-controller.inc"
-
-# Postfix log routing : strip maillog_file line if logs go to syslog
-if [[ "${POSTFIX_PRIVATE_LOGS,,}" != "true" ]]; then
-  sed -i "/maillog_file=/d" "$RUNTIME_DIR/postfix/main.cf"
+if [ "$(id -u)" -ne 0 ]; then
+	die "This script must be run with sudo or as root"
 fi
 
-# Postfix milters : declarative chain (no more sequential sed appends)
-MILTERS="inet:opendkim:12301, inet:rspamd:11332"
-if [[ "${DMARC_ENABLE,,}" == "true" && "$DMARC_SELECT" == "OpenDMARC" ]]; then
-  MILTERS="$MILTERS, inet:opendmarc:8893"
-fi
-sed -i "s|^smtpd_milters =.*|smtpd_milters = $MILTERS|" "$RUNTIME_DIR/postfix/main.cf" || true
+[ -f "$SAMPLE" ] || die ".env.sample missing"
 
-# Multi-container adaptation : postfix/dovecot/roundcube MySQL configs all referenced
-# `localhost`/`127.0.0.1` in the 1.x.x monolith. In v2 the DB is in a separate container,
-# so the host becomes the docker service name `mariadb`. The user/password stay identical
-# to 1.x.x (root + SYSTEM_PASSWORD) - this preserves the compat lock on auth.
-log "Patching MySQL host references for multi-container connectivity..."
-for f in "$RUNTIME_DIR"/postfix/mysql-virtual-*.cf "$RUNTIME_DIR"/dovecot/db-sql/_mysql-connect.conf; do
-  [[ -f "$f" ]] || continue
-  sed -i 's|^hosts = 127\.0\.0\.1|hosts = mariadb|' "$f"
-  sed -i 's|host=localhost|host=mariadb|g' "$f"
-  sed -i 's|host=127\.0\.0\.1|host=mariadb|g' "$f"
-done
+# `_INSTALL_STAGE` records the last successfully-completed step so a Ctrl-C
+# mid-install can be resumed with a plain `./install.sh` re-run. The
+# underscore prefix marks the line as installer scaffolding: every key
+# matching `^_[A-Z_]+=` is wiped from .env once the install finishes, so
+# the live runtime config never carries internal state. Stages are ordered
+# and a re-run skips every step whose name appears at or before the
+# recorded marker.
+STAGE_KEY="_INSTALL_STAGE"
+STAGES=(start config secrets up schema admin)
 
-# Alpine adaptation : opendkim.conf points TrustAnchorFile at a Debian-only path.
-# Alpine doesn't ship the dnssec-anchors at that location ; DNSSEC validation is non-essential
-# for DKIM signing so we comment the directive out.
-if [[ -f "$RUNTIME_DIR/opendkim/opendkim.conf" ]]; then
-  sed -i 's|^TrustAnchorFile|#TrustAnchorFile|' "$RUNTIME_DIR/opendkim/opendkim.conf"
-fi
+env_get() { grep -E "^${1}=" "$TARGET" 2>/dev/null | head -1 | cut -d= -f2-; }
+env_set() {
+	local key="$1" value="$2"
+	if grep -qE "^${key}=" "$TARGET"; then
+		sed -i "s|^${key}=.*|${key}=${value}|" "$TARGET"
+	else
+		echo "${key}=${value}" >>"$TARGET"
+	fi
+}
 
-# fail2ban : the 1.x.x jail.local references custom filters (dovecot-auth_failed, postfix-ddos, ...)
-# whose definitions use Debian-specific interpolation keys absent from the Alpine fail2ban image.
-# We regenerate a minimal jail.local using the stock filters shipped with crazymax/fail2ban.
-cat > "$RUNTIME_DIR/fail2ban/jail.local" <<EOF
-[DEFAULT]
-maxretry = ${FAIL2BAN_MAXRETRY_EFF}
-findtime = ${FAIL2BAN_FINDTIME_EFF}
-bantime  = ${FAIL2BAN_BANTIME_EFF}
-ignoreip = 127.0.0.1/8 ::1 172.16.0.0/12 192.168.0.0/16
+stage_index() {
+	local s="$1" i=0
+	for x in "${STAGES[@]}"; do
+		[ "$x" = "$s" ] && echo "$i" && return
+		i=$((i + 1))
+	done
+	echo -1
+}
+stage_done() {
+	# Returns 0 (skip work) if the requested checkpoint is at or before the
+	# last completed stage recorded in .env.
+	local want="$1" have wi hi
+	have=$(env_get "$STAGE_KEY")
+	[ -z "$have" ] && return 1
+	wi=$(stage_index "$want")
+	hi=$(stage_index "$have")
+	[ "$hi" -lt 0 ] || [ "$wi" -lt 0 ] && return 1
+	[ "$hi" -ge "$wi" ]
+}
+stage_set() { env_set "$STAGE_KEY" "$1"; }
+stage_purge() { sed -i -E '/^_[A-Z_]+=/d' "$TARGET"; }
 
-# fail2ban runs in network_mode: host - default banaction (iptables-multiport) targets the host.
-banaction = iptables-multiport
-
-[dovecot]
-enabled  = true
-filter   = dovecot
-logpath  = /var/log/dovecot.log
-port     = imap,imaps,pop3,pop3s,submission,submissions
-
-[postfix]
-enabled  = true
-filter   = postfix
-logpath  = /var/log/mail.log
-port     = smtp,smtps,submission
-
-[postfix-sasl]
-enabled  = true
-filter   = postfix-sasl
-logpath  = /var/log/mail.log
-port     = smtp,smtps,submission
-EOF
-
-# Sanity : any remaining placeholder is a bug
-REMAINING="$(grep -rohE '____[a-zA-Z]+' "$RUNTIME_DIR" 2>/dev/null | sort -u || true)"
-if [[ -n "$REMAINING" ]]; then
-  warn "Unhydrated placeholders left in runtime/config/:"
-  echo "$REMAINING" | sed 's|^|    |'
-fi
-
-# manager-api login bootstrap : extends the existing 1.x.x `Accounts` table with the
-# columns needed to authenticate (password_hash, role, is_active, ...) and creates the
-# RefreshTokens table where issued refresh JWTs are persisted (one row per session,
-# revocable). Runs ONCE on fresh MariaDB datadir ; skipped on re-installs so we don't
-# overwrite hashes that no longer match what we'd print.
-if [[ "$MARIADB_INITIALIZED" == "false" ]]; then
-  cat > "$RUNTIME_DIR/mariadb/init/99_manager_api_auth.sql" <<EOF
-USE mailserver;
-
-ALTER TABLE \`Accounts\`
-  ADD COLUMN IF NOT EXISTS \`password_hash\` varchar(128) DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS \`role\` enum('root','admin','owner','user') NOT NULL DEFAULT 'user',
-  ADD COLUMN IF NOT EXISTS \`is_active\` tinyint(1) NOT NULL DEFAULT 1,
-  ADD COLUMN IF NOT EXISTS \`created_at\` datetime DEFAULT current_timestamp(),
-  ADD COLUMN IF NOT EXISTS \`last_login_at\` datetime DEFAULT NULL,
-  ADD INDEX IF NOT EXISTS \`idx_accounts_role\` (\`role\`);
-
-CREATE TABLE IF NOT EXISTS \`RefreshTokens\` (
-  \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
-  \`jti\` char(36) NOT NULL,
-  \`account_id\` int(11) NOT NULL,
-  \`expires_at\` datetime NOT NULL,
-  \`revoked_at\` datetime DEFAULT NULL,
-  \`created_at\` datetime NOT NULL DEFAULT current_timestamp(),
-  \`last_used_at\` datetime DEFAULT NULL,
-  \`user_agent\` varchar(255) DEFAULT NULL,
-  \`ip\` varchar(45) DEFAULT NULL,
-  PRIMARY KEY (\`id\`),
-  UNIQUE KEY \`uk_RefreshTokens_jti\` (\`jti\`),
-  KEY \`idx_RefreshTokens_account_id\` (\`account_id\`),
-  KEY \`idx_RefreshTokens_expires_at\` (\`expires_at\`),
-  FOREIGN KEY (\`account_id\`) REFERENCES \`Accounts\` (\`id\`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_general_ci;
-
-INSERT INTO \`Accounts\` (\`username\`, \`password_hash\`, \`role\`, \`is_active\`)
-  VALUES ('$ROOT_EMAIL_ESC', '$ROOT_HASHED_ESC', 'root', 1)
-  ON DUPLICATE KEY UPDATE
-    \`password_hash\` = VALUES(\`password_hash\`),
-    \`role\` = 'root',
-    \`is_active\` = 1;
-EOF
-  ok "Wrote manager-api auth bootstrap SQL (Accounts root row + RefreshTokens table)"
-fi
-
-ok "Hydration done - $(find "$RUNTIME_DIR" -type f | wc -l) files in runtime/config/"
-
-#
-# 5. Volumes preparation
-#
-log "Preparing volumes under $DOCKER_VOLUMES ..."
-mkdir -p "$DOCKER_VOLUMES"/{mail,mysql,redis,rspamd,opendkim,opendmarc,clamav,fail2ban,ssl,postfix-spool,log,roundcube}
-
-# OpenDKIM expects KeyTable / SigningTable / TrustedHosts files even when no DKIM key is registered.
-# Touch empty placeholders so the daemon starts ; dkim-create.sh appends to them later.
-[[ -f "$DOCKER_VOLUMES/opendkim/key.table" ]] || sudo touch "$DOCKER_VOLUMES/opendkim/key.table"
-[[ -f "$DOCKER_VOLUMES/opendkim/signing.table" ]] || sudo touch "$DOCKER_VOLUMES/opendkim/signing.table"
-if [[ ! -f "$DOCKER_VOLUMES/opendkim/trusted.hosts" ]]; then
-  sudo tee "$DOCKER_VOLUMES/opendkim/trusted.hosts" >/dev/null <<EOF
-127.0.0.1
-::1
-localhost
-$DOMAIN_FQDN
-EOF
-fi
-sudo mkdir -p "$DOCKER_VOLUMES/opendkim/keys"
-
-# Fail2ban watches log files - touch them so the jails don't refuse to start on a fresh volume.
-sudo mkdir -p "$DOCKER_VOLUMES/log"
-for f in mail.log dovecot.log auth.log; do
-  [[ -f "$DOCKER_VOLUMES/log/$f" ]] || sudo touch "$DOCKER_VOLUMES/log/$f"
-done
-
-#
-# 6. Letsencrypt sync (optional, non-fatal)
-#
-LE_LIVE="/etc/letsencrypt/live/$DOMAIN_FQDN"
-# Use sudo for the test since /etc/letsencrypt/live is typically 700 root
-if sudo test -d "$LE_LIVE"; then
-  log "Syncing Letsencrypt certs from $LE_LIVE ..."
-  if sudo cp -L "$LE_LIVE/fullchain.pem" "$DOCKER_VOLUMES/ssl/" \
-    && sudo cp -L "$LE_LIVE/privkey.pem" "$DOCKER_VOLUMES/ssl/" \
-    && sudo chmod 644 "$DOCKER_VOLUMES/ssl/"*.pem; then
-    ok "SSL certs copied"
-  else
-    warn "Could not copy Letsencrypt certs"
-  fi
+# -----------------------------------------------------------------------------
+# Pre-flight: decide whether this is a fresh install, a resume, or a refusal.
+# -----------------------------------------------------------------------------
+if [ -f "$TARGET" ]; then
+	RESUME_STAGE=$(env_get "$STAGE_KEY")
+	if [ -z "$RESUME_STAGE" ]; then
+		die ".env exists and carries no _INSTALL_STAGE marker, which means a
+         previous install finished successfully. install.sh refuses to
+         clobber a live .env. To start over:
+           sudo rm -rf volumes/ INSTALL_INFO.txt && rm .env
+         To tweak values without reinstalling: edit .env directly."
+	fi
+	c "resuming install from stage: $RESUME_STAGE"
+elif [ -d volumes ]; then
+	die "./volumes/ exists but .env does not -- inconsistent state.
+       stateful services would skip their init step and keep whatever
+       credentials lived in volumes/ before. To start over:
+         sudo rm -rf volumes/ INSTALL_INFO.txt"
 else
-  warn "No Letsencrypt certs found at $LE_LIVE - default self-signed will be used"
+	c "creating $TARGET from $SAMPLE"
+	cp "$SAMPLE" "$TARGET"
+	stage_set start
+fi
+# After this point, .env exists and $STAGE_KEY is set. Any later die() exit
+# leaves the marker in place, so the next ./install.sh resumes cleanly.
+
+needs_input() {
+	local v="$1"
+	[[ -z "$v" || "$v" =~ example\.com|203\.0\.113\.10|change_me ]]
+}
+
+ask() {
+	local key="$1" label="$2" default="$3"
+	local current
+	current=$(env_get "$key")
+	if needs_input "$current"; then
+		if [ -n "$default" ]; then
+			q "$label [$default]:"
+		else
+			q "$label:"
+		fi
+		local answer
+		read -e -r answer
+		env_set "$key" "${answer:-$default}"
+	fi
+}
+
+rand_b64() { openssl rand -base64 48 | tr -d '\n/+=' | head -c 32; }
+rand_alnum() { openssl rand -hex 16; }
+
+# Normalize Roundcube locale input. Accepts short codes (fr, FR, Fr) and
+# expands them to the canonical xx_YY form; passes through a full xx_YY
+# if the user typed it. Echoes empty string on unknown input.
+normalize_lang() {
+	case "${1,,}" in
+	en | en_us) echo "en_US" ;;
+	fr | fr_fr) echo "fr_FR" ;;
+	de | de_de) echo "de_DE" ;;
+	es | es_es) echo "es_ES" ;;
+	it | it_it) echo "it_IT" ;;
+	pt | pt_pt) echo "pt_PT" ;;
+	pt_br) echo "pt_BR" ;;
+	nl | nl_nl) echo "nl_NL" ;;
+	ru | ru_ru) echo "ru_RU" ;;
+	pl | pl_pl) echo "pl_PL" ;;
+	*)
+		if [[ "$1" =~ ^[a-zA-Z]{2}_[a-zA-Z]{2}$ ]]; then
+			local lo="${1%_*}" hi="${1#*_}"
+			echo "${lo,,}_${hi^^}"
+		fi
+		;;
+	esac
+}
+
+# Prompt for a Roundcube language. Accepts short aliases (fr, FR, en, ...)
+# and full locales (fr_FR, pt_BR, ...). Echoes the canonical xx_YY value.
+prompt_lang() {
+	local label="$1" default="$2" ans norm
+	while true; do
+		printf '\033[1;36m[?]\033[0m %s (en, fr, de, es, it, pt, nl, ru, pl, ... or full like pt_BR) [%s]: ' \
+			"$label" "$default" >&2
+		read -e -r ans
+		ans="${ans:-$default}"
+		norm=$(normalize_lang "$ans")
+		if [ -n "$norm" ]; then
+			printf '%s' "$norm"
+			return 0
+		fi
+		printf '\033[1;33m[warn]\033[0m unknown language %q, try a short code (fr, en, de, ...) or a full xx_YY locale\n' "$ans" >&2
+	done
+}
+
+# Read a value in a validation loop: re-prompts until the answer matches the
+# regex. Echoes the validated value (caller captures with $(...)).
+# Warnings and prompts go to stderr so they do not pollute the captured value.
+prompt_re() {
+	local label="$1" default="$2" pattern="$3" hint="$4" ans
+	while true; do
+		if [ -n "$default" ]; then
+			printf '\033[1;36m[?]\033[0m %s [%s]: ' "$label" "$default" >&2
+		else
+			printf '\033[1;36m[?]\033[0m %s: ' "$label" >&2
+		fi
+		read -e -r ans
+		ans="${ans:-$default}"
+		if [[ "$ans" =~ $pattern ]]; then
+			printf '%s' "$ans"
+			return 0
+		fi
+		printf '\033[1;33m[warn]\033[0m invalid input, expected: %s\n' "$hint" >&2
+	done
+}
+
+set_secret_if_placeholder() {
+	local key="$1" value="$2"
+	if grep -qE "^${key}=change_me" "$TARGET"; then
+		env_set "$key" "$value"
+	fi
+}
+
+# ---------------------------------------------------------------------------
+# 1. Interactive configuration
+# ---------------------------------------------------------------------------
+if ! stage_done config; then
+	echo
+	c "configuration"
+
+	# Prompt for the FQDN in a loop: a Let's Encrypt cert for it must already
+	# exist on the host. Re-prompt until the user enters a name whose cert is
+	# present (or Ctrl-C). Only persist to .env once the check passes.
+	LE_PATH=$(env_get TLS_LETSENCRYPT_PATH)
+	FQDN_DEFAULT="mail.example.com"
+	while true; do
+		q "Mail server FQDN (PTR + cert CN) [$FQDN_DEFAULT]:"
+		read -e -r ANSWER
+		HOSTNAME="${ANSWER:-$FQDN_DEFAULT}"
+		CERT_DIR="${LE_PATH}/live/${HOSTNAME}"
+		if [ -f "${CERT_DIR}/fullchain.pem" ] && [ -f "${CERT_DIR}/privkey.pem" ]; then
+			env_set MAIL_HOSTNAME "$HOSTNAME"
+			env_set TLS_CERT_NAME "$HOSTNAME"
+			ok "TLS certificate found at ${CERT_DIR}"
+			break
+		fi
+		warn "no Let's Encrypt certificate at ${CERT_DIR}/{fullchain,privkey}.pem"
+		warn "obtain one with: sudo certbot certonly --standalone -d ${HOSTNAME}"
+		warn "then re-enter the FQDN below (or Ctrl-C to quit)"
+		FQDN_DEFAULT="$HOSTNAME"
+	done
+
+	DETECTED_IP=$(curl -s --max-time 4 https://api.ipify.org 2>/dev/null ||
+		curl -s --max-time 4 https://ifconfig.me 2>/dev/null ||
+		true)
+	PUBLIC_IP=$(prompt_re "Public IPv4 of this host" "$DETECTED_IP" \
+		'^([0-9]{1,3}\.){3}[0-9]{1,3}$' "IPv4 like 203.0.113.10")
+	env_set MAIL_PUBLIC_IP "$PUBLIC_IP"
+
+	RC_LANG=$(prompt_lang "Roundcube default language" "en_US")
+	env_set ROUNDCUBE_LANGUAGE "$RC_LANG"
+
+	ATTACH_MB=$(prompt_re "Maximum attachment size in MB (postfix + Roundcube)" "25" \
+		'^[1-9][0-9]{0,3}$' \
+		"integer between 1 and 9999 MB (Gmail caps at 25)")
+	env_set ATTACHMENT_MAX_SIZE_MB "$ATTACH_MB"
+
+	stage_set config
 fi
 
-echo
-if [[ -n "${ROOT_PWD_PRINT:-}" ]]; then
-  warn "Root account password generated this run - save it now, it will NOT be shown again :"
-  echo "    email    : $ROOT_EMAIL_VAL"
-  echo "    password : $ROOT_PWD_PRINT"
-  echo
+# Rehydrate shell vars from .env: on a fresh run these were set inside the
+# config block above, but on a resume the block was skipped, so the vars
+# need to come back from .env.
+HOSTNAME=$(env_get MAIL_HOSTNAME)
+PUBLIC_IP=$(env_get MAIL_PUBLIC_IP)
+
+# ---------------------------------------------------------------------------
+# 2. Secrets (auto-generated, never asked)
+# ---------------------------------------------------------------------------
+if ! stage_done secrets; then
+	c "generating secrets where placeholders remain"
+	set_secret_if_placeholder DB_PASSWORD "$(rand_alnum)"
+	set_secret_if_placeholder DB_ROOT_PASSWORD "$(rand_alnum)"
+	set_secret_if_placeholder RSPAMD_PASSWORD "$(rand_alnum)"
+	set_secret_if_placeholder MANAGER_JWT_ACCESS_SECRET "$(rand_b64)"
+	set_secret_if_placeholder MANAGER_JWT_REFRESH_SECRET "$(rand_b64)"
+	stage_set secrets
 fi
-ok "INSTALLATION done. Next step:"
-echo "    docker compose up -d"
+
+DB_NAME=$(env_get DB_NAME)
+DB_USER=$(env_get DB_USER)
+DB_PASS=$(env_get DB_PASSWORD)
+DB_ROOT=$(env_get DB_ROOT_PASSWORD)
+MANAGEUI_PORT=$(env_get BINDING_PORT_MANAGEUI)
+ROUNDCUBE_PORT=$(env_get BINDING_PORT_ROUNDCUBE)
+PHPMYADMIN_PORT=$(env_get BINDING_PORT_PHPMYADMIN)
+RSPAMDUI_PORT=$(env_get BINDING_PORT_RSPAMD_UI)
+
+# ---------------------------------------------------------------------------
+# 3. Full stack up
+# ---------------------------------------------------------------------------
+if ! stage_done up; then
+	c "building images and bringing the full stack up..."
+	docker compose up -d --build
+	stage_set up
+fi
+
+# ---------------------------------------------------------------------------
+# 4. Wait for TypeORM to create the schema
+# ---------------------------------------------------------------------------
+if ! stage_done schema; then
+	c "waiting for TypeORM to create the schema (max 180s)..."
+	T=180
+	until docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" \
+		-e "SHOW TABLES LIKE 'accounts'" 2>/dev/null | grep -q accounts; do
+		sleep 1
+		T=$((T - 1))
+		[ $T -le 0 ] && die "manager-api did not finish creating the schema in time"
+	done
+	ok "schema ready"
+	stage_set schema
+fi
+
+# ---------------------------------------------------------------------------
+# 5. Seed root account
+# ---------------------------------------------------------------------------
+if ! stage_done admin; then
+	# The root account's email and password are asked here and kept ONLY in shell
+	# memory for the duration of this stage: neither is ever written to .env (a
+	# plaintext admin password lingering on disk is a needless secret to leak) --
+	# the account is identified by email + a scrypt hash in the DB, nothing here is
+	# needed at runtime. On a resume where this stage already ran, it is skipped,
+	# so nothing is re-prompted.
+	ADMIN_EMAIL=$(prompt_re "Email of the first (root) account" "" \
+		'^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' \
+		"a valid email like admin@example.com")
+	# Choose the password (hidden, confirmed), or leave blank to auto-generate a
+	# strong one shown once at the end (terminal only, stored nowhere).
+	ADMIN_PASS=""
+	ADMIN_PASS_GENERATED=0
+	while true; do
+		printf '\033[1;36m[?]\033[0m Password for the root account (8+ chars, blank = auto-generate): ' >&2
+		read -rs ADMIN_PW1
+		printf '\n' >&2
+		if [ -z "$ADMIN_PW1" ]; then
+			ADMIN_PASS=$(rand_alnum)
+			ADMIN_PASS_GENERATED=1
+			break
+		fi
+		if [ ${#ADMIN_PW1} -lt 8 ]; then
+			warn "password must be at least 8 characters"
+			continue
+		fi
+		printf '\033[1;36m[?]\033[0m Confirm password: ' >&2
+		read -rs ADMIN_PW2
+		printf '\n' >&2
+		if [ "$ADMIN_PW1" = "$ADMIN_PW2" ]; then
+			ADMIN_PASS="$ADMIN_PW1"
+			break
+		fi
+		warn "passwords do not match, try again"
+	done
+	unset ADMIN_PW1 ADMIN_PW2
+
+	c "hashing root password and upserting accounts row..."
+	ADMIN_HASH=$(docker compose exec -T -e P="$ADMIN_PASS" manager-api node -e '
+const { randomBytes, scryptSync } = require("crypto");
+const N = 16384, r = 8, p = 1, salt = randomBytes(16);
+const dk = scryptSync(process.env.P, salt, 64, { N, r, p, maxmem: 67108864 });
+process.stdout.write(`scrypt$${N}$${r}$${p}$${salt.toString("base64")}$${dk.toString("base64")}`);
+' | tr -d '\r')
+	# is_root=1 marks this row as the bootstrap super-admin. The login identity is
+	# the email (no username). The seeded account is the only one created by
+	# install.sh; every subsequent account, domain, postmaster reservation and
+	# DKIM key is created from the manager-ui (or the manager-api directly) by this
+	# root user. Re-running install (with the admin stage reset) keeps the row but
+	# rehashes its password (NOT a no-op: lets the operator reset it by entering a
+	# new one at the prompt). `id` is a char(36) uuid with no DB-side default
+	# (TypeORM generates it for API-created accounts), so this raw INSERT supplies
+	# its own; it stays out of the UPDATE list so a re-run never rotates it, and
+	# the ON DUPLICATE key is the unique email. The second statement gives the
+	# account its 1-1 profile row (empty for now) via a by-email id lookup, so it
+	# works whether the account was just created or already existed. The third
+	# hands the seeded default group (created with the schema by
+	# SeedDefaultGroup, before any account existed to own it) to this root
+	# account; `owner_id IS NULL` keeps a re-run from stealing a group whose
+	# ownership was since passed on.
+	NEW_UUID=$(cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen)
+	docker compose exec -T mariadb mariadb -uroot -p"$DB_ROOT" "$DB_NAME" <<SQL
+INSERT INTO accounts (id, email, password, is_root, enabled, created_at, updated_at)
+VALUES ('${NEW_UUID}', '${ADMIN_EMAIL}', '${ADMIN_HASH}', 1, 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE password=VALUES(password), is_root=1, updated_at=NOW();
+INSERT IGNORE INTO account_profiles (account_id, created_at, updated_at)
+SELECT id, NOW(), NOW() FROM accounts WHERE email='${ADMIN_EMAIL}';
+UPDATE \`groups\` SET owner_id = (SELECT id FROM accounts WHERE email='${ADMIN_EMAIL}')
+WHERE is_default = 1 AND owner_id IS NULL;
+SQL
+	ok "root account ready"
+	stage_set admin
+fi
+
+# ---------------------------------------------------------------------------
+# 6. Summary
+# ---------------------------------------------------------------------------
+PUBLIC_DISPLAY="${PUBLIC_IP:-<MAIL_PUBLIC_IP>}"
+URLS="  manager UI   : http://${PUBLIC_DISPLAY}:${MANAGEUI_PORT}
+  phpmyadmin   : http://${PUBLIC_DISPLAY}:${PHPMYADMIN_PORT}
+  rspamd UI    : http://${PUBLIC_DISPLAY}:${RSPAMDUI_PORT}"
+
+cat <<EOF | tee INSTALL_INFO.txt
+
+==========================================================================
+                       install complete
+==========================================================================
+
+URLs (binding IPs are set in .env, default 127.0.0.1 for UIs):
+${URLS}
+
+Root account (is_root=1 super-admin):
+  login (email): ${ADMIN_EMAIL:-<seeded on a previous run>}
+  password     : the one you set during install (stored nowhere)
+
+Sign in at the manager UI above, then create your first domain
+(Domains -> +Add). The API reserves postmaster@<domain> inactive and
+generates a DKIM key in the same call; the TXT record to publish is
+returned by the create response and listed under Domains -> <name> -> DKIM.
+
+phpMyAdmin / MariaDB credentials:
+  root         : root / ${DB_ROOT}
+  app user     : ${DB_USER} / ${DB_PASS}  (postfix, dovecot, manager-api)
+
+See DOMAIN_DNS.md for the full DNS record set (MX, SPF, DMARC, DKIM).
+==========================================================================
+EOF
+
+# An auto-generated root password is the only copy in existence: show it ONCE,
+# to the terminal only -- never tee'd into INSTALL_INFO.txt, never in .env. A
+# password the operator chose is deliberately not echoed (they already have it).
+if [ "${ADMIN_PASS_GENERATED:-0}" = "1" ]; then
+	warn "auto-generated root password (save it now, it is stored nowhere):"
+	printf '    \033[1;33m%s\033[0m\n' "$ADMIN_PASS" >&2
+fi
+
+# Install reached the end: wipe every installer-owned scaffolding key
+# (`_INSTALL_STAGE`, anything matching `^_[A-Z_]+=`) so the live .env carries
+# only runtime config. A re-run of install.sh against this .env will now die
+# with the "completed install" branch of the preflight, as expected.
+stage_purge
+ok "install.sh complete; .env scrubbed of internal scaffolding"

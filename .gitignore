@@ -1,16 +1,22 @@
 .env
-.secrets/
-runtime/
+.env.local
+.env.menu
+.env.file*
+INSTALL_INFO.txt
 volumes/
-*.log
+nohup.out
+backup/
 node_modules/
 dist/
-
-# Production DB dump - contains real password hashes, NEVER commit
-mailserver.sql
-*.dump.sql
-
 .trash/
+.secrets/
+___keep
+*.log
+.output/
+.nuxt/
+coverage/
 
-.profiles
+*.tsbuildinfo
 
+# test-mailservers.sh outputs (regenerated on every run)
+test-results.md

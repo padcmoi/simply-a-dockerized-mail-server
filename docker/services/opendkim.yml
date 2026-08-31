@@ -1,0 +1,15 @@
+services:
+  opendkim:
+    container_name: mail-opendkim
+    restart: unless-stopped
+    build:
+      context: ../../images/opendkim
+    env_file: ../../.env
+    volumes:
+      - ${VOLUMES_PATH}/opendkim:/etc/opendkim
+    networks:
+      mail:
+        ipv4_address: 172.200.0.13
+    depends_on:
+      mariadb:
+        condition: service_healthy
