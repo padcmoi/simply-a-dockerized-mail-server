@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- A mail addressed to an alias is no longer refused before the alias has been read _(postfix)_ (31-08-2026)
+
 ## [2.0.0-rc.1] - 31-08-2026
 
 ### Added

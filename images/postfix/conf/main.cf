@@ -86,6 +86,7 @@ smtpd_recipient_restrictions =
     reject_non_fqdn_recipient,
     reject_unknown_recipient_domain,
     reject_unauth_destination,
+    check_recipient_access mysql:/etc/postfix/sql/mysql-virtual-aliases-policy.cf,
     check_policy_service inet:mail-dovecot:12340,
     check_policy_service unix:private/policyd-spf,
     reject_rbl_client zen.spamhaus.org

@@ -1,0 +1,9 @@
+hosts    = ${DB_HOST}
+user     = ${DB_USER}
+password = ${DB_PASSWORD}
+dbname   = ${DB_NAME}
+# Says "this address is an alias", nothing more. Consulted just before the quota
+# policy, because RCPT TO comes before postfix expands virtual_alias_maps in
+# cleanup: an alias reaches that policy unexpanded, matches no mailbox, and
+# comes back refused as an unknown user.
+query    = SELECT 'OK' FROM virtual_aliases WHERE source='%s'
