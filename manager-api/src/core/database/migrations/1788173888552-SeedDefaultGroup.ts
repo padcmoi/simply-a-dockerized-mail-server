@@ -40,6 +40,7 @@ const GLOBAL_PERMISSIONS: [resource: string, action: string][] = [
   ["tickets", "list-tickets"],
   ["tickets", "view-ticket"],
   ["tickets", "create-ticket"],
+  ["tickets", "reply-ticket"],
 ];
 
 export class SeedDefaultGroup1788173888552 implements MigrationInterface {

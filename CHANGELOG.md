@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(groups): the default group may answer a ticket it did not open (31-08-2026)
 - A fresh install lands on a seeded default group instead of an empty ACL _(groups)_ [c9966c0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c9966c0d489140daebe9df11bb28cc7491f166a9) (31-08-2026)
 - A ticket names the mailboxes and aliases it is about, mandatory unless root says otherwise _(tickets)_ [df89d98](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/df89d9879a303782cb0dec15795f18ff12e8d6d4) (31-08-2026)
 - The account changes its own password, current one required _(profile)_ [5b45cb2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5b45cb22543fb29b3a0af0a3f717808cc820df06) (30-08-2026)
