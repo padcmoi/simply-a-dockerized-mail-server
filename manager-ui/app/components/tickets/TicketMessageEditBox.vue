@@ -9,8 +9,8 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="w-full text-sm rounded-2xl overflow-hidden ring ring-inset ring-default bg-default" @keydown.esc="emit('cancel')">
-    <MessageEditor v-model="model" :placeholder="t('tickets.detail.replyPlaceholder')">
+  <div class="w-full text-sm" @keydown.esc="emit('cancel')">
+    <MessageEditor v-model="model" framed>
       <template #footer>
         <div class="flex items-center justify-between gap-2">
           <span class="text-[11px] tabular-nums" :class="expired ? 'text-error' : 'text-warning'">

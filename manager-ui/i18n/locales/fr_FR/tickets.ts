@@ -2,7 +2,8 @@ import type { Locales } from "../../Locales";
 
 export default {
   alertTitle: "Tickets de support pour ce domaine",
-  alertDescription: "Ouvrez un ticket pour joindre le support. Un ticket privé reste visible uniquement par vous et l'équipe support.",
+  alertDescription:
+    "Ouvrez un ticket pour joindre le support. Un ticket privé reste visible uniquement par vous et l'équipe support.",
   createTitle: "Nouveau ticket",
   empty: "Aucun ticket pour l'instant.",
   table: {
@@ -23,7 +24,6 @@ export default {
     subject: "Sujet",
     subjectPlaceholder: "Résumé court",
     body: "Message",
-    bodyPlaceholder: "Décrivez votre demande",
     visibility: "Visibilité",
     public: "Public",
     private: "Privé",
@@ -51,7 +51,6 @@ export default {
     backToList: "Retour aux tickets",
     openedBy: "Ouvert par {who}",
     reply: "Répondre",
-    replyPlaceholder: "Écrire un message",
     send: "Envoyer",
     take: "Prendre en charge",
     authorCannotTake: "Vous avez ouvert ce ticket, sa prise en charge revient à quelqu'un d'autre.",

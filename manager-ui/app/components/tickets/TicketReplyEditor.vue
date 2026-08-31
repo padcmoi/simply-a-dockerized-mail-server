@@ -27,7 +27,7 @@ defineExpose({
 </script>
 
 <template>
-  <MessageEditor ref="editor" v-model="body" :placeholder="t('tickets.detail.replyPlaceholder')" @typing="emit('typing')">
+  <MessageEditor ref="editor" v-model="body" @typing="emit('typing')">
     <template #footer>
       <div class="flex justify-end">
         <UButton icon="i-lucide-send" :disabled="empty" :loading="sending" @click="submit">

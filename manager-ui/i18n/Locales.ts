@@ -462,7 +462,6 @@ export interface Locales {
       subject: string;
       subjectPlaceholder: string;
       body: string;
-      bodyPlaceholder: string;
       visibility: string;
       public: string;
       private: string;
@@ -490,7 +489,6 @@ export interface Locales {
       backToList: string;
       openedBy: string;
       reply: string;
-      replyPlaceholder: string;
       send: string;
       take: string;
       authorCannotTake: string;

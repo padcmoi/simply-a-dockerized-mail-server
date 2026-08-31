@@ -1,17 +1,21 @@
 <script setup lang="ts">
-// The rich message editor, shared by the reply composer and the inline edit of
-// an existing message. It owns the TipTap surface and the toolbar; the caller
-// supplies the footer actions (send, or cancel/save) through the `footer` slot.
+// The one rich message editor of the support desk: opening a ticket, replying
+// to one, and editing a sent message all go through it. It owns the TipTap
+// surface and the toolbar; the caller supplies the footer actions (send, or
+// cancel/save) through the `footer` slot, and asks for the framed box wherever
+// the editor stands on its own rather than flush inside a card.
 const emit = defineEmits<{ typing: [] }>();
 const model = defineModel<string>({ required: true });
-defineProps<{ placeholder?: string }>();
+defineProps<{ framed?: boolean; baseClass?: string }>();
 
 const { t } = useI18n();
 const slots = useSlots();
 
 // Only the slice of the TipTap editor this component drives; the package is a
 // transitive dependency of @nuxt/ui, not a direct one to import types from.
-const editor = shallowRef<{ commands: { focus: (_at: "end") => boolean } } | null>(null);
+// UEditor exposes its instance rather than emitting it: it overrides the tiptap
+// `onCreate` it receives, so a listener on that event is never called.
+const surface = useTemplateRef<{ editor: { commands: { focus: (_at: "end") => boolean } } | null }>("surface");
 
 // UEditorToolbar renders strictly what `items` declares: with no list it draws
 // nothing at all. Grouped by intent, each group separated in the bar.
@@ -41,26 +45,25 @@ const toolbar = computed(() => [
 defineExpose({
   focusEnd: async () => {
     await nextTick();
-    editor.value?.commands.focus("end");
+    surface.value?.editor?.commands.focus("end");
   },
 });
 </script>
 
 <template>
-  <div>
+  <div :class="framed && 'rounded-lg overflow-hidden ring ring-inset ring-accented bg-default'">
     <UEditor
+      ref="surface"
       v-model="model"
       content-type="markdown"
-      :placeholder="placeholder"
       :image="false"
       :mention="false"
-      :ui="{ content: 'max-h-60 overflow-y-auto px-4 py-2.5 sm:px-6 focus:outline-none' }"
+      :ui="{ base: baseClass, content: 'max-h-60 overflow-y-auto px-4 py-2.5 sm:px-6 focus:outline-none' }"
       class="w-full divide-y divide-default"
-      @create="({ editor: created }) => (editor = created)"
       @update:model-value="emit('typing')"
     >
       <template #default="{ editor: current }">
-        <UEditorToolbar :editor="current" :items="toolbar" class="px-3 py-1.5 sm:px-5 bg-elevated/50" />
+        <UEditorToolbar :editor="current" :items="toolbar" class="flex-wrap px-3 py-1.5 sm:px-5 bg-elevated/50" />
       </template>
     </UEditor>
 

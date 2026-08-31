@@ -88,7 +88,7 @@ async function create() {
           <UInput v-model="form.subject" :placeholder="t('tickets.form.subjectPlaceholder')" class="w-full" />
         </UFormField>
         <UFormField :label="t('tickets.form.body')" name="body">
-          <UTextarea v-model="form.body" :rows="6" :placeholder="t('tickets.form.bodyPlaceholder')" class="w-full" />
+          <MessageEditor v-model="form.body" framed base-class="min-h-40" />
         </UFormField>
         <UFormField :label="t('tickets.form.visibility')" name="visibility" :hint="visibilityHint">
           <USelectMenu v-model="form.visibility" value-key="value" :items="visibilityOptions" class="w-full sm:w-56" />

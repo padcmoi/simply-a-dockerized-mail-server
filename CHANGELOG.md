@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- fix(tickets): a ticket's first message is written in the same rich editor as every reply (31-08-2026)
 - fix(invitations): the two resource columns the entity always declared now exist in the schema (30-08-2026)
 - feat(profile): the account changes its own password, current one required (30-08-2026)
 - refactor(manager-api): entities pin every constraint name so generate detects only real drift (30-08-2026)
