@@ -21,6 +21,20 @@ CONTAINER="${MANAGER_API_CONTAINER:-mail-manager-api}"
 DATA_SOURCE="src/core/database/data-source.ts"
 MIGRATIONS_DIR="src/core/database/migrations"
 
+# The directory this was launched from can have been deleted under the shell,
+# which leaves it holding a handle on nothing. Node dies on process.cwd() with
+# a stack trace that names none of this, so say it plainly when bash still can.
+# Reached only when bash itself started: `pnpm db:*` dies before this file runs.
+if ! pwd >/dev/null 2>&1; then
+	echo "" >&2
+	echo "[FAIL] the directory you are in no longer exists." >&2
+	echo "       It was deleted while this shell was standing in it." >&2
+	echo "       Come back with an absolute path (not 'cd .'):" >&2
+	echo "         cd \"$(dirname "$0")\"" >&2
+	echo "" >&2
+	exit 1
+fi
+
 if [ "$#" -eq 0 ]; then
 	echo "usage: ./db.sh <typeorm migration subcommand> [name] [flags...]" >&2
 	echo "  ./db.sh migration:show" >&2
@@ -70,16 +84,43 @@ if [ -f /.dockerenv ]; then
 	TS_NODE_TRANSPILE_ONLY=true exec pnpm typeorm "${args[@]}"
 fi
 
-if ! command -v docker >/dev/null 2>&1; then
-	echo "[FAIL] docker is not available, and this is not running inside $CONTAINER" >&2
+# Everything that can stand between here and the database, each said in one
+# line. None of it is repaired: this script reports, the operator decides.
+die() {
+	echo "" >&2
+	echo "[FAIL] $1" >&2
+	shift
+	for line in "$@"; do echo "       $line" >&2; done
+	echo "" >&2
 	exit 1
+}
+
+if ! command -v docker >/dev/null 2>&1; then
+	die "docker is not installed on this machine." "The TypeORM CLI only reaches the database from inside $CONTAINER."
 fi
 
-running="$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo "missing")"
-if [ "$running" != "true" ]; then
-	echo "[FAIL] container $CONTAINER is not running - start the stack first, this script will not do it for you" >&2
-	exit 1
+if ! docker info >/dev/null 2>&1; then
+	die "the docker daemon is not answering." "Start docker, then bring the stack up with ./service.sh up"
 fi
+
+# Kept out of a `||` fallback on purpose: a failing `docker inspect` still
+# writes an empty line to stdout, which would land in front of the fallback and
+# print as a two-line state.
+state="$(docker inspect -f '{{.State.Status}}' "$CONTAINER" 2>/dev/null)" || state=""
+[ -n "$state" ] || state="absent"
+case "$state" in
+running) ;;
+absent)
+	die "the container $CONTAINER does not exist." \
+		"The stack has never been brought up here, or it was removed." \
+		"Bring it up with:  ./service.sh up"
+	;;
+*)
+	die "the container $CONTAINER is down (state: $state)." \
+		"It has to be running: the database only answers on the docker network." \
+		"Start it with:  ./service.sh up"
+	;;
+esac
 
 # One quoted string for `sh -c`, so an argument carrying a space survives.
 quoted=""

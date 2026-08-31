@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- chore(manager-api): db.sh names what stands between it and the database, one line each (31-08-2026)
 - chore(manager-api): the deprecated glob an install pulled in is pinned to a supported one (31-08-2026)
 - fix(acl): elevated domain ownership asks to read a domain, not to run the whole domains section (31-08-2026)
 - feat(groups): a fresh install lands on a seeded default group instead of an empty ACL (31-08-2026)
