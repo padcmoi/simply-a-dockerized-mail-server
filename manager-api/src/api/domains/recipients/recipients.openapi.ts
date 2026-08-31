@@ -17,6 +17,7 @@ export const RecipientsApi = () =>
 const recipientListItemExample = {
   id: 1,
   ownerId: null,
+  ownerEmail: null,
   domain: "example.com",
   email: "jdoe@example.com",
   maildir: "example.com/jdoe/",
@@ -37,8 +38,10 @@ export const ListRecipientsDocs = () =>
       summary: "List recipients that belong to this domain, paginated",
       description:
         'Every recipient row also carries a computed `usedBytes` (from virtual_quota_users, `"0"` if dovecot ' +
-        "hasn't written a counter for it yet). `sortBy=usedBytes` is accepted despite not being a real column -- " +
-        "it sorts on a joined value.",
+        "hasn't written a counter for it yet) and `ownerEmail` (the address of the account in `ownerId`, `null` " +
+        "when the mailbox belongs to nobody). `sortBy=usedBytes` and `sortBy=ownerEmail` are accepted despite " +
+        "not being real columns -- both sort on a joined value, and `search` matches the owner's address as well " +
+        "as the recipient's.",
     }),
     ApiResponse({
       status: 200,

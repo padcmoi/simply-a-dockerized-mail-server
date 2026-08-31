@@ -114,27 +114,39 @@ describe("RecipientsService", () => {
   });
 
   describe("list (paginated)", () => {
-    it("searches, sorts on the joined usedBytes column, and maps raw usedBytes (missing -> '0')", async () => {
+    it("searches over the mailbox and its owner, sorts on the joined usedBytes column, and maps raw usedBytes (missing -> '0')", async () => {
       qb.getCount.mockResolvedValueOnce(2);
       qb.getRawAndEntities.mockResolvedValueOnce({
         entities: [{ id: 1, email: "a@example.com" }, { id: 2, email: "b@example.com" }],
-        raw: [{ usedBytes: "999" }, {}],
+        raw: [{ usedBytes: "999", ownerEmail: "owner@example.com" }, {}],
       });
 
       const res = await svc.list(FQDN, q({ limit: 10, search: "jd", sortBy: "usedBytes", sortDir: "asc" }));
 
       expect(qb.where).toHaveBeenCalledWith("r.domain = :domain", { domain: FQDN });
-      expect(qb.andWhere).toHaveBeenCalledWith("r.email LIKE :search", { search: "%jd%" });
+      expect(qb.andWhere).toHaveBeenCalledWith("(r.email LIKE :search OR o.email LIKE :search)", { search: "%jd%" });
       expect(qb.orderBy).toHaveBeenCalledWith("usedBytes", "ASC");
       expect(qb.skip).toHaveBeenCalledWith(0);
       expect(qb.take).toHaveBeenCalledWith(10);
       expect(res).toEqual({
         items: [
-          { id: 1, email: "a@example.com", usedBytes: "999" },
-          { id: 2, email: "b@example.com", usedBytes: "0" },
+          { id: 1, email: "a@example.com", usedBytes: "999", ownerEmail: "owner@example.com" },
+          { id: 2, email: "b@example.com", usedBytes: "0", ownerEmail: null },
         ],
         total: 2,
       });
+    });
+
+    // The owner lives in `accounts`, not in `virtual_users`, so the sort has to
+    // reach the joined address rather than the `owner_id` uuid the row carries.
+    it("sorts on the joined owner address when sortBy is ownerEmail", async () => {
+      qb.getCount.mockResolvedValueOnce(0);
+      qb.getRawAndEntities.mockResolvedValueOnce({ entities: [], raw: [] });
+
+      await svc.list(FQDN, q({ limit: 10, sortBy: "ownerEmail", sortDir: "asc" }));
+
+      expect(qb.orderBy).toHaveBeenCalledWith("ownerEmail", "ASC");
+      expect(qb.orderBy).not.toHaveBeenCalledWith("r.ownerEmail", "ASC");
     });
 
     it("without a search term, falls back to the id column on an unknown sortBy and orders on r.<col>", async () => {

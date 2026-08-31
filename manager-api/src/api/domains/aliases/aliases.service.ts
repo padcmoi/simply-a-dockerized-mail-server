@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Like, Not, Repository } from "typeorm";
+import { Not, Repository } from "typeorm";
 import { ApiError } from "../../../core/common/api-error";
 import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { Account } from "../../../core/entities/account.entity";
@@ -20,7 +20,10 @@ function isPostmaster(source: string, domain: string) {
 // `lastActivity` maps to `last_activity`, which carries `ON UPDATE
 // current_timestamp()`: it is the row's last modification, not any mail
 // activity. The column name is postfix legacy and stays as it is.
-export const ALIASES_SORTABLE_COLUMNS = ["source", "destination", "lastActivity", "id"] as const;
+// `ownerEmail` isn't a real virtual_aliases column either: the table carries
+// only `owner_id`, and sorting on that would order by uuid, which reads as
+// random. It sorts on the joined account's address instead, see `list()`.
+export const ALIASES_SORTABLE_COLUMNS = ["source", "destination", "ownerEmail", "lastActivity", "id"] as const;
 
 @Injectable()
 export class AliasesService {
@@ -80,23 +83,39 @@ export class AliasesService {
   // `query.limit` absent = legacy unpaginated behavior, still relied on by
   // dashboard.vue and useDomainDashboard.ts (need every alias of a domain
   // for aggregation, not a page of 10).
+  //
+  // The paginated branch joins the owning account so every row carries the
+  // address behind its `owner_id`, which the list column links to. The join is
+  // what makes searching and sorting on that address possible at all: both have
+  // to happen in SQL, before the page window is cut, and neither could read a
+  // uuid.
   async list(domain: string, query: PaginationQuery) {
     if (query.limit === undefined) {
       return this.aliases.find({ where: { domain }, order: { source: "ASC" } });
     }
-    const where = query.search
-      ? [
-          { domain, source: Like(`%${query.search}%`) },
-          { domain, destination: Like(`%${query.search}%`) },
-        ]
-      : { domain };
+
     const sortBy = resolveSortColumn(query.sortBy, ALIASES_SORTABLE_COLUMNS, "id");
-    const [items, total] = await this.aliases.findAndCount({
-      where,
-      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
-      skip: query.offset,
-      take: query.limit,
-    });
+    const dir = query.sortDir === "asc" ? "ASC" : "DESC";
+    const qb = this.aliases
+      .createQueryBuilder("a")
+      .leftJoin(Account, "o", "o.id = a.ownerId")
+      .addSelect("o.email", "ownerEmail")
+      .where("a.domain = :domain", { domain });
+    if (query.search) {
+      qb.andWhere("(a.source LIKE :search OR a.destination LIKE :search OR o.email LIKE :search)", {
+        search: `%${query.search}%`,
+      });
+    }
+
+    const total = await qb.getCount();
+    if (sortBy === "ownerEmail") qb.orderBy("ownerEmail", dir);
+    else qb.orderBy(`a.${sortBy}`, dir);
+
+    const { entities, raw } = await qb.skip(query.offset).take(query.limit).getRawAndEntities();
+    const items = entities.map((entity, i) => ({
+      ...entity,
+      ownerEmail: (raw[i] as { ownerEmail?: string | null } | undefined)?.ownerEmail ?? null,
+    }));
     return { items, total };
   }
 

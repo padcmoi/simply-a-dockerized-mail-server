@@ -17,6 +17,7 @@ export const AliasesApi = () =>
 const aliasListItemExample = {
   id: 1,
   ownerId: null,
+  ownerEmail: null,
   domain: "example.com",
   source: "sales@example.com",
   destination: "jdoe@example.com",
@@ -28,7 +29,13 @@ const aliasListItemExample = {
 export const ListAliasesDocs = () =>
   applyDecorators(
     ApiPaginationQuery(ALIASES_SORTABLE_COLUMNS),
-    ApiOperation({ summary: "List aliases that belong to this domain, paginated" }),
+    ApiOperation({
+      summary: "List aliases that belong to this domain, paginated",
+      description:
+        "Every alias row also carries `ownerEmail`, the address of the account in `ownerId` (`null` when the " +
+        "alias belongs to nobody). `sortBy=ownerEmail` is accepted despite not being a real column -- it sorts " +
+        "on that joined address, and `search` matches it as well as the alias source and destination.",
+    }),
     ApiResponse({
       status: 200,
       description: "Aliases returned",

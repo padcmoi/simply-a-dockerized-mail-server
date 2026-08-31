@@ -846,6 +846,7 @@ export interface Locales {
       quota: string;
       used: string;
       active: string;
+      owner: string;
     };
     toast: {
       pickDomain: string;
@@ -885,6 +886,7 @@ export interface Locales {
       from: string;
       to: string;
       domain: string;
+      owner: string;
     };
     toast: {
       pickDomain: string;

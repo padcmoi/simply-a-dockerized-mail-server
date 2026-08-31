@@ -27,8 +27,10 @@ function isPostmaster(email: string, domain: string) {
 // value since it's the existing default -- keeps `resolveSortColumn`'s
 // fallback type-safe without a cast. `usedBytes` isn't a real virtual_users
 // column (it's dovecot's own counter, joined from virtual_quota_users, see
-// `list()`) -- sorting by it takes a dedicated branch there.
-export const RECIPIENTS_SORTABLE_COLUMNS = ["email", "quota", "active", "usedBytes", "lastActivity", "id"] as const;
+// `list()`) -- sorting by it takes a dedicated branch there. `ownerEmail` is
+// joined the same way, from `accounts`: the table carries only `owner_id`, and
+// ordering on a uuid reads as random.
+export const RECIPIENTS_SORTABLE_COLUMNS = ["email", "quota", "active", "usedBytes", "ownerEmail", "lastActivity", "id"] as const;
 
 // VirtualUser is the ORM mapping for the `virtual_users` postfix table; the
 // table name is dictated by postfix conventions and not under our control.
@@ -120,16 +122,23 @@ export class RecipientsService {
     const qb = this.recipients
       .createQueryBuilder("r")
       .leftJoin(VirtualQuotaUser, "q", "q.email = r.email")
+      .leftJoin(Account, "o", "o.id = r.ownerId")
       .addSelect("COALESCE(q.bytes, 0)", "usedBytes")
+      .addSelect("o.email", "ownerEmail")
       .where("r.domain = :domain", { domain });
-    if (query.search) qb.andWhere("r.email LIKE :search", { search: `%${query.search}%` });
+    if (query.search) qb.andWhere("(r.email LIKE :search OR o.email LIKE :search)", { search: `%${query.search}%` });
 
     const total = await qb.getCount();
     if (sortBy === "usedBytes") qb.orderBy("usedBytes", dir);
+    else if (sortBy === "ownerEmail") qb.orderBy("ownerEmail", dir);
     else qb.orderBy(`r.${sortBy}`, dir);
 
     const { entities, raw } = await qb.skip(query.offset).take(query.limit).getRawAndEntities();
-    const items = entities.map((entity, i) => ({ ...entity, usedBytes: String(raw[i]?.usedBytes ?? "0") }));
+    const items = entities.map((entity, i) => ({
+      ...entity,
+      usedBytes: String(raw[i]?.usedBytes ?? "0"),
+      ownerEmail: (raw[i] as { ownerEmail?: string | null } | undefined)?.ownerEmail ?? null,
+    }));
     return { items, total };
   }
 

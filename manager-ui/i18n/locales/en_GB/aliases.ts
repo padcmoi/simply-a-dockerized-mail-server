@@ -18,6 +18,7 @@ export default {
     from: "From",
     to: "To",
     domain: "Domain",
+    owner: "Account",
   },
   toast: {
     pickDomain: "Pick a domain first",

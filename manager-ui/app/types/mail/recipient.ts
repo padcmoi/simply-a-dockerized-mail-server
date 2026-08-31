@@ -7,6 +7,11 @@ export interface RecipientRow {
   quota: string;
   usedBytes: string;
   active: number;
+  // The account the mailbox belongs to, joined by the list route: the id is
+  // what the owner column links to, the address is what it shows. Both null
+  // when the mailbox belongs to nobody.
+  ownerId: string | null;
+  ownerEmail: string | null;
   // `virtual_users.last_activity` carries `ON UPDATE current_timestamp()`: it
   // stamps the row's last edit, not mail traffic. Postfix-legacy name, kept.
   lastActivity: string | null;

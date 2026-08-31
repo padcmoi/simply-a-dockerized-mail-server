@@ -16,6 +16,7 @@ const columns = computed<DataTableColumn<RecipientRow>[]>(() => [
   { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota) },
   { key: "usedBytes", label: t("recipients.table.used"), value: (row) => Number(row.usedBytes) },
   { key: "active", label: t("recipients.table.active"), value: (row) => row.active === 1 },
+  { key: "ownerEmail", label: t("recipients.table.owner"), value: (row) => row.ownerEmail ?? "" },
   { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity },
 ]);
 
@@ -120,7 +121,7 @@ async function onDeleteConfirmed() {
       </UCard>
     </div>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="6" />
 
     <DataTable
       v-else
@@ -169,6 +170,10 @@ async function onDeleteConfirmed() {
         <UBadge :color="row.active ? 'success' : 'neutral'" variant="subtle">
           {{ row.active ? t("common.yes") : t("common.no") }}
         </UBadge>
+      </template>
+
+      <template #ownerEmail="{ row }">
+        <OwnerAccountCell :owner-id="row.ownerId" :owner-email="row.ownerEmail" />
       </template>
 
       <template #lastActivity="{ row }">

@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NotFoundException } from "@nestjs/common";
-import { Like } from "typeorm";
 import { AliasesService } from "../../src/api/domains/aliases/aliases.service";
 import { ApiError } from "../../src/core/common/api-error";
 import type { PaginationQuery } from "../../src/core/common/pagination.validation";
@@ -12,10 +11,24 @@ import { repoMock } from "../helpers/mocks";
 // One typed double per constructor arg: the alias repo and the domain repo.
 // repoMock stubs every repository method, so the service constructor stays
 // type-checked without a cast.
-function makeAliasRepo() {
+// Chainable QueryBuilder double for the paginated `list`, which joins the
+// owning account. Every builder step returns the same object; terminals carry
+// empty defaults a test overrides when it asserts on rows.
+function makeQb() {
+  const qb: Record<string, ReturnType<typeof vi.fn>> = {};
+  for (const m of ["leftJoin", "addSelect", "where", "andWhere", "orderBy", "skip", "take"]) {
+    qb[m] = vi.fn(() => qb);
+  }
+  qb.getCount = vi.fn(async () => 0);
+  qb.getRawAndEntities = vi.fn(async () => ({ entities: [], raw: [] }));
+  return qb;
+}
+
+function makeAliasRepo(qb: ReturnType<typeof makeQb>) {
   const repo = repoMock<VirtualAlias>();
   // The DB assigns the id on insert; mirror that so a saved row carries one.
   repo.save.mockImplementation(async (x: object) => ({ id: 1, ...x }));
+  repo.createQueryBuilder.mockReturnValue(qb);
   return repo;
 }
 function makeDomainRepo() {
@@ -31,10 +44,12 @@ describe("AliasesService", () => {
   let aliases: ReturnType<typeof makeAliasRepo>;
   let domains: ReturnType<typeof makeDomainRepo>;
   let accounts: ReturnType<typeof makeAccountRepo>;
+  let qb: ReturnType<typeof makeQb>;
   let svc: AliasesService;
 
   beforeEach(() => {
-    aliases = makeAliasRepo();
+    qb = makeQb();
+    aliases = makeAliasRepo(qb);
     domains = makeDomainRepo();
     accounts = makeAccountRepo();
     svc = new AliasesService(aliases, domains, accounts);
@@ -62,38 +77,68 @@ describe("AliasesService", () => {
     });
 
     it("paginates with the default sort column when sortBy is absent", async () => {
-      aliases.findAndCount.mockResolvedValue([[{ id: 1 }], 1]);
+      qb.getCount.mockResolvedValueOnce(1);
+      qb.getRawAndEntities.mockResolvedValueOnce({ entities: [{ id: 1 }], raw: [{}] });
+
       const res = await svc.list("example.test", q({ limit: 10, offset: 0 }));
-      expect(res).toEqual({ items: [{ id: 1 }], total: 1 });
-      const arg = aliases.findAndCount.mock.calls[0][0];
-      expect(arg.where).toEqual({ domain: "example.test" });
-      expect(arg.order).toEqual({ id: "DESC" });
-      expect(arg.take).toBe(10);
-      expect(arg.skip).toBe(0);
+
+      expect(res).toEqual({ items: [{ id: 1, ownerEmail: null }], total: 1 });
+      expect(qb.where).toHaveBeenCalledWith("a.domain = :domain", { domain: "example.test" });
+      expect(qb.orderBy).toHaveBeenCalledWith("a.id", "DESC");
+      expect(qb.take).toHaveBeenCalledWith(10);
+      expect(qb.skip).toHaveBeenCalledWith(0);
     });
 
     it("honours a whitelisted sortBy in ascending order", async () => {
-      aliases.findAndCount.mockResolvedValue([[], 0]);
       await svc.list("example.test", q({ limit: 25, offset: 5, sortBy: "source", sortDir: "asc" }));
-      const arg = aliases.findAndCount.mock.calls[0][0];
-      expect(arg.order).toEqual({ source: "ASC" });
-      expect(arg.take).toBe(25);
-      expect(arg.skip).toBe(5);
+      expect(qb.orderBy).toHaveBeenCalledWith("a.source", "ASC");
+      expect(qb.take).toHaveBeenCalledWith(25);
+      expect(qb.skip).toHaveBeenCalledWith(5);
     });
 
     it("falls back to the default column on an unknown sortBy", async () => {
-      aliases.findAndCount.mockResolvedValue([[], 0]);
       await svc.list("example.test", q({ limit: 10, offset: 0, sortBy: "bogus", sortDir: "asc" }));
-      expect(aliases.findAndCount.mock.calls[0][0].order).toEqual({ id: "ASC" });
+      expect(qb.orderBy).toHaveBeenCalledWith("a.id", "ASC");
     });
 
-    it("builds an OR search across source + destination when search is present", async () => {
-      aliases.findAndCount.mockResolvedValue([[], 0]);
+    // The owner lives in `accounts`, not in `virtual_aliases`, so the sort has
+    // to reach the joined address rather than the `owner_id` uuid the row
+    // carries.
+    it("sorts on the joined owner address when sortBy is ownerEmail", async () => {
+      await svc.list("example.test", q({ limit: 10, offset: 0, sortBy: "ownerEmail", sortDir: "asc" }));
+      expect(qb.orderBy).toHaveBeenCalledWith("ownerEmail", "ASC");
+      expect(qb.orderBy).not.toHaveBeenCalledWith("a.ownerEmail", "ASC");
+    });
+
+    it("searches across source, destination and the owner address", async () => {
       await svc.list("example.test", q({ limit: 10, offset: 0, search: "foo" }));
-      const where = aliases.findAndCount.mock.calls[0][0].where as Array<Record<string, unknown>>;
-      expect(where).toHaveLength(2);
-      expect(where[0]).toEqual({ domain: "example.test", source: Like("%foo%") });
-      expect(where[1]).toEqual({ domain: "example.test", destination: Like("%foo%") });
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "(a.source LIKE :search OR a.destination LIKE :search OR o.email LIKE :search)",
+        { search: "%foo%" }
+      );
+    });
+
+    it("leaves the query unfiltered when no search term is given", async () => {
+      await svc.list("example.test", q({ limit: 10, offset: 0 }));
+      expect(qb.andWhere).not.toHaveBeenCalled();
+    });
+
+    it("carries the joined owner address onto each row, null when the alias belongs to nobody", async () => {
+      qb.getCount.mockResolvedValueOnce(2);
+      qb.getRawAndEntities.mockResolvedValueOnce({
+        entities: [{ id: 1 }, { id: 2 }],
+        raw: [{ ownerEmail: "owner@example.test" }, {}],
+      });
+
+      const res = await svc.list("example.test", q({ limit: 10, offset: 0 }));
+
+      expect(res).toEqual({
+        items: [
+          { id: 1, ownerEmail: "owner@example.test" },
+          { id: 2, ownerEmail: null },
+        ],
+        total: 2,
+      });
     });
   });
 

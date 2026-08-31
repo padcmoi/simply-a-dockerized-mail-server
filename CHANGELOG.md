@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- feat(groups): the default group may answer a ticket it did not open (31-08-2026)
+- The recipient and alias lists name the account behind each address, and link to it _(domains)_ (31-08-2026)
+- The default group may answer a ticket it did not open _(groups)_ [d8b48f2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d8b48f280b7a4f98b6528cd4c5599e729725495d) (31-08-2026)
 - A fresh install lands on a seeded default group instead of an empty ACL _(groups)_ [c9966c0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c9966c0d489140daebe9df11bb28cc7491f166a9) (31-08-2026)
 - A ticket names the mailboxes and aliases it is about, mandatory unless root says otherwise _(tickets)_ [df89d98](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/df89d9879a303782cb0dec15795f18ff12e8d6d4) (31-08-2026)
 - The account changes its own password, current one required _(profile)_ [5b45cb2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5b45cb22543fb29b3a0af0a3f717808cc820df06) (30-08-2026)
@@ -219,6 +220,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The day's entries take the house form, with their commit links _(changelog)_ [a881086](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a881086267888110a1b01639204eed42b0ab64bb) (31-08-2026)
 - Db.sh names what stands between it and the database, one line each _(manager-api)_ [49b0f0b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/49b0f0baaed46fc95e3584722e748562e18d3fb3) (31-08-2026)
 - The db scripts run the TypeORM CLI where it can reach the database _(manager-api)_ [1eb793f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1eb793f84dee8767f31d4c60b7462b716b65663f) (31-08-2026)
 - Entities declare the exact schema the migrations build _(manager-api)_ [84d6cb4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/84d6cb43bae88c252aaa28509da8e00f3451426b) (30-08-2026)

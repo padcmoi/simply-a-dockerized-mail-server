@@ -14,6 +14,7 @@ const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 const columns = computed<DataTableColumn<AliasRow>[]>(() => [
   { key: "source", label: t("aliases.table.from"), value: (row) => row.source, primary: true },
   { key: "destination", label: t("aliases.table.to"), value: (row) => row.destination },
+  { key: "ownerEmail", label: t("aliases.table.owner"), value: (row) => row.ownerEmail ?? "" },
   { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity },
 ]);
 
@@ -93,7 +94,7 @@ function editAlias(alias: AliasRow) {
       </UCard>
     </div>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
 
     <DataTable
       v-else
@@ -126,6 +127,10 @@ function editAlias(alias: AliasRow) {
         <FullTooltip :text="row.destination">
           <span>{{ truncateChars(row.destination, 44) }}</span>
         </FullTooltip>
+      </template>
+
+      <template #ownerEmail="{ row }">
+        <OwnerAccountCell :owner-id="row.ownerId" :owner-email="row.ownerEmail" />
       </template>
 
       <template #lastActivity="{ row }">

@@ -36,6 +36,7 @@ export default {
     quota: "Quota",
     used: "Consommé",
     active: "Actif",
+    owner: "Compte",
   },
   toast: {
     pickDomain: "Choisissez d'abord un domaine",
