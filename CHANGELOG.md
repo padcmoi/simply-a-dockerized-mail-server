@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- chore(manager-api): the db scripts run the TypeORM CLI where it can reach the database (31-08-2026)
 - feat(tickets): the list leaves the closed ones out, and remembers it (31-08-2026)
 - feat(tickets): a ticket names the mailboxes and aliases it is about, mandatory unless root says otherwise (31-08-2026)
 - fix(tickets): the taken-by-me filter is remembered between visits (31-08-2026)

@@ -33,9 +33,18 @@ import { MetricsHistory } from "../entities/metrics-history.entity";
 // migration:run, migration:revert, migration:show). The Nest runtime keeps its
 // own connection through TypeOrmModule.forRoot in app.module.ts. The two must
 // stay in sync on driver + database + entities so generate diffs against the
-// real schema. Run the CLI from inside the manager-api container so DB_* env
-// vars are already injected by docker compose:
-//   service.sh exec manager-api pnpm db:generate src/core/database/migrations/MyChange
+// real schema.
+//
+// Never invoke the CLI by hand: `db.sh` carries what it takes to reach the
+// database (inside the container, DB_* injected by compose, ts-node in
+// transpile-only) and every db:* script goes through it.
+//   pnpm db:check           is there a migration missing? nothing is written
+//   pnpm db:show            what the ledger holds
+//   pnpm db:generate MyChange   -> migrations/<epoch ms>-MyChange.ts
+//
+// db:generate WRITES the file, and the container applies a migration as soon as
+// it appears, so it changes the running database. db:check is the read-only
+// question.
 export default new DataSource({
   type: "mariadb",
   host: process.env.DB_HOST ?? "mail-mariadb",
