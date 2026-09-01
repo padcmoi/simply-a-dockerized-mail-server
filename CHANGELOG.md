@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - The login screen names the release it is running, and opens it on GitHub _(ui)_ (31-08-2026)
+- The new password and its confirmation carry an eye button that reveals what is typed on the password page; the current password stays masked, since an existing password is never shown _(ui)_ (01-09-2026)
 
 ### Changed
 

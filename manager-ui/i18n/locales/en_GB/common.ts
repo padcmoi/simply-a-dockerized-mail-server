@@ -34,4 +34,6 @@ export default {
   itemsPerPage: "Per page",
   noResults: "No results",
   totalCount: "{count} total",
+  showPassword: "Show password",
+  hidePassword: "Hide password",
 } satisfies Locales["common"];

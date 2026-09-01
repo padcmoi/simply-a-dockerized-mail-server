@@ -638,6 +638,8 @@ export interface Locales {
     itemsPerPage: string;
     noResults: string;
     totalCount: string;
+    showPassword: string;
+    hidePassword: string;
   };
   // Full-page error states rendered by app/error.vue (Nuxt error boundary).
   error: {

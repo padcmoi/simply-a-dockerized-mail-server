@@ -34,4 +34,6 @@ export default {
   itemsPerPage: "Par page",
   noResults: "Aucun résultat",
   totalCount: "{count} au total",
+  showPassword: "Afficher le mot de passe",
+  hidePassword: "Masquer le mot de passe",
 } satisfies Locales["common"];

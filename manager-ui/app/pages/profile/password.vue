@@ -87,7 +87,7 @@ async function submit() {
           :error="tooShort ? t('profile.passwordPage.min', { value: PASSWORD_MIN }) : undefined"
           required
         >
-          <UInput v-model="form.next" type="password" autocomplete="new-password" class="w-full sm:max-w-sm" required />
+          <PasswordInput v-model="form.next" autocomplete="new-password" class="w-full sm:max-w-sm" required />
         </UFormField>
 
         <UFormField
@@ -95,7 +95,7 @@ async function submit() {
           :error="mismatch ? t('profile.passwordPage.mismatch') : undefined"
           required
         >
-          <UInput v-model="form.confirm" type="password" autocomplete="new-password" class="w-full sm:max-w-sm" required />
+          <PasswordInput v-model="form.confirm" autocomplete="new-password" class="w-full sm:max-w-sm" required />
         </UFormField>
       </form>
 
