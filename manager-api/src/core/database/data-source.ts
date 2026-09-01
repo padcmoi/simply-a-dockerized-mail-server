@@ -1,5 +1,6 @@
 import { DataSource } from "typeorm";
 import { Account } from "../entities/account.entity";
+import { AccountIdentity } from "../entities/account-identity.entity";
 import { AccountProfile } from "../entities/account-profile.entity";
 import { RefreshToken } from "../entities/refresh-token.entity";
 import { DkimKeyEntity } from "../entities/dkim-key.entity";
@@ -18,6 +19,7 @@ import { SupportTicketRecipient } from "../entities/support-ticket-recipient.ent
 import { SupportTicketAlias } from "../entities/support-ticket-alias.entity";
 import { MailSetting } from "../entities/mail-setting.entity";
 import { AppSetting } from "../entities/app-setting.entity";
+import { PassportProviderCredential } from "../entities/passport-provider-credential.entity";
 import { DomainDelegation } from "../entities/domain-delegation.entity";
 import { AccountInvitation } from "../entities/account-invitation.entity";
 import { AccountTheme } from "../entities/account-theme.entity";
@@ -55,6 +57,7 @@ export default new DataSource({
   charset: "utf8mb4",
   entities: [
     Account,
+    AccountIdentity,
     AccountProfile,
     RefreshToken,
     DkimKeyEntity,
@@ -73,6 +76,7 @@ export default new DataSource({
     NotificationPreference,
     MailSetting,
     AppSetting,
+    PassportProviderCredential,
     DomainDelegation,
     AccountInvitation,
     AccountTheme,

@@ -38,7 +38,8 @@ export const acceptInvitationSchema = z.object({
     .transform((v) => v.toLowerCase())
     .optional(),
   password: z.string().min(8),
-  displayName: z.string().max(255).optional(),
+  firstName: z.string().max(255).optional(),
+  lastName: z.string().max(255).optional(),
 });
 
 export type SendInvitationDto = z.infer<typeof sendInvitationSchema>;

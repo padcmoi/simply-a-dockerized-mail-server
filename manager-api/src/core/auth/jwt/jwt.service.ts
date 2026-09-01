@@ -7,7 +7,7 @@ import { PaginationQuery, resolveSortColumn } from "../../common/pagination.vali
 import { scryptHash, scryptVerify } from "../../common/scrypt";
 import { ApiError } from "../../common/api-error";
 import { Account } from "../../entities/account.entity";
-import { AccountProfile } from "../../entities/account-profile.entity";
+import { ACCOUNT_GENDERS, AccountGender, AccountProfile, composeDisplayName } from "../../entities/account-profile.entity";
 import { GroupMember } from "../../entities/group-member.entity";
 import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
@@ -31,6 +31,13 @@ export type ProfileResponse = {
   id: string;
   email: string;
   displayName: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  gender: AccountGender | null;
+  /** The titles the API accepts, so the interface never hardcodes the list. */
+  genders: readonly AccountGender[];
+  /** False for an account created by an external sign-in: it has none yet. */
+  hasPassword: boolean;
   locale: string | null;
   avatarUrl: string | null;
   phone: string | null;
@@ -63,15 +70,11 @@ export class JwtAuthService {
     private readonly mailSettings: MailSettingsService
   ) {}
 
-  // Login identity is the email now (no username).
-  async login(email: string, password: string, ua?: string, ip?: string) {
-    const account = await this.accounts.findOne({
-      where: { email, enabled: 1 },
-    });
-    if (!account || !account.password) throw new UnauthorizedException("Invalid credentials");
-    if (!(await scryptVerify(password, account.password))) {
-      throw new UnauthorizedException("Invalid credentials");
-    }
+  // The tail every way in shares, whichever strategy proved the identity: the
+  // password form, or a provider. Everything downstream of a session -- its
+  // device row, the `sid` binding, the API keys the account can mint -- is
+  // therefore identical, and nothing knows which door was used.
+  async openSessionFor(account: Account, ua?: string, ip?: string) {
     account.lastLogin = new Date();
     await this.accounts.save(account);
     // One live session per device: a re-login from the same device (same UA +
@@ -246,7 +249,7 @@ export class JwtAuthService {
       this.profiles.find({ where: { accountId: In(accountIds) } }),
     ]);
     const emailById = new Map(accountRows.map((a) => [a.id, a.email]));
-    const nameById = new Map(profileRows.map((p) => [p.accountId, p.displayName]));
+    const nameById = new Map(profileRows.map((p) => [p.accountId, composeDisplayName(p.firstName, p.lastName)]));
 
     return raw
       .map((r) => ({
@@ -298,9 +301,14 @@ export class JwtAuthService {
   // password must land on the field, not sign anyone out.
   async changePassword(accountId: string, input: ChangeMyPasswordDto) {
     const account = await this.accounts.findOne({ where: { id: accountId } });
-    if (!account || !account.password) throw new NotFoundException("Account not found");
-    if (!(await scryptVerify(input.currentPassword, account.password))) {
-      throw new ApiError(HttpStatus.BAD_REQUEST, "auth.wrongPassword", "Current password is incorrect");
+    if (!account) throw new NotFoundException("Account not found");
+    // An account with no password at all (created by an external sign-in) has
+    // nothing to prove: this is where it sets its first one. One that has a
+    // password must still hand it over, session or not.
+    if (account.password) {
+      if (!input.currentPassword || !(await scryptVerify(input.currentPassword, account.password))) {
+        throw new ApiError(HttpStatus.BAD_REQUEST, "auth.wrongPassword", "Current password is incorrect");
+      }
     }
     account.password = await scryptHash(input.newPassword);
     await this.accounts.save(account);
@@ -321,7 +329,9 @@ export class JwtAuthService {
     }
 
     const profile = (await this.profiles.findOne({ where: { accountId } })) ?? this.profiles.create({ accountId });
-    if (input.displayName !== undefined) profile.displayName = input.displayName;
+    if (input.firstName !== undefined) profile.firstName = input.firstName;
+    if (input.lastName !== undefined) profile.lastName = input.lastName;
+    if (input.gender !== undefined) profile.gender = input.gender;
     if (input.locale !== undefined) profile.locale = input.locale;
     if (input.avatarUrl !== undefined) profile.avatarUrl = input.avatarUrl;
     if (input.phone !== undefined) profile.phone = input.phone;
@@ -360,7 +370,12 @@ export class JwtAuthService {
     return {
       id: account.id,
       email: account.email,
-      displayName: profile?.displayName ?? null,
+      displayName: composeDisplayName(profile?.firstName, profile?.lastName),
+      firstName: profile?.firstName ?? null,
+      lastName: profile?.lastName ?? null,
+      gender: profile?.gender ?? null,
+      genders: ACCOUNT_GENDERS,
+      hasPassword: !!account.password,
       locale: profile?.locale ?? null,
       avatarUrl: profile?.avatarUrl ?? null,
       phone: profile?.phone ?? null,

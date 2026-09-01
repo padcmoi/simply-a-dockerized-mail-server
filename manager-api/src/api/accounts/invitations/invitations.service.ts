@@ -215,7 +215,13 @@ export class AccountsInvitationsService {
         enabled: 1,
       })
     );
-    await this.profiles.save(this.profiles.create({ accountId: account.id, displayName: input.displayName ?? null }));
+    await this.profiles.save(
+      this.profiles.create({
+        accountId: account.id,
+        firstName: input.firstName ?? null,
+        lastName: input.lastName ?? null,
+      })
+    );
     // Every account gets the default group (the system floor), on top of any
     // explicitly invited groups. There is no account-creation hook, so it is
     // assigned here. assignAccountToGroup is idempotent, hence the Set.

@@ -37,7 +37,12 @@ const tokenPairExample = {
 
 const profileExample = {
   email: "jdoe@example.com",
-  displayName: "Example User",
+  displayName: "Jane Doe",
+  firstName: "Jane",
+  lastName: "Doe",
+  gender: "mrs",
+  genders: ["mr", "mrs", "other"],
+  hasPassword: true,
   avatarUrl: "https://example.com/avatar.png",
   phone: "+33123456789",
   addressLine: "1 rue de la Paix",
@@ -331,7 +336,9 @@ export const JwtChangePasswordDocs = () =>
       summary: "Change the authenticated account's own password",
       description:
         "Self-scoped: always changes the caller's own password (req.user.id). The current password is verified " +
-        "first, so holding a session is not enough to take the account over. Existing sessions stay valid.",
+        "first, so holding a session is not enough to take the account over. An account with no password at all " +
+        "(created by an external sign-in) sets its first one here, with no currentPassword to give. Existing " +
+        "sessions stay valid.",
     }),
     ApiBody({
       schema: {
@@ -361,7 +368,7 @@ export const JwtUpdateProfileDocs = () =>
   applyDecorators(
     ApiSecurity("apiToken"),
     ApiOperation({
-      summary: "Update the authenticated account's display name, email or avatar URL",
+      summary: "Update the authenticated account's name, title, email or avatar URL",
       description:
         "Self-scoped: always updates the caller's own account (req.user.id), no permission requirement beyond " +
         "being authenticated. Any field omitted from the body is left unchanged; any field explicitly set to " +
@@ -370,7 +377,9 @@ export const JwtUpdateProfileDocs = () =>
     ApiBody({
       schema: {
         example: {
-          displayName: "Example User",
+          firstName: "Jane",
+          lastName: "Doe",
+          gender: "mrs",
           email: "jdoe@example.com",
           avatarUrl: "https://example.com/avatar.png",
           city: "Paris",

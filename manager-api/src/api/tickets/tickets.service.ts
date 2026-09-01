@@ -4,7 +4,7 @@ import { In, Repository } from "typeorm";
 import { PaginatedResult, PaginationQuery, resolveSortColumn } from "../../core/common/pagination.validation";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import { Account } from "../../core/entities/account.entity";
-import { AccountProfile } from "../../core/entities/account-profile.entity";
+import { AccountProfile, composeDisplayName } from "../../core/entities/account-profile.entity";
 import { SupportTicket } from "../../core/entities/support-ticket.entity";
 import { SupportTicketMessage } from "../../core/entities/support-ticket-message.entity";
 import { SupportTicketRead } from "../../core/entities/support-ticket-read.entity";
@@ -74,13 +74,23 @@ export class TicketsService {
     if (!unique.length) return new Map();
     const [accounts, profiles] = await Promise.all([
       this.accounts.find({ where: { id: In(unique) }, select: { id: true, email: true } }),
-      this.profiles.find({ where: { accountId: In(unique) }, select: { accountId: true, displayName: true, avatarUrl: true } }),
+      this.profiles.find({
+        where: { accountId: In(unique) },
+        select: { accountId: true, firstName: true, lastName: true, avatarUrl: true },
+      }),
     ]);
     const profileById = new Map(profiles.map((p) => [p.accountId, p]));
     return new Map(
       accounts.map((a) => {
         const profile = profileById.get(a.id);
-        return [a.id, { email: a.email, name: profile?.displayName || a.email, avatarUrl: profile?.avatarUrl ?? null }];
+        return [
+          a.id,
+          {
+            email: a.email,
+            name: composeDisplayName(profile?.firstName, profile?.lastName) || a.email,
+            avatarUrl: profile?.avatarUrl ?? null,
+          },
+        ];
       })
     );
   }

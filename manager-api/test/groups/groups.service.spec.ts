@@ -519,9 +519,9 @@ describe("GroupsService", () => {
       m.groups.findOne.mockResolvedValue(makeGroup());
       m.groupMembers.find.mockResolvedValue([{ accountId: "a1" }]);
       m.accounts.find.mockResolvedValue([{ id: "a1", email: "a1@x.com" }]);
-      m.profiles.find.mockResolvedValue([{ accountId: "a1", displayName: "Alice" }]);
+      m.profiles.find.mockResolvedValue([{ accountId: "a1", firstName: "Alice", lastName: "Martin" }]);
       const res = await svc.listMembers(GID, ROOT, q());
-      expect(res).toEqual([{ id: "a1", email: "a1@x.com", displayName: "Alice" }]);
+      expect(res).toEqual([{ id: "a1", email: "a1@x.com", displayName: "Alice Martin" }]);
     });
 
     it("legacy returns [] when the group has no members", async () => {
@@ -539,7 +539,7 @@ describe("GroupsService", () => {
       expect(res).toEqual([{ id: "a2", email: "a2@x.com", displayName: null }]);
     });
 
-    it("paginated: search + sortBy displayName asc orders on p.displayName", async () => {
+    it("paginated: search + sortBy displayName asc orders on the name columns", async () => {
       m.groups.findOne.mockResolvedValue(makeGroup());
       m.qb.getRawMany.mockResolvedValue([
         { id: "a1", email: "a1@x.com", displayName: "Alice" },
@@ -555,7 +555,9 @@ describe("GroupsService", () => {
         total: 2,
       });
       expect(m.qb.andWhere).toHaveBeenCalled();
-      expect(m.qb.orderBy).toHaveBeenCalledWith("p.displayName", "ASC");
+      // The display name is composed, so its sort orders on last then first name.
+      expect(m.qb.orderBy).toHaveBeenCalledWith("p.lastName", "ASC");
+      expect(m.qb.addOrderBy).toHaveBeenCalledWith("p.firstName", "ASC");
       expect(m.qb.limit).toHaveBeenCalledWith(10);
       expect(m.qb.offset).toHaveBeenCalledWith(0);
     });

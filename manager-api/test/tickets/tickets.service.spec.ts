@@ -107,7 +107,14 @@ describe("TicketsService (row-level visibility)", () => {
   }
 
   function ticketRow(over: Partial<SupportTicket>): SupportTicket {
-    return entity<SupportTicket>({ id: 5, domainId: DOMAIN_ID, visibility: "private", createdBy: CREATOR, status: "open", ...over });
+    return entity<SupportTicket>({
+      id: 5,
+      domainId: DOMAIN_ID,
+      visibility: "private",
+      createdBy: CREATOR,
+      status: "open",
+      ...over,
+    });
   }
 
   describe("get / visibility", () => {
@@ -136,13 +143,17 @@ describe("TicketsService (row-level visibility)", () => {
     });
 
     it("keeps a private ticket hidden from a reply-ticket holder (that right covers public threads only)", async () => {
-      cpg.guard.utils.check.global.mockImplementation(async (_u: string, _r: string, action: string) => action === "reply-ticket");
+      cpg.guard.utils.check.global.mockImplementation(
+        async (_u: string, _r: string, action: string) => action === "reply-ticket"
+      );
       tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
       await expect(svc.get(5, caller(STRANGER))).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("shows a private ticket to a handle-ticket holder", async () => {
-      cpg.guard.utils.check.global.mockImplementation(async (_u: string, _r: string, action: string) => action === "handle-ticket");
+      cpg.guard.utils.check.global.mockImplementation(
+        async (_u: string, _r: string, action: string) => action === "handle-ticket"
+      );
       tickets.findOne.mockResolvedValue(ticketRow({ visibility: "private", createdBy: CREATOR }));
       await expect(svc.get(5, caller(STRANGER))).resolves.toMatchObject({ id: 5 });
     });
@@ -212,14 +223,22 @@ describe("TicketsService (row-level visibility)", () => {
       const created = await svc.create({ domainId: DOMAIN_ID, subject: "Help", body: "broke" }, caller(CREATOR));
       expect(created).toMatchObject({ id: 1 });
       expect(tickets.create).toHaveBeenCalledWith(
-        expect.objectContaining({ domainId: DOMAIN_ID, createdBy: CREATOR, subject: "Help", visibility: "private", status: "open" })
+        expect.objectContaining({
+          domainId: DOMAIN_ID,
+          createdBy: CREATOR,
+          subject: "Help",
+          visibility: "private",
+          status: "open",
+        })
       );
       expect(messages.create).toHaveBeenCalledWith(expect.objectContaining({ ticketId: 1, authorId: CREATOR, body: "broke" }));
     });
 
     it("404s when the domain does not exist", async () => {
       domains.findOne.mockResolvedValue(null);
-      await expect(svc.create({ domainId: 999, subject: "a", body: "b" }, caller(CREATOR))).rejects.toBeInstanceOf(NotFoundException);
+      await expect(svc.create({ domainId: 999, subject: "a", body: "b" }, caller(CREATOR))).rejects.toBeInstanceOf(
+        NotFoundException
+      );
     });
   });
 
@@ -380,7 +399,9 @@ describe("TicketsService (row-level visibility)", () => {
       appSettings.get.mockReturnValue({ ...APP_SETTINGS_DEFAULTS, ticketResourcesRequired: true });
       offers([], []);
       acceptsSave();
-      await expect(svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b" }, caller(CREATOR))).resolves.toMatchObject({ id: 1 });
+      await expect(svc.create({ domainId: DOMAIN_ID, subject: "a", body: "b" }, caller(CREATOR))).resolves.toMatchObject({
+        id: 1,
+      });
     });
 
     it("resolves the linked rows back to addresses on the ticket", async () => {
@@ -501,7 +522,7 @@ describe("TicketsService (row-level visibility)", () => {
 
     it("resolves the author display name and avatar of each message", async () => {
       profiles.find.mockResolvedValue([
-        entity<AccountProfile>({ accountId: CREATOR, displayName: "Jane", avatarUrl: "https://x/a.png" }),
+        entity<AccountProfile>({ accountId: CREATOR, firstName: "Jane", avatarUrl: "https://x/a.png" }),
       ]);
       const detail = await svc.get(5, caller(CREATOR));
       expect(detail.messages[0]).toMatchObject({
@@ -531,7 +552,14 @@ describe("TicketsService (row-level visibility)", () => {
 
   describe("editMessage", () => {
     const recent = () =>
-      entity<SupportTicketMessage>({ id: 9, ticketId: 5, authorId: CREATOR, body: "old", createdAt: new Date(Date.now() - 60_000), editCount: 0 });
+      entity<SupportTicketMessage>({
+        id: 9,
+        ticketId: 5,
+        authorId: CREATOR,
+        body: "old",
+        createdAt: new Date(Date.now() - 60_000),
+        editCount: 0,
+      });
 
     beforeEach(() => messages.save.mockImplementation((m) => Promise.resolve(m)));
 
@@ -546,7 +574,9 @@ describe("TicketsService (row-level visibility)", () => {
 
     it("refuses to edit someone else's message", async () => {
       tickets.findOne.mockResolvedValue(ticketRow({ status: "open", createdBy: CREATOR }));
-      messages.findOne.mockResolvedValue(entity<SupportTicketMessage>({ id: 9, ticketId: 5, authorId: STRANGER, createdAt: new Date(), editCount: 0 }));
+      messages.findOne.mockResolvedValue(
+        entity<SupportTicketMessage>({ id: 9, ticketId: 5, authorId: STRANGER, createdAt: new Date(), editCount: 0 })
+      );
       await expect(svc.editMessage(5, 9, "x", caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
       expect(messages.save).not.toHaveBeenCalled();
     });
@@ -554,7 +584,13 @@ describe("TicketsService (row-level visibility)", () => {
     it("refuses to edit a message older than an hour", async () => {
       tickets.findOne.mockResolvedValue(ticketRow({ status: "open", createdBy: CREATOR }));
       messages.findOne.mockResolvedValue(
-        entity<SupportTicketMessage>({ id: 9, ticketId: 5, authorId: CREATOR, createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), editCount: 0 })
+        entity<SupportTicketMessage>({
+          id: 9,
+          ticketId: 5,
+          authorId: CREATOR,
+          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          editCount: 0,
+        })
       );
       await expect(svc.editMessage(5, 9, "x", caller(CREATOR))).rejects.toBeInstanceOf(ForbiddenException);
       expect(messages.save).not.toHaveBeenCalled();
@@ -622,12 +658,17 @@ describe("TicketsService (row-level visibility)", () => {
     it("ticketableDomains resolves the reachable domains to names for the creation form", async () => {
       cpg.guard.getEffectivePermissions.mockResolvedValue({ global: [], domain: [] });
       delegations.find.mockResolvedValue([entity<DomainDelegation>({ domainId: DOMAIN_ID })]);
-      domains.find.mockResolvedValueOnce([]).mockResolvedValueOnce([entity<VirtualDomain>({ id: DOMAIN_ID, domain: "example.com" })]);
+      domains.find
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([entity<VirtualDomain>({ id: DOMAIN_ID, domain: "example.com" })]);
       await expect(svc.ticketableDomains(caller(STRANGER))).resolves.toEqual([{ id: DOMAIN_ID, domain: "example.com" }]);
     });
 
     it("ticketableDomains lists every domain for root", async () => {
-      domains.find.mockResolvedValue([entity<VirtualDomain>({ id: 1, domain: "a.io" }), entity<VirtualDomain>({ id: 2, domain: "b.io" })]);
+      domains.find.mockResolvedValue([
+        entity<VirtualDomain>({ id: 1, domain: "a.io" }),
+        entity<VirtualDomain>({ id: 2, domain: "b.io" }),
+      ]);
       await expect(svc.ticketableDomains(caller(ROOT_ID, true))).resolves.toEqual([
         { id: 1, domain: "a.io" },
         { id: 2, domain: "b.io" },

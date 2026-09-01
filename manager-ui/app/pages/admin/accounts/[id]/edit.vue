@@ -19,9 +19,13 @@ const loading = ref(false);
 const saving = ref(false);
 // Read-only: geocoded from the city server-side (see GeocodingService).
 const coords = ref<{ latitude: string | null; longitude: string | null }>({ latitude: null, longitude: null });
+// The titles the API accepts; labels live in the locale files.
+const genders = ref<string[]>([]);
 const form = reactive({
   email: "",
-  displayName: "",
+  gender: "",
+  firstName: "",
+  lastName: "",
   avatarUrl: "",
   phone: "",
   addressLine: "",
@@ -33,7 +37,8 @@ const form = reactive({
 });
 
 const accountId = computed(() => String(route.params.id));
-const avatarAlt = computed(() => form.displayName || form.email || "?");
+const avatarAlt = computed(() => [form.firstName, form.lastName].filter(Boolean).join(" ") || form.email || "?");
+const genderOptions = computed(() => genders.value.map((value) => ({ value, label: t(`profile.genderOptions.${value}`) })));
 
 watchEffect(() => {
   setBreadcrumb([
@@ -45,7 +50,9 @@ watchEffect(() => {
 
 const schema = z.object({
   email: z.email(t("profile.emailInvalid")).max(255).or(z.literal("")).optional(),
-  displayName: z.string().max(255).optional(),
+  gender: z.string().max(16).optional(),
+  firstName: z.string().max(255).optional(),
+  lastName: z.string().max(255).optional(),
   avatarUrl: z.url(t("profile.urlInvalid")).max(1024).or(z.literal("")).optional(),
   phone: z.string().max(32).optional(),
   addressLine: z.string().max(255).optional(),
@@ -57,7 +64,10 @@ const schema = z.object({
 
 function fillForm(a: AccountEditView) {
   form.email = a.email ?? "";
-  form.displayName = a.displayName ?? "";
+  genders.value = a.genders;
+  form.gender = a.gender ?? "";
+  form.firstName = a.firstName ?? "";
+  form.lastName = a.lastName ?? "";
   form.avatarUrl = a.avatarUrl ?? "";
   form.phone = a.phone ?? "";
   form.addressLine = a.addressLine ?? "";
@@ -89,7 +99,9 @@ async function save() {
       method: "PATCH",
       body: {
         email: form.email.trim() || undefined,
-        displayName: form.displayName.trim() || null,
+        gender: form.gender || null,
+        firstName: form.firstName.trim() || null,
+        lastName: form.lastName.trim() || null,
         avatarUrl: form.avatarUrl.trim() || null,
         phone: form.phone.trim() || null,
         addressLine: form.addressLine.trim() || null,
@@ -164,12 +176,27 @@ onMounted(load);
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+          <UFormField :label="t('profile.gender')" name="gender">
+            <USelectMenu
+              v-model="form.gender"
+              value-key="value"
+              :items="genderOptions"
+              :placeholder="t('profile.genderPlaceholder')"
+              icon="i-lucide-user-round"
+              class="w-full"
+            />
+          </UFormField>
+
           <UFormField :label="t('accounts.editPage.emailLabel')" name="email">
             <UInput v-model="form.email" type="email" placeholder="jane@example.com" icon="i-lucide-mail" class="w-full" />
           </UFormField>
 
-          <UFormField :label="t('accounts.editPage.nameLabel')" name="displayName">
-            <UInput v-model="form.displayName" placeholder="Jane Doe" icon="i-lucide-user" class="w-full" />
+          <UFormField :label="t('profile.lastName')" name="lastName">
+            <UInput v-model="form.lastName" placeholder="Doe" icon="i-lucide-user" class="w-full" />
+          </UFormField>
+
+          <UFormField :label="t('profile.firstName')" name="firstName">
+            <UInput v-model="form.firstName" placeholder="Jane" icon="i-lucide-user" class="w-full" />
           </UFormField>
 
           <UFormField :label="t('profile.phone')" name="phone">

@@ -9,9 +9,9 @@ import { GroupMember } from "../../src/core/entities/group-member.entity";
 import { RefreshToken } from "../../src/core/entities/refresh-token.entity";
 import type { GeocodingService } from "../../src/core/geocoding/geocoding.service";
 import type { MailSettingsService } from "../../src/core/mailer/mail-settings.service";
-import { providerMock, qbMock, repoMock } from "../helpers/mocks";
+import { entity, providerMock, qbMock, repoMock } from "../helpers/mocks";
 
-// scryptVerify is the only crypto the login path relies on; stub it so tests stay
+// scryptVerify is the only crypto the password-change path relies on; stub it so tests stay
 // pure and fast (no real hashing). Hoisted with an explicit signature so the mock
 // exists before vi.mock replaces the module AND mockResolvedValue stays type-checked
 // to a boolean.
@@ -69,33 +69,10 @@ describe("JwtAuthService", () => {
     );
   });
 
-  describe("login", () => {
-    it("401 when no account matches", async () => {
-      m.accounts.findOne.mockResolvedValueOnce(null);
-      await expect(svc.login("a@b.com", "pw")).rejects.toBeInstanceOf(UnauthorizedException);
-      expect(verify).not.toHaveBeenCalled();
-    });
-    it("401 when the account has no password set", async () => {
-      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: null });
-      await expect(svc.login("a@b.com", "pw")).rejects.toBeInstanceOf(UnauthorizedException);
-    });
-    it("401 on a wrong password", async () => {
-      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "scrypt$16384$8$1$salt$hash" });
-      verify.mockResolvedValueOnce(false);
-      await expect(svc.login("a@b.com", "pw")).rejects.toBeInstanceOf(UnauthorizedException);
-    });
-    it("verifies the password with scrypt", async () => {
-      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "scrypt$16384$8$1$salt$hash", isRoot: 0 });
-      verify.mockResolvedValueOnce(true);
-      const res = await svc.login("a@b.com", "pw");
-      expect(verify).toHaveBeenCalledWith("pw", "scrypt$16384$8$1$salt$hash");
-      expect(res.accessToken).toBe("access-token");
-    });
+  describe("openSessionFor", () => {
     it("issues tokens, records last login and persists the refresh token", async () => {
-      const account = { id: "a1", email: "a@b.com", password: "hash", isRoot: 1 as const };
-      m.accounts.findOne.mockResolvedValueOnce(account);
-      verify.mockResolvedValueOnce(true);
-      const res = await svc.login("a@b.com", "pw", "UA/1.0", "1.2.3.4");
+      const account = entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 1 });
+      const res = await svc.openSessionFor(account, "UA/1.0", "1.2.3.4");
       expect(res.accessToken).toBe("access-token");
       expect(typeof res.refreshToken).toBe("string");
       expect(res.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -111,23 +88,17 @@ describe("JwtAuthService", () => {
       expect(inserted.expiresAt).toBeInstanceOf(Date);
     });
     it("stores null ua/ip when not provided", async () => {
-      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
-      verify.mockResolvedValueOnce(true);
-      await svc.login("a@b.com", "pw");
+      await svc.openSessionFor(entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 }));
       expect(m.refreshTokens.insert.mock.calls[0][0]).toMatchObject({ userAgent: null, ip: null });
     });
     it("revokes the device's earlier live tokens first (one session per device)", async () => {
-      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
-      verify.mockResolvedValueOnce(true);
-      await svc.login("a@b.com", "pw", "UA/1.0", "1.2.3.4");
+      await svc.openSessionFor(entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 }), "UA/1.0", "1.2.3.4");
       expect(m.refreshTokens.update).toHaveBeenCalledTimes(1);
       const [criteria] = m.refreshTokens.update.mock.calls[0];
       expect(criteria).toMatchObject({ accountId: "a1", userAgent: "UA/1.0", ip: "1.2.3.4" });
     });
     it("skips device consolidation when no ua/ip fingerprint is available", async () => {
-      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
-      verify.mockResolvedValueOnce(true);
-      await svc.login("a@b.com", "pw");
+      await svc.openSessionFor(entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 }));
       expect(m.refreshTokens.update).not.toHaveBeenCalled();
     });
   });
@@ -297,19 +268,27 @@ describe("JwtAuthService", () => {
       expect(m.groups.findBy).not.toHaveBeenCalled();
     });
     it("hydrates profile fields and group memberships", async () => {
-      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", isRoot: 1 });
-      m.profiles.findOne.mockResolvedValueOnce({ displayName: "Bob", city: "Paris", latitude: "48.8", longitude: "2.3" });
+      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", isRoot: 1, password: "hash" });
+      m.profiles.findOne.mockResolvedValueOnce({ firstName: "Bob", lastName: "Martin", city: "Paris", latitude: "48.8", longitude: "2.3" });
       m.groupMembers.find.mockResolvedValueOnce([{ groupId: "g1" }]);
       m.groups.findBy.mockResolvedValueOnce([{ id: "g1", name: "Admins" }]);
       const res = await svc.me("a1");
-      expect(res).toMatchObject({ displayName: "Bob", city: "Paris", isRoot: true, groups: [{ id: "g1", name: "Admins" }] });
+      expect(res).toMatchObject({
+        displayName: "Bob Martin",
+        firstName: "Bob",
+        lastName: "Martin",
+        hasPassword: true,
+        city: "Paris",
+        isRoot: true,
+        groups: [{ id: "g1", name: "Admins" }],
+      });
     });
   });
 
   describe("updateProfile", () => {
     it("404 when the account is gone", async () => {
       m.accounts.findOne.mockResolvedValueOnce(null);
-      await expect(svc.updateProfile("a1", { displayName: "x" })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(svc.updateProfile("a1", { lastName: "x" })).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("409 when the new email is taken by another account", async () => {
@@ -323,7 +302,7 @@ describe("JwtAuthService", () => {
       const account = { id: "a1", email: "old@b.com", isRoot: 0 };
       m.accounts.findOne.mockResolvedValueOnce(account).mockResolvedValueOnce(null);
       m.profiles.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
-      const res = await svc.updateProfile("a1", { email: "new@b.com", displayName: "Bob" });
+      const res = await svc.updateProfile("a1", { email: "new@b.com", lastName: "Bob" });
       expect(account.email).toBe("new@b.com");
       expect(m.accounts.save).toHaveBeenCalledWith(account);
       expect(m.profiles.create).toHaveBeenCalledWith({ accountId: "a1" });

@@ -68,7 +68,8 @@ export default {
     groupsHint: "Optionnel. Le groupe par défaut est assigné automatiquement et n'est pas listé ici.",
     groupsPlaceholder: "Sélectionner un ou plusieurs groupes",
     assignSectionTitle: "Assigner des destinataires et alias",
-    assignHint: "Ressources existantes et non assignées du domaine choisi, remises à l'invité à l'acceptation. Assignation uniquement, aucun mot de passe n'est modifié.",
+    assignHint:
+      "Ressources existantes et non assignées du domaine choisi, remises à l'invité à l'acceptation. Assignation uniquement, aucun mot de passe n'est modifié.",
     assignRecipients: "Destinataires",
     assignRecipientsPlaceholder: "Sélectionner des destinataires non assignés",
     assignAliases: "Alias",
@@ -77,7 +78,8 @@ export default {
     currentOwnerLabel: "Propriétaire actuel :",
     noOwner: "Aucun propriétaire",
     makeOwnerLabel: "Désigner cet utilisateur comme propriétaire du domaine",
-    makeOwnerHint: "Appliqué lorsque l'invitation est acceptée. Un domaine a un seul propriétaire ; le propriétaire existant est remplacé.",
+    makeOwnerHint:
+      "Appliqué lorsque l'invitation est acceptée. Un domaine a un seul propriétaire ; le propriétaire existant est remplacé.",
     makeOwnerNoRight: "Vous n'avez pas les droits requis pour désigner un propriétaire de domaine.",
     makeOwnerConfirmTitle: "Changer le propriétaire du domaine ?",
     makeOwnerConfirmDescription:
@@ -153,7 +155,6 @@ export default {
     alertDescription: "Email, nom affiché, avatar, téléphone, adresse et statut d'activation.",
     title: "Modifier le compte ({email})",
     breadcrumb: "Modifier",
-    nameLabel: "Nom affiché",
     emailLabel: "Email",
     avatarUrlLabel: "URL de l'avatar",
     enabledLabel: "Compte activé",
@@ -175,5 +176,6 @@ export default {
     loadFailed: "Échec du chargement",
   },
   confirmDelete: "Supprimer ce compte ?",
-  confirmDeleteHint: "Supprime définitivement le compte. Les domaines, destinataires et groupes qu'il possède sont conservés mais perdent leur propriétaire.",
+  confirmDeleteHint:
+    "Supprime définitivement le compte. Les domaines, destinataires et groupes qu'il possède sont conservés mais perdent leur propriétaire.",
 } satisfies Locales["accounts"];

@@ -58,7 +58,7 @@ export const AcceptInvitationDocs = () =>
     ApiOperation({ summary: "Accept an invitation and create an account (public)" }),
     ApiBody({
       schema: {
-        example: { password: "correct-horse-battery-staple", displayName: "John Doe" },
+        example: { password: "correct-horse-battery-staple", firstName: "John", lastName: "Doe" },
       },
     }),
     ApiResponse({ status: 201, description: "Account created", schema: { example: { ok: true, email: "jdoe@example.com" } } }),

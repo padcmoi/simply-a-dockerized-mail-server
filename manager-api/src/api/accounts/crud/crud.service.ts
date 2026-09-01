@@ -4,7 +4,7 @@ import { In, Not, Repository } from "typeorm";
 import { ApiError } from "../../../core/common/api-error";
 import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { Account } from "../../../core/entities/account.entity";
-import { AccountProfile } from "../../../core/entities/account-profile.entity";
+import { ACCOUNT_GENDERS, AccountProfile, composeDisplayName } from "../../../core/entities/account-profile.entity";
 import { GroupMember } from "../../../core/entities/group-member.entity";
 import { Group } from "../../../core/entities/group.entity";
 import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
@@ -15,7 +15,7 @@ import type { UpdateAccountDto } from "./crud.validation";
 
 // `group` (enriched post-query, see `enrichWithGroups`) isn't a real column
 // on `accounts` -- not sortable without a join/subquery, out of scope here.
-// `displayName` lives on the joined account_profiles table (see ACCOUNTS_SORT_EXPR).
+// `displayName` is composed from the joined account_profiles name columns (see ACCOUNTS_SORT_EXPR).
 export const ACCOUNTS_SORTABLE_COLUMNS = ["email", "displayName", "enabled", "createdAt"] as const;
 
 // Maps each sortable key to its real SQL expression (account column or the
@@ -23,11 +23,13 @@ export const ACCOUNTS_SORTABLE_COLUMNS = ["email", "displayName", "enabled", "cr
 // Values are entity-property paths (alias.property), NOT db column names --
 // TypeORM resolves them to columns; a snake_case db name (a.created_at) makes it
 // throw "Cannot read properties of undefined (reading 'databaseName')".
-const ACCOUNTS_SORT_EXPR: Record<(typeof ACCOUNTS_SORTABLE_COLUMNS)[number], string> = {
-  email: "a.email",
-  displayName: "p.displayName",
-  enabled: "a.enabled",
-  createdAt: "a.createdAt",
+// `displayName` is no longer a stored column: it is composed from the profile's
+// last + first name, so its sort orders on those two columns in that order.
+const ACCOUNTS_SORT_EXPR: Record<(typeof ACCOUNTS_SORTABLE_COLUMNS)[number], string[]> = {
+  email: ["a.email"],
+  displayName: ["p.lastName", "p.firstName"],
+  enabled: ["a.enabled"],
+  createdAt: ["a.createdAt"],
 };
 
 @Injectable()
@@ -56,7 +58,7 @@ export class AccountsService {
       .leftJoin(AccountProfile, "p", "p.account_id = a.id")
       .select("a.id", "id")
       .addSelect("a.email", "email")
-      .addSelect("p.displayName", "displayName")
+      .addSelect("NULLIF(TRIM(CONCAT_WS(' ', p.first_name, p.last_name)), '')", "displayName")
       .orderBy("a.email", "ASC");
     if (opts.notInGroup) {
       qb.leftJoin(GroupMember, "gm", "gm.account_id = a.id AND gm.group_id = :gid", { gid: opts.notInGroup }).andWhere(
@@ -64,7 +66,7 @@ export class AccountsService {
       );
     }
     if (opts.search) {
-      qb.andWhere("(a.email LIKE :s OR p.display_name LIKE :s)", { s: `%${opts.search}%` });
+      qb.andWhere("(a.email LIKE :s OR CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s)", { s: `%${opts.search}%` });
     }
     if (opts.limit !== undefined) qb.limit(opts.limit);
     const rows = await qb.getRawMany<{ id: string; email: string; displayName: string | null }>();
@@ -80,21 +82,22 @@ export class AccountsService {
       return this.enrichWithGroups(allAccounts);
     }
 
-    // Joins account_profiles so search and sort can reach the display name,
-    // which no longer lives on `accounts`. addSelect keeps p.display_name in the
-    // pagination DISTINCT subquery getManyAndCount builds, so ORDER BY on it
-    // resolves (otherwise: Unknown column 'distinctAlias.p_display_name').
+    // Joins account_profiles so search and sort can reach the name, which does
+    // not live on `accounts`. addSelect keeps the name columns in the pagination
+    // DISTINCT subquery getManyAndCount builds, so ORDER BY on them resolves
+    // (otherwise: Unknown column 'distinctAlias.p_last_name').
     const qb = this.accounts
       .createQueryBuilder("a")
       .leftJoin(AccountProfile, "p", "p.account_id = a.id")
-      .addSelect("p.displayName");
+      .addSelect("p.firstName")
+      .addSelect("p.lastName");
     if (query.search) {
-      qb.andWhere("(a.email LIKE :s OR p.display_name LIKE :s)", { s: `%${query.search}%` });
+      qb.andWhere("(a.email LIKE :s OR CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s)", { s: `%${query.search}%` });
     }
     const sortBy = resolveSortColumn(query.sortBy, ACCOUNTS_SORTABLE_COLUMNS, "createdAt");
-    qb.orderBy(ACCOUNTS_SORT_EXPR[sortBy], query.sortDir === "asc" ? "ASC" : "DESC")
-      .skip(query.offset)
-      .take(query.limit);
+    const dir = query.sortDir === "asc" ? "ASC" : "DESC";
+    ACCOUNTS_SORT_EXPR[sortBy].forEach((expr, i) => (i === 0 ? qb.orderBy(expr, dir) : qb.addOrderBy(expr, dir)));
+    qb.skip(query.offset).take(query.limit);
     const [rows, total] = await qb.getManyAndCount();
     return { items: await this.enrichWithGroups(rows), total };
   }
@@ -105,7 +108,7 @@ export class AccountsService {
       accountIds.length ? this.groupMembers.find({ where: { accountId: In(accountIds) } }) : [],
       accountIds.length ? this.profiles.find({ where: { accountId: In(accountIds) } }) : [],
     ]);
-    const displayByAccount = new Map(profileRows.map((p) => [p.accountId, p.displayName]));
+    const displayByAccount = new Map(profileRows.map((p) => [p.accountId, composeDisplayName(p.firstName, p.lastName)]));
     const groupIds = [...new Set(memberRows.map((m) => m.groupId))];
     const groupMap = new Map<string, string>();
     if (groupIds.length) {
@@ -144,7 +147,11 @@ export class AccountsService {
     return {
       id: account.id,
       email: account.email,
-      displayName: profile?.displayName ?? null,
+      displayName: composeDisplayName(profile?.firstName, profile?.lastName),
+      firstName: profile?.firstName ?? null,
+      lastName: profile?.lastName ?? null,
+      gender: profile?.gender ?? null,
+      genders: ACCOUNT_GENDERS,
       avatarUrl: profile?.avatarUrl ?? null,
       phone: profile?.phone ?? null,
       addressLine: profile?.addressLine ?? null,
@@ -182,7 +189,9 @@ export class AccountsService {
     await this.accounts.save(account);
 
     const profileFields = [
-      "displayName",
+      "firstName",
+      "lastName",
+      "gender",
       "avatarUrl",
       "phone",
       "addressLine",

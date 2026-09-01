@@ -29,6 +29,8 @@ describe("AppSettingsService", () => {
       row("supervision_retention_ms", "number", "604800000"),
       row("manager_url", "string", "https://mgr.test"),
       row("ticket_resources_required", "boolean", "false"),
+      row("passport_enabled", "boolean", "true"),
+      row("passport_auto_provision", "boolean", "false"),
     ]);
     await svc.reload();
     expect(svc.get()).toEqual({
@@ -38,6 +40,8 @@ describe("AppSettingsService", () => {
       supervisionRetentionMs: 604800000,
       managerUrl: "https://mgr.test",
       ticketResourcesRequired: false,
+      passportEnabled: true,
+      passportAutoProvision: false,
     });
   });
 

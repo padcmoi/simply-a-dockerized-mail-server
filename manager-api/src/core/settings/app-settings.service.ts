@@ -12,6 +12,16 @@ export interface AppSettingsView {
   managerUrl: string;
   /** Whether opening a ticket must name at least one mailbox or alias. */
   ticketResourcesRequired: boolean;
+  /**
+   * Whether external sign-in is offered at all. Off, the login screen draws no
+   * provider button and the API refuses every exchange, credentials or not.
+   */
+  passportEnabled: boolean;
+  /**
+   * Whether an external sign-in by someone with no account here creates one.
+   * Off means a provider only signs in accounts that already exist.
+   */
+  passportAutoProvision: boolean;
 }
 
 interface FieldSpec {
@@ -26,6 +36,8 @@ const FIELDS: Record<keyof AppSettingsView, FieldSpec> = {
   supervisionRetentionMs: { key: "supervision_retention_ms", type: "number" },
   managerUrl: { key: "manager_url", type: "string" },
   ticketResourcesRequired: { key: "ticket_resources_required", type: "boolean" },
+  passportEnabled: { key: "passport_enabled", type: "boolean" },
+  passportAutoProvision: { key: "passport_auto_provision", type: "boolean" },
 };
 
 export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
@@ -39,6 +51,14 @@ export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
   // On by default: a ticket that names nothing sends the support desk hunting
   // through a whole domain. A server that would rather not ask turns it off.
   ticketResourcesRequired: true,
+  // On: setting a provider's credentials is already a deliberate act, so its
+  // button appears as soon as they exist. The switch is there to pull external
+  // sign-in off the login screen without having to unset the credentials.
+  passportEnabled: true,
+  // Off: with a provider configured, anyone holding an address there could
+  // otherwise walk into the manager. Turning it on is a deliberate act by a
+  // root admin, for a deployment that wants open sign-up.
+  passportAutoProvision: false,
 };
 
 @Injectable()
@@ -75,6 +95,8 @@ export class AppSettingsService implements OnModuleInit {
       supervisionRetentionMs: num(FIELDS.supervisionRetentionMs, APP_SETTINGS_DEFAULTS.supervisionRetentionMs),
       managerUrl: str(FIELDS.managerUrl, APP_SETTINGS_DEFAULTS.managerUrl),
       ticketResourcesRequired: bool(FIELDS.ticketResourcesRequired, APP_SETTINGS_DEFAULTS.ticketResourcesRequired),
+      passportEnabled: bool(FIELDS.passportEnabled, APP_SETTINGS_DEFAULTS.passportEnabled),
+      passportAutoProvision: bool(FIELDS.passportAutoProvision, APP_SETTINGS_DEFAULTS.passportAutoProvision),
     };
     return this.cache;
   }

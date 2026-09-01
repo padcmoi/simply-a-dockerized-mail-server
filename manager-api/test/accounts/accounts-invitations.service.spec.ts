@@ -494,27 +494,27 @@ describe("AccountsInvitationsService", () => {
       m.invitations.findOne.mockResolvedValue(inv);
       m.accounts.findOne.mockResolvedValue(null);
 
-      const res = await svc.acceptInvitation("t", { password: "longenough", displayName: "Jo" });
+      const res = await svc.acceptInvitation("t", { password: "longenough", firstName: "Jo" });
 
       expect(scryptHash).toHaveBeenCalledWith("longenough");
       expect(m.accounts.create).toHaveBeenCalledWith(
         expect.objectContaining({ email: "x@y.com", password: "hashed:longenough", isRoot: 0, enabled: 1 })
       );
-      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ accountId: "generated-id", displayName: "Jo" }));
+      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ accountId: "generated-id", firstName: "Jo" }));
       expect(m.cpg.guard.assignAccountToGroup).not.toHaveBeenCalled();
       expect(inv.acceptedAt).toBeInstanceOf(Date);
       expect(m.invitations.save).toHaveBeenCalledWith(inv);
       expect(res).toEqual({ ok: true, email: "x@y.com" });
     });
 
-    it("assigns the invited group and defaults a missing display name to null", async () => {
+    it("assigns the invited group and defaults a missing name to null", async () => {
       const inv = { email: "x@y.com", groupId: "g1", acceptedAt: null, expiresAt: new Date(Date.now() + 1000) };
       m.invitations.findOne.mockResolvedValue(inv);
       m.accounts.findOne.mockResolvedValue(null);
 
       await svc.acceptInvitation("t", { password: "longenough" });
 
-      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ displayName: null }));
+      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ firstName: null, lastName: null }));
       expect(m.cpg.guard.assignAccountToGroup).toHaveBeenCalledWith("generated-id", "g1");
     });
 

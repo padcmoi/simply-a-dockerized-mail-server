@@ -18,7 +18,7 @@ const done = ref(false);
 // invalid or still being checked), then the form shows the matching path.
 const emailExists = ref<boolean | null>(null);
 const checking = ref(false);
-const form = reactive({ email: "", displayName: "", password: "" });
+const form = reactive({ email: "", firstName: "", lastName: "", password: "" });
 let checkTimer: ReturnType<typeof setTimeout> | null = null;
 
 const token = computed(() => route.params.token as string);
@@ -27,7 +27,8 @@ const emailValid = computed(() => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.t
 const schema = computed(() =>
   z.object({
     email: openToken.value ? z.email(t("invite.emailInvalid")) : z.string().optional(),
-    displayName: z.string().max(255).optional(),
+    firstName: z.string().max(255).optional(),
+    lastName: z.string().max(255).optional(),
     password: z.string().min(8, t("invite.passwordMin")),
   })
 );
@@ -75,7 +76,8 @@ async function submit() {
       method: "POST",
       body: {
         email: openToken.value ? form.email.trim().toLowerCase() : undefined,
-        displayName: form.displayName || undefined,
+        firstName: form.firstName.trim() || undefined,
+        lastName: form.lastName.trim() || undefined,
         password: form.password,
       },
     });
@@ -180,9 +182,15 @@ onMounted(loadInvitation);
         :description="t('invite.existingHint')"
       />
 
-      <UFormField v-if="emailExists !== true" :label="t('invite.nameLabel')" :hint="t('invite.nameHint')" name="displayName">
-        <UInput v-model="form.displayName" icon="i-lucide-user" autocomplete="name" placeholder="Jane Doe" class="w-full" />
-      </UFormField>
+      <div v-if="emailExists !== true" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+        <UFormField :label="t('invite.lastNameLabel')" :hint="t('invite.nameHint')" name="lastName">
+          <UInput v-model="form.lastName" icon="i-lucide-user" autocomplete="family-name" placeholder="Doe" class="w-full" />
+        </UFormField>
+
+        <UFormField :label="t('invite.firstNameLabel')" name="firstName">
+          <UInput v-model="form.firstName" icon="i-lucide-user" autocomplete="given-name" placeholder="Jane" class="w-full" />
+        </UFormField>
+      </div>
 
       <UFormField :label="t('invite.passwordLabel')" name="password" required>
         <UInput

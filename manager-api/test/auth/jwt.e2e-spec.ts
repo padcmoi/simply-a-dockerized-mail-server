@@ -3,11 +3,19 @@ import request from "supertest";
 import { getRepositoryToken } from "@nestjs/typeorm";
 import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
 import { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
+import { LocalProvider } from "../../src/core/auth/passport/providers/local.provider";
+import { Account } from "../../src/core/entities/account.entity";
 import { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import { VirtualQuotaUser } from "../../src/core/entities/virtual-quota-user.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
+
+// The login route verifies credentials through the real `local` provider, so it
+// is registered here with an account repo double. Only the hashing is stubbed:
+// this suite is about which routes are reachable, not about scrypt.
+const { verify } = vi.hoisted(() => ({ verify: vi.fn<(plain: string, stored: string) => Promise<boolean>>() }));
+vi.mock("../../src/core/common/scrypt", () => ({ scryptVerify: verify }));
 
 // login / refresh / logout are @Public (no token needed). me + me/* are
 // authenticated but carry NO permission requirement: 401 without a token, 2xx
@@ -18,7 +26,7 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
   let h: Harness;
 
   const auth = {
-    login: vi.fn(),
+    openSessionFor: vi.fn(),
     refresh: vi.fn(),
     revoke: vi.fn(),
     me: vi.fn(),
@@ -35,12 +43,15 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
   const virtualUserRepo = { find: vi.fn() };
   const virtualAliasRepo = { find: vi.fn() };
   const recipientQuotaRepo = { find: vi.fn().mockResolvedValue([]) };
+  const accountRepo = { findOne: vi.fn() };
 
   beforeAll(async () => {
     h = await buildHarness({
       controllers: [JwtAuthController],
       providers: [
         { provide: JwtAuthService, useValue: auth },
+        LocalProvider,
+        { provide: getRepositoryToken(Account), useValue: accountRepo },
         { provide: getRepositoryToken(VirtualDomain), useValue: domainRepo },
         { provide: getRepositoryToken(VirtualUser), useValue: virtualUserRepo },
         { provide: getRepositoryToken(VirtualAlias), useValue: virtualAliasRepo },
@@ -62,17 +73,28 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
   const GROUP_ID = "11111111-1111-1111-1111-111111111111";
 
   describe("POST login (public)", () => {
-    it("200 with no Authorization header and forwards credentials", async () => {
-      auth.login.mockResolvedValueOnce({ accessToken: "a", refreshToken: "r", expiresAt: "2030-01-01T00:00:00.000Z" });
+    it("200 with no Authorization header, on the account the credentials matched", async () => {
+      const account = { id: "a1", email: "user@test.local", password: "hash", enabled: 1 };
+      accountRepo.findOne.mockResolvedValueOnce(account);
+      verify.mockResolvedValueOnce(true);
+      auth.openSessionFor.mockResolvedValueOnce({ accessToken: "a", refreshToken: "r", expiresAt: "2030-01-01T00:00:00.000Z" });
       const res = await api()
         .post("/api/v1/auth/jwt/login")
         .send({ email: "user@test.local", password: "s3cret" })
         .expect(200);
       expect(res.body.accessToken).toBe("a");
+      expect(accountRepo.findOne).toHaveBeenCalledWith({ where: { email: "user@test.local", enabled: 1 } });
+      expect(verify).toHaveBeenCalledWith("s3cret", "hash");
       // ua (user-agent header) may be undefined and ip is socket-derived, so
-      // only the credentials are asserted precisely.
-      const [email, password] = auth.login.mock.calls[0];
-      expect([email, password]).toEqual(["user@test.local", "s3cret"]);
+      // only the account is asserted precisely.
+      expect(auth.openSessionFor.mock.calls[0][0]).toBe(account);
+    });
+
+    it("401 when the credentials do not match", async () => {
+      accountRepo.findOne.mockResolvedValueOnce({ id: "a1", email: "user@test.local", password: "hash", enabled: 1 });
+      verify.mockResolvedValueOnce(false);
+      await api().post("/api/v1/auth/jwt/login").send({ email: "user@test.local", password: "nope" }).expect(401);
+      expect(auth.openSessionFor).not.toHaveBeenCalled();
     });
     it("400 on an invalid email (zod)", async () => {
       await api().post("/api/v1/auth/jwt/login").send({ email: "nope", password: "x" }).expect(400);
@@ -191,12 +213,12 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
 
   describe("PATCH me (authenticated, no ACL)", () => {
     it("401 without a token", async () => {
-      await api().patch("/api/v1/auth/jwt/me").send({ displayName: "Bob" }).expect(401);
+      await api().patch("/api/v1/auth/jwt/me").send({ lastName: "Bob" }).expect(401);
     });
     it("200 with a token and forwards (callerId, body)", async () => {
-      auth.updateProfile.mockResolvedValueOnce({ email: "user@test.local", displayName: "Bob" });
-      await api().patch("/api/v1/auth/jwt/me").set(bearer(h.token(USER))).send({ displayName: "Bob" }).expect(200);
-      expect(auth.updateProfile).toHaveBeenCalledWith(USER.id, { displayName: "Bob" });
+      auth.updateProfile.mockResolvedValueOnce({ email: "user@test.local", displayName: "Bob Martin" });
+      await api().patch("/api/v1/auth/jwt/me").set(bearer(h.token(USER))).send({ lastName: "Bob" }).expect(200);
+      expect(auth.updateProfile).toHaveBeenCalledWith(USER.id, { lastName: "Bob" });
     });
     it("400 on an invalid email (zod)", async () => {
       await api().patch("/api/v1/auth/jwt/me").set(bearer(h.token(USER))).send({ email: "nope" }).expect(400);

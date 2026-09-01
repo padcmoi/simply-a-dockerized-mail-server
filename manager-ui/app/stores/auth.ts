@@ -34,6 +34,24 @@ export const useAuthStore = defineStore("auth", {
       this.session = { ...data, email };
       await this.fetchProfile().catch(() => undefined);
     },
+    // The one-time code an external provider's callback left on the login URL,
+    // traded for one of our sessions. What comes back is the same pair login()
+    // gets, so everything downstream -- the refresh rotation, the 401 retry, the
+    // session list -- is unaware there was ever a second way in. The email is
+    // left to fetchProfile: the one that counts is the account's, not whatever
+    // address the provider signed.
+    async loginWithPassportProvider(code: string) {
+      const data = await $fetch<{
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: string;
+      }>("/api/v1/auth/passport/exchange", {
+        method: "POST",
+        body: { code },
+      });
+      this.session = { ...data, email: "" };
+      await this.fetchProfile().catch(() => undefined);
+    },
     async fetchProfile() {
       if (!this.session) return;
       const me = await $fetch<Profile>("/api/v1/auth/jwt/me", {

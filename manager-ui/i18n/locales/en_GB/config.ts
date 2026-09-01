@@ -19,7 +19,8 @@ export default {
   themeCardHint: "Interface colours for everyone",
   mail: {
     alertTitle: "Outbound mail server.",
-    alertDescription: "How the manager sends all its emails (invitations, notifications, codes...). Stored in the database, not the environment.",
+    alertDescription:
+      "How the manager sends all its emails (invitations, notifications, codes...). Stored in the database, not the environment.",
     cardTitle: "Mail provider",
     provider: "Provider",
     providerOff: "Disabled",
@@ -40,7 +41,8 @@ export default {
     password: "Password",
     passwordKeepHint: "Leave blank to keep the stored password.",
     brevoPassword: "SMTP key",
-    brevoPasswordHint: "Paste the SMTP key value from Brevo (SMTP & API, SMTP keys): the secret value, not the key name such as MailServerCustom.",
+    brevoPasswordHint:
+      "Paste the SMTP key value from Brevo (SMTP & API, SMTP keys): the secret value, not the key name such as MailServerCustom.",
     fromAddress: "Sender address",
     fromAddressHint: "Required for an external relay: it must be a verified sender.",
     brevoFromHint: "A sender you verified in Brevo (Senders, domains, IPs). It can differ from the login.",
@@ -79,9 +81,11 @@ export default {
   cadence: {
     cardTitle: "Email cadence",
     alertTitle: "Email cadence.",
-    alertDescription: "When notification emails are sent and how often any recipient can be contacted. Stored in the database, reserved for root accounts.",
+    alertDescription:
+      "When notification emails are sent and how often any recipient can be contacted. Stored in the database, reserved for root accounts.",
     offlineNotify: "Delay before the pending-notifications email",
-    offlineNotifyHint: "How long a member must stay offline before getting the summary email, then nothing more until they reconnect. In seconds (300 = 5 min).",
+    offlineNotifyHint:
+      "How long a member must stay offline before getting the summary email, then nothing more until they reconnect. In seconds (300 = 5 min).",
     sweep: "Check frequency",
     sweepHint: "How often the system looks for members due a summary. In seconds.",
     spool: "Anti-spam: at most one email per recipient every",
@@ -93,13 +97,14 @@ export default {
     cannotExceedDelay: "Cannot exceed the delay above.",
     reset: "Factory defaults",
   },
+  passportCardLabel: "External sign-in",
+  passportCardHint: "The sign-in providers, and what becomes of a sign-in with no account here.",
   theme: {
     cardTitle: "Interface theme",
     alertTitle: "Interface colours.",
     alertDescription:
       "What everyone lands on, signed in or not. This interface's own server reads these colours before rendering the first page, so they are there from the first paint. An account can lay its own over them from its preferences.",
-    resetDesc:
-      "The colours of the mode on screen go back to the ones the interface ships with, for the whole server once saved.",
+    resetDesc: "The colours of the mode on screen go back to the ones the interface ships with, for the whole server once saved.",
     hint: "Saved for the whole server. A colour left alone is not stored: it stays the one the interface ships with, and Reset followed by Save returns the mode on screen to that state.",
   },
   supervision: {
@@ -131,13 +136,65 @@ export default {
     saveFailed: "Could not save",
     loadFailed: "Could not load",
   },
+  passport: {
+    cardTitle: "External sign-in",
+    alertTitle: "Sign-in providers.",
+    alertDescription:
+      "The services people may sign in to the manager with, alongside email and password. A provider only appears on the login screen when its credentials are set in the .env and it is switched on here.",
+    managerUrlMissingTitle: "The manager URL is not set.",
+    managerUrlMissing:
+      "No provider can work while it is empty: the callback URL handed to the provider is built from it, and it has to be public and exact. Set it under Configuration, General.",
+    managerUrlAction: "Set the address",
+    enabled: "Enable external sign-in",
+    enabledHint:
+      "Off, no provider button appears on the login screen and the server refuses every external sign-in, credentials set or not. Email and password remain the only way in.",
+    enabledOn: "Enabled",
+    enabledOff: "Disabled",
+    providersSection: "Providers",
+    accountsSection: "Accounts",
+    configured: "Credentials set",
+    notConfigured: "No credentials: set MANAGER_OAUTH_{id}_CLIENT_ID and _CLIENT_SECRET in the .env, then restart the API.",
+    configure: "Configure",
+    close: "Collapse",
+    consoleTitle: "To paste into the {provider} console.",
+    consoleHint:
+      "Both values have to appear exactly like this in the OAuth client configuration at {provider}, otherwise the sign-in is refused. They are built from the manager URL.",
+    javascriptOrigin: "Authorised JavaScript origin",
+    redirectUri: "Authorised redirect URI",
+    copy: "Copy",
+    copied: "Copied",
+    clientId: "Client ID",
+    clientSecret: "Client secret",
+    clientSecretKeep: "Leave empty to keep the stored secret",
+    saveCredentials: "Save the credentials",
+    providerSaved: "Credentials saved",
+    forget: "Forget the credentials",
+    forgetTitle: "Forget the {provider} credentials?",
+    forgetHint:
+      "The provider becomes unconfigured again and its button leaves the login screen. Accounts already linked keep their link: only the way in is removed.",
+    providerForgotten: "Credentials forgotten",
+    autoProvision: "Create the account on a first sign-in",
+    autoProvisionHint:
+      "Off, a provider only opens a session on an account that already exists here, and an unknown address is refused. Accounts then keep arriving through invitations.",
+    autoProvisionWarning:
+      "Anyone holding an address at a switched-on provider can now obtain an account. A created account carries no password, no admin rights, and nothing beyond the default group.",
+    on: "Account created",
+    off: "Unknown address refused",
+    saving: "Saving...",
+    autosaveHint: "Saved automatically",
+    saved: "Settings saved",
+    saveFailed: "Could not save",
+    loadFailed: "Could not load",
+  },
   general: {
     cardTitle: "General",
     alertTitle: "General settings.",
     alertDescription: "Server settings that do not depend on any domain. Stored in the database, reserved for root accounts.",
     managerUrl: "Interface address",
-    managerUrlHint: "http(s):// followed by a real domain or subdomain with a real extension (e.g. mail-manager.example.com), no path. Used for the button in emails. Empty: no button.",
-    managerUrlInvalid: "Invalid address: http(s):// + a real domain with a real extension (.ovh, .com...), with nothing after it.",
+    managerUrlHint:
+      "http(s):// followed by a real domain or subdomain with a real extension (e.g. mail-manager.example.com), no path. Used for the button in emails. Empty: no button.",
+    managerUrlInvalid:
+      "Invalid address: http(s):// + a real domain with a real extension (.ovh, .com...), with nothing after it.",
     save: "Save",
     saved: "Settings saved",
     saveFailed: "Failed to save",

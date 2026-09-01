@@ -20,6 +20,7 @@ import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.m
 import { ApiTokenModule } from "./core/auth/api-token/api-token.module";
 import { CombinedAuthGuard } from "./core/auth/auth.guard";
 import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
+import { PassportAuthModule } from "./core/auth/passport/passport.module";
 import { CustomPermissionGuardModule } from "./core/custom-permission-guard/custom-permission-guard.module";
 import { RefreshToken } from "./core/entities/refresh-token.entity";
 import { WebsocketModule } from "./core/websocket/websocket.module";
@@ -46,6 +47,7 @@ import { WebsocketModule } from "./core/websocket/websocket.module";
     HealthModule,
     InfoModule,
     JwtAuthModule,
+    PassportAuthModule,
     ApiTokenModule,
     CustomPermissionGuardModule,
     DomainsModule,

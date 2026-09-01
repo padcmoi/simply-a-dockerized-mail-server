@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ACCOUNT_GENDERS } from "../../../core/entities/account-profile.entity";
 
 // Admin-facing edit: the full set of a user's editable fields. email is the
 // login identity (changeable, never cleared) and enabled is the admin-only gate;
@@ -8,7 +9,9 @@ import { z } from "zod";
 // fields the owner can, plus enabled.
 export const updateAccountSchema = z.object({
   email: z.email().max(255).optional(),
-  displayName: z.string().max(255).nullable().optional(),
+  firstName: z.string().max(255).nullable().optional(),
+  lastName: z.string().max(255).nullable().optional(),
+  gender: z.enum(ACCOUNT_GENDERS).nullable().optional(),
   avatarUrl: z.url().max(1024).nullable().optional(),
   phone: z.string().max(32).nullable().optional(),
   addressLine: z.string().max(255).nullable().optional(),

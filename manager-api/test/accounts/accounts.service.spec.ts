@@ -38,7 +38,16 @@ describe("AccountsService", () => {
 
   beforeEach(() => {
     m = makeMocks();
-    svc = new AccountsService(m.accounts, m.profiles, m.groups, m.groupMembers, m.geocoding, m.domains, m.virtualUsers, m.aliases);
+    svc = new AccountsService(
+      m.accounts,
+      m.profiles,
+      m.groups,
+      m.groupMembers,
+      m.geocoding,
+      m.domains,
+      m.virtualUsers,
+      m.aliases
+    );
   });
 
   describe("listNames", () => {
@@ -70,7 +79,9 @@ describe("AccountsService", () => {
 
       expect(qb.leftJoin).toHaveBeenCalledTimes(2); // profile + group_members
       expect(qb.andWhere).toHaveBeenCalledWith("gm.id IS NULL");
-      expect(qb.andWhere).toHaveBeenCalledWith("(a.email LIKE :s OR p.display_name LIKE :s)", { s: "%bob%" });
+      expect(qb.andWhere).toHaveBeenCalledWith("(a.email LIKE :s OR CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s)", {
+        s: "%bob%",
+      });
       expect(qb.limit).toHaveBeenCalledWith(10);
     });
   });
@@ -81,7 +92,7 @@ describe("AccountsService", () => {
         { id: "a1", email: "a@b.com", isRoot: 1, enabled: 1, lastLogin: null, createdAt: null },
       ]);
       m.groupMembers.find.mockResolvedValue([{ accountId: "a1", groupId: "g1" }]);
-      m.profiles.find.mockResolvedValue([{ accountId: "a1", displayName: "Alice" }]);
+      m.profiles.find.mockResolvedValue([{ accountId: "a1", firstName: "Alice", lastName: "Martin" }]);
       m.groups.findBy.mockResolvedValue([{ id: "g1", name: "Admins" }]);
 
       const res = await svc.list({ offset: 0, sortDir: "desc" });
@@ -91,7 +102,7 @@ describe("AccountsService", () => {
         {
           id: "a1",
           email: "a@b.com",
-          displayName: "Alice",
+          displayName: "Alice Martin",
           isRoot: true,
           enabled: true,
           lastLogin: null,
@@ -110,7 +121,9 @@ describe("AccountsService", () => {
 
       const res = await svc.list({ limit: 10, offset: 0, search: "x", sortBy: "email", sortDir: "asc" });
 
-      expect(qb.andWhere).toHaveBeenCalledWith("(a.email LIKE :s OR p.display_name LIKE :s)", { s: "%x%" });
+      expect(qb.andWhere).toHaveBeenCalledWith("(a.email LIKE :s OR CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s)", {
+        s: "%x%",
+      });
       expect(qb.orderBy).toHaveBeenCalledWith("a.email", "ASC");
       expect(qb.skip).toHaveBeenCalledWith(0);
       expect(qb.take).toHaveBeenCalledWith(10);
@@ -185,7 +198,7 @@ describe("AccountsService", () => {
         lastLogin: null,
         createdAt: null,
       });
-      m.profiles.findOne.mockResolvedValue({ displayName: "Alice", avatarUrl: "u", phone: "p", city: "Paris" });
+      m.profiles.findOne.mockResolvedValue({ firstName: "Alice", lastName: "Martin", avatarUrl: "u", phone: "p", city: "Paris" });
       m.groupMembers.find.mockResolvedValue([{ accountId: "a1", groupId: "g1" }]);
       m.groups.findBy.mockResolvedValue([{ id: "g1", name: "Admins" }]);
 
@@ -194,7 +207,9 @@ describe("AccountsService", () => {
       expect(res).toMatchObject({
         id: "a1",
         email: "a@b.com",
-        displayName: "Alice",
+        displayName: "Alice Martin",
+        firstName: "Alice",
+        lastName: "Martin",
         avatarUrl: "u",
         phone: "p",
         city: "Paris",
@@ -257,17 +272,17 @@ describe("AccountsService", () => {
       expect(m.accounts.save).not.toHaveBeenCalled();
     });
 
-    it("toggles enabled and updates an existing profile display name", async () => {
+    it("toggles enabled and updates an existing profile name", async () => {
       const account = { id: "a1", email: "a@b.com", isRoot: 0, enabled: 0, lastLogin: null, createdAt: null };
       m.accounts.findOne.mockResolvedValue(account);
       const profile = { accountId: "a1", displayName: "old" };
       m.profiles.findOne.mockResolvedValue(profile);
       m.groupMembers.find.mockResolvedValue([]);
 
-      await svc.updateAccount("a1", { enabled: true, displayName: "New" });
+      await svc.updateAccount("a1", { enabled: true, lastName: "New" });
 
       expect(m.accounts.save).toHaveBeenCalledWith(expect.objectContaining({ enabled: 1 }));
-      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ displayName: "New" }));
+      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ lastName: "New" }));
       expect(m.profiles.create).not.toHaveBeenCalled();
     });
 
@@ -282,16 +297,16 @@ describe("AccountsService", () => {
       expect(m.accounts.save).toHaveBeenCalledWith(expect.objectContaining({ enabled: 0 }));
     });
 
-    it("creates a profile when none exists to set the display name", async () => {
+    it("creates a profile when none exists to set the name", async () => {
       const account = { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null };
       m.accounts.findOne.mockResolvedValue(account);
       m.profiles.findOne.mockResolvedValue(null);
       m.groupMembers.find.mockResolvedValue([]);
 
-      await svc.updateAccount("a1", { displayName: "Fresh" });
+      await svc.updateAccount("a1", { lastName: "Fresh" });
 
       expect(m.profiles.create).toHaveBeenCalledWith({ accountId: "a1" });
-      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ accountId: "a1", displayName: "Fresh" }));
+      expect(m.profiles.save).toHaveBeenCalledWith(expect.objectContaining({ accountId: "a1", lastName: "Fresh" }));
     });
 
     it("persists every profile field and geocodes when the city is set", async () => {

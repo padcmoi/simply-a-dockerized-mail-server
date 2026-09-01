@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(profile): the sign-in email address moves to its own page, behind a ten-click confirmation naming both the old and the new address (01-09-2026)
+- feat(auth): a provider's client id and secret live in the database and are entered at Configuration, Connexion externe, which also shows the two URLs to paste into that provider's own console. The secret is sealed with the pepper the API already requires, so a database dump alone never yields it, and no route ever answers it back. Adding or replacing credentials takes effect on the next sign-in, with no restart and nothing left in .env (01-09-2026)
+- feat(auth): sign in through an external provider, opening the same session a password does. Every way in is a Passport provider under core/auth/passport/providers: local verifies the password this server holds, google verifies an identity Google vouches for, and one route serves them all. The account is found by the provider's subject claim, or by its verified email on a first sign-in, which links the two for good; an unknown address is refused unless a root admin turns on account creation, and a created account carries no password, no root flag and only the default group (01-09-2026)
+- feat(config): Connexion externe carries one switch for external sign-in as a whole, one per provider with its credentials state, and one for creating an account on a first sign-in, off by default and disabled while external sign-in is off (01-09-2026)
+- feat(profile): the profile carries a first name, a last name and a civility title in place of the single display name; every list shows the two joined, composed server-side, and existing display names are split by the migration (01-09-2026)
+- feat(profile): an account created by an external sign-in has no password, so the password page stops asking for the current one and lets it set its first, after which the email and password form works for it too (01-09-2026)
 - The login screen names the release it is running, and opens it on GitHub _(ui)_ (31-08-2026)
 - The new password and its confirmation carry an eye button that reveals what is typed on the password page; the current password stays masked, since an existing password is never shown _(ui)_ (01-09-2026)
 

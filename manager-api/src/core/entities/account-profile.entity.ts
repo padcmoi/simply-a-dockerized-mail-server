@@ -1,6 +1,23 @@
 import { Column, Entity, Index, JoinColumn, OneToOne, PrimaryColumn } from "typeorm";
 import { Account } from "./account.entity";
 
+// The civility titles a profile may carry. Single source of truth: the write
+// schemas validate against it and the API hands it to the interface, which
+// builds its select from the answer and never hardcodes the list. Only the
+// labels are translated, under the i18n key profile.genderOptions.<value>.
+export const ACCOUNT_GENDERS = ["mr", "mrs", "other"] as const;
+export type AccountGender = (typeof ACCOUNT_GENDERS)[number];
+
+// The label every list shows, composed rather than stored: one place decides
+// how a first and last name read together, and no row can drift from it.
+export function composeDisplayName(firstName: string | null | undefined, lastName: string | null | undefined): string | null {
+  const name = [firstName, lastName]
+    .map((v) => v?.trim() ?? "")
+    .filter((v) => v !== "")
+    .join(" ");
+  return name || null;
+}
+
 // One-to-one profile for an account: every personal / non-auth attribute lives
 // here, keeping `accounts` to strictly what authentication needs (id, email,
 // password, is_root, enabled). Shares the account id as its primary key, no
@@ -34,8 +51,14 @@ export class AccountProfile {
   @Column({ name: "offline_notified_at", type: "datetime", nullable: true })
   offlineNotifiedAt!: Date | null;
 
-  @Column({ name: "display_name", type: "varchar", length: 255, nullable: true })
-  displayName!: string | null;
+  @Column({ name: "first_name", type: "varchar", length: 255, nullable: true })
+  firstName!: string | null;
+
+  @Column({ name: "last_name", type: "varchar", length: 255, nullable: true })
+  lastName!: string | null;
+
+  @Column({ name: "gender", type: "varchar", length: 16, nullable: true })
+  gender!: AccountGender | null;
 
   @Column({ name: "avatar_url", type: "varchar", length: 1024, nullable: true })
   avatarUrl!: string | null;

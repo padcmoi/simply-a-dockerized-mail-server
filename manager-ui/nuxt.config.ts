@@ -75,6 +75,13 @@ export default defineNuxtConfig({
       "/api/v1/**": {
         proxy: {
           to: `${process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000"}/api/v1/**`,
+          // A proxy forwards a redirect, it does not follow one. Without this,
+          // external sign-in cannot work at all: the API answers 302 to the
+          // provider, this server would fetch the provider's page itself and
+          // serve it under our own origin, where the provider's own assets 404
+          // and the request finally times out as a 502. "manual" hands the 302
+          // back to the browser, the only thing that can act on it.
+          fetchOptions: { redirect: "manual" },
         },
       },
       // Swagger UI HTML + static assets (CSS/JS/icons served relative to /api/doc/).

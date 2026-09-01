@@ -58,8 +58,7 @@ export default {
     byEmail: "By email",
     byToken: "By token",
     emailAlertTitle: "Invite by email.",
-    emailAlertDescription:
-      "The invitation is sent from the chosen domain (postmaster{'@'}domain) so it is not flagged as spam.",
+    emailAlertDescription: "The invitation is sent from the chosen domain (postmaster{'@'}domain) so it is not flagged as spam.",
     emailLabel: "Email address",
     domainLabel: "Domain",
     domainHint: "The invite email is sent from the postmaster address of this domain.",
@@ -68,7 +67,8 @@ export default {
     groupsHint: "Optional. The default group is assigned automatically and is not listed here.",
     groupsPlaceholder: "Select one or more groups",
     assignSectionTitle: "Assign recipients and aliases",
-    assignHint: "Existing, unassigned resources of the chosen domain, handed to the invitee on acceptance. Ownership only, no password is changed.",
+    assignHint:
+      "Existing, unassigned resources of the chosen domain, handed to the invitee on acceptance. Ownership only, no password is changed.",
     assignRecipients: "Recipients",
     assignRecipientsPlaceholder: "Select unassigned recipients",
     assignAliases: "Aliases",
@@ -153,7 +153,6 @@ export default {
     alertDescription: "Email, display name, avatar, phone, address and enabled status.",
     title: "Edit account ({email})",
     breadcrumb: "Edit",
-    nameLabel: "Display name",
     emailLabel: "Email",
     avatarUrlLabel: "Avatar URL",
     enabledLabel: "Account enabled",
@@ -175,5 +174,6 @@ export default {
     loadFailed: "Load failed",
   },
   confirmDelete: "Delete this account?",
-  confirmDeleteHint: "This permanently deletes the account. The domains, recipients and groups it owns are kept but lose their owner.",
+  confirmDeleteHint:
+    "This permanently deletes the account. The domains, recipients and groups it owns are kept but lose their owner.",
 } satisfies Locales["accounts"];

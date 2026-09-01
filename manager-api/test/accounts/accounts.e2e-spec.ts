@@ -188,7 +188,9 @@ describe("AccountsController (e2e: auth + ACL + behavior)", () => {
       svc.updateAccount.mockResolvedValueOnce({ id: UUID });
       const body = {
         email: "new@x.com",
-        displayName: "New",
+        firstName: "New",
+        lastName: "Name",
+        gender: "mr",
         avatarUrl: "https://example.com/a.png",
         phone: "+33123456789",
         addressLine: "10 rue de la Paix",

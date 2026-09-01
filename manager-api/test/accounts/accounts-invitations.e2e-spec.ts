@@ -96,8 +96,8 @@ describe("AccountsInvitationsController (e2e: auth + ACL + behavior)", () => {
   describe("POST /accounts/invite/:token/accept (public)", () => {
     it("201 with no Authorization header and forwards token + body", async () => {
       svc.acceptInvitation.mockResolvedValueOnce({ ok: true, email: "x@y.com" });
-      await api().post("/api/v1/accounts/invite/tok-123/accept").send({ password: "longenough", displayName: "Jo" }).expect(201);
-      expect(svc.acceptInvitation).toHaveBeenCalledWith("tok-123", { password: "longenough", displayName: "Jo" });
+      await api().post("/api/v1/accounts/invite/tok-123/accept").send({ password: "longenough", firstName: "Jo" }).expect(201);
+      expect(svc.acceptInvitation).toHaveBeenCalledWith("tok-123", { password: "longenough", firstName: "Jo" });
     });
 
     it("400 on an invalid body (zod: password too short)", async () => {

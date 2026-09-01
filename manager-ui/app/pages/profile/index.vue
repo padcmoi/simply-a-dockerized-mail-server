@@ -123,6 +123,12 @@ useAsyncData(
         to="/profile/password"
       />
       <ProfileActionCard
+        icon="i-lucide-mail"
+        :label="t('profile.changeEmail')"
+        :hint="t('profile.changeEmailHint')"
+        to="/profile/email"
+      />
+      <ProfileActionCard
         v-for="item in comingSoon"
         :key="item.label"
         :icon="item.icon"

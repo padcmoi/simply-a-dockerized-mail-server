@@ -22,6 +22,10 @@ export interface AccountDetail {
 
 // The edit page's full reading: identity plus every profile field it can write.
 export interface AccountEditView extends AccountDetail {
+  firstName: string | null;
+  lastName: string | null;
+  gender: string | null;
+  genders: string[];
   avatarUrl: string | null;
   phone: string | null;
   addressLine: string | null;

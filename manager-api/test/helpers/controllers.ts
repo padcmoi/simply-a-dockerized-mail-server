@@ -34,6 +34,8 @@ import { AppThemeController } from "../../src/api/theme/app-theme.controller";
 import { AccountThemeController } from "../../src/api/theme/account-theme.controller";
 import { ApiTokenController } from "../../src/core/auth/api-token/api-token.controller";
 import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
+import { PassportAuthController } from "../../src/core/auth/passport/passport.controller";
+import { PassportConfigController } from "../../src/api/config/passport-config.controller";
 
 export const ALL_CONTROLLERS = [
   AccountsController,
@@ -68,4 +70,6 @@ export const ALL_CONTROLLERS = [
   AccountThemeController,
   ApiTokenController,
   JwtAuthController,
+  PassportAuthController,
+  PassportConfigController,
 ] as const;

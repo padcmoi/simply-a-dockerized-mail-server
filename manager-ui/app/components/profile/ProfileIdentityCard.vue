@@ -10,9 +10,12 @@ const toast = useToast();
 const loading = ref(false);
 // Read-only: geocoded from the city server-side (see GeocodingService).
 const coords = ref<{ latitude: string | null; longitude: string | null }>({ latitude: null, longitude: null });
+// The titles the API accepts; labels live in the locale files.
+const genders = ref<string[]>([]);
 const form = reactive({
-  displayName: "",
-  email: "",
+  gender: "",
+  firstName: "",
+  lastName: "",
   avatarUrl: "",
   phone: "",
   addressLine: "",
@@ -22,11 +25,13 @@ const form = reactive({
   country: "",
 });
 
-const avatarAlt = computed(() => form.displayName || auth.session?.email || "?");
+const avatarAlt = computed(() => [form.firstName, form.lastName].filter(Boolean).join(" ") || auth.session?.email || "?");
+const genderOptions = computed(() => genders.value.map((value) => ({ value, label: t(`profile.genderOptions.${value}`) })));
 
 const schema = z.object({
-  displayName: z.string().max(255).optional(),
-  email: z.email(t("profile.emailInvalid")).max(255).or(z.literal("")).optional(),
+  gender: z.string().max(16).optional(),
+  firstName: z.string().max(255).optional(),
+  lastName: z.string().max(255).optional(),
   avatarUrl: z.url(t("profile.urlInvalid")).max(1024).or(z.literal("")).optional(),
   phone: z.string().max(32).optional(),
   addressLine: z.string().max(255).optional(),
@@ -38,8 +43,10 @@ const schema = z.object({
 // Populates the form from the full /me profile (the session only keeps a subset).
 async function fetchProfileForm() {
   const me = await call<MeProfile>("/auth/jwt/me");
-  form.displayName = me.displayName ?? "";
-  form.email = me.email;
+  genders.value = me.genders;
+  form.gender = me.gender ?? "";
+  form.firstName = me.firstName ?? "";
+  form.lastName = me.lastName ?? "";
   form.avatarUrl = me.avatarUrl ?? "";
   form.phone = me.phone ?? "";
   form.addressLine = me.addressLine ?? "";
@@ -53,10 +60,12 @@ async function fetchProfileForm() {
 async function save() {
   loading.value = true;
   try {
-    // email is the login identity and cannot be cleared: only send it when set.
+    // The email is the login identity and is deliberately not part of this form:
+    // it changes on its own page, behind a confirmation (see /profile/email).
     await auth.updateProfile({
-      displayName: form.displayName.trim() || null,
-      email: form.email.trim() || undefined,
+      gender: form.gender || null,
+      firstName: form.firstName.trim() || null,
+      lastName: form.lastName.trim() || null,
       avatarUrl: form.avatarUrl.trim() || null,
       phone: form.phone.trim() || null,
       addressLine: form.addressLine.trim() || null,
@@ -135,12 +144,23 @@ const identityLoading = computed(() => identityStatus.value !== "success" && ide
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-        <UFormField :label="t('profile.email')" name="email">
-          <UInput v-model="form.email" type="email" placeholder="jane@example.com" icon="i-lucide-mail" class="w-full" />
+        <UFormField :label="t('profile.gender')" name="gender">
+          <USelectMenu
+            v-model="form.gender"
+            value-key="value"
+            :items="genderOptions"
+            :placeholder="t('profile.genderPlaceholder')"
+            icon="i-lucide-user-round"
+            class="w-full"
+          />
         </UFormField>
 
-        <UFormField :label="t('profile.displayName')" name="displayName">
-          <UInput v-model="form.displayName" placeholder="Jane Doe" icon="i-lucide-user" class="w-full" />
+        <UFormField :label="t('profile.lastName')" name="lastName">
+          <UInput v-model="form.lastName" placeholder="Doe" icon="i-lucide-user" class="w-full" />
+        </UFormField>
+
+        <UFormField :label="t('profile.firstName')" name="firstName">
+          <UInput v-model="form.firstName" placeholder="Jane" icon="i-lucide-user" class="w-full" />
         </UFormField>
 
         <UFormField :label="t('profile.phone')" name="phone">

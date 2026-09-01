@@ -27,10 +27,17 @@ export interface Profile {
   groups: { id: string; name: string }[];
 }
 
-// The identity card's own reading of GET /auth/jwt/me: the editable fields.
+// The identity card's own reading of GET /auth/jwt/me: the editable fields,
+// plus the title catalog the API owns and whether a password exists at all (an
+// account created by an external sign-in has none until it sets one).
 export interface MeProfile {
   email: string;
   displayName: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  gender: string | null;
+  genders: string[];
+  hasPassword: boolean;
   avatarUrl: string | null;
   phone: string | null;
   addressLine: string | null;
@@ -45,7 +52,9 @@ export interface MeProfile {
 // PATCH /auth/jwt/me payload: the login email plus every editable profile field.
 export interface UpdateProfileInput {
   email?: string;
-  displayName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  gender?: string | null;
   avatarUrl?: string | null;
   phone?: string | null;
   addressLine?: string | null;

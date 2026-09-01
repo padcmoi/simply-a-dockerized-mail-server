@@ -7,7 +7,7 @@ import { CustomPermissionGuardService } from "../../core/custom-permission-guard
 import type { GlobalAction } from "../../core/custom-permission-guard/permission-catalog";
 import { AntiEscalationService, type ActingUser } from "../../core/acl/anti-escalation.service";
 import { Account } from "../../core/entities/account.entity";
-import { AccountProfile } from "../../core/entities/account-profile.entity";
+import { AccountProfile, composeDisplayName } from "../../core/entities/account-profile.entity";
 import { GroupMember } from "../../core/entities/group-member.entity";
 import { Group } from "../../core/entities/group.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
@@ -390,7 +390,9 @@ export class GroupsService {
 
     const sortBy = resolveSortColumn(query.sortBy, GROUP_MEMBERS_SORTABLE_COLUMNS, "email");
     // Entity-property paths, not db column names (see accounts.service note).
-    const orderExpr = sortBy === "displayName" ? "p.displayName" : "a.email";
+    // The display name is composed from last + first name, so its sort orders on
+    // those two columns in that order.
+    const orderExprs = sortBy === "displayName" ? ["p.lastName", "p.firstName"] : ["a.email"];
     // Base carries only the joins + filter (no custom select), so getCount works
     // cleanly; the rows query clones it and adds the raw column selects.
     const base = this.accounts
@@ -399,16 +401,17 @@ export class GroupsService {
       .leftJoin(AccountProfile, "p", "p.account_id = a.id")
       .where("gm.group_id = :id", { id });
     if (query.search) {
-      base.andWhere("(a.email LIKE :s OR p.display_name LIKE :s)", { s: `%${query.search}%` });
+      base.andWhere("(a.email LIKE :s OR CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s)", { s: `%${query.search}%` });
     }
+    const dir = query.sortDir === "asc" ? "ASC" : "DESC";
     const rowsQb = base
       .clone()
       .select("a.id", "id")
       .addSelect("a.email", "email")
-      .addSelect("p.displayName", "displayName")
-      .orderBy(orderExpr, query.sortDir === "asc" ? "ASC" : "DESC")
+      .addSelect("NULLIF(TRIM(CONCAT_WS(' ', p.first_name, p.last_name)), '')", "displayName")
       .limit(query.limit)
       .offset(query.offset);
+    orderExprs.forEach((expr, i) => (i === 0 ? rowsQb.orderBy(expr, dir) : rowsQb.addOrderBy(expr, dir)));
     const [rows, total] = await Promise.all([
       rowsQb.getRawMany<{ id: string; email: string; displayName: string | null }>(),
       base.getCount(),
@@ -591,7 +594,7 @@ export class GroupsService {
       this.accounts.find({ where: { id: In(accountIds) }, order: { email: "ASC" } }),
       this.profiles.find({ where: { accountId: In(accountIds) } }),
     ]);
-    const displayByAccount = new Map(profileRows.map((p) => [p.accountId, p.displayName]));
+    const displayByAccount = new Map(profileRows.map((p) => [p.accountId, composeDisplayName(p.firstName, p.lastName)]));
     return accs.map((a) => ({ id: a.id, email: a.email, displayName: displayByAccount.get(a.id) ?? null }));
   }
 }

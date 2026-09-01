@@ -99,13 +99,15 @@ export const UpdateAccountDocs = () =>
     ApiOperation({
       summary: "Update a manager account's full profile and enabled status",
       description:
-        "Edits every editable field of a user: email (login identity), the enabled flag, and all account_profiles attributes (display name, avatar, phone, address, city, postal code, country). Setting or changing the city re-geocodes latitude/longitude. Group membership is managed separately via the groups endpoints, not through this route.",
+        "Edits every editable field of a user: email (login identity), the enabled flag, and all account_profiles attributes (first/last name, title, avatar, phone, address, city, postal code, country). Setting or changing the city re-geocodes latitude/longitude. Group membership is managed separately via the groups endpoints, not through this route.",
     }),
     ApiBody({
       schema: {
         example: {
           email: "jdoe@example.com",
-          displayName: "John Doe",
+          firstName: "John",
+          lastName: "Doe",
+          gender: "mr",
           avatarUrl: "https://example.com/avatar.png",
           phone: "+33123456789",
           addressLine: "10 rue de la Paix",

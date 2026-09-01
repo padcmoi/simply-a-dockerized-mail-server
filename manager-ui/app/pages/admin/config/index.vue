@@ -59,6 +59,13 @@ setBreadcrumb([{ label: t("nav.config") }]);
         :hint="t('config.ticketsCardHint')"
         to="/admin/config/tickets"
       />
+
+      <ProfileActionCard
+        icon="i-lucide-key-square"
+        :label="t('config.passportCardLabel')"
+        :hint="t('config.passportCardHint')"
+        to="/admin/config/passport"
+      />
     </div>
   </div>
 </template>

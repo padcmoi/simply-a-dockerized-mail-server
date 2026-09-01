@@ -14,6 +14,7 @@ import {
   Post,
   Query,
   Req,
+  UseGuards,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import type { Request } from "express";
@@ -21,6 +22,8 @@ import { In, Repository } from "typeorm";
 import { PaginationQuery, paginationQuerySchema } from "../../common/pagination.validation";
 import { ZodValidationPipe } from "../../common/zod.pipe";
 import { CustomPermissionGuardService } from "../../custom-permission-guard/custom-permission-guard.service";
+import { Account } from "../../entities/account.entity";
+import { LocalAuthGuard } from "../passport/local-auth.guard";
 import { VirtualAlias } from "../../entities/virtual-alias.entity";
 import { VirtualDomain } from "../../entities/virtual-domain.entity";
 import { VirtualQuotaUser } from "../../entities/virtual-quota-user.entity";
@@ -44,11 +47,9 @@ import {
 import { JwtAuthService } from "./jwt.service";
 import {
   ChangeMyPasswordDto,
-  LoginDto,
   RefreshDto,
   UpdateProfileDto,
   changeMyPasswordSchema,
-  loginSchema,
   refreshSchema,
   updateProfileSchema,
 } from "./jwt.validation";
@@ -56,6 +57,10 @@ import {
 type AuthedRequest = Request & {
   user: { id: string; email: string; isRoot: boolean };
 };
+
+// What the `local` Passport strategy leaves on the request once it has verified
+// the credentials (see core/auth/passport/providers/local.provider.ts).
+type LocalAuthedRequest = Request & { user: Account };
 
 @JwtAuthApi()
 @Controller({ path: "auth/jwt", version: "1" })
@@ -80,16 +85,17 @@ export class JwtAuthController {
     return rows.map((r) => ({ ...r, domainName: names.get(r.domainId) ?? `#${r.domainId}` }));
   }
 
+  // The credential check is the `local` provider's and opening the session is
+  // the same call every provider makes: this route only wires the two. The
+  // guard validates the body before Passport sees it, so a malformed request is
+  // still a 400 with its issue list rather than a flat 401.
   @Post("login")
   @Public()
   @HttpCode(200)
+  @UseGuards(LocalAuthGuard)
   @JwtLoginDocs()
-  login(
-    @Body(new ZodValidationPipe(loginSchema)) body: LoginDto,
-    @Headers("user-agent") ua: string | undefined,
-    @Ip() ip: string
-  ) {
-    return this.auth.login(body.email, body.password, ua, ip);
+  login(@Req() req: LocalAuthedRequest, @Headers("user-agent") ua: string | undefined, @Ip() ip: string) {
+    return this.auth.openSessionFor(req.user, ua, ip);
   }
 
   @Post("refresh")

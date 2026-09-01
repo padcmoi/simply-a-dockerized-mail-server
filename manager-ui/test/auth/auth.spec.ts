@@ -113,7 +113,7 @@ describe("auth store fetchProfile + updateProfile", () => {
   it("updateProfile is a no-op without a session", async () => {
     const fetchMock = stubFetch();
     const auth = useAuthStore();
-    await auth.updateProfile({ displayName: "Nope" });
+    await auth.updateProfile({ lastName: "Nope" });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -123,11 +123,11 @@ describe("auth store fetchProfile + updateProfile", () => {
     });
     const auth = useAuthStore();
     auth.session = { accessToken: "at", refreshToken: "rt", expiresAt: "x", email: "e@x.io" };
-    await auth.updateProfile({ displayName: "Renamed" });
+    await auth.updateProfile({ lastName: "Renamed" });
     expect(auth.session?.displayName).toBe("Renamed");
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/auth/jwt/me",
-      expect.objectContaining({ method: "PATCH", body: { displayName: "Renamed" } })
+      expect.objectContaining({ method: "PATCH", body: { lastName: "Renamed" } })
     );
   });
 });

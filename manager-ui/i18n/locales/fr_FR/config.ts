@@ -4,7 +4,8 @@ export default {
   landingAlertTitle: "Configuration du serveur.",
   landingAlertDescription: "Réglages qui s'appliquent à tout le serveur. Réservés aux comptes root.",
   backToConfig: "Retour à la configuration",
-  mailOffNotice: "Le serveur de mail sortant est éteint : l'envoi d'e-mails est désactivé tant qu'un admin root ne l'a pas configuré.",
+  mailOffNotice:
+    "Le serveur de mail sortant est éteint : l'envoi d'e-mails est désactivé tant qu'un admin root ne l'a pas configuré.",
   mailCardLabel: "Envoi des e-mails",
   mailCardHint: "Comment le manager envoie ses e-mails",
   cadenceCardLabel: "Cadence des e-mails",
@@ -19,7 +20,8 @@ export default {
   ticketsCardHint: "Ce qu'un ticket doit désigner",
   mail: {
     alertTitle: "Serveur de mail sortant.",
-    alertDescription: "Comment le manager envoie tous ses e-mails (invitations, notifications, codes...). Stocké en base, pas dans l'environnement.",
+    alertDescription:
+      "Comment le manager envoie tous ses e-mails (invitations, notifications, codes...). Stocké en base, pas dans l'environnement.",
     cardTitle: "Fournisseur de mail",
     provider: "Fournisseur",
     providerOff: "Désactivé",
@@ -40,7 +42,8 @@ export default {
     password: "Mot de passe",
     passwordKeepHint: "Laisser vide pour conserver le mot de passe enregistré.",
     brevoPassword: "Clé SMTP",
-    brevoPasswordHint: "Collez la valeur de la clé SMTP depuis Brevo (SMTP & API, Clés SMTP) : la valeur secrète, pas le nom de la clé comme MailServerCustom.",
+    brevoPasswordHint:
+      "Collez la valeur de la clé SMTP depuis Brevo (SMTP & API, Clés SMTP) : la valeur secrète, pas le nom de la clé comme MailServerCustom.",
     fromAddress: "Adresse d'expédition",
     fromAddressHint: "Obligatoire pour un relais externe : ce doit être un expéditeur vérifié.",
     brevoFromHint: "Un expéditeur vérifié dans Brevo (Expéditeurs, domaine, IP). Il peut différer de la connexion.",
@@ -79,9 +82,11 @@ export default {
   cadence: {
     cardTitle: "Cadence des e-mails",
     alertTitle: "Cadence des e-mails.",
-    alertDescription: "Quand partent les e-mails de notification et à quelle fréquence un destinataire peut être contacté. Stocké en base, réservé aux comptes root.",
+    alertDescription:
+      "Quand partent les e-mails de notification et à quelle fréquence un destinataire peut être contacté. Stocké en base, réservé aux comptes root.",
     offlineNotify: "Délai avant l'e-mail de notifications en attente",
-    offlineNotifyHint: "Temps qu'un membre doit rester hors-ligne avant de recevoir l'e-mail récapitulatif, puis plus rien jusqu'à sa reconnexion. En secondes (300 = 5 min).",
+    offlineNotifyHint:
+      "Temps qu'un membre doit rester hors-ligne avant de recevoir l'e-mail récapitulatif, puis plus rien jusqu'à sa reconnexion. En secondes (300 = 5 min).",
     sweep: "Fréquence de vérification",
     sweepHint: "À quelle fréquence le système cherche les membres à notifier. En secondes.",
     spool: "Anti-spam : au maximum un e-mail par destinataire toutes les",
@@ -93,6 +98,8 @@ export default {
     cannotExceedDelay: "Ne peut pas dépasser le délai ci-dessus.",
     reset: "Valeurs d'usine",
   },
+  passportCardLabel: "Connexion externe",
+  passportCardHint: "Les fournisseurs de connexion et le sort d'une connexion sans compte ici.",
   theme: {
     cardTitle: "Thème de l'interface",
     alertTitle: "Couleurs de l'interface.",
@@ -108,7 +115,8 @@ export default {
     alertDescription:
       "Combien de temps l'historique CPU, charge, mémoire et réseau est conservé. La purge tourne au démarrage puis toutes les heures et relit cette valeur à chaque passage : un changement s'applique à la purge suivante, pas au prochain redémarrage.",
     retention: "Rétention (jours)",
-    retentionHint: "De 1 à 365 jours. Une ligne enregistrée couvre 10 secondes, et les fenêtres des cartes vont jusqu'à 7 jours : en dessous, une carte demanderait plus que ce qui existe.",
+    retentionHint:
+      "De 1 à 365 jours. Une ligne enregistrée couvre 10 secondes, et les fenêtres des cartes vont jusqu'à 7 jours : en dessous, une carte demanderait plus que ce qui existe.",
     rowsEstimate: "Environ {rows} lignes conservées en régime permanent.",
     save: "Enregistrer",
     saved: "Rétention enregistrée",
@@ -130,13 +138,66 @@ export default {
     saveFailed: "Échec de l'enregistrement",
     loadFailed: "Échec du chargement",
   },
+  passport: {
+    cardTitle: "Connexion externe",
+    alertTitle: "Fournisseurs de connexion.",
+    alertDescription:
+      "Les services par lesquels on peut se connecter au manager, en plus de l'email et du mot de passe. Un fournisseur n'apparaît sur l'écran de connexion que si ses identifiants sont renseignés dans le .env et qu'il est activé ici.",
+    managerUrlMissingTitle: "Adresse de l'interface non renseignée.",
+    managerUrlMissing:
+      "Aucun fournisseur ne peut fonctionner tant qu'elle est vide : l'URL de retour communiquée au fournisseur en est construite, et elle doit être publique et exacte. Renseignez-la dans Configuration, Général.",
+    managerUrlAction: "Renseigner l'adresse",
+    enabled: "Activer la connexion externe",
+    enabledHint:
+      "Désactivée, aucun bouton de fournisseur n'apparaît sur l'écran de connexion et le serveur refuse toute connexion externe, identifiants renseignés ou non. Seuls l'email et le mot de passe restent.",
+    enabledOn: "Activée",
+    enabledOff: "Désactivée",
+    providersSection: "Fournisseurs",
+    accountsSection: "Comptes",
+    configured: "Identifiants renseignés",
+    notConfigured:
+      "Identifiants absents : renseignez MANAGER_OAUTH_{id}_CLIENT_ID et _CLIENT_SECRET dans le .env, puis redémarrez l'API.",
+    configure: "Configurer",
+    close: "Replier",
+    consoleTitle: "À coller dans la console {provider}.",
+    consoleHint:
+      "Ces deux valeurs doivent figurer à l'identique dans la configuration du client OAuth chez {provider}, sans quoi la connexion sera refusée. Elles sont construites à partir de l'adresse de l'interface.",
+    javascriptOrigin: "Origine JavaScript autorisée",
+    redirectUri: "URI de redirection autorisé",
+    copy: "Copier",
+    copied: "Copié",
+    clientId: "Identifiant client",
+    clientSecret: "Secret client",
+    clientSecretKeep: "Laisser vide pour conserver le secret enregistré",
+    saveCredentials: "Enregistrer les identifiants",
+    providerSaved: "Identifiants enregistrés",
+    forget: "Oublier les identifiants",
+    forgetTitle: "Oublier les identifiants {provider} ?",
+    forgetHint:
+      "Le fournisseur redeviendra non configuré et son bouton disparaîtra de l'écran de connexion. Les comptes déjà liés gardent leur lien : seule la porte d'entrée est retirée.",
+    providerForgotten: "Identifiants oubliés",
+    autoProvision: "Créer le compte à la première connexion",
+    autoProvisionHint:
+      "Désactivée, un fournisseur ne fait qu'ouvrir une session sur un compte qui existe déjà ici, et une adresse inconnue est refusée. Les comptes continuent alors d'arriver par les invitations.",
+    autoProvisionWarning:
+      "Toute personne détenant une adresse chez un fournisseur activé peut désormais obtenir un compte. Le compte créé n'a ni mot de passe, ni droit d'administration, et rien de plus que le groupe par défaut.",
+    on: "Compte créé",
+    off: "Adresse inconnue refusée",
+    saving: "Enregistrement...",
+    autosaveHint: "Enregistré automatiquement",
+    saved: "Réglages enregistrés",
+    saveFailed: "Échec de l'enregistrement",
+    loadFailed: "Échec du chargement",
+  },
   general: {
     cardTitle: "Général",
     alertTitle: "Réglages généraux.",
     alertDescription: "Réglages du serveur qui ne dépendent d'aucun domaine. Stocké en base, réservé aux comptes root.",
     managerUrl: "Adresse de l'interface",
-    managerUrlHint: "http(s):// suivi d'un vrai domaine ou sous-domaine avec une extension réelle (par ex. mail-manager.example.com), sans chemin. Sert au bouton des e-mails. Vide : aucun bouton.",
-    managerUrlInvalid: "Adresse invalide : http(s):// + un vrai domaine avec une extension réelle (.ovh, .com...), sans rien après.",
+    managerUrlHint:
+      "http(s):// suivi d'un vrai domaine ou sous-domaine avec une extension réelle (par ex. mail-manager.example.com), sans chemin. Sert au bouton des e-mails. Vide : aucun bouton.",
+    managerUrlInvalid:
+      "Adresse invalide : http(s):// + un vrai domaine avec une extension réelle (.ovh, .com...), sans rien après.",
     save: "Enregistrer",
     saved: "Réglages enregistrés",
     saveFailed: "Échec de l'enregistrement",
