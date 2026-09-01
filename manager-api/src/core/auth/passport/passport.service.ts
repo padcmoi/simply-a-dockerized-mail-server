@@ -82,8 +82,19 @@ export class PassportAuthService {
 
   // Relative on purpose, unlike the callback: the browser is already on this
   // origin, so a path is always right and nothing has to be configured for it.
-  loginRedirect(params: Record<string, string>) {
-    return `/login?${new URLSearchParams(params).toString()}`;
+  // The page that started the sign-in gets the browser back, which is how the
+  // invitation screen can offer a provider and still finish its own business
+  // afterwards; anything but a plain path on this interface lands on /login.
+  loginRedirect(params: Record<string, string>, returnTo?: string | null) {
+    return `${this.returnPath(returnTo)}?${new URLSearchParams(params).toString()}`;
+  }
+
+  // A path this interface can render, never a URL: an open redirect here would
+  // hand a one-time sign-in code to whoever asked for it.
+  returnPath(raw?: string | null) {
+    const path = (raw ?? "").trim();
+    if (path.startsWith("//") || !/^\/[A-Za-z0-9\-._~/]*$/.test(path)) return "/login";
+    return path;
   }
 
   // The end of a provider's callback: the identity it proved becomes an account

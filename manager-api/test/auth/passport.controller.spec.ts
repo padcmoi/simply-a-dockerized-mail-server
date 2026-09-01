@@ -10,13 +10,20 @@ import type { PassportAuthService } from "../../src/core/auth/passport/passport.
 import type { ProviderIdentity } from "../../src/core/auth/passport/passport-providers";
 import { entity, providerMock, type Loose } from "../helpers/mocks";
 
-// The guard reads exactly one thing off the request: the :provider segment.
-function ctx(params: Record<string, string>) {
+// The guard reads two things off the request: the :provider segment, and the
+// page to come back to.
+function ctx(params: Record<string, string>, query: Record<string, string> = {}) {
   // getRequest is generic on Nest's side, hence the single parameter cast: the
   // guard asks it for the Express request this builds.
-  const req = entity<Request>({ params });
+  const req = entity<Request>({ params, query });
   const http = entity<HttpArgumentsHost>({ getRequest: <T>() => req as T });
   return entity<ExecutionContext>({ switchToHttp: () => http });
+}
+
+// Express always fills `query`, so a double that leaves it out is not a request
+// the controller can ever be handed.
+function callbackReq(over: Partial<Request & { user?: ProviderIdentity }> = {}) {
+  return entity<Request & { user?: ProviderIdentity }>({ query: {}, ...over });
 }
 
 describe("PassportAuthController", () => {
@@ -29,7 +36,9 @@ describe("PassportAuthController", () => {
       publicProviders: vi.fn(() => [{ id: "google", label: "Google" }]),
       redeem: vi.fn(),
       codeForIdentity: vi.fn(),
-      loginRedirect: vi.fn((p: Record<string, string>) => `/login?${new URLSearchParams(p).toString()}`),
+      loginRedirect: vi.fn(
+        (p: Record<string, string>, returnTo?: string | null) => `${returnTo ?? "/login"}?${new URLSearchParams(p).toString()}`
+      ),
     });
     ctrl = new PassportAuthController(passport);
     res = providerMock<Response>({ redirect: vi.fn() });
@@ -53,17 +62,14 @@ describe("PassportAuthController", () => {
 
     it("sends the browser back with a one-time code when the identity resolves", async () => {
       passport.codeForIdentity.mockResolvedValue("the-code");
-      const req = entity<Request & { user?: ProviderIdentity }>({ user: identity });
 
-      await ctrl.callback(req, res, "google");
+      await ctrl.callback(callbackReq({ user: identity }), res, "google");
 
       expect(res.redirect).toHaveBeenCalledWith("/login?provider_code=the-code");
     });
 
     it("sends a flat refusal when the provider left no identity", async () => {
-      const req = entity<Request & { user?: ProviderIdentity }>({});
-
-      await ctrl.callback(req, res, "google");
+      await ctrl.callback(callbackReq(), res, "google");
 
       expect(res.redirect).toHaveBeenCalledWith("/login?provider_error=refused&provider=google");
       expect(passport.codeForIdentity).not.toHaveBeenCalled();
@@ -71,11 +77,24 @@ describe("PassportAuthController", () => {
 
     it("answers the same flat refusal whatever the service refused for", async () => {
       passport.codeForIdentity.mockRejectedValue(new Error("no account here answers to this address"));
-      const req = entity<Request & { user?: ProviderIdentity }>({ user: identity });
 
-      await ctrl.callback(req, res, "google");
+      await ctrl.callback(callbackReq({ user: identity }), res, "google");
 
       expect(res.redirect).toHaveBeenCalledWith("/login?provider_error=refused&provider=google");
+    });
+
+    // The page that started the sign-in is the one that has something left to
+    // do with it: the invitation screen takes its grant once the session is
+    // open, which it can only do if the browser comes back to it.
+    it("comes back to the page the sign-in started from, code and refusal alike", async () => {
+      passport.codeForIdentity.mockResolvedValue("the-code");
+      const query = { state: "/invite/abc" };
+
+      await ctrl.callback(callbackReq({ user: identity, query }), res, "google");
+      expect(res.redirect).toHaveBeenCalledWith("/invite/abc?provider_code=the-code");
+
+      await ctrl.callback(callbackReq({ query }), res, "google");
+      expect(res.redirect).toHaveBeenCalledWith("/invite/abc?provider_error=refused&provider=google");
     });
   });
 });

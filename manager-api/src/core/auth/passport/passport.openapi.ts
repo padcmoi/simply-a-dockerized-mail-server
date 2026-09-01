@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 
 export const PassportAuthApi = () => applyDecorators(ApiTags("auth"));
 
@@ -22,6 +22,14 @@ export const PassportProvidersDocs = () =>
 export const PassportStartDocs = () =>
   applyDecorators(
     providerParam(),
+    ApiQuery({
+      name: "redirect",
+      required: false,
+      type: String,
+      description:
+        "Page of the interface to come back to, e.g. /invite/<token>. Travels as OAuth state and is answered on the " +
+        "callback. A path only: anything else lands on /login.",
+    }),
     ApiOperation({
       summary: "Begin a sign-in with one provider",
       description:
@@ -39,12 +47,12 @@ export const PassportCallbackDocs = () =>
     ApiOperation({
       summary: "Where the provider sends the browser back",
       description:
-        "Never answers a body: the browser leaves with a redirect to the login screen, carrying either a one-time " +
-        "code to trade for a session (`?provider_code=`) or a flat refusal (`?provider_error=refused`). The token pair is " +
-        "deliberately not put in this URL, since a redirect URL reaches the history, the referrer and every log on " +
-        "the way.",
+        "Never answers a body: the browser leaves with a redirect to the page the sign-in started from (the login " +
+        "screen unless `redirect` said otherwise), carrying either a one-time code to trade for a session " +
+        "(`?provider_code=`) or a flat refusal (`?provider_error=refused`). The token pair is deliberately not put " +
+        "in this URL, since a redirect URL reaches the history, the referrer and every log on the way.",
     }),
-    ApiResponse({ status: 302, description: "Redirect to /login with a one-time code or a refusal" }),
+    ApiResponse({ status: 302, description: "Redirect to the starting page with a one-time code or a refusal" }),
     ApiResponse({ status: 503, description: "Provider unknown, switched off, missing credentials, or no manager URL" })
   );
 

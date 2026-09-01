@@ -33,8 +33,18 @@ export class PassportProviderGuard implements CanActivate {
     // is built from the manager URL a root admin can change at any time, and it
     // has to be identical on the authorize call and on the token exchange or
     // the provider rejects the code.
+    //
+    // OAuth's `state` carries the page that started the sign-in, which the
+    // provider hands back untouched on the callback. It is the only way back:
+    // the callback is a fresh request from the provider, with nothing of ours
+    // on it. Sanitised here, and again where it is read.
+    const returnTo = req.query["redirect"];
     const Guard = AuthGuard(provider);
-    const guard = new Guard({ session: false, callbackURL: this.passport.callbackUrl(provider) }) as CanActivate;
+    const guard = new Guard({
+      session: false,
+      callbackURL: this.passport.callbackUrl(provider),
+      ...(typeof returnTo === "string" ? { state: this.passport.returnPath(returnTo) } : {}),
+    }) as CanActivate;
     return (await guard.canActivate(context)) as boolean;
   }
 }

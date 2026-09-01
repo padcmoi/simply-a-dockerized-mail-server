@@ -60,16 +60,19 @@ export class PassportAuthController {
   @UseGuards(PassportProviderGuard)
   @PassportCallbackDocs()
   async callback(@Req() req: ProviderRequest, @Res() res: Response, @Param("provider") provider: string) {
-    if (!req.user) return res.redirect(this.passport.loginRedirect({ provider_error: "refused", provider }));
+    // Whatever the start route put in `state`: the page the browser left from,
+    // which is where it goes back, code or refusal alike.
+    const returnTo = typeof req.query["state"] === "string" ? req.query["state"] : null;
+    if (!req.user) return res.redirect(this.passport.loginRedirect({ provider_error: "refused", provider }, returnTo));
     try {
       const code = await this.passport.codeForIdentity(req.user);
-      return res.redirect(this.passport.loginRedirect({ provider_code: code }));
+      return res.redirect(this.passport.loginRedirect({ provider_code: code }, returnTo));
     } catch {
       // Deliberately flat: an address no account answers to, a disabled account
       // and an unverified email are the same answer to whoever is standing at
       // the door, and telling them which one they got only helps them get it
       // right.
-      return res.redirect(this.passport.loginRedirect({ provider_error: "refused", provider }));
+      return res.redirect(this.passport.loginRedirect({ provider_error: "refused", provider }, returnTo));
     }
   }
 }

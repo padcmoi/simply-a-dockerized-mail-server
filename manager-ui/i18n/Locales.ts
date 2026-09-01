@@ -1275,6 +1275,7 @@ export interface Locales {
     existingTitle: string;
     existingHint: string;
     claimSubmit: string;
+    claimWithProvider: string;
     claimed: string;
     claimFailed: string;
     emailPlaceholder: string;

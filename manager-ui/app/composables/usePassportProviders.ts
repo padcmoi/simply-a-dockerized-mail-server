@@ -25,8 +25,12 @@ export function usePassportProviders() {
   const providers = computed(() => data.value ?? []);
   const pending = computed(() => status.value === "pending");
 
-  function startUrl(id: string) {
-    return `/api/v1/auth/passport/${encodeURIComponent(id)}`;
+  // `redirect` is the page to come back to once the provider has answered. Left
+  // out, the callback lands on /login; the invitation screen passes its own
+  // address so the sign-in it started finishes there, on the invitation.
+  function startUrl(id: string, redirect?: string) {
+    const url = `/api/v1/auth/passport/${encodeURIComponent(id)}`;
+    return redirect ? `${url}?redirect=${encodeURIComponent(redirect)}` : url;
   }
 
   return { providers, pending, startUrl };

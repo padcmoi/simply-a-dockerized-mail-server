@@ -116,6 +116,28 @@ describe("PassportAuthService", () => {
     it("returns to the login screen with a relative path, which needs no configuration", () => {
       expect(svc.loginRedirect({ provider_code: "c" })).toBe("/login?provider_code=c");
     });
+
+    it("returns to the page that started the sign-in when it named one", () => {
+      expect(svc.loginRedirect({ provider_code: "c" }, "/invite/abc")).toBe("/invite/abc?provider_code=c");
+    });
+
+    // An open redirect here would hand the one-time code to whoever asked for
+    // it, so anything but a plain path on this interface lands on /login.
+    it.each([
+      ["https://evil.example/x", "an absolute URL"],
+      ["//evil.example", "a protocol-relative URL"],
+      ["/invite/abc?next=//evil.example", "a path smuggling a query"],
+      ["invite/abc", "a path that is not rooted"],
+      ["", "nothing at all"],
+    ])("refuses %s (%s) and falls back to the login screen", (raw) => {
+      expect(svc.returnPath(raw)).toBe("/login");
+      expect(svc.loginRedirect({ provider_error: "refused" }, raw)).toBe("/login?provider_error=refused");
+    });
+
+    it("keeps a plain path on this interface", () => {
+      expect(svc.returnPath("/invite/a4c7bdb1")).toBe("/invite/a4c7bdb1");
+      expect(svc.returnPath(null)).toBe("/login");
+    });
   });
 
   describe("codeForIdentity", () => {

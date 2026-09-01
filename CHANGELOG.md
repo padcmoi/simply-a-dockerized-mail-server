@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(invite): an open invitation link is taken with an external provider as well as with a password, the provider coming back to the invitation instead of the login screen so the grant lands on the account that just signed in (01-09-2026)
 - test(auth): the Passport layer ships with its own suites, covering provider usability, identity linking and provisioning, the credential registry's sealing and hot re-registration, the guard's refusals and the one-time exchange code (01-09-2026)
 - feat(profile): the sign-in email address moves to its own page, behind a ten-click confirmation naming both the old and the new address (01-09-2026)
 - feat(auth): a provider's client id and secret live in the database and are entered at Configuration, Connexion externe, which also shows the two URLs to paste into that provider's own console. The secret is sealed with the pepper the API already requires, so a database dump alone never yields it, and no route ever answers it back. Adding or replacing credentials takes effect on the next sign-in, with no restart and nothing left in .env (01-09-2026)
