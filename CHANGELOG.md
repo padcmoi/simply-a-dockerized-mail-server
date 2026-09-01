@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- test(auth): the Passport layer ships with its own suites, covering provider usability, identity linking and provisioning, the credential registry's sealing and hot re-registration, the guard's refusals and the one-time exchange code (01-09-2026)
 - feat(profile): the sign-in email address moves to its own page, behind a ten-click confirmation naming both the old and the new address (01-09-2026)
 - feat(auth): a provider's client id and secret live in the database and are entered at Configuration, Connexion externe, which also shows the two URLs to paste into that provider's own console. The secret is sealed with the pepper the API already requires, so a database dump alone never yields it, and no route ever answers it back. Adding or replacing credentials takes effect on the next sign-in, with no restart and nothing left in .env (01-09-2026)
 - feat(auth): sign in through an external provider, opening the same session a password does. Every way in is a Passport provider under core/auth/passport/providers: local verifies the password this server holds, google verifies an identity Google vouches for, and one route serves them all. The account is found by the provider's subject claim, or by its verified email on a first sign-in, which links the two for good; an unknown address is refused unless a root admin turns on account creation, and a created account carries no password, no root flag and only the default group (01-09-2026)

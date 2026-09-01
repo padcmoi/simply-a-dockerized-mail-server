@@ -6,7 +6,7 @@ const PROVIDER_ID = "google";
 // Normalization only, never authorization: who may sign in, who gets an account
 // and who is refused is PassportAuthService's decision, taken once for every
 // provider.
-function toIdentity(profile: Profile): ProviderIdentity {
+export function toIdentity(profile: Profile): ProviderIdentity {
   const primary = profile.emails?.[0];
   return {
     provider: PROVIDER_ID,
