@@ -9,7 +9,8 @@ const { preference, resolved, options, setPreference, flagFor } = useLocalePrefe
 
 const items = computed<DropdownMenuItem[]>(() =>
   options.value.map((o) => ({
-    label: `${o.flag}  ${o.name ?? t("layout.system")}`,
+    label: o.name ?? t("layout.system"),
+    icon: countryFlagIcon(o.flag),
     type: "checkbox" as const,
     checked: preference.value === o.value,
     onUpdateChecked(checked: boolean) {
@@ -25,7 +26,7 @@ const items = computed<DropdownMenuItem[]>(() =>
 <template>
   <UDropdownMenu :items="items" :content="{ align: 'end' }">
     <UButton color="neutral" variant="ghost" size="sm" :aria-label="t('app.language')" class="gap-1">
-      <span class="text-base leading-none">{{ flagFor(resolved) }}</span>
+      <CountryFlag :code="flagFor(resolved)" class="size-5" />
       <UIcon name="i-lucide-chevron-down" class="size-4 text-dimmed" />
     </UButton>
   </UDropdownMenu>

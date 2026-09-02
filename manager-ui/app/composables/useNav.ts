@@ -233,7 +233,8 @@ export function useNav(onSignOut: () => Promise<void>) {
         label: t("app.language"),
         icon: "i-lucide-languages",
         children: localeOptions.value.map((o) => ({
-          label: `${o.flag}  ${o.name ?? t("layout.system")}`,
+          label: o.name ?? t("layout.system"),
+          icon: countryFlagIcon(o.flag),
           type: "checkbox",
           checked: localePreference.value === o.value,
           onUpdateChecked: (c: boolean) => {

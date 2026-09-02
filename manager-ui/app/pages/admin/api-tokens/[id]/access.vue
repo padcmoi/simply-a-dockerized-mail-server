@@ -121,7 +121,7 @@ function agentIcon(userAgent: string) {
 
       <template #clientIp="{ row }">
         <span class="flex items-center gap-1.5 min-w-0" :title="countryName(row.country)">
-          <span v-if="row.country" class="shrink-0">{{ countryFlagEmoji(row.country) }}</span>
+          <CountryFlag v-if="row.country" :code="row.country" class="size-4" />
           <span class="font-mono text-xs truncate">{{ row.clientIp || "-" }}</span>
         </span>
       </template>

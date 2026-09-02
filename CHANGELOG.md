@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(ui): every flag is drawn as an SVG icon instead of an emoji, so Windows shows a flag where it printed the two bare letters, its emoji font carrying no glyph for them (02-09-2026)
 - The manager-api image builds again, now that nothing copies the deleted libs directory _(manager-api)_ (31-08-2026)
 
 ## [2.0.0-rc.2] - 31-08-2026

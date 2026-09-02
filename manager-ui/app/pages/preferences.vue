@@ -53,7 +53,7 @@ function setTheme(value: string) {
           :variant="localePreference === opt.value ? 'solid' : 'subtle'"
           @click="setLocalePreference(opt.value)"
         >
-          <span class="text-base leading-none">{{ opt.flag }}</span>
+          <CountryFlag :code="opt.flag" class="size-5" />
           {{ opt.name ?? t("layout.system") }}
         </UButton>
       </div>

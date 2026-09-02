@@ -258,3 +258,13 @@ export const COUNTRY_CODES = [
 export function countryFlagEmoji(code: string) {
   return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
 }
+
+// "FR" -> "i-circle-flags-fr". Windows ships no glyph for the regional-indicator
+// pairs above: every browser there draws the bare letters ("FR") instead of a
+// flag, so the UI never renders the emoji and asks for this icon instead. The
+// `circle-flags` collection covers all 250 codes plus "xx" for an unknown one,
+// and is installed locally, so it resolves from disk like `lucide` does.
+export function countryFlagIcon(code: string) {
+  const key = code.toLowerCase();
+  return `i-circle-flags-${COUNTRY_CODES.includes(key.toUpperCase()) ? key : "xx"}`;
+}

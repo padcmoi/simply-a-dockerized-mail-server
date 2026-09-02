@@ -18,6 +18,7 @@
     "test:cov": "nuxt prepare && vitest run --coverage"
   },
   "dependencies": {
+    "@iconify-json/circle-flags": "^1.2.10",
     "@iconify-json/lucide": "^1.2.115",
     "@nuxt/ui": "^4.9.0",
     "@nuxtjs/i18n": "^10.4.0",

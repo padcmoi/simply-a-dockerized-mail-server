@@ -28,6 +28,9 @@ beforeEach(() => {
     ]),
     setLocale: vi.fn(),
   }));
+  // A flag is an icon from the `circle-flags` collection, not an emoji: the
+  // composable hands out a region code and useNav turns it into an icon name.
+  vi.stubGlobal("countryFlagIcon", (c: string) => `i-circle-flags-${c.toLowerCase()}`);
   // The language sub-menu now goes through useLocalePreference (tri-state, with a
   // "system" entry), so stub it: preference "system", three flagged options.
   vi.stubGlobal("useLocalePreference", () => ({
@@ -35,9 +38,9 @@ beforeEach(() => {
     resolved: ref("en_GB"),
     detected: ref("en_GB"),
     options: ref([
-      { value: "system", flag: "🇬🇧", name: null },
-      { value: "en_GB", flag: "🇬🇧", name: "English" },
-      { value: "fr_FR", flag: "🇫🇷", name: "Français" },
+      { value: "system", flag: "GB", name: null },
+      { value: "en_GB", flag: "GB", name: "English" },
+      { value: "fr_FR", flag: "FR", name: "Français" },
     ]),
     availableCodes: ref(["en_GB", "fr_FR"]),
     flagFor: (c: string) => c,
@@ -262,11 +265,16 @@ describe("useNav user menu", () => {
     asRoot();
     const { userItems } = useNav(noop);
     const language = userItems.value[1]![0] as {
-      children: { label: string; checked: boolean; onUpdateChecked: (c: boolean) => void }[];
+      children: { label: string; icon: string; checked: boolean; onUpdateChecked: (c: boolean) => void }[];
     };
-    // system + the two configured locales, each label carrying its flag.
+    // system + the two configured locales, each carrying its flag as an icon.
     expect(language.children).toHaveLength(3);
-    expect(language.children.map((c) => c.label)).toEqual(["🇬🇧  layout.system", "🇬🇧  English", "🇫🇷  Français"]);
+    expect(language.children.map((c) => c.label)).toEqual(["layout.system", "English", "Français"]);
+    expect(language.children.map((c) => c.icon)).toEqual([
+      "i-circle-flags-gb",
+      "i-circle-flags-gb",
+      "i-circle-flags-fr",
+    ]);
     // preference is "system", so only the first entry is checked.
     expect(language.children.map((c) => c.checked)).toEqual([true, false, false]);
     language.children[2]!.onUpdateChecked(true);

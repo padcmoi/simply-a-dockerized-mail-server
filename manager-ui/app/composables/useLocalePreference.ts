@@ -28,8 +28,11 @@ export function useLocalePreference() {
 
   const availableCodes = computed(() => locales.value.map((l) => String(l.code)));
 
+  // The region code whose flag stands for the locale, for <CountryFlag> or
+  // countryFlagIcon() to draw. Not an emoji flag: Windows renders those as the
+  // bare letters (see countryFlagIcon).
   function flagFor(code: string) {
-    return countryFlagEmoji(LOCALE_FLAG_CODE[code] ?? code.slice(-2));
+    return (LOCALE_FLAG_CODE[code] ?? code.slice(-2)).toUpperCase();
   }
 
   // Match the browser's ordered language list against the configured locales:

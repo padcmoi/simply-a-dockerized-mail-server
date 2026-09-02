@@ -56,12 +56,19 @@ export default defineNuxtConfig({
   // Bundle every `i-lucide-*` icon used in templates into the client output
   // so they render offline / behind a strict CSP that blocks the iconify CDN.
   // `serverBundle: "local"` makes the SSR pass resolve from the installed
-  // `@iconify-json/lucide` package on disk instead of an HTTP call.
+  // `@iconify-json/lucide` and `@iconify-json/circle-flags` packages on disk
+  // instead of an HTTP call.
   icon: {
     serverBundle: "local",
     clientBundle: {
       scan: true,
       includeCustomCollections: true,
+      // Flags are asked for by a computed name (`i-circle-flags-${code}`), which
+      // the scanner cannot see: the country list is served on demand from the
+      // local server bundle, while the two locale flags sit in the header of
+      // every page, login included, so they ride along in the client bundle and
+      // paint with the first render.
+      icons: ["circle-flags:gb", "circle-flags:fr"],
     },
   },
   runtimeConfig: {

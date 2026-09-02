@@ -1,4 +1,4 @@
-// All countries as { value, label, sortKey }, localized name + flag emoji, sorted
+// All countries as { value, label, icon, sortKey }, localized name + flag icon, sorted
 // by name. value = the canonical English name so what is stored stays stable
 // across UI locales and geocodes reliably (see GeocodingService). The app's
 // locale codes use an underscore (`fr_FR`); Intl needs a BCP 47 tag (`fr-FR`), so
@@ -20,7 +20,7 @@ export function useCountryOptions() {
     }
     return COUNTRY_CODES.map((code) => {
       const name = localNames?.of(code) ?? code;
-      return { value: enNames?.of(code) ?? code, label: `${countryFlagEmoji(code)} ${name}`, sortKey: name };
+      return { value: enNames?.of(code) ?? code, label: name, icon: countryFlagIcon(code), sortKey: name };
     }).sort((a, b) => a.sortKey.localeCompare(b.sortKey, uiLocale));
   });
 }

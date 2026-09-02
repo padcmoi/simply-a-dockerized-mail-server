@@ -15,6 +15,11 @@ defineProps<{ coords: { latitude: string | null; longitude: string | null } }>()
 const { t } = useI18n();
 const countryOptions = useCountryOptions();
 
+// The list carries each country's flag as an item icon, so the field's own
+// leading icon becomes the selected country's flag once one is picked, and
+// stays the generic globe while the field is empty.
+const countryIcon = computed(() => countryOptions.value.find((o) => o.value === country.value)?.icon ?? "i-lucide-globe");
+
 function clearCountry() {
   country.value = "";
 }
@@ -47,7 +52,7 @@ function clearCountry() {
           value-key="value"
           :items="countryOptions"
           :placeholder="t('profile.countryPlaceholder')"
-          icon="i-lucide-globe"
+          :icon="countryIcon"
           class="w-full"
         >
           <template #trailing>
