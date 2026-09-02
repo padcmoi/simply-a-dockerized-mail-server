@@ -130,7 +130,7 @@ async function onDeleteConfirmed() {
     >
       <template #email="{ row }">
         <div class="flex items-center gap-2 min-w-0">
-          <UAvatar :alt="row.displayName ?? row.email" size="xs" />
+          <UAvatar :src="row.avatarUrl ?? undefined" :alt="row.displayName ?? row.email" size="xs" class="shrink-0" />
           <NuxtLink
             :to="`/admin/accounts/${row.id}`"
             class="font-medium text-primary hover:underline underline-offset-2 transition-colors truncate min-w-0"

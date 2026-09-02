@@ -92,7 +92,9 @@ describe("AccountsService", () => {
         { id: "a1", email: "a@b.com", isRoot: 1, enabled: 1, lastLogin: null, createdAt: null },
       ]);
       m.groupMembers.find.mockResolvedValue([{ accountId: "a1", groupId: "g1" }]);
-      m.profiles.find.mockResolvedValue([{ accountId: "a1", firstName: "Alice", lastName: "Martin" }]);
+      m.profiles.find.mockResolvedValue([
+        { accountId: "a1", firstName: "Alice", lastName: "Martin", avatarUrl: "https://cdn.example/a1.png" },
+      ]);
       m.groups.findBy.mockResolvedValue([{ id: "g1", name: "Admins" }]);
 
       const res = await svc.list({ offset: 0, sortDir: "desc" });
@@ -103,6 +105,7 @@ describe("AccountsService", () => {
           id: "a1",
           email: "a@b.com",
           displayName: "Alice Martin",
+          avatarUrl: "https://cdn.example/a1.png",
           isRoot: true,
           enabled: true,
           lastLogin: null,

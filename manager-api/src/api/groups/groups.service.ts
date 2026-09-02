@@ -409,15 +409,21 @@ export class GroupsService {
       .select("a.id", "id")
       .addSelect("a.email", "email")
       .addSelect("NULLIF(TRIM(CONCAT_WS(' ', p.first_name, p.last_name)), '')", "displayName")
+      .addSelect("p.avatar_url", "avatarUrl")
       .limit(query.limit)
       .offset(query.offset);
     orderExprs.forEach((expr, i) => (i === 0 ? rowsQb.orderBy(expr, dir) : rowsQb.addOrderBy(expr, dir)));
     const [rows, total] = await Promise.all([
-      rowsQb.getRawMany<{ id: string; email: string; displayName: string | null }>(),
+      rowsQb.getRawMany<{ id: string; email: string; displayName: string | null; avatarUrl: string | null }>(),
       base.getCount(),
     ]);
     return {
-      items: rows.map((r) => ({ id: r.id, email: r.email, displayName: r.displayName ?? null })),
+      items: rows.map((r) => ({
+        id: r.id,
+        email: r.email,
+        displayName: r.displayName ?? null,
+        avatarUrl: r.avatarUrl ?? null,
+      })),
       total,
     };
   }
@@ -595,6 +601,12 @@ export class GroupsService {
       this.profiles.find({ where: { accountId: In(accountIds) } }),
     ]);
     const displayByAccount = new Map(profileRows.map((p) => [p.accountId, composeDisplayName(p.firstName, p.lastName)]));
-    return accs.map((a) => ({ id: a.id, email: a.email, displayName: displayByAccount.get(a.id) ?? null }));
+    const avatarByAccount = new Map(profileRows.map((p) => [p.accountId, p.avatarUrl ?? null]));
+    return accs.map((a) => ({
+      id: a.id,
+      email: a.email,
+      displayName: displayByAccount.get(a.id) ?? null,
+      avatarUrl: avatarByAccount.get(a.id) ?? null,
+    }));
   }
 }

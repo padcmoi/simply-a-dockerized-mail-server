@@ -156,7 +156,7 @@ function onAdd() {
     >
       <template #displayName="{ row }">
         <div class="min-w-0 flex items-center gap-2">
-          <UAvatar :alt="row.displayName ?? row.email" size="xs" />
+          <UAvatar :src="row.avatarUrl ?? undefined" :alt="row.displayName ?? row.email" size="xs" class="shrink-0" />
           <span class="font-medium truncate">{{ row.displayName ?? row.email }}</span>
         </div>
       </template>

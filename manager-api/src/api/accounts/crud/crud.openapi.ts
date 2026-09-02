@@ -11,6 +11,7 @@ const accountListItemExample = {
   id: 5,
   email: "jdoe@example.com",
   displayName: "John Doe",
+  avatarUrl: "https://example.com/avatar.png",
   isRoot: false,
   enabled: true,
   lastLogin: "2026-06-30T08:12:00.000Z",
@@ -61,7 +62,7 @@ export const ListAccountsDocs = () =>
     ApiResponse({ status: 403, description: "Root access required" })
   );
 
-const accountDetailExample = { ...accountListItemExample, avatarUrl: "https://example.com/avatar.png" };
+const accountDetailExample = { ...accountListItemExample, firstName: "John", lastName: "Doe" };
 
 export const GetAccountDocs = () =>
   applyDecorators(

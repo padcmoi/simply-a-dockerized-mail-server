@@ -4,6 +4,9 @@ export interface ManagerAccount {
   id: string;
   email: string;
   displayName: string | null;
+  // Null for an account that never set a picture: the avatar falls back to the
+  // initials of its name.
+  avatarUrl: string | null;
   isRoot: boolean;
   enabled: boolean;
   lastLogin: string | null;

@@ -109,6 +109,7 @@ export class AccountsService {
       accountIds.length ? this.profiles.find({ where: { accountId: In(accountIds) } }) : [],
     ]);
     const displayByAccount = new Map(profileRows.map((p) => [p.accountId, composeDisplayName(p.firstName, p.lastName)]));
+    const avatarByAccount = new Map(profileRows.map((p) => [p.accountId, p.avatarUrl ?? null]));
     const groupIds = [...new Set(memberRows.map((m) => m.groupId))];
     const groupMap = new Map<string, string>();
     if (groupIds.length) {
@@ -125,6 +126,10 @@ export class AccountsService {
       id: acc.id,
       email: acc.email,
       displayName: displayByAccount.get(acc.id) ?? null,
+      // The profiles are already loaded for the name, so the avatar rides along:
+      // a list showing initials for an account that has a picture is a list that
+      // looks like it lost the picture.
+      avatarUrl: avatarByAccount.get(acc.id) ?? null,
       isRoot: acc.isRoot === 1,
       enabled: acc.enabled === 1,
       lastLogin: acc.lastLogin,

@@ -519,9 +519,13 @@ describe("GroupsService", () => {
       m.groups.findOne.mockResolvedValue(makeGroup());
       m.groupMembers.find.mockResolvedValue([{ accountId: "a1" }]);
       m.accounts.find.mockResolvedValue([{ id: "a1", email: "a1@x.com" }]);
-      m.profiles.find.mockResolvedValue([{ accountId: "a1", firstName: "Alice", lastName: "Martin" }]);
+      m.profiles.find.mockResolvedValue([
+        { accountId: "a1", firstName: "Alice", lastName: "Martin", avatarUrl: "https://cdn.example/a1.png" },
+      ]);
       const res = await svc.listMembers(GID, ROOT, q());
-      expect(res).toEqual([{ id: "a1", email: "a1@x.com", displayName: "Alice Martin" }]);
+      expect(res).toEqual([
+        { id: "a1", email: "a1@x.com", displayName: "Alice Martin", avatarUrl: "https://cdn.example/a1.png" },
+      ]);
     });
 
     it("legacy returns [] when the group has no members", async () => {
@@ -536,21 +540,21 @@ describe("GroupsService", () => {
       m.accounts.find.mockResolvedValue([{ id: "a2", email: "a2@x.com" }]);
       m.profiles.find.mockResolvedValue([]);
       const res = await svc.listMembers(GID, ROOT, q());
-      expect(res).toEqual([{ id: "a2", email: "a2@x.com", displayName: null }]);
+      expect(res).toEqual([{ id: "a2", email: "a2@x.com", displayName: null, avatarUrl: null }]);
     });
 
     it("paginated: search + sortBy displayName asc orders on the name columns", async () => {
       m.groups.findOne.mockResolvedValue(makeGroup());
       m.qb.getRawMany.mockResolvedValue([
-        { id: "a1", email: "a1@x.com", displayName: "Alice" },
+        { id: "a1", email: "a1@x.com", displayName: "Alice", avatarUrl: "https://cdn.example/a1.png" },
         { id: "a2", email: "a2@x.com", displayName: null },
       ]);
       m.qb.getCount.mockResolvedValue(2);
       const res = await svc.listMembers(GID, ROOT, q({ limit: 10, search: "a", sortBy: "displayName", sortDir: "asc" }));
       expect(res).toEqual({
         items: [
-          { id: "a1", email: "a1@x.com", displayName: "Alice" },
-          { id: "a2", email: "a2@x.com", displayName: null },
+          { id: "a1", email: "a1@x.com", displayName: "Alice", avatarUrl: "https://cdn.example/a1.png" },
+          { id: "a2", email: "a2@x.com", displayName: null, avatarUrl: null },
         ],
         total: 2,
       });
@@ -603,7 +607,7 @@ describe("GroupsService", () => {
       m.profiles.find.mockResolvedValue([]);
       const res = await svc.addMember(GID, ROOT, AID);
       expect(m.cpg.guard.assignAccountToGroup).toHaveBeenCalledWith(AID, GID);
-      expect(res).toEqual([{ id: AID, email: "a@x.com", displayName: null }]);
+      expect(res).toEqual([{ id: AID, email: "a@x.com", displayName: null, avatarUrl: null }]);
     });
   });
 

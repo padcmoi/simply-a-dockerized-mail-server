@@ -27,7 +27,9 @@ const groupDetailExample = {
   domainPermissions: [{ id: 5, domainId: 1, domainName: "example.com", resource: "recipients", action: "list-recipients" }],
 };
 
-const groupMembersExample = [{ id: 4, email: "jdoe@example.com", displayName: "John Doe" }];
+const groupMembersExample = [
+  { id: 4, email: "jdoe@example.com", displayName: "John Doe", avatarUrl: "https://example.com/avatar.png" },
+];
 
 const permissionsCatalogExample = {
   global: {
