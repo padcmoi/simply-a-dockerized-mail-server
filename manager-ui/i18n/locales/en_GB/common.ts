@@ -36,4 +36,6 @@ export default {
   totalCount: "{count} total",
   showPassword: "Show password",
   hidePassword: "Hide password",
+  saving: "Saving...",
+  autosaveHint: "Saved automatically",
 } satisfies Locales["common"];

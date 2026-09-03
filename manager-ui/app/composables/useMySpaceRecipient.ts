@@ -45,6 +45,27 @@ export function useMySpaceRecipient(recipientId: () => number) {
     { immediate: true }
   );
 
+  // No save button on either card: flipping the switch or moving the quota
+  // writes on its own once the value settles. Only a real, valid change writes,
+  // so loading the mailbox, or a slider passing through a refused value on its
+  // way, stays silent (saveStatus and saveQuota check again when they fire).
+  const autosaveStatus = useAutosave(saveStatus);
+  const autosaveQuota = useAutosave(saveQuota);
+
+  watch(
+    () => form.active,
+    () => {
+      if (statusDirty.value) void autosaveStatus();
+    }
+  );
+
+  watch(
+    () => form.quotaMb,
+    () => {
+      if (canSaveQuota.value) void autosaveQuota();
+    }
+  );
+
   async function load() {
     loading.value = true;
     loadError.value = null;
@@ -133,18 +154,14 @@ export function useMySpaceRecipient(recipientId: () => number) {
     delegation,
     passwordTooShort,
     canChangePassword,
-    statusDirty,
     minQuotaMb,
     maxQuotaMb,
     quotaUnderMin,
-    canSaveQuota,
     savingStatus,
     changingPassword,
     savingQuota,
     deleting,
-    saveStatus,
     changePassword,
-    saveQuota,
     remove,
   };
 }

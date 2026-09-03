@@ -97,7 +97,6 @@ export interface Locales {
       usage: string;
       active: string;
       activeHint: string;
-      statusSave: string;
       statusSaved: string;
       statusFailed: string;
       passwordTitle: string;
@@ -685,6 +684,8 @@ export interface Locales {
     totalCount: string;
     showPassword: string;
     hidePassword: string;
+    saving: string;
+    autosaveHint: string;
   };
   // Full-page error states rendered by app/error.vue (Nuxt error boundary).
   error: {

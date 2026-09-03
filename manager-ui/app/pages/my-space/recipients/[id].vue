@@ -17,18 +17,14 @@ const {
   delegation,
   passwordTooShort,
   canChangePassword,
-  statusDirty,
   minQuotaMb,
   maxQuotaMb,
   quotaUnderMin,
-  canSaveQuota,
   savingStatus,
   changingPassword,
   savingQuota,
   deleting,
-  saveStatus,
   changePassword,
-  saveQuota,
   remove,
 } = useMySpaceRecipient(() => recipientId.value);
 
@@ -76,10 +72,13 @@ watchEffect(() => {
         <div class="space-y-6">
           <UCard>
             <template #header>
-              <h2 class="font-semibold flex items-center gap-1.5">
-                <UIcon name="i-lucide-power" class="size-4 text-muted" />
-                {{ t("myspace.recipient.active") }}
-              </h2>
+              <div class="flex items-center justify-between gap-4">
+                <h2 class="font-semibold flex items-center gap-1.5">
+                  <UIcon name="i-lucide-power" class="size-4 text-muted" />
+                  {{ t("myspace.recipient.active") }}
+                </h2>
+                <AutosaveState :saving="savingStatus" />
+              </div>
             </template>
 
             <div class="space-y-3">
@@ -91,14 +90,6 @@ watchEffect(() => {
               </div>
               <p class="text-sm text-muted">{{ t("myspace.recipient.activeHint") }}</p>
             </div>
-
-            <template #footer>
-              <div class="flex justify-end">
-                <UButton icon="i-lucide-save" :disabled="!statusDirty" :loading="savingStatus" @click="saveStatus">
-                  {{ t("myspace.recipient.statusSave") }}
-                </UButton>
-              </div>
-            </template>
           </UCard>
 
           <UCard>
@@ -139,10 +130,13 @@ watchEffect(() => {
 
           <UCard v-if="delegation">
             <template #header>
-              <h2 class="font-semibold flex items-center gap-1.5">
-                <UIcon name="i-lucide-database" class="size-4 text-muted" />
-                {{ t("myspace.recipient.quota") }}
-              </h2>
+              <div class="flex items-center justify-between gap-4">
+                <h2 class="font-semibold flex items-center gap-1.5">
+                  <UIcon name="i-lucide-database" class="size-4 text-muted" />
+                  {{ t("myspace.recipient.quota") }}
+                </h2>
+                <AutosaveState :saving="savingQuota" />
+              </div>
             </template>
 
             <div class="space-y-3">
@@ -161,14 +155,6 @@ watchEffect(() => {
                 {{ t("myspace.delegations.quotaAvailable", { used: Math.round(Number(form.quotaMb) || 0), max: maxQuotaMb }) }}
               </p>
             </div>
-
-            <template #footer>
-              <div class="flex justify-end">
-                <UButton icon="i-lucide-save" :disabled="!canSaveQuota" :loading="savingQuota" @click="saveQuota">
-                  {{ t("myspace.recipient.statusSave") }}
-                </UButton>
-              </div>
-            </template>
           </UCard>
         </div>
       </div>

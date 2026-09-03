@@ -36,4 +36,6 @@ export default {
   totalCount: "{count} au total",
   showPassword: "Afficher le mot de passe",
   hidePassword: "Masquer le mot de passe",
+  saving: "Enregistrement...",
+  autosaveHint: "Enregistré automatiquement",
 } satisfies Locales["common"];

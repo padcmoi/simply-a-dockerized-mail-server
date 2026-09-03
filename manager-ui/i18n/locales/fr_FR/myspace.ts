@@ -27,7 +27,6 @@ export default {
     usage: "Utilisé",
     active: "Active",
     activeHint: "Désactivez la boîte pour qu'elle cesse de recevoir des messages, sans la supprimer.",
-    statusSave: "Enregistrer",
     statusSaved: "Boîte mise à jour.",
     statusFailed: "Impossible de mettre à jour la boîte.",
     passwordTitle: "Mot de passe",

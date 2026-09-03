@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- feat(myspace): an owned mailbox loses its two save buttons, its status switch and its quota slider writing on their own once the value settles, the card header saying whether a write is in flight (02-09-2026)
 - The permission guard comes from npm, instead of a tarball carried in the repository _(manager-api)_ (31-08-2026)
 
 ### Fixed

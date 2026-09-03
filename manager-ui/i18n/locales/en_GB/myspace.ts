@@ -27,7 +27,6 @@ export default {
     usage: "Used",
     active: "Active",
     activeHint: "Turn the mailbox off to stop it receiving mail, without deleting it.",
-    statusSave: "Save",
     statusSaved: "Mailbox updated.",
     statusFailed: "Could not update the mailbox.",
     passwordTitle: "Password",
