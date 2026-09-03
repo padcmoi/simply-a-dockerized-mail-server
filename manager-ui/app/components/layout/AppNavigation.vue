@@ -72,16 +72,11 @@ async function onSignOut() {
     }"
   >
     <template #header>
-      <UButton
-        icon="i-lucide-mail"
-        :label="t('app.name')"
-        color="neutral"
-        variant="ghost"
-        square
-        to="/my-space"
-        class="w-full overflow-hidden"
-        :ui="{ leadingIcon: 'text-primary' }"
-      />
+      <UButton :label="t('app.name')" color="neutral" variant="ghost" square to="/my-space" class="w-full overflow-hidden">
+        <template #leading>
+          <NaskotMailIcon class="text-primary size-6 shrink-0" />
+        </template>
+      </UButton>
     </template>
 
     <template #default="{ state }">

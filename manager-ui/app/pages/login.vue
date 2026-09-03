@@ -83,11 +83,11 @@ onMounted(resumeProviderSignIn);
 <template>
   <UCard class="w-full max-w-md">
     <template #header>
-      <div class="flex items-center gap-2">
-        <UIcon name="i-lucide-mail" class="text-primary text-2xl" />
+      <div class="flex flex-col items-center text-center">
+        <img src="~/assets/naskot-mail-logo.svg" alt="" width="72" height="72" class="size-16 mb-3" />
         <h1 class="text-lg font-semibold">{{ t("login.title") }}</h1>
+        <p class="text-sm text-muted mt-1">{{ t("login.subtitle") }}</p>
       </div>
-      <p class="text-sm text-muted mt-1">{{ t("login.subtitle") }}</p>
     </template>
     <div v-if="resuming" class="flex flex-col items-center gap-3 py-10">
       <UIcon name="i-lucide-loader-2" class="size-8 text-primary animate-spin" />

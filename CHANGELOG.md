@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): the Naskot beaver replaces lucide's envelope as the product's mark, drawn at three levels of detail since the full logo blurs below 64 px: a line icon in the sidebar header, the colour logo centred on the login card, and a favicon set whose 16 px entry drops the envelope to stay readable in a tab, with an apple-touch-icon for iOS (03-09-2026)
 - feat(invite): an open invitation link is taken with an external provider as well as with a password, the provider coming back to the invitation instead of the login screen so the grant lands on the account that just signed in (01-09-2026)
 - test(auth): the Passport layer ships with its own suites, covering provider usability, identity linking and provisioning, the credential registry's sealing and hot re-registration, the guard's refusals and the one-time exchange code (01-09-2026)
 - feat(profile): the sign-in email address moves to its own page, behind a ten-click confirmation naming both the old and the new address (01-09-2026)
