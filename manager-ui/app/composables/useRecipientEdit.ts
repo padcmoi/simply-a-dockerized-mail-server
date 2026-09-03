@@ -1,8 +1,9 @@
+import { MB } from "~/utils/bytes";
+
 // Editing one mailbox from the administration: its status and quota inside the
 // domain's headroom, the admin password reset, and the ownership rights the
 // buttons obey. The page that shows the form was carrying all of this.
 
-const MB = 1024 * 1024;
 const MIN_QUOTA_MB = 1;
 const PASSWORD_MIN = 8;
 

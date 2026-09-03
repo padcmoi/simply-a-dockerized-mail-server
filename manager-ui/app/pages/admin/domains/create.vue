@@ -9,7 +9,6 @@ definePageMeta({
   ],
 });
 
-const MB = 1024 * 1024;
 const MIN_QUOTA_MB = 10;
 // Mirrors createDomainSchema's own regex. The API stays the authority; this
 // only spares a round-trip and names the rule where the user is typing.

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { ChartData, ChartOptions } from "chart.js";
-import { formatBytes } from "~/composables/useDiskChartData";
 
 const props = defineProps<{ totalBytes: number; usedBytes: number }>();
 

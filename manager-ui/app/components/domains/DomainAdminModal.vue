@@ -14,8 +14,6 @@ const props = defineProps<{
   canDelete: boolean;
 }>();
 
-const MB = 1024 * 1024;
-
 const confirmDeleteOpen = ref(false);
 const quotaMbField = ref(10);
 

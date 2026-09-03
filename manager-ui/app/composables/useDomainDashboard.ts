@@ -1,4 +1,5 @@
 import type { ChartData, ChartOptions } from "chart.js";
+import { formatBytes } from "~/utils/bytes";
 
 // How many mailboxes the "fullest mailboxes" chart lists. Kept in step with
 // the `{count}` the i18n title interpolates, so the heading can never promise

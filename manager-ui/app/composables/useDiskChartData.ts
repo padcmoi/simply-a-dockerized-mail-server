@@ -1,10 +1,5 @@
 import type { ChartData, ChartOptions } from "chart.js";
-
-export function formatBytes(bytes: number) {
-  if (bytes >= 1_073_741_824) return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
-  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(0)} MB`;
-  return `${(bytes / 1024).toFixed(0)} KB`;
-}
+import { formatBytes } from "~/utils/bytes";
 
 export function useDiskChartData(input: Readonly<Ref<DiskInput | null>>) {
   const { t } = useI18n();

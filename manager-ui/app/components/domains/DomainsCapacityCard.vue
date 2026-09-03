@@ -3,13 +3,10 @@ const props = defineProps<{
   disk: { totalBytes: number; freeBytes: number; reservedBytes: number; assignableBytes: number } | null;
 }>();
 
-const GB = 1024 * 1024 * 1024;
-const gb = (bytes: number) => (bytes / GB).toFixed(1);
-
-const totalGb = computed(() => (props.disk ? gb(props.disk.totalBytes) : "0.0"));
-const freeGb = computed(() => (props.disk ? gb(props.disk.freeBytes) : "0.0"));
-const reservedGb = computed(() => (props.disk ? gb(props.disk.reservedBytes) : "0.0"));
-const assignableGb = computed(() => (props.disk ? gb(props.disk.assignableBytes) : "0.0"));
+const total = computed(() => formatBytes(props.disk?.totalBytes ?? 0));
+const free = computed(() => formatBytes(props.disk?.freeBytes ?? 0));
+const reserved = computed(() => formatBytes(props.disk?.reservedBytes ?? 0));
+const assignable = computed(() => formatBytes(props.disk?.assignableBytes ?? 0));
 // The 4 numbers above already say this, but nothing there is a glanceable
 // visual, unlike the per-domain dashboard's own donut.
 const reservedPercent = computed(() =>
@@ -35,19 +32,19 @@ const { t } = useI18n();
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
       <div>
         <p class="text-dimmed">{{ t("domains.capacity.total") }}</p>
-        <p class="font-semibold">{{ totalGb }} GB</p>
+        <p class="font-semibold">{{ total }}</p>
       </div>
       <div>
         <p class="text-dimmed">{{ t("domains.capacity.free") }}</p>
-        <p class="font-semibold">{{ freeGb }} GB</p>
+        <p class="font-semibold">{{ free }}</p>
       </div>
       <div>
         <p class="text-dimmed">{{ t("domains.capacity.reserved") }}</p>
-        <p class="font-semibold">{{ reservedGb }} GB</p>
+        <p class="font-semibold">{{ reserved }}</p>
       </div>
       <div>
         <p class="text-dimmed">{{ t("domains.capacity.assignable") }}</p>
-        <p class="font-semibold text-primary">{{ assignableGb }} GB</p>
+        <p class="font-semibold text-primary">{{ assignable }}</p>
       </div>
     </div>
     <div class="mt-4">

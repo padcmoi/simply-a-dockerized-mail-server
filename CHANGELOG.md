@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(ui): a quota reads "100 MB" or "9.8 GB" wherever it is shown, the dashboard, an account's domains and the personal space having printed the raw byte count (02-09-2026)
 - fix(accounts): an account carrying a picture shows it as a thumbnail in the accounts and group members tables, where every row fell back to its initials (02-09-2026)
 - fix(ui): every flag is drawn as an SVG icon instead of an emoji, so Windows shows a flag where it printed the two bare letters, its emoji font carrying no glyph for them (02-09-2026)
 - The manager-api image builds again, now that nothing copies the deleted libs directory _(manager-api)_ (31-08-2026)

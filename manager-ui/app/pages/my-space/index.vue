@@ -32,7 +32,7 @@ const recipients = computed(() => data.value?.recipients ?? []);
 const aliases = computed(() => data.value?.aliases ?? []);
 const domainColumns = computed<DataTableColumn<OwnedDomain>[]>(() => [
   { key: "domain", label: t("myspace.table.domain"), value: (row) => row.domain, primary: true },
-  { key: "quota", label: t("myspace.table.quota"), value: (row) => row.quota },
+  { key: "quota", label: t("myspace.table.quota"), value: (row) => Number(row.quota) },
   { key: "active", label: t("myspace.table.status"), value: (row) => row.active },
 ]);
 
@@ -113,7 +113,7 @@ watch(
         </template>
 
         <template #quota="{ row }">
-          <span class="text-muted">{{ row.quota }}</span>
+          <span class="text-muted">{{ formatBytes(Number(row.quota)) }}</span>
         </template>
 
         <template #active="{ row }">

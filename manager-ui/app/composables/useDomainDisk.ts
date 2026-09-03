@@ -1,4 +1,4 @@
-const MB = 1024 * 1024;
+import { MB } from "~/utils/bytes";
 
 // What the mail volume still has to hand out to a new domain. Shared by the
 // domains list (capacity card) and the create page (quota ceiling + donut).

@@ -87,7 +87,7 @@ const { stats, disk, loading, recentDomains, recentRecipients, recipientsPerDoma
             <div class="min-w-0 flex-1">
               <p class="font-medium truncate">{{ d.domain }}</p>
               <p class="text-xs text-muted">
-                {{ t("dashboard.recent.quotaLabel", { value: d.quota }) }}
+                {{ t("dashboard.recent.quotaLabel", { value: formatBytes(Number(d.quota)) }) }}
               </p>
             </div>
             <UBadge :color="d.active ? 'success' : 'neutral'" variant="subtle">

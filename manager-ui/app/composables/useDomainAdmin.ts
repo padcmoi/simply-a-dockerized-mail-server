@@ -1,8 +1,7 @@
 import { useAuthStore } from "~/stores/auth";
 import { useDomainStore } from "~/stores/domain";
 import { usePermissionsStore } from "~/stores/permissions";
-
-const MB = 1024 * 1024;
+import { MB } from "~/utils/bytes";
 
 // Quota/delete from the domains list -- gated more strictly than the rest of
 // the Administration surface (see admin-domains.controller.ts): root or the

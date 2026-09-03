@@ -8,8 +8,6 @@ definePageMeta({
   ],
 });
 
-const MB = 1024 * 1024;
-
 const { t } = useI18n();
 const { call } = useApi();
 const { apiErrorMessage } = useApiError();

@@ -270,11 +270,7 @@ describe("useNav user menu", () => {
     // system + the two configured locales, each carrying its flag as an icon.
     expect(language.children).toHaveLength(3);
     expect(language.children.map((c) => c.label)).toEqual(["layout.system", "English", "Français"]);
-    expect(language.children.map((c) => c.icon)).toEqual([
-      "i-circle-flags-gb",
-      "i-circle-flags-gb",
-      "i-circle-flags-fr",
-    ]);
+    expect(language.children.map((c) => c.icon)).toEqual(["i-circle-flags-gb", "i-circle-flags-gb", "i-circle-flags-fr"]);
     // preference is "system", so only the first entry is checked.
     expect(language.children.map((c) => c.checked)).toEqual([true, false, false]);
     language.children[2]!.onUpdateChecked(true);

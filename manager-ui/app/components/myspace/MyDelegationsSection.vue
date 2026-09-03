@@ -1,6 +1,4 @@
 <script setup lang="ts">
-const MB = 1024 * 1024;
-
 const { t } = useI18n();
 const { rows, loading, hasLoadedOnce } = useMyDelegations();
 

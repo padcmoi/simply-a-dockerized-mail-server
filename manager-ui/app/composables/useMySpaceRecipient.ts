@@ -1,9 +1,10 @@
+import { MB } from "~/utils/bytes";
+
 // One owned mailbox and everything the personal space can do to it: its status,
 // its password, its quota within what the domain delegated, and its deletion.
 // The page that shows it was carrying all of this itself.
 
 const PASSWORD_MIN = 8;
-const MB = 1024 * 1024;
 
 export function useMySpaceRecipient(recipientId: () => number) {
   const { t } = useI18n();

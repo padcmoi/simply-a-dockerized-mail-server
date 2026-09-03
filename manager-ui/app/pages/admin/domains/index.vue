@@ -10,7 +10,6 @@ definePageMeta({
   requiredGlobal: [{ resource: "domains", action: "access" }],
 });
 
-const MB = 1024 * 1024;
 const MIN_QUOTA_MB = 10;
 
 // `GET /domains` now only needs `access` -- the table always renders (the

@@ -1,27 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { ref, reactive } from "vue";
-import { formatBytes, useDiskChartData } from "~/composables/useDiskChartData";
+import { useDiskChartData } from "~/composables/useDiskChartData";
 import { useChartColors } from "~/composables/useChartColors";
 
-describe("formatBytes", () => {
-  it("prints GB with one decimal at and above 1 GiB", () => {
-    expect(formatBytes(1_073_741_824)).toBe("1.0 GB");
-    expect(formatBytes(2 * 1_073_741_824)).toBe("2.0 GB");
-    expect(formatBytes(1_610_612_736)).toBe("1.5 GB");
-  });
-
-  it("prints whole MB between 1 MiB and 1 GiB", () => {
-    expect(formatBytes(1_048_576)).toBe("1 MB");
-    expect(formatBytes(5 * 1_048_576)).toBe("5 MB");
-  });
-
-  it("prints whole KB below 1 MiB", () => {
-    expect(formatBytes(1024)).toBe("1 KB");
-    expect(formatBytes(2048)).toBe("2 KB");
-    expect(formatBytes(500)).toBe("0 KB");
-  });
-});
-
+// formatBytes moved to ~/utils/bytes, and its own suite with it.
 describe("useDiskChartData", () => {
   function mount(input: { totalBytes: number; freeBytes: number; reservedBytes: number } | null) {
     // useChartColors is an auto-import; register the real one so it reads the

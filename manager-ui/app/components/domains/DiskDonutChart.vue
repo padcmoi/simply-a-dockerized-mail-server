@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { formatBytes, useDiskChartData } from "~/composables/useDiskChartData";
+import { useDiskChartData } from "~/composables/useDiskChartData";
 
 const props = defineProps<{
   totalBytes: number;

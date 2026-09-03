@@ -1,8 +1,9 @@
+import { MB } from "~/utils/bytes";
+
 // Creating a mailbox: the form's state, its local checks, the field-level
 // refusals the API sends back, and the quota views the donut and the slider
 // share. The page that shows the form was carrying all of this.
 
-const MB = 1024 * 1024;
 const MIN_QUOTA_MB = 1;
 // Mirrors createRecipientSchema's `password: z.string().min(8)`. The API stays
 // the authority; this only spares a round-trip and names the rule in place.

@@ -1,4 +1,4 @@
-const MB = 1024 * 1024;
+import { MB } from "~/utils/bytes";
 
 // What the domain has left to grant its recipients, read from the API rather
 // than summed client-side: the recipients list is paginated, so the browser
@@ -7,6 +7,7 @@ const MB = 1024 * 1024;
 // Shared by the list page (which needs it to cap the edit modal) and the
 // create page (which needs it to cap the new quota), and reloaded on every
 // mutation of either, since each one shifts what is left.
+
 export function useRecipientHeadroom(domainId: Readonly<Ref<number | null>>) {
   const { call } = useApi();
 

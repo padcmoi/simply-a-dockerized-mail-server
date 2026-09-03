@@ -26,7 +26,9 @@ const { t } = useI18n();
           </div>
           <div class="min-w-0 flex-1">
             <p class="font-medium truncate">{{ d.domain }}</p>
-            <p class="text-xs text-muted">{{ t("accounts.overviewPage.quotaLabel", { value: d.quota }) }}</p>
+            <p class="text-xs text-muted">
+              {{ t("accounts.overviewPage.quotaLabel", { value: formatBytes(Number(d.quota)) }) }}
+            </p>
           </div>
           <UBadge :color="d.active ? 'success' : 'neutral'" variant="subtle">
             {{ d.active ? t("common.active") : t("common.inactive") }}
