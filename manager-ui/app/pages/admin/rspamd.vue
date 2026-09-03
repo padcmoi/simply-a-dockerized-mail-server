@@ -32,8 +32,11 @@ const {
   sortDir,
 } = useRspamdPage();
 const { t } = useI18n();
+const { set: setBreadcrumb } = useBreadcrumb();
 const toast = useToast();
 const { isRoot, hasGlobal } = usePermissions();
+
+setBreadcrumb([{ label: t("nav.rspamd") }]);
 const { actions, actionsLoading, saveActions, resetActions } = useRspamdActions();
 
 const bayesStatfiles = computed(() => stats.value?.statfiles ?? []);

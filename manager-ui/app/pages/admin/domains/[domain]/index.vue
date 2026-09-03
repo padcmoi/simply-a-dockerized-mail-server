@@ -52,6 +52,7 @@ const canViewAdmin = computed(() => isRoot.value || (domain.value && hasDomain(d
 const domainPath = computed(() => (domain.value ? `/admin/domains/${domain.value.domain}` : null));
 
 const { t } = useI18n();
+const { set: setBreadcrumb } = useBreadcrumb();
 
 // Reflects the actual DNS TXT match (dkimCheck), not just whether a key row
 // exists in the DB -- a stale/never-updated DNS record must show as "not ok"
@@ -62,6 +63,13 @@ const dkimStatusColor = computed(() => (dkimStatusOk.value ? "text-success" : "t
 const dkimStatusText = computed(() => {
   if (!dkimCheck.value || !dkimCheck.value.hasKeyInDatabase) return t("domainDashboard.dkim.statusMissing");
   return dkimCheck.value.match ? t("domainDashboard.dkim.statusMatch") : t("domainDashboard.dkim.statusMismatch");
+});
+
+// Below the computeds it reads: watchEffect runs its callback straight away, so
+// everything it touches must already be bound. The domain is loaded, so the
+// trail follows it in rather than being set once at setup.
+watchEffect(() => {
+  setBreadcrumb([{ label: t("nav.domains"), to: "/admin/domains" }, { label: domain.value?.domain ?? "..." }]);
 });
 </script>
 

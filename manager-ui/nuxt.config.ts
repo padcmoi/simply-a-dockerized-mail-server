@@ -52,6 +52,11 @@ export default defineNuxtConfig({
     },
   },
   ssr: true,
+  // The name every tab falls back to, on a page with no breadcrumb to name it
+  // (login, an invitation, an error). A page inside the app replaces it with
+  // its own trail, see provideBreadcrumb. Not translated: it is the product's
+  // name, identical in every locale (i18n/locales/*/app.ts).
+  app: { head: { title: "Simply Mail Server" } },
   css: ["~/assets/css/main.css"],
   // Bundle every `i-lucide-*` icon used in templates into the client output
   // so they render offline / behind a strict CSP that blocks the iconify CDN.
