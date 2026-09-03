@@ -14,21 +14,18 @@ export function provideBreadcrumb() {
   const items: Ref<BreadcrumbItem[]> = ref([]);
   provide(BreadcrumbKey, {
     items,
-    // The trail is words only, no icon on any crumb, home included.
+    // The trail is words only, no icon on any crumb, and it starts where the
+    // page's own section starts: no Home crumb ahead of it.
     set: (v) => {
-      items.value = [{ label: t("layout.home"), to: "/" }, ...v];
+      items.value = [...v];
     },
   });
 
-  // "Simply Mail Server :: Configuration > Connexion externe". The home entry is
-  // dropped: it is a way back, not part of the page's name. A page that has set
-  // nothing yet leaves the app's name alone.
+  // "Simply Mail Server :: Configuration > Connexion externe". A page that has
+  // set nothing yet leaves the app's name alone.
   useHead({
     title: computed(() => {
-      const trail = items.value
-        .slice(1)
-        .map((i) => String(i.label ?? ""))
-        .filter(Boolean);
+      const trail = items.value.map((i) => String(i.label ?? "")).filter(Boolean);
       return trail.length ? `${t("app.name")} :: ${trail.join(" > ")}` : t("app.name");
     }),
   });

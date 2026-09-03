@@ -31,14 +31,11 @@ describe("useBreadcrumb", () => {
     expect(ctx.items).toBe(items);
   });
 
-  it("set() prepends the Home crumb ahead of the supplied trail", () => {
+  it("set() takes the supplied trail as it stands, with no crumb ahead of it", () => {
     const items = provideBreadcrumb();
     const ctx = useBreadcrumb();
     ctx.set([{ label: "Domains", to: "/domains" }]);
-    expect(items.value).toEqual([
-      { label: "layout.home", to: "/" },
-      { label: "Domains", to: "/domains" },
-    ]);
+    expect(items.value).toEqual([{ label: "Domains", to: "/domains" }]);
   });
 
   it("set() replaces the previous trail rather than appending to it", () => {
@@ -46,10 +43,7 @@ describe("useBreadcrumb", () => {
     const ctx = useBreadcrumb();
     ctx.set([{ label: "First", to: "/a" }]);
     ctx.set([{ label: "Second", to: "/b" }]);
-    expect(items.value).toEqual([
-      { label: "layout.home", to: "/" },
-      { label: "Second", to: "/b" },
-    ]);
+    expect(items.value).toEqual([{ label: "Second", to: "/b" }]);
   });
 });
 
@@ -59,7 +53,7 @@ describe("the page title the breadcrumb names", () => {
     expect(head?.title.value).toBe("app.name");
   });
 
-  it("joins the trail with the app name, Home excluded", () => {
+  it("joins the trail with the app name", () => {
     provideBreadcrumb();
     const ctx = useBreadcrumb();
     ctx.set([{ label: "Configuration", to: "/admin/config" }, { label: "Connexion externe" }]);
