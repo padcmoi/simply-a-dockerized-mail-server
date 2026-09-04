@@ -1,6 +1,17 @@
 // What the machine reports about itself: the live sample and the recorded
 // windows the supervision charts draw.
 
+// rspamd's own counters, the ones its page tiles, each counted since rspamd
+// started.
+export interface RspamdCounters {
+  scanned: number;
+  noAction: number;
+  greylist: number;
+  addHeader: number;
+  reject: number;
+  learned: number;
+}
+
 export interface SystemSnapshot {
   /** Epoch milliseconds, read on the host that sampled it. */
   at: number;
@@ -9,6 +20,10 @@ export interface SystemSnapshot {
   load: { one: number; five: number; fifteen: number };
   memory: { total: number; used: number };
   network: { interface: string; in: number | null; out: number | null } | null;
+  /** rspamd's counters at that moment; null while rspamd is out of reach. */
+  rspamd: RspamdCounters | null;
+  /** Messages waiting in each Postfix queue directory; null while the spool is out of reach. */
+  postfix: QueueDirStats | null;
 }
 
 // One point's worth of what the curves draw, as percentages except the load.
@@ -23,6 +38,10 @@ export interface HistoryPoint {
   load: [number, number, number] | null;
   /** Bytes per second, in then out. */
   network: [number, number] | null;
+  /** rspamd's counters at the point: scanned, no action, greylist, add header, reject, learned. */
+  rspamd: [number, number, number, number, number, number] | null;
+  /** Queue depths at the point: active, deferred, hold, incoming. */
+  postfix: [number, number, number, number] | null;
 }
 
 export type MetricsStatus = "connecting" | "live" | "offline";

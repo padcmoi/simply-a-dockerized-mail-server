@@ -1,7 +1,8 @@
 import type { Locales } from "../../Locales";
 
 export default {
-  subtitle: "The state of the machine running this mail server, live and over the past seven days.",
+  subtitle:
+    "The state of the machine running this mail server and of its two services, rspamd and Postfix, live and over the past seven days.",
   machine: "Machine",
   live: "Live",
   connecting: "Connecting…",
@@ -35,4 +36,11 @@ export default {
   networkIn: "in",
   networkOut: "out",
   networkUnavailable: "The machine's interface is out of reach from this container",
+  services: "Services",
+  rspamd: "Rspamd",
+  rspamdScanned: "{n} messages scanned",
+  rspamdUnavailable: "Rspamd is out of reach from this container",
+  postfix: "Postfix queue",
+  postfixWaiting: "{n} messages queued",
+  postfixUnavailable: "The Postfix spool is out of reach from this container",
 } satisfies Locales["supervision"];

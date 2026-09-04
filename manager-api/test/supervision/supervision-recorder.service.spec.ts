@@ -5,6 +5,7 @@ import { LIVE_POINTS, SupervisionRecorderService } from "../../src/core/supervis
 import type { SystemMetricsService, SystemSnapshot } from "../../src/core/supervision/system-metrics.service";
 import { APP_SETTINGS_DEFAULTS, type AppSettingsService } from "../../src/core/settings/app-settings.service";
 import type { MachineAlertsService } from "../../src/core/supervision/machine-alerts.service";
+import type { ServiceMetricsService, ServiceSample } from "../../src/core/supervision/service-metrics.service";
 import { providerMock, repoMock } from "../helpers/mocks";
 
 function snapshotAt(at: number, over: Partial<SystemSnapshot> = {}): SystemSnapshot {
@@ -19,10 +20,19 @@ function snapshotAt(at: number, over: Partial<SystemSnapshot> = {}): SystemSnaps
   };
 }
 
+function servicesSample(over: Partial<ServiceSample> = {}): ServiceSample {
+  return {
+    rspamd: { scanned: 100, noAction: 80, greylist: 4, addHeader: 8, reject: 5, learned: 7 },
+    postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },
+    ...over,
+  };
+}
+
 describe("SupervisionRecorderService", () => {
   const history = repoMock<MetricsHistory>();
   let now = 1_800_000_000_000;
   let sample: ReturnType<typeof vi.fn>;
+  let services: ReturnType<typeof vi.fn>;
   let inspect: ReturnType<typeof vi.fn>;
   let service: SupervisionRecorderService;
   let retentionMs = 30 * 24 * 3_600_000;
@@ -30,13 +40,15 @@ describe("SupervisionRecorderService", () => {
   // The tick is driven by the websocket poller, so time is driven here too.
   function build() {
     sample = vi.fn(async () => snapshotAt(now));
+    services = vi.fn(async () => servicesSample());
     inspect = vi.fn(async () => undefined);
     const metrics = providerMock<SystemMetricsService>({ sample });
+    const serviceMetrics = providerMock<ServiceMetricsService>({ sample: services });
     const settings = providerMock<AppSettingsService>({
       get: vi.fn(() => ({ ...APP_SETTINGS_DEFAULTS, supervisionRetentionMs: retentionMs })),
     });
     const alerts = providerMock<MachineAlertsService>({ inspect });
-    return new SupervisionRecorderService(metrics, history, settings, alerts);
+    return new SupervisionRecorderService(metrics, serviceMetrics, history, settings, alerts);
   }
 
   beforeEach(() => {
@@ -60,6 +72,15 @@ describe("SupervisionRecorderService", () => {
     expect(snapshot.at).toBe(now);
     expect(service.latest()).toBe(snapshot);
     expect(service.recent()).toEqual([snapshot]);
+  });
+
+  // One loop, one clock: the services ride on the machine's own sample, so a
+  // frame carries both and nothing else reads them.
+  it("reads the two services on the same tick and carries them on the snapshot", async () => {
+    const snapshot = await service.tick();
+    expect(services).toHaveBeenCalledTimes(1);
+    expect(snapshot).toMatchObject({ cpu: 10, ...servicesSample() });
+    expect(inspect).toHaveBeenCalledWith(snapshot);
   });
 
   it("prunes once at boot, so a host restarted daily still drops the month before it", async () => {
@@ -119,6 +140,93 @@ describe("SupervisionRecorderService", () => {
     await service.tick();
 
     expect(history.insert).toHaveBeenCalledWith(expect.objectContaining({ netIn: null, netOut: null }));
+  });
+
+  // rspamd's counters only climb, so the row says where they stood at its end,
+  // like the load; a queue's depth is averaged over the row.
+  it("writes rspamd's last counters and the queues' mean into the same row", async () => {
+    const steps = [
+      { scanned: 100, deferred: 0 },
+      { scanned: 102, deferred: 2 },
+      { scanned: 105, deferred: 4 },
+    ];
+    for (const step of steps) {
+      services.mockResolvedValueOnce(
+        servicesSample({
+          rspamd: { scanned: step.scanned, noAction: step.scanned - 20, greylist: 4, addHeader: 8, reject: 5, learned: 7 },
+          postfix: { active: 1, deferred: step.deferred, hold: 0, incoming: 0 },
+        })
+      );
+      await service.tick();
+      advance(5000);
+    }
+
+    expect(history.insert).toHaveBeenCalledTimes(1);
+    expect(history.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cpu: 10,
+        rspamdScanned: 105,
+        rspamdNoAction: 85,
+        rspamdGreylist: 4,
+        rspamdAddHeader: 8,
+        rspamdReject: 5,
+        rspamdLearned: 7,
+        postfixActive: 1,
+        postfixDeferred: 2,
+        postfixHold: 0,
+        postfixIncoming: 0,
+      })
+    );
+  });
+
+  it("records nothing for rspamd when every sample of the row had it out of reach", async () => {
+    services.mockImplementation(async () => servicesSample({ rspamd: null }));
+    await service.tick();
+    advance(11_000);
+    await service.tick();
+    expect(history.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rspamdScanned: null,
+        rspamdNoAction: null,
+        rspamdGreylist: null,
+        rspamdAddHeader: null,
+        rspamdReject: null,
+        rspamdLearned: null,
+        postfixActive: 1,
+        cpu: 10,
+      })
+    );
+  });
+
+  it("records nothing for postfix when every sample of the row had the spool out of reach", async () => {
+    services.mockImplementation(async () => servicesSample({ postfix: null }));
+    await service.tick();
+    advance(11_000);
+    await service.tick();
+    expect(history.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        postfixActive: null,
+        postfixDeferred: null,
+        postfixHold: null,
+        postfixIncoming: null,
+        rspamdScanned: 100,
+      })
+    );
+  });
+
+  // rspamd away for the last second of a row is not rspamd away for the row:
+  // the counters it last gave are what the row keeps.
+  it("keeps the last counters rspamd gave when it is away at the moment of the write", async () => {
+    await service.tick();
+    advance(5000);
+    services.mockResolvedValueOnce(
+      servicesSample({ rspamd: { scanned: 103, noAction: 83, greylist: 4, addHeader: 8, reject: 5, learned: 7 } })
+    );
+    await service.tick();
+    advance(6000);
+    services.mockResolvedValueOnce(servicesSample({ rspamd: null }));
+    await service.tick();
+    expect(history.insert).toHaveBeenCalledWith(expect.objectContaining({ rspamdScanned: 103, rspamdNoAction: 83 }));
   });
 
   it("holds the live window to the minute the cards draw", async () => {

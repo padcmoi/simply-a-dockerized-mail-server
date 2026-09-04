@@ -1937,5 +1937,12 @@ export interface Locales {
     networkIn: string;
     networkOut: string;
     networkUnavailable: string;
+    services: string;
+    rspamd: string;
+    rspamdScanned: string;
+    rspamdUnavailable: string;
+    postfix: string;
+    postfixWaiting: string;
+    postfixUnavailable: string;
   };
 }

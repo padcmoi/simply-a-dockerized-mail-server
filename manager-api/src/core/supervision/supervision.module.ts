@@ -4,8 +4,11 @@ import { CustomPermissionGuardModule } from "../custom-permission-guard/custom-p
 import { Account } from "../entities/account.entity";
 import { MetricsHistory } from "../entities/metrics-history.entity";
 import { NotificationsModule } from "../notifications/notifications.module";
+import { PostfixCoreModule } from "../postfix/postfix.module";
+import { RspamdCoreModule } from "../rspamd/rspamd.module";
 import { SettingsModule } from "../settings/settings.module";
 import { MachineAlertsService } from "./machine-alerts.service";
+import { ServiceMetricsService } from "./service-metrics.service";
 import { SupervisionHistoryService } from "./supervision-history.service";
 import { SupervisionRecorderService } from "./supervision-recorder.service";
 import { SystemMetricsService } from "./system-metrics.service";
@@ -16,8 +19,22 @@ import { SystemMetricsService } from "./system-metrics.service";
     SettingsModule,
     NotificationsModule,
     CustomPermissionGuardModule,
+    RspamdCoreModule,
+    PostfixCoreModule,
   ],
-  providers: [SystemMetricsService, SupervisionRecorderService, SupervisionHistoryService, MachineAlertsService],
-  exports: [SystemMetricsService, SupervisionRecorderService, SupervisionHistoryService, MachineAlertsService],
+  providers: [
+    SystemMetricsService,
+    ServiceMetricsService,
+    SupervisionRecorderService,
+    SupervisionHistoryService,
+    MachineAlertsService,
+  ],
+  exports: [
+    SystemMetricsService,
+    ServiceMetricsService,
+    SupervisionRecorderService,
+    SupervisionHistoryService,
+    MachineAlertsService,
+  ],
 })
 export class SupervisionModule {}

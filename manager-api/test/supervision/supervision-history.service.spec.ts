@@ -18,9 +18,22 @@ function bucket(at: number | string, over: Record<string, unknown> = {}) {
     memory_total: 1000,
     net_in: 10,
     net_out: 20,
+    rspamd_scanned: 14,
+    rspamd_no_action: 11,
+    rspamd_greylist: 1,
+    rspamd_add_header: 1,
+    rspamd_reject: 1,
+    rspamd_learned: 0,
+    postfix_active: 0.5,
+    postfix_deferred: 3,
+    postfix_hold: 0,
+    postfix_incoming: 0,
     ...over,
   };
 }
+
+const RSPAMD = [14, 11, 1, 1, 1, 0];
+const POSTFIX = [0.5, 3, 0, 0];
 
 describe("SupervisionHistoryService", () => {
   let query: ReturnType<typeof vi.fn>;
@@ -39,6 +52,9 @@ describe("SupervisionHistoryService", () => {
     const [sql, params] = query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain("metrics_history");
     expect(sql).toContain("GROUP BY 1");
+    // rspamd's counters keep their highest, the queues are averaged, in the one query.
+    expect(sql).toContain("MAX(rspamd_no_action)");
+    expect(sql).toContain("AVG(postfix_deferred)");
     expect(params).toEqual([60_000, 60_000, NOW - 3_600_000]);
   });
 
@@ -59,8 +75,16 @@ describe("SupervisionHistoryService", () => {
     query.mockResolvedValue([bucket(at + step)]);
 
     const { points } = await service.read("hour");
-    expect(points[0]).toEqual({ at, cpu: null, load: null, memory: null, network: null });
-    expect(points[1]).toEqual({ at: at + step, cpu: 12.5, load: [1, 2, 3], memory: 25, network: [10, 20] });
+    expect(points[0]).toEqual({ at, cpu: null, load: null, memory: null, network: null, rspamd: null, postfix: null });
+    expect(points[1]).toEqual({
+      at: at + step,
+      cpu: 12.5,
+      load: [1, 2, 3],
+      memory: 25,
+      network: [10, 20],
+      rspamd: RSPAMD,
+      postfix: POSTFIX,
+    });
   });
 
   // The driver hands aggregates back as strings often enough that a point would
@@ -69,11 +93,51 @@ describe("SupervisionHistoryService", () => {
     const step = METRIC_RANGES.hour.step;
     const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
     query.mockResolvedValue([
-      bucket(String(at), { cpu: "12.5", load1: "1", load5: "2", load15: "3", memory_used: "250", memory_total: "1000" }),
+      bucket(String(at), {
+        cpu: "12.5",
+        load1: "1",
+        load5: "2",
+        load15: "3",
+        memory_used: "250",
+        memory_total: "1000",
+        rspamd_scanned: "14",
+        rspamd_no_action: "11",
+        postfix_active: "0.5",
+      }),
     ]);
 
     const { points } = await service.read("hour");
-    expect(points[0]).toEqual({ at, cpu: 12.5, load: [1, 2, 3], memory: 25, network: [10, 20] });
+    expect(points[0]).toEqual({
+      at,
+      cpu: 12.5,
+      load: [1, 2, 3],
+      memory: 25,
+      network: [10, 20],
+      rspamd: RSPAMD,
+      postfix: POSTFIX,
+    });
+  });
+
+  // A service's figures stand or fall together: one missing is the service out
+  // of reach for the bucket, and the other service's curve is left whole.
+  it("keeps a bucket during which one service was out of reach as a hole in that curve alone", async () => {
+    const step = METRIC_RANGES.hour.step;
+    const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
+    query.mockResolvedValue([
+      bucket(at, {
+        rspamd_scanned: null,
+        rspamd_no_action: null,
+        rspamd_greylist: null,
+        rspamd_add_header: null,
+        rspamd_reject: null,
+        rspamd_learned: null,
+      }),
+      bucket(at + step, { postfix_hold: null }),
+    ]);
+
+    const { points } = await service.read("hour");
+    expect(points[0]).toMatchObject({ cpu: 12.5, rspamd: null, postfix: POSTFIX });
+    expect(points[1]).toMatchObject({ cpu: 12.5, rspamd: RSPAMD, postfix: null });
   });
 
   it("keeps a bucket with no recorded rate as a hole in the network curve alone", async () => {

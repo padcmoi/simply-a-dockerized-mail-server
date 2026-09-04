@@ -1,7 +1,8 @@
 import type { Locales } from "../../Locales";
 
 export default {
-  subtitle: "L'état de la machine qui fait tourner ce serveur mail, en direct et sur les sept derniers jours.",
+  subtitle:
+    "L'état de la machine qui fait tourner ce serveur mail et de ses deux services, rspamd et Postfix, en direct et sur les sept derniers jours.",
   machine: "Machine",
   live: "En direct",
   connecting: "Connexion…",
@@ -35,4 +36,11 @@ export default {
   networkIn: "entrant",
   networkOut: "sortant",
   networkUnavailable: "L'interface de la machine est hors de portée depuis ce conteneur",
+  services: "Services",
+  rspamd: "Rspamd",
+  rspamdScanned: "{n} messages analysés",
+  rspamdUnavailable: "Rspamd est hors de portée depuis ce conteneur",
+  postfix: "File Postfix",
+  postfixWaiting: "{n} messages en file",
+  postfixUnavailable: "Le spool de Postfix est hors de portée depuis ce conteneur",
 } satisfies Locales["supervision"];

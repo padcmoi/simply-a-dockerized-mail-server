@@ -4,10 +4,32 @@
 // pixels for two short figures took a fifth of the width away from the curve,
 // which is the thing anyone came to look at.
 //
-// Several curves are either told apart by hue (the load's three windows) or by
-// their own label (in and out); the ramp is kept for curves that are one thing
-// at several depths. Every curve is named where it is read, so identity never
-// rests on colour alone.
+// Up to nine curves. They are either told apart by hue (the load's three
+// windows, the verdicts of rspamd, the queues of Postfix) or by their own label
+// (in and out); the ramp is kept for curves that are one thing at several
+// depths. Every curve is named where it is read, so identity never rests on
+// colour alone.
+
+/** The nine hues a chart can tell curves apart with, each a colour the app
+ *  already has, so a curve follows the theme like everything else on the page.
+ *  Literal classes, so the stylesheet carries them. */
+const HUES = {
+  primary: { line: "stroke-primary", dot: "bg-primary", width: 2 },
+  warning: { line: "stroke-warning", dot: "bg-warning", width: 2 },
+  error: { line: "stroke-error", dot: "bg-error", width: 2 },
+  success: { line: "stroke-success", dot: "bg-success", width: 2 },
+  info: { line: "stroke-info", dot: "bg-info", width: 2 },
+  secondary: { line: "stroke-secondary", dot: "bg-secondary", width: 2 },
+  inverted: { line: "stroke-inverted", dot: "bg-inverted", width: 2 },
+  toned: { line: "stroke-toned", dot: "bg-toned", width: 2 },
+  dimmed: { line: "stroke-dimmed", dot: "bg-dimmed", width: 2 },
+} as const;
+
+type Hue = keyof typeof HUES;
+
+/** The hues in the order a chart deals them out when a card names none. */
+const HUE_ORDER = Object.keys(HUES) as Hue[];
+
 const {
   series,
   max,
@@ -19,11 +41,12 @@ const {
   area = false,
   at = [],
   variant = "ramp",
+  colors = [],
   live = false,
 } = defineProps<{
-  /** One to three curves, in the order the ramp reads: first is the loudest. A
-   *  null is a moment with no figure, and the curve is cut rather than drawn
-   *  through it. */
+  /** Up to nine curves; for the ramp, in the order it reads: first is the
+   *  loudest. A null is a moment with no figure, and the curve is cut rather
+   *  than drawn through it. */
   series: (number | null)[][];
   /** The ceiling the curves are drawn against. */
   max: number;
@@ -42,27 +65,31 @@ const {
   at?: number[];
   /** `series` gives each curve its own hue; `ramp` steps one hue for ordered ones. */
   variant?: "ramp" | "series";
+  /** One hue per curve, for curves that already wear one elsewhere on the
+   *  site (a verdict on the rspamd page, a queue on the Postfix page); wins
+   *  over `variant`. */
+  colors?: Hue[];
   /** Points still arriving: the plot walks left instead of jumping a step. */
   live?: boolean;
 }>();
 
-// One hue at three steps, for curves that are the same measurement at different
-// depths, where three hues would claim a difference in kind that is not there.
+// One hue at nine steps, for curves that are the same measurement at different
+// depths, where nine hues would claim a difference in kind that is not there.
 const RAMP = [
   { line: "stroke-primary", dot: "bg-primary", width: 2 },
   { line: "stroke-primary opacity-70", dot: "bg-primary opacity-70", width: 1.75 },
   { line: "stroke-primary opacity-45", dot: "bg-primary opacity-45", width: 1.5 },
+  { line: "stroke-primary opacity-40", dot: "bg-primary opacity-40", width: 1.5 },
+  { line: "stroke-primary opacity-35", dot: "bg-primary opacity-35", width: 1.5 },
+  { line: "stroke-primary opacity-30", dot: "bg-primary opacity-30", width: 1.5 },
+  { line: "stroke-primary opacity-25", dot: "bg-primary opacity-25", width: 1.5 },
+  { line: "stroke-primary opacity-20", dot: "bg-primary opacity-20", width: 1.5 },
+  { line: "stroke-primary opacity-15", dot: "bg-primary opacity-15", width: 1.5 },
 ];
 
-// Three hues, for when the curves have to be told apart at a glance rather than
-// read as a progression. The app's own colours rather than hexes written here:
-// each already carries its light and its dark step, so a curve follows the
-// theme like everything else on the page.
-const CATEGORICAL = [
-  { line: "stroke-primary", dot: "bg-primary", width: 2 },
-  { line: "stroke-warning", dot: "bg-warning", width: 2 },
-  { line: "stroke-error", dot: "bg-error", width: 2 },
-];
+// One hue each, for when the curves have to be told apart at a glance rather
+// than read as a progression: the nine of HUES, dealt in order.
+const CATEGORICAL = HUE_ORDER.map((hue) => HUES[hue]);
 
 const { locale } = useI18n();
 
@@ -77,7 +104,7 @@ const tag = computed(() => locale.value.replace("_", "-"));
 // moves, which is what memory does, is a slab that hides the baseline.
 const gradient = useId();
 
-const palette = computed(() => (variant === "series" ? CATEGORICAL : RAMP));
+const palette = computed(() => (colors.length ? colors.map((hue) => HUES[hue]) : variant === "series" ? CATEGORICAL : RAMP));
 const count = computed(() => series[0]?.length ?? 0);
 
 // A live plot is laid out one step wider than its box and walked left over the

@@ -13,7 +13,7 @@ vi.spyOn(console, "warn").mockImplementation((msg: unknown, ...rest: unknown[]) 
 let call: ReturnType<typeof vi.fn>;
 
 function point(at: number): HistoryPoint {
-  return { at, cpu: 1, memory: 2, load: [1, 2, 3], network: [4, 5] };
+  return { at, cpu: 1, memory: 2, load: [1, 2, 3], network: [4, 5], rspamd: null, postfix: null };
 }
 
 beforeEach(() => {

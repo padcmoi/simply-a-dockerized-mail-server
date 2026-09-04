@@ -41,4 +41,38 @@ export class MetricsHistory {
 
   @Column({ name: "net_out", type: "double", nullable: true })
   netOut!: number | null;
+
+  // The two mail services, read by the same loop: messages rspamd handled
+  // over the row's ten seconds, by verdict, plus what its filter learned, and
+  // the mean depth of each Postfix queue. Null where the service was out of
+  // reach for the whole row.
+  @Column({ name: "rspamd_scanned", type: "double", nullable: true })
+  rspamdScanned!: number | null;
+
+  @Column({ name: "rspamd_no_action", type: "double", nullable: true })
+  rspamdNoAction!: number | null;
+
+  @Column({ name: "rspamd_greylist", type: "double", nullable: true })
+  rspamdGreylist!: number | null;
+
+  @Column({ name: "rspamd_add_header", type: "double", nullable: true })
+  rspamdAddHeader!: number | null;
+
+  @Column({ name: "rspamd_reject", type: "double", nullable: true })
+  rspamdReject!: number | null;
+
+  @Column({ name: "rspamd_learned", type: "double", nullable: true })
+  rspamdLearned!: number | null;
+
+  @Column({ name: "postfix_active", type: "double", nullable: true })
+  postfixActive!: number | null;
+
+  @Column({ name: "postfix_deferred", type: "double", nullable: true })
+  postfixDeferred!: number | null;
+
+  @Column({ name: "postfix_hold", type: "double", nullable: true })
+  postfixHold!: number | null;
+
+  @Column({ name: "postfix_incoming", type: "double", nullable: true })
+  postfixIncoming!: number | null;
 }

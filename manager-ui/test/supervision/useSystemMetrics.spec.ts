@@ -24,6 +24,8 @@ function snapshot(at: number, over: Partial<SystemSnapshot> = {}): SystemSnapsho
     load: { one: 1, five: 2, fifteen: 3 },
     memory: { total: 1000, used: 250 },
     network: { interface: "eth0", in: 100, out: 200 },
+    rspamd: { scanned: 100, noAction: 80, greylist: 4, addHeader: 8, reject: 5, learned: 7 },
+    postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },
     ...over,
   };
 }
@@ -62,6 +64,18 @@ describe("pointOf", () => {
 
   it("reports no memory at all rather than dividing by a total of zero", () => {
     expect(pointOf(snapshot(1, { memory: { total: 0, used: 0 } })).memory).toBe(0);
+  });
+
+  // The two services ride on the same frame: rspamd's tiles in the order the
+  // card draws them, the four queues in the order the Postfix page lists them.
+  it("lays the services out as the tuples the curves read", () => {
+    expect(pointOf(snapshot(1))).toMatchObject({ rspamd: [100, 80, 4, 8, 5, 7], postfix: [1, 3, 0, 0] });
+  });
+
+  it("keeps a service that is out of reach as a hole rather than a row of zeros", () => {
+    const point = pointOf(snapshot(1, { rspamd: null, postfix: null }));
+    expect(point.rspamd).toBeNull();
+    expect(point.postfix).toBeNull();
   });
 });
 

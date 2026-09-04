@@ -93,11 +93,26 @@ function togglePause() {
     <!-- Held at reduced opacity while the feed is away rather than replaced by a
          skeleton: the last figures are still the truth of a moment ago, and a
          card that empties on every reconnect is a card that flashes. -->
-    <div v-else class="grid items-stretch gap-4 transition-opacity lg:grid-cols-2" :class="status !== 'live' && 'opacity-60'">
-      <SystemCpuCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
-      <SystemLoadCard v-bind="{ snapshot, points, at, notice, thresholds }" v-model:range="range" />
-      <SystemMemoryCard v-bind="{ snapshot, points, at, notice, thresholds }" v-model:range="range" />
-      <SystemNetworkCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
-    </div>
+    <template v-else>
+      <div class="grid items-stretch gap-4 transition-opacity lg:grid-cols-2" :class="status !== 'live' && 'opacity-60'">
+        <SystemCpuCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
+        <SystemLoadCard v-bind="{ snapshot, points, at, notice, thresholds }" v-model:range="range" />
+        <SystemMemoryCard v-bind="{ snapshot, points, at, notice, thresholds }" v-model:range="range" />
+        <SystemNetworkCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
+      </div>
+
+      <!-- The two mail services, read by the same loop on the same clock: the
+           same feed, the same window and the same pause as the machine, so what
+           rspamd took in is read against what the host was doing at that moment. -->
+      <h3 class="flex items-center gap-2 pt-3 text-sm font-medium">
+        <UIcon name="i-lucide-mail-check" class="size-4 text-primary" />
+        {{ t("supervision.services") }}
+      </h3>
+
+      <div class="grid items-stretch gap-4 transition-opacity lg:grid-cols-2" :class="status !== 'live' && 'opacity-60'">
+        <RspamdActivityCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
+        <PostfixQueueCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
+      </div>
+    </template>
   </section>
 </template>
