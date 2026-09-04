@@ -23,9 +23,9 @@ const loadedFor = ref<number | null>(null);
 const note = ref("");
 const form = ref<DelegationCapsForm>({
   unlimitedRecipients: false,
-  maxRecipients: 5,
+  maxRecipients: 0,
   unlimitedAliases: false,
-  maxAliases: 5,
+  maxAliases: 0,
   quotaMb: 1024,
   noExpiry: false,
   expiresDays: 7,
@@ -46,9 +46,9 @@ watch(
       r.expiresAt === null ? 7 : Math.max(1, Math.ceil((new Date(r.expiresAt).getTime() - Date.now()) / DAY_MS));
     form.value = {
       unlimitedRecipients: r.maxRecipients === null,
-      maxRecipients: r.maxRecipients ?? 5,
+      maxRecipients: r.maxRecipients ?? 0,
       unlimitedAliases: r.maxAliases === null,
-      maxAliases: r.maxAliases ?? 5,
+      maxAliases: r.maxAliases ?? 0,
       quotaMb: r.quotaMb,
       noExpiry: r.expiresAt === null,
       expiresDays: remainingDays,

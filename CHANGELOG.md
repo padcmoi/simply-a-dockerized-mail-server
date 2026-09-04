@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- feat(delegations): a new grant opens with no mailboxes and no aliases rather than five of each, so what a delegate may create is decided by whoever grants it; unticking "unlimited" on an existing grant lands on zero for the same reason (04-09-2026)
 - refactor(ui): the breadcrumb drops its Accueil crumb and starts at the page's own section, "Domaines > gestionpratique.ovh > Délégations" rather than an Accueil that names a page nobody reaches from there; the browser tab already left it out and reads the same as before (03-09-2026)
 - refactor(ui): the header shows the breadcrumb where it used to repeat a title, its own bar and the eleven-path title map both gone, and the browser tab takes the trail with it: "Simply Mail Server :: Configuration > Connexion externe" (02-09-2026)
 - feat(myspace): an owned mailbox loses its two save buttons, its status switch and its quota slider writing on their own once the value settles, the card header saying whether a write is in flight (02-09-2026)

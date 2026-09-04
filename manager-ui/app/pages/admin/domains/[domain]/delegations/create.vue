@@ -21,11 +21,14 @@ const email = ref("");
 const note = ref("");
 const saving = ref(false);
 const createdLink = ref<string | null>(null);
+// The two ceilings open at zero rather than at a figure nobody chose: a grant
+// is what its author decides to give, and five mailboxes handed out by default
+// is five mailboxes nobody asked for.
 const form = ref<DelegationCapsForm>({
   unlimitedRecipients: false,
-  maxRecipients: 5,
+  maxRecipients: 0,
   unlimitedAliases: false,
-  maxAliases: 5,
+  maxAliases: 0,
   quotaMb: 1024,
   noExpiry: false,
   expiresDays: 7,
