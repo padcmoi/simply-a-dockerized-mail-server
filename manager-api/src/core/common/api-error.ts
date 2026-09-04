@@ -35,6 +35,12 @@ export const API_ERROR_CODES = [
   "delegations.reserveExceeded",
   "deliverability.probeUnavailable",
   "auth.wrongPassword",
+  "twoFactor.alreadyEnabled",
+  "twoFactor.notEnabled",
+  "twoFactor.noSetupPending",
+  "twoFactor.invalidCode",
+  "twoFactor.tooManyAttempts",
+  "twoFactor.challengeExpired",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

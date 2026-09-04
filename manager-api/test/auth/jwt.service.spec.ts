@@ -9,6 +9,8 @@ import { GroupMember } from "../../src/core/entities/group-member.entity";
 import { RefreshToken } from "../../src/core/entities/refresh-token.entity";
 import type { GeocodingService } from "../../src/core/geocoding/geocoding.service";
 import type { MailSettingsService } from "../../src/core/mailer/mail-settings.service";
+import type { TwoFactorService } from "../../src/core/auth/two-factor/two-factor.service";
+import type { TwoFactorChallengeStore } from "../../src/core/auth/two-factor/two-factor-challenge.store";
 import { entity, providerMock, qbMock, repoMock } from "../helpers/mocks";
 
 // scryptVerify is the only crypto the password-change path relies on; stub it so tests stay
@@ -47,6 +49,15 @@ function makeMocks() {
     refreshTokens,
     geocoding: providerMock<GeocodingService>({ geocodeCity: vi.fn() }),
     mailSettings: providerMock<MailSettingsService>({ isEnabled: vi.fn(async () => false) }),
+    twoFactor: providerMock<TwoFactorService>({
+      isEnabled: vi.fn(async () => false),
+      verifyForLogin: vi.fn(async () => true),
+    }),
+    challenges: providerMock<TwoFactorChallengeStore>({
+      mint: vi.fn(() => ({ challenge: "challenge-1", expiresAt: new Date(0) })),
+      attempt: vi.fn(() => "a1"),
+      settle: vi.fn(),
+    }),
   };
 }
 
@@ -65,14 +76,20 @@ describe("JwtAuthService", () => {
       m.groupMembers,
       m.refreshTokens,
       m.geocoding,
-      m.mailSettings
+      m.mailSettings,
+      m.twoFactor,
+      m.challenges
     );
   });
 
   describe("openSessionFor", () => {
     it("issues tokens, records last login and persists the refresh token", async () => {
       const account = entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 1 });
-      const res = await svc.openSessionFor(account, "UA/1.0", "1.2.3.4");
+      const res = (await svc.openSessionFor(account, "UA/1.0", "1.2.3.4")) as {
+        accessToken: string;
+        refreshToken: string;
+        expiresAt: string;
+      };
       expect(res.accessToken).toBe("access-token");
       expect(typeof res.refreshToken).toBe("string");
       expect(res.expiresAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);

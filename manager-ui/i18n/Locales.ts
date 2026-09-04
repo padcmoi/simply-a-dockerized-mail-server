@@ -27,6 +27,14 @@ export interface Locales {
     auth: {
       wrongPassword: string;
     };
+    twoFactor: {
+      alreadyEnabled: string;
+      notEnabled: string;
+      noSetupPending: string;
+      invalidCode: string;
+      tooManyAttempts: string;
+      challengeExpired: string;
+    };
     delegations: {
       quotaExceedsDomain: string;
       ownerNotDelegable: string;
@@ -715,6 +723,16 @@ export interface Locales {
     password: string;
     submit: string;
     failed: string;
+    twoFactorTitle: string;
+    twoFactorHint: string;
+    twoFactorRecoveryHint: string;
+    code: string;
+    recoveryCode: string;
+    useRecoveryCode: string;
+    useAppCode: string;
+    verify: string;
+    backToLogin: string;
+    twoFactorFailed: string;
   };
   dashboard: {
     subtitle: string;
@@ -1028,6 +1046,36 @@ export interface Locales {
     };
     twoFactor: string;
     twoFactorHint: string;
+    twoFactorPage: {
+      breadcrumb: string;
+      alertTitle: string;
+      alertDescription: string;
+      statusOn: string;
+      statusOff: string;
+      recoveryLeft: string;
+      enableTitle: string;
+      enableIntro: string;
+      manualEntry: string;
+      codeFromApp: string;
+      start: string;
+      confirm: string;
+      enabled: string;
+      recoveryTitle: string;
+      recoveryIntro: string;
+      copy: string;
+      copied: string;
+      done: string;
+      regenerateTitle: string;
+      regenerateHint: string;
+      regenerate: string;
+      disableTitle: string;
+      disableHint: string;
+      disable: string;
+      disabled: string;
+      recoveryCode: string;
+      failed: string;
+      setupFailed: string;
+    };
     sessions: string;
     sessionsHint: string;
     auditLog: string;
@@ -1206,8 +1254,9 @@ export interface Locales {
       noDomains: string;
       noRecipients: string;
       stats: { groupsSub: string; aliasesSub: string };
-      actions: { edit: string; groups: string; recipients: string; aliases: string };
-      toast: { loadFailed: string };
+      actions: { edit: string; groups: string; recipients: string; aliases: string; resetTwoFactor: string };
+      resetTwoFactorConfirm: string;
+      toast: { loadFailed: string; twoFactorReset: string; twoFactorResetFailed: string };
     };
     ownership: {
       backToAccount: string;

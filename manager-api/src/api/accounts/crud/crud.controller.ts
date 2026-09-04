@@ -18,6 +18,7 @@ import {
 } from "./crud.openapi";
 import { AccountsService } from "./crud.service";
 import { UpdateAccountDto, updateAccountSchema } from "./crud.validation";
+import { AdminResetTwoFactorDocs } from "../../../core/auth/two-factor/two-factor.openapi";
 
 // Core account management (CRUD). Session views live in AccountsSessionsModule
 // and invitations in AccountsInvitationsModule (same folder), both aggregated by
@@ -81,6 +82,16 @@ export class AccountsController {
   @DeleteAccountDocs()
   remove(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.deleteAccount(id);
+  }
+
+  // The way back in for an account whose authenticator and recovery codes are
+  // both gone: the factor is removed and the password signs it in again. Gated
+  // like an edit of the account, since that is what it is.
+  @Delete(":id/two-factor")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "edit-account"] }])
+  @AdminResetTwoFactorDocs()
+  resetTwoFactor(@Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.resetTwoFactor(id);
   }
 
   // Ownership management (global): a recipient/alias belongs to at most one

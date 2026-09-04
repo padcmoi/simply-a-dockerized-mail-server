@@ -113,8 +113,20 @@ export default {
     noDomains: "Ce compte ne possède aucun domaine.",
     noRecipients: "Ce compte ne possède aucun destinataire.",
     stats: { groupsSub: "Appartenances aux groupes", aliasesSub: "Alias possédés" },
-    actions: { edit: "Modifier le compte", groups: "Gérer les groupes", recipients: "Destinataires", aliases: "Alias" },
-    toast: { loadFailed: "Échec du chargement de la vue d'ensemble" },
+    actions: {
+      edit: "Modifier le compte",
+      groups: "Gérer les groupes",
+      recipients: "Destinataires",
+      aliases: "Alias",
+      resetTwoFactor: "Réinitialiser la double authentification",
+    },
+    resetTwoFactorConfirm:
+      "Le compte se connectera avec son seul mot de passe jusqu'à ce qu'il réactive la double authentification. À faire quand son téléphone et ses codes de secours sont perdus.",
+    toast: {
+      loadFailed: "Échec du chargement de la vue d'ensemble",
+      twoFactorReset: "Double authentification réinitialisée",
+      twoFactorResetFailed: "Échec de la réinitialisation",
+    },
   },
   ownership: {
     backToAccount: "Retour au compte",

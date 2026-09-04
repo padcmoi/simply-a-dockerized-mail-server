@@ -32,4 +32,12 @@ export default {
   auth: {
     wrongPassword: "Le mot de passe actuel est incorrect",
   },
+  twoFactor: {
+    alreadyEnabled: "L'authentification à deux facteurs est déjà activée",
+    notEnabled: "L'authentification à deux facteurs n'est pas activée",
+    noSetupPending: "Aucune activation en cours : recommencez depuis le début",
+    invalidCode: "Ce code n'est pas valide",
+    tooManyAttempts: "Trop de codes refusés, réessayez dans quelques minutes",
+    challengeExpired: "La connexion a expiré, recommencez depuis le début",
+  },
 } satisfies Locales["apiErrors"];

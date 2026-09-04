@@ -48,6 +48,7 @@ export interface AccountOverview {
     avatarUrl: string | null;
     isRoot: boolean;
     enabled: boolean;
+    twoFactorEnabled: boolean;
     groups: { id: string; name: string }[];
   };
   domains: OwnedDomain[];

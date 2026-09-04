@@ -111,8 +111,20 @@ export default {
     noDomains: "This account owns no domain.",
     noRecipients: "This account owns no recipient.",
     stats: { groupsSub: "Group memberships", aliasesSub: "Owned aliases" },
-    actions: { edit: "Edit account", groups: "Manage groups", recipients: "Recipients", aliases: "Aliases" },
-    toast: { loadFailed: "Failed to load the account overview" },
+    actions: {
+      edit: "Edit account",
+      groups: "Manage groups",
+      recipients: "Recipients",
+      aliases: "Aliases",
+      resetTwoFactor: "Reset two-factor authentication",
+    },
+    resetTwoFactorConfirm:
+      "The account will sign in with its password alone until it turns two-factor authentication on again. For when its phone and its recovery codes are both lost.",
+    toast: {
+      loadFailed: "Failed to load the account overview",
+      twoFactorReset: "Two-factor authentication reset",
+      twoFactorResetFailed: "The reset failed",
+    },
   },
   ownership: {
     backToAccount: "Back to the account",

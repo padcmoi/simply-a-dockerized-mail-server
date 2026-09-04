@@ -9,6 +9,7 @@ import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { CustomPermissionGuardModule } from "../../../core/custom-permission-guard/custom-permission-guard.module";
 import { GeocodingModule } from "../../../core/geocoding/geocoding.module";
+import { TwoFactorModule } from "../../../core/auth/two-factor/two-factor.module";
 import { AccountsController } from "./crud.controller";
 import { AccountsService } from "./crud.service";
 
@@ -24,6 +25,7 @@ import { AccountsService } from "./crud.service";
     // imported here for Nest to resolve the guard at boot (the CRUD service no
     // longer uses the ACL layer itself, but the controller's guard still does).
     CustomPermissionGuardModule,
+    TwoFactorModule,
   ],
   providers: [AccountsService],
   controllers: [AccountsController],

@@ -13,6 +13,8 @@ import { Group } from "../../entities/group.entity";
 import { RefreshToken } from "../../entities/refresh-token.entity";
 import { GeocodingService } from "../../geocoding/geocoding.service";
 import { MailSettingsService } from "../../mailer/mail-settings.service";
+import { TwoFactorChallengeStore } from "../two-factor/two-factor-challenge.store";
+import { TwoFactorService } from "../two-factor/two-factor.service";
 import { ChangeMyPasswordDto, UpdateProfileDto } from "./jwt.validation";
 
 // Columns the session-history list may sort by, mapped to their real SQL
@@ -59,6 +61,8 @@ export type ProfileResponse = {
   longitude: string | null;
   isRoot: boolean;
   mailEnabled: boolean;
+  /** Whether every sign-in of this account asks for a code from its authenticator app. */
+  twoFactorEnabled: boolean;
   groups: { id: string; name: string }[];
 };
 
@@ -76,14 +80,49 @@ export class JwtAuthService {
     @InjectRepository(RefreshToken)
     private readonly refreshTokens: Repository<RefreshToken>,
     private readonly geocoding: GeocodingService,
-    private readonly mailSettings: MailSettingsService
+    private readonly mailSettings: MailSettingsService,
+    private readonly twoFactor: TwoFactorService,
+    private readonly challenges: TwoFactorChallengeStore
   ) {}
 
   // The tail every way in shares, whichever strategy proved the identity: the
   // password form, or a provider. Everything downstream of a session -- its
   // device row, the `sid` binding, the API keys the account can mint -- is
   // therefore identical, and nothing knows which door was used.
+  //
+  // One factor is not a session when the account asks for two: what goes back
+  // then is a challenge, opaque and short-lived, and the session opens only
+  // once `completeTwoFactor` has seen a code for it. This sits here, on the
+  // shared tail, so a provider sign-in is asked for its code exactly as the
+  // password form is.
   async openSessionFor(account: Account, ua?: string, ip?: string) {
+    if (await this.twoFactor.isEnabled(account.id)) {
+      const { challenge, expiresAt } = this.challenges.mint(account.id);
+      return { twoFactorRequired: true as const, challenge, expiresAt: expiresAt.toISOString() };
+    }
+    return this.finishSession(account, ua, ip);
+  }
+
+  // The second step: the challenge names the account whose first factor was
+  // accepted, the code proves the second, and only then does the session open.
+  // A challenge that is unknown, expired or out of attempts is one answer, so a
+  // guess learns nothing about which; a wrong code is another, and the
+  // challenge survives it, up to its limit.
+  async completeTwoFactor(challenge: string, code: string, ua?: string, ip?: string) {
+    const accountId = this.challenges.attempt(challenge);
+    if (!accountId) {
+      throw new ApiError(HttpStatus.UNAUTHORIZED, "twoFactor.challengeExpired", "Start the sign-in again");
+    }
+    if (!(await this.twoFactor.verifyForLogin(accountId, code))) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, "twoFactor.invalidCode", "This code is not valid");
+    }
+    this.challenges.settle(challenge);
+    const account = await this.accounts.findOne({ where: { id: accountId, enabled: 1 } });
+    if (!account) throw new UnauthorizedException("This account is disabled");
+    return this.finishSession(account, ua, ip);
+  }
+
+  private async finishSession(account: Account, ua?: string, ip?: string) {
     account.lastLogin = new Date();
     await this.accounts.save(account);
     // One live session per device: a re-login from the same device (same UA +
@@ -399,6 +438,7 @@ export class JwtAuthService {
       longitude: profile?.longitude ?? null,
       isRoot: account.isRoot === 1,
       mailEnabled,
+      twoFactorEnabled: await this.twoFactor.isEnabled(account.id),
       groups: groupRows.map((g) => ({ id: g.id, name: g.name })),
     };
   }

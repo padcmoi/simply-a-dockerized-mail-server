@@ -15,6 +15,8 @@ const { isRoot, hasGlobal } = usePermissions();
 
 const overview = ref<AccountOverview | null>(null);
 const loading = ref(false);
+const resetTwoFactorOpen = ref(false);
+const resettingTwoFactor = ref(false);
 
 const accountId = computed(() => String(route.params.id));
 const account = computed(() => overview.value?.account ?? null);
@@ -42,6 +44,23 @@ async function load() {
     toast.add({ title: t("accounts.overviewPage.toast.loadFailed"), description: (e as Error).message, color: "error" });
   } finally {
     loading.value = false;
+  }
+}
+
+async function resetTwoFactor() {
+  resettingTwoFactor.value = true;
+  try {
+    await call(`/accounts/${accountId.value}/two-factor`, { method: "DELETE" });
+    toast.add({ title: t("accounts.overviewPage.toast.twoFactorReset"), color: "success" });
+    await load();
+  } catch (e) {
+    toast.add({
+      title: t("accounts.overviewPage.toast.twoFactorResetFailed"),
+      description: (e as Error).message,
+      color: "error",
+    });
+  } finally {
+    resettingTwoFactor.value = false;
   }
 }
 
@@ -128,6 +147,22 @@ onMounted(load);
             <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
           </div>
         </UCard>
+        <UCard
+          v-if="canEdit && account.twoFactorEnabled"
+          :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+          @click="resetTwoFactorOpen = true"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-shield-off" class="text-error text-xl" />
+            <span class="font-medium">{{ t("accounts.overviewPage.actions.resetTwoFactor") }}</span>
+            <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+          </div>
+        </UCard>
+        <ConfirmModal
+          v-model:open="resetTwoFactorOpen"
+          :description="t('accounts.overviewPage.resetTwoFactorConfirm')"
+          @confirm="resetTwoFactor"
+        />
         <UCard
           v-if="canManageGroups && !account.isRoot"
           :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"

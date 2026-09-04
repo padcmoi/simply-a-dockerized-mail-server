@@ -22,35 +22,45 @@ export const useAuthStore = defineStore("auth", {
   state: () => ({ session: null as Session | null }),
   getters: { isAuthenticated: (state) => state.session !== null },
   actions: {
+    // Either way in answers one of two things: a token pair, which opens the
+    // session here, or a challenge when the account asks for a second factor,
+    // handed back to the caller, which owes the API a code before anything
+    // opens. The email is left to fetchProfile: the one that counts is the
+    // account's, not whatever address was typed or a provider signed.
     async login(email: string, password: string) {
-      const data = await $fetch<{
-        accessToken: string;
-        refreshToken: string;
-        expiresAt: string;
-      }>("/api/v1/auth/jwt/login", {
+      const data = await $fetch<TokenPair | TwoFactorChallenge>("/api/v1/auth/jwt/login", {
         method: "POST",
         body: { email, password },
       });
-      this.session = { ...data, email };
-      await this.fetchProfile().catch(() => undefined);
+      return this.openOrChallenge(data, email);
     },
     // The one-time code an external provider's callback left on the login URL,
     // traded for one of our sessions. What comes back is the same pair login()
     // gets, so everything downstream -- the refresh rotation, the 401 retry, the
-    // session list -- is unaware there was ever a second way in. The email is
-    // left to fetchProfile: the one that counts is the account's, not whatever
-    // address the provider signed.
+    // session list -- is unaware there was ever a second way in.
     async loginWithPassportProvider(code: string) {
-      const data = await $fetch<{
-        accessToken: string;
-        refreshToken: string;
-        expiresAt: string;
-      }>("/api/v1/auth/passport/exchange", {
+      const data = await $fetch<TokenPair | TwoFactorChallenge>("/api/v1/auth/passport/exchange", {
         method: "POST",
         body: { code },
       });
-      this.session = { ...data, email: "" };
+      return this.openOrChallenge(data, "");
+    },
+    // The second step: the challenge the first answered with, and a code from
+    // the authenticator app or a recovery code. What opens is the same session.
+    async loginTwoFactor(challenge: string, code: string, email = "") {
+      const data = await $fetch<TokenPair>("/api/v1/auth/jwt/login/two-factor", {
+        method: "POST",
+        body: { challenge, code },
+      });
+      await this.openOrChallenge(data, email);
+    },
+    // The email the session opens on is the one typed, when there was one, until
+    // the profile answers with the account's own; a provider sign-in typed none.
+    async openOrChallenge(data: TokenPair | TwoFactorChallenge, email: string) {
+      if ("twoFactorRequired" in data) return data;
+      this.session = { ...data, email };
       await this.fetchProfile().catch(() => undefined);
+      return null;
     },
     async fetchProfile() {
       if (!this.session) return;

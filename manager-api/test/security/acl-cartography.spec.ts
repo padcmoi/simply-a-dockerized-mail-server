@@ -30,6 +30,7 @@ const EXPECTED_PUBLIC = [
   "GET /api/v1/auth/passport/:provider/callback",
   "POST /api/v1/auth/passport/exchange",
   "POST /api/v1/auth/jwt/login",
+  "POST /api/v1/auth/jwt/login/two-factor",
   "POST /api/v1/auth/jwt/logout",
   "POST /api/v1/auth/jwt/refresh",
 ].sort();
@@ -42,6 +43,11 @@ const EXPECTED_PUBLIC = [
 // Every other authenticated route MUST declare a permission requirement.
 const EXPECTED_NO_ACL_AUTHED = [
   "DELETE /api/v1/auth/jwt/me/sessions/:id",
+  "DELETE /api/v1/auth/jwt/me/two-factor",
+  "GET /api/v1/auth/jwt/me/two-factor",
+  "POST /api/v1/auth/jwt/me/two-factor/enable",
+  "POST /api/v1/auth/jwt/me/two-factor/recovery-codes",
+  "POST /api/v1/auth/jwt/me/two-factor/setup",
   "DELETE /api/v1/groups/:id/members/all",
   "DELETE /api/v1/my-space/aliases/:id",
   "DELETE /api/v1/my-space/recipients/:id",

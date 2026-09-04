@@ -33,4 +33,12 @@ export default {
   auth: {
     wrongPassword: "The current password is incorrect",
   },
+  twoFactor: {
+    alreadyEnabled: "Two-factor authentication is already enabled",
+    notEnabled: "Two-factor authentication is not enabled",
+    noSetupPending: "No setup is pending: start again from the beginning",
+    invalidCode: "This code is not valid",
+    tooManyAttempts: "Too many wrong codes, try again in a few minutes",
+    challengeExpired: "The sign-in has expired, start again from the beginning",
+  },
 } satisfies Locales["apiErrors"];

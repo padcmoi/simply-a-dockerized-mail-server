@@ -11,11 +11,19 @@ const loading = ref(false);
 // page must never flash the login form, since a sign-in is already under way.
 // Only a refusal, or a failed exchange, puts the form back.
 const resuming = ref(typeof route.query.provider_code === "string");
+// The second step, when the account asks for one: the challenge the first step
+// answered with, and the code typed against it. Either kind of code goes in
+// the same field; the switch only changes what the field says it expects.
+const challenge = ref<string | null>(null);
+// The six cells answer a refused code themselves: shaken and emptied.
+const otp = useTemplateRef<{ reject: () => Promise<void> }>("otp");
 const state = reactive({ email: "", password: "" });
+const twoFactor = reactive({ code: "", recovery: false });
 
 const { t } = useI18n();
 const auth = useAuthStore();
 const toast = useToast();
+const { apiErrorBody, apiErrorMessage } = useApiError();
 const { resolve: resolveLastRoute } = useLastRoute();
 const { persist: persistLocale } = useLocalePreference();
 const { providers: passportProviders, pending: passportPending, startUrl } = usePassportProviders();
@@ -34,11 +42,22 @@ async function signedIn() {
   await navigateTo(resolveLastRoute());
 }
 
+// A sign-in that came back with a challenge stops here, on the code step; one
+// that came back with a session is done.
+async function settle(answer: TwoFactorChallenge | null) {
+  if (answer) {
+    challenge.value = answer.challenge;
+    twoFactor.code = "";
+    twoFactor.recovery = false;
+    return;
+  }
+  await signedIn();
+}
+
 async function onSubmit() {
   loading.value = true;
   try {
-    await auth.login(state.email, state.password);
-    await signedIn();
+    await settle(await auth.login(state.email, state.password));
   } catch (err) {
     toast.add({
       title: t("login.failed"),
@@ -66,8 +85,8 @@ async function resumeProviderSignIn() {
   }
   loading.value = true;
   try {
-    await auth.loginWithPassportProvider(code);
-    await signedIn();
+    await settle(await auth.loginWithPassportProvider(code));
+    resuming.value = false;
   } catch (err) {
     // The code was spent, expired or refused: the form is the way forward again.
     resuming.value = false;
@@ -75,6 +94,34 @@ async function resumeProviderSignIn() {
   } finally {
     loading.value = false;
   }
+}
+
+async function onVerify() {
+  if (!challenge.value || twoFactor.code.trim().length < 6) return;
+  loading.value = true;
+  try {
+    await auth.loginTwoFactor(challenge.value, twoFactor.code, state.email);
+    await signedIn();
+  } catch (err) {
+    // An expired or exhausted challenge cannot be answered any more: back to
+    // the first step. A wrong code keeps the step, the challenge survives it.
+    if (apiErrorBody(err)?.code === "twoFactor.challengeExpired") challenge.value = null;
+    else if (twoFactor.recovery) twoFactor.code = "";
+    else await otp.value?.reject();
+    toast.add({ title: t("login.twoFactorFailed"), description: apiErrorMessage(err), color: "error" });
+  } finally {
+    loading.value = false;
+  }
+}
+
+function backToLogin() {
+  challenge.value = null;
+  state.password = "";
+}
+
+function toggleRecovery() {
+  twoFactor.recovery = !twoFactor.recovery;
+  twoFactor.code = "";
 }
 
 onMounted(resumeProviderSignIn);
@@ -89,7 +136,45 @@ onMounted(resumeProviderSignIn);
         <p class="text-sm text-muted mt-1">{{ t("login.subtitle") }}</p>
       </div>
     </template>
-    <div v-if="resuming" class="flex flex-col items-center gap-3 py-10">
+    <form v-if="challenge" class="space-y-4" @submit.prevent="onVerify">
+      <div class="text-center">
+        <p class="font-medium">{{ t("login.twoFactorTitle") }}</p>
+        <p class="text-sm text-muted mt-1">
+          {{ twoFactor.recovery ? t("login.twoFactorRecoveryHint") : t("login.twoFactorHint") }}
+        </p>
+      </div>
+      <template v-if="twoFactor.recovery">
+        <UFormField :label="t('login.recoveryCode')" required>
+          <UInput
+            v-model="twoFactor.code"
+            autocomplete="one-time-code"
+            maxlength="16"
+            placeholder="XXXXX-XXXXX"
+            icon="i-lucide-key-round"
+            autofocus
+            class="w-full"
+          />
+        </UFormField>
+        <UButton type="submit" :loading="loading" :disabled="twoFactor.code.trim().length < 6" block size="lg">
+          {{ t("login.verify") }}
+        </UButton>
+      </template>
+      <UFormField v-else :label="t('login.code')" required>
+        <div class="flex justify-center">
+          <OtpInput ref="otp" v-model="twoFactor.code" autofocus :disabled="loading" @complete="onVerify" />
+        </div>
+      </UFormField>
+      <div class="flex justify-between gap-2">
+        <UButton color="neutral" variant="link" size="sm" @click="toggleRecovery">
+          {{ twoFactor.recovery ? t("login.useAppCode") : t("login.useRecoveryCode") }}
+        </UButton>
+        <UButton color="neutral" variant="link" size="sm" icon="i-lucide-arrow-left" @click="backToLogin">
+          {{ t("login.backToLogin") }}
+        </UButton>
+      </div>
+    </form>
+
+    <div v-else-if="resuming" class="flex flex-col items-center gap-3 py-10">
       <UIcon name="i-lucide-loader-2" class="size-8 text-primary animate-spin" />
       <p class="text-sm text-muted">{{ t("login.signingIn") }}</p>
     </div>

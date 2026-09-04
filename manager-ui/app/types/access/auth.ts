@@ -24,7 +24,28 @@ export interface Profile {
   avatarUrl: string | null;
   isRoot: boolean;
   mailEnabled: boolean;
+  twoFactorEnabled: boolean;
   groups: { id: string; name: string }[];
+}
+
+export interface TokenPair {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+}
+
+// What a sign-in answers when the account asks for a second factor: no
+// session yet, a challenge to bring back with a code.
+export interface TwoFactorChallenge {
+  twoFactorRequired: true;
+  challenge: string;
+  expiresAt: string;
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  enabledAt: string | null;
+  recoveryCodesLeft: number;
 }
 
 // The identity card's own reading of GET /auth/jwt/me: the editable fields,
@@ -38,6 +59,7 @@ export interface MeProfile {
   gender: string | null;
   genders: string[];
   hasPassword: boolean;
+  twoFactorEnabled: boolean;
   avatarUrl: string | null;
   phone: string | null;
   addressLine: string | null;

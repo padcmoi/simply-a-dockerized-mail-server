@@ -14,6 +14,7 @@ import { VirtualUser } from "../../entities/virtual-user.entity";
 import { CustomPermissionGuardModule } from "../../custom-permission-guard/custom-permission-guard.module";
 import { GeocodingModule } from "../../geocoding/geocoding.module";
 import { MailerModule } from "../../mailer/mailer.module";
+import { TwoFactorModule } from "../two-factor/two-factor.module";
 import { JwtAuthController } from "./jwt.controller";
 import { JwtAuthService } from "./jwt.service";
 import { JwtStrategy } from "./jwt.strategy";
@@ -36,6 +37,7 @@ import { JwtStrategy } from "./jwt.strategy";
     CustomPermissionGuardModule,
     GeocodingModule,
     MailerModule,
+    TwoFactorModule,
   ],
   providers: [JwtAuthService, JwtStrategy],
   controllers: [JwtAuthController],

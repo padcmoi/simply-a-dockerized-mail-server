@@ -19,7 +19,6 @@ const { isOnline } = usePresence();
 const avatarAlt = computed(() => auth.session?.displayName || auth.session?.email || "?");
 // Sections not built yet, surfaced as disabled cards so the roadmap is visible.
 const comingSoon = computed(() => [
-  { icon: "i-lucide-smartphone", label: t("profile.twoFactor"), hint: t("profile.twoFactorHint") },
   { icon: "i-lucide-scroll-text", label: t("profile.auditLog"), hint: t("profile.auditLogHint") },
 ]);
 
@@ -127,6 +126,13 @@ useAsyncData(
         :label="t('profile.changeEmail')"
         :hint="t('profile.changeEmailHint')"
         to="/profile/email"
+      />
+      <ProfileActionCard
+        icon="i-lucide-smartphone"
+        icon-color="text-success"
+        :label="t('profile.twoFactor')"
+        :hint="t('profile.twoFactorHint')"
+        to="/profile/two-factor"
       />
       <ProfileActionCard
         v-for="item in comingSoon"

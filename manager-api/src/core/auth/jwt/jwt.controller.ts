@@ -53,6 +53,8 @@ import {
   refreshSchema,
   updateProfileSchema,
 } from "./jwt.validation";
+import { TwoFactorLoginDocs } from "../two-factor/two-factor.openapi";
+import { TwoFactorLoginDto, twoFactorLoginSchema } from "../two-factor/two-factor.validation";
 
 type AuthedRequest = Request & {
   user: { id: string; email: string; isRoot: boolean };
@@ -96,6 +98,21 @@ export class JwtAuthController {
   @JwtLoginDocs()
   login(@Req() req: LocalAuthedRequest, @Headers("user-agent") ua: string | undefined, @Ip() ip: string) {
     return this.auth.openSessionFor(req.user, ua, ip);
+  }
+
+  // The second step of a sign-in whose first was accepted: the challenge the
+  // first step answered with, and a code. Public like the first, since there is
+  // no session yet to authenticate with.
+  @Post("login/two-factor")
+  @Public()
+  @HttpCode(200)
+  @TwoFactorLoginDocs()
+  loginTwoFactor(
+    @Body(new ZodValidationPipe(twoFactorLoginSchema)) body: TwoFactorLoginDto,
+    @Headers("user-agent") ua: string | undefined,
+    @Ip() ip: string
+  ) {
+    return this.auth.completeTwoFactor(body.challenge, body.code, ua, ip);
   }
 
   @Post("refresh")

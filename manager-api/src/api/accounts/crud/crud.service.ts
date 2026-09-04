@@ -11,6 +11,7 @@ import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { GeocodingService } from "../../../core/geocoding/geocoding.service";
+import { TwoFactorService } from "../../../core/auth/two-factor/two-factor.service";
 import type { UpdateAccountDto } from "./crud.validation";
 
 // `group` (enriched post-query, see `enrichWithGroups`) isn't a real column
@@ -52,7 +53,8 @@ export class AccountsService {
     private readonly geocoding: GeocodingService,
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>,
-    @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>
+    @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>,
+    private readonly twoFactor: TwoFactorService
   ) {}
 
   // `notInGroup` (a group id) filters out accounts that are already members of
@@ -182,8 +184,18 @@ export class AccountsService {
       enabled: account.enabled === 1,
       lastLogin: account.lastLogin,
       createdAt: account.createdAt,
+      twoFactorEnabled: await this.twoFactor.isEnabled(id),
       groups: await this.accountGroups(id),
     };
+  }
+
+  // An administrator removing the second factor of an account that can no
+  // longer produce a code: no code is asked, which is the whole point, and the
+  // permission it takes is the one that edits the account.
+  async resetTwoFactor(id: string) {
+    const account = await this.accounts.findOne({ where: { id } });
+    if (!account) throw new NotFoundException(`Account #${id} not found`);
+    return this.twoFactor.reset(id);
   }
 
   // Admin-facing account edit: the full set of a user's editable fields. email

@@ -10,6 +10,7 @@ import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import type { GeocodingService } from "../../src/core/geocoding/geocoding.service";
+import type { TwoFactorService } from "../../src/core/auth/two-factor/two-factor.service";
 import { providerMock, qbMock, repoMock } from "../helpers/mocks";
 
 // One typed double per constructor argument, in order. The repositories slot
@@ -29,6 +30,10 @@ function makeMocks() {
     domains: repoMock<VirtualDomain>(),
     virtualUsers: repoMock<VirtualUser>(),
     aliases: repoMock<VirtualAlias>(),
+    twoFactor: providerMock<TwoFactorService>({
+      isEnabled: vi.fn(async () => false),
+      reset: vi.fn(async () => ({ reset: true })),
+    }),
   };
 }
 
@@ -46,7 +51,8 @@ describe("AccountsService", () => {
       m.geocoding,
       m.domains,
       m.virtualUsers,
-      m.aliases
+      m.aliases,
+      m.twoFactor
     );
   });
 
