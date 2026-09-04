@@ -77,12 +77,7 @@ const visibilityHint = computed(() =>
               {{ resourcesRequired ? t("tickets.form.resourcesRequiredHint") : t("tickets.form.resourcesOptionalHint") }}
             </p>
 
-            <UFormField
-              v-if="recipientOptions.length"
-              :label="t('tickets.form.recipients')"
-              name="recipientIds"
-              :required="resourcesRequired"
-            >
+            <UFormField v-if="recipientOptions.length" :label="t('tickets.form.recipients')" name="recipientIds">
               <USelectMenu
                 v-model="form.recipientIds"
                 multiple
@@ -94,12 +89,7 @@ const visibilityHint = computed(() =>
               />
             </UFormField>
 
-            <UFormField
-              v-if="aliasOptions.length"
-              :label="t('tickets.form.aliases')"
-              name="aliasIds"
-              :required="resourcesRequired"
-            >
+            <UFormField v-if="aliasOptions.length" :label="t('tickets.form.aliases')" name="aliasIds">
               <USelectMenu
                 v-model="form.aliasIds"
                 multiple
