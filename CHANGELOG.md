@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(tickets): the message editor opens on three lines wherever it stands, the reply box and the edit box having been one line tall under their own toolbar; the minimum is carried by the typing area itself, so the toolbar no longer counts towards it (04-09-2026)
 - fix(tickets): the new ticket form stops marking the mailboxes and the aliases as two separate obligations, an asterisk on each having announced that both were needed; naming one or the other, or both, has always been the rule the server enforces, and the single line above the two selectors is what carries it (04-09-2026)
 - fix(ui): a quota reads "100 MB" or "9.8 GB" wherever it is shown, the dashboard, an account's domains and the personal space having printed the raw byte count (02-09-2026)
 - fix(accounts): an account carrying a picture shows it as a thumbnail in the accounts and group members tables, where every row fell back to its initials (02-09-2026)

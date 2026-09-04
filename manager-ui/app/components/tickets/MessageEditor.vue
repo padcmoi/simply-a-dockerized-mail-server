@@ -4,6 +4,10 @@
 // surface and the toolbar; the caller supplies the footer actions (send, or
 // cancel/save) through the `footer` slot, and asks for the framed box wherever
 // the editor stands on its own rather than flush inside a card.
+//
+// The typing area opens on three lines wherever it is used: a reply box one line
+// tall reads as a chat input, and a support message is a paragraph. It grows
+// from there up to `max-h-60`, then scrolls.
 const emit = defineEmits<{ typing: [] }>();
 const model = defineModel<string>({ required: true });
 defineProps<{ framed?: boolean; baseClass?: string }>();
@@ -58,7 +62,7 @@ defineExpose({
       content-type="markdown"
       :image="false"
       :mention="false"
-      :ui="{ base: baseClass, content: 'max-h-60 overflow-y-auto px-4 py-2.5 sm:px-6 focus:outline-none' }"
+      :ui="{ base: baseClass, content: 'min-h-24 max-h-60 overflow-y-auto px-4 py-2.5 sm:px-6 focus:outline-none' }"
       class="w-full divide-y divide-default"
       @update:model-value="emit('typing')"
     >
