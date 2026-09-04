@@ -17,6 +17,10 @@ export const paginationQuerySchema = z.object({
   // endpoint (see `resolveSortColumn` below), not enforceable generically
   // here.
   sortBy: z.string().trim().max(50).optional(),
+  // Which single column the search term is matched against. Absent means every
+  // column the endpoint searches, which is what every caller sent before this
+  // existed and stays the default.
+  searchBy: z.string().trim().max(50).optional(),
 });
 
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>;
@@ -32,4 +36,11 @@ export interface PaginatedResult<T> {
 // absent or names something not on that list.
 export function resolveSortColumn<T extends string>(requested: string | undefined, allowed: readonly T[], fallback: T): T {
   return (allowed as readonly string[]).includes(requested ?? "") ? (requested as T) : fallback;
+}
+
+// Same whitelist discipline as the sort, with no fallback column: an absent or
+// unrecognized `searchBy` narrows nothing and the search stays what it was,
+// over every column the endpoint knows how to match.
+export function resolveSearchColumn<T extends string>(requested: string | undefined, allowed: readonly T[]): T | null {
+  return (allowed as readonly string[]).includes(requested ?? "") ? (requested as T) : null;
 }

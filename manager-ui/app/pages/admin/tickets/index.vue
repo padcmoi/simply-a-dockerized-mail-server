@@ -52,13 +52,14 @@ const canCreate = computed(() => isRoot.value || (hasGlobal("tickets", "access")
 // column to order them by, hence the two that say so.
 const columns = computed<DataTableColumn<TicketRow>[]>(() => [
   { key: "subject", label: t("tickets.table.subject"), value: (row) => row.subject, primary: true },
-  { key: "domainName", label: t("common.domain"), value: (row) => row.domainName ?? "" },
-  { key: "status", label: t("tickets.table.status"), value: (row) => row.status },
+  { key: "domainName", label: t("common.domain"), value: (row) => row.domainName ?? "", searchable: false },
+  { key: "status", label: t("tickets.table.status"), value: (row) => row.status, searchable: false },
   {
     key: "author",
     label: t("tickets.table.author"),
     value: (row) => row.creatorName ?? row.creatorEmail ?? "",
     sortable: false,
+    searchable: false,
     class: "max-w-48 truncate",
   },
   {
@@ -66,8 +67,9 @@ const columns = computed<DataTableColumn<TicketRow>[]>(() => [
     label: t("tickets.table.assignee"),
     value: (row) => row.assigneeName ?? row.assigneeEmail ?? "",
     sortable: false,
+    searchable: false,
   },
-  { key: "updatedAt", label: t("tickets.table.updated"), value: (row) => row.updatedAt },
+  { key: "updatedAt", label: t("tickets.table.updated"), value: (row) => row.updatedAt, searchable: false },
 ]);
 
 setBreadcrumb([{ label: t("nav.tickets") }]);

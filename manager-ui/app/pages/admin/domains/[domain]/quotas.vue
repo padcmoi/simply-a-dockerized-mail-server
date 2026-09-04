@@ -33,10 +33,10 @@ const { tick } = useDataRefresh();
 // last delivery date, which live nowhere else.
 const recipientCols = computed<DataTableColumn<QuotaRow>[]>(() => [
   { key: "email", label: t("common.address"), value: (row) => row.email ?? "", primary: true },
-  { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota ?? 0) },
-  { key: "bytes", label: t("recipients.table.used"), value: (row) => Number(row.bytes) },
-  { key: "messages", label: t("common.messages"), value: (row) => Number(row.messages) },
-  { key: "lastActivity", label: t("common.lastActivity"), value: (row) => row.lastActivity },
+  { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota ?? 0), searchable: false },
+  { key: "bytes", label: t("recipients.table.used"), value: (row) => Number(row.bytes), searchable: false },
+  { key: "messages", label: t("common.messages"), value: (row) => Number(row.messages), searchable: false },
+  { key: "lastActivity", label: t("common.lastActivity"), value: (row) => row.lastActivity, searchable: false },
 ]);
 
 // `bytes` is what dovecot has written, summed over the domain's mailboxes:

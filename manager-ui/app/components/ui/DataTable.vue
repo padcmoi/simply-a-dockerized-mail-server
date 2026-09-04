@@ -34,6 +34,11 @@ const limit = defineModel<number>("pageSize", { default: 10 });
 // is the one that has to know. Unbound, both are local state and this component
 // searches and sorts the collection it was handed.
 const search = defineModel<string>("search", { default: "" });
+// Which column the term is matched against, `ALL_COLUMNS` for every one of them.
+// Bindable like the term itself: a caller whose rows come a page at a time is
+// the one that has to put it on the query, since the matching happens over
+// there. Unbound it is local state and this component narrows its own filter.
+const searchBy = defineModel<string>("searchBy", { default: ALL_COLUMNS });
 // Empty rather than null: a caller's own sort key is a plain string, and a model
 // that could be null would not bind to it.
 const sortKey = defineModel<string>("sortKey", { default: "" });
@@ -99,8 +104,6 @@ const { t } = useI18n();
 const root = useTemplateRef<HTMLElement>("root");
 const { asTable } = useTableLayout(root);
 
-const scope = ref(ALL_COLUMNS);
-
 // The field writes `search` on every keystroke, so what was typed appears at
 // once and a caller fetching over the network sees it as it is typed and applies
 // its own pace. This is the one the LOCAL filter reads: every keystroke would
@@ -117,7 +120,7 @@ const { serverPaged, searchableColumns, paged, totalRows, pageCount } = useDataT
   data: () => props.data,
   columns: () => props.columns,
   searchTerm: () => searchTerm.value,
-  scope: () => scope.value,
+  scope: () => searchBy.value,
   sort: () => sort.value,
   page,
   limit: () => limit.value,
@@ -128,8 +131,12 @@ const sortableColumns = computed(() => props.columns.filter((column) => column.s
 
 const scopeItems = computed(() => [
   { label: t("table.allColumns"), value: ALL_COLUMNS },
-  ...searchableColumns.value.map((column) => ({ label: column.label, value: column.key })),
+  ...searchableColumns.value.map((column) => ({ label: column.label, value: dataTableSearchKey(column) })),
 ]);
+
+// A table whose search reaches a single column has nothing to narrow: the choice
+// would be between "everywhere" and the one place, which are the same answer.
+const withSearchScope = computed(() => searchableColumns.value.length > 1);
 
 const sortItems = computed(() => [
   { label: t("table.noSort"), value: NO_SORT },
@@ -168,10 +175,17 @@ function flipSortDirection() {
     <div v-if="withSearch" class="mb-4 flex flex-col gap-3 @5xl:flex-row @5xl:items-center @5xl:justify-between">
       <div class="flex flex-col gap-2 @lg:flex-row @lg:items-center">
         <UInput v-model="search" icon="i-lucide-search" :placeholder="t('common.search')" class="w-full @lg:w-64" />
-        <!-- Which column the term is matched against, and only where the
-             matching happens here: a caller searching over the network answers
-             the term with a query of its own. -->
-        <USelect v-if="!serverPaged" v-model="scope" :items="scopeItems" icon="i-lucide-filter" class="w-full @lg:w-56" />
+        <!-- Which column the term is matched against, wherever the matching
+             happens: this component narrows its own filter, and a caller
+             searching over the network carries the choice on its query. -->
+        <USelect
+          v-if="withSearchScope"
+          v-model="searchBy"
+          :items="scopeItems"
+          icon="i-lucide-filter"
+          class="w-full @lg:w-56"
+          :aria-label="t('table.searchIn')"
+        />
       </div>
 
       <div class="flex flex-col gap-2 @lg:flex-row @lg:items-center">

@@ -16,6 +16,7 @@ const {
   page,
   limit,
   search,
+  searchBy,
   sortBy,
   sortDir,
   ALL,
@@ -50,10 +51,10 @@ const emptyLabel = computed(() =>
 );
 
 const columns = computed<DataTableColumn<NotificationRow>[]>(() => [
-  { key: "readAt", label: t("notifications.history.colStatus"), value: (row) => row.readAt ?? "" },
+  { key: "readAt", label: t("notifications.history.colStatus"), value: (row) => row.readAt ?? "", searchable: false },
   { key: "source", label: t("notifications.history.colSource"), value: (row) => row.source },
   { key: "type", label: t("notifications.history.colMessage"), value: (row) => label(row), primary: true },
-  { key: "createdAt", label: t("notifications.history.colWhen"), value: (row) => row.createdAt },
+  { key: "createdAt", label: t("notifications.history.colWhen"), value: (row) => row.createdAt, searchable: false },
 ]);
 
 function askPurge(scope: "all" | "read") {
@@ -111,6 +112,7 @@ const onPurgeConfirmed = () => purgeScope(purgeChoice.value);
       v-model:page="page"
       v-model:page-size="limit"
       v-model:search="search"
+      v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       :data="items"

@@ -1,3 +1,5 @@
+import { ALL_COLUMNS } from "~/composables/useDataTableRows";
+
 export function rspamdActionColor(action: string) {
   if (action === "no action") return "success";
   if (action === "reject") return "error";
@@ -28,6 +30,9 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
   const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
   const search = ref("");
   const debouncedSearch = ref("");
+  // Which column the term is matched against, as everywhere else: the history
+  // is filtered where it is fetched, so the choice rides on the query.
+  const searchBy = ref(ALL_COLUMNS);
   const sortBy = ref("time");
   const sortDir = ref<"asc" | "desc">("desc");
 
@@ -95,13 +100,14 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
         sortBy: sortBy.value,
       });
       if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
+      if (searchBy.value !== ALL_COLUMNS) qs.set("searchBy", searchBy.value);
       return call<{ items: RspamdHistoryRow[]; total: number }>(`${basePath.value}/history?${qs.toString()}`);
     },
     {
       server: false,
       watch: domainId
-        ? [domainId, page, limit, sortBy, sortDir, debouncedSearch, tick]
-        : [page, limit, sortBy, sortDir, debouncedSearch, tick],
+        ? [domainId, page, limit, sortBy, sortDir, debouncedSearch, searchBy, tick]
+        : [page, limit, sortBy, sortDir, debouncedSearch, searchBy, tick],
       default: () => ({ items: [], total: 0 }),
     }
   );
@@ -167,6 +173,7 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
     page,
     limit,
     search,
+    searchBy,
     sortBy,
     sortDir,
     load,

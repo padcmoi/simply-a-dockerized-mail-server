@@ -34,6 +34,7 @@ const {
   page,
   limit,
   search,
+  searchBy,
   sortBy,
   sortDir,
   load,
@@ -158,6 +159,7 @@ onMounted(loadAccountOptions);
         v-model:page="page"
         v-model:page-size="limit"
         v-model:search="search"
+        v-model:search-by="searchBy"
         v-model:sort-key="sortBy"
         v-model:sort-direction="sortDir"
         :members="members"

@@ -42,10 +42,10 @@ const adminMaxQuotaMb = computed(() => {
 // Declared once: DataTable decides on its own width whether this is a table or
 // a block per row, so the page no longer carries one of each.
 const columns = computed<DataTableColumn<DomainRow>[]>(() => [
-  { key: "id", label: t("domains.table.id"), value: (row) => row.id, hideOnCard: true },
+  { key: "id", label: t("domains.table.id"), value: (row) => row.id, hideOnCard: true, searchable: false },
   { key: "domain", label: t("domains.table.domain"), value: (row) => row.domain, primary: true },
-  { key: "active", label: t("domains.table.active"), value: (row) => row.active === 1 },
-  { key: "quota", label: t("domains.table.quotaMb"), value: (row) => Number(row.quota) },
+  { key: "active", label: t("domains.table.active"), value: (row) => row.active === 1, searchable: false },
+  { key: "quota", label: t("domains.table.quotaMb"), value: (row) => Number(row.quota), searchable: false },
 ]);
 
 const { t } = useI18n();

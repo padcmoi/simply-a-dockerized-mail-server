@@ -3,7 +3,7 @@ import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { createHash, randomBytes } from "crypto";
 import { In, IsNull, MoreThan, Not, Repository } from "typeorm";
-import { PaginationQuery, resolveSortColumn } from "../../common/pagination.validation";
+import { PaginationQuery, resolveSearchColumn, resolveSortColumn } from "../../common/pagination.validation";
 import { scryptHash, scryptVerify } from "../../common/scrypt";
 import { ApiError } from "../../common/api-error";
 import { Account } from "../../entities/account.entity";
@@ -25,6 +25,15 @@ const SESSIONS_SORT_EXPR: Record<(typeof SESSIONS_SORTABLE_COLUMNS)[number], str
   createdAt: "t.created_at",
   expiresAt: "t.expires_at",
   revokedAt: "t.revoked_at",
+};
+
+// The two columns a `searchBy` may name, matching what the free-text search
+// spans when it names none. The list shows the user agent as a device label,
+// which is read out of the string this matches whole.
+export const SESSIONS_SEARCHABLE_COLUMNS = ["userAgent", "ip"] as const;
+const SESSIONS_SEARCH_EXPR: Record<(typeof SESSIONS_SEARCHABLE_COLUMNS)[number], string> = {
+  userAgent: "t.user_agent LIKE :s",
+  ip: "t.ip LIKE :s",
 };
 
 export type ProfileResponse = {
@@ -166,7 +175,9 @@ export class JwtAuthService {
       .where("t.account_id = :accountId", { accountId })
       .andWhere("(t.revoked_at IS NOT NULL OR t.expires_at <= :now)", { now });
     if (query.search) {
-      qb.andWhere("(t.user_agent LIKE :s OR t.ip LIKE :s)", { s: `%${query.search}%` });
+      const searchBy = resolveSearchColumn(query.searchBy, SESSIONS_SEARCHABLE_COLUMNS);
+      const expressions = searchBy ? [SESSIONS_SEARCH_EXPR[searchBy]] : Object.values(SESSIONS_SEARCH_EXPR);
+      qb.andWhere(`(${expressions.join(" OR ")})`, { s: `%${query.search}%` });
     }
     const sortBy = resolveSortColumn(query.sortBy, SESSIONS_SORTABLE_COLUMNS, "createdAt");
     qb.orderBy(SESSIONS_SORT_EXPR[sortBy], query.sortDir === "asc" ? "ASC" : "DESC")

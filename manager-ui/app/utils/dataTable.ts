@@ -4,6 +4,13 @@
 //
 // A missing value is the empty string and not "null": the word would otherwise be a search term that
 // matches every blank cell in the table.
+// What a column is called when the search is narrowed to it: its own key, or the
+// name the API knows it by where the two differ. One definition, so the value
+// the scope select carries is the one a server-paged caller puts on the query.
+export function dataTableSearchKey<T>(column: DataTableColumn<T>) {
+  return column.searchKey ?? column.key;
+}
+
 export function dataTableText<T>(column: DataTableColumn<T>, row: T) {
   const value = column.value(row);
   if (value === null || value === undefined) return "";

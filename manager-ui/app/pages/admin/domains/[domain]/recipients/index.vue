@@ -13,11 +13,11 @@ const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 // width rather than this page carrying one of each.
 const columns = computed<DataTableColumn<RecipientRow>[]>(() => [
   { key: "email", label: t("recipients.table.address"), value: (row) => row.email, primary: true },
-  { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota) },
-  { key: "usedBytes", label: t("recipients.table.used"), value: (row) => Number(row.usedBytes) },
-  { key: "active", label: t("recipients.table.active"), value: (row) => row.active === 1 },
+  { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota), searchable: false },
+  { key: "usedBytes", label: t("recipients.table.used"), value: (row) => Number(row.usedBytes), searchable: false },
+  { key: "active", label: t("recipients.table.active"), value: (row) => row.active === 1, searchable: false },
   { key: "ownerEmail", label: t("recipients.table.owner"), value: (row) => row.ownerEmail ?? "" },
-  { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity },
+  { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity, searchable: false },
 ]);
 
 // The create form now lives on its own page, which demands recipients:create-recipient.
@@ -58,12 +58,13 @@ watchEffect(() => {
   ]);
 });
 
-const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<RecipientRow>(
-  "recipients-list",
-  () => (domainId.value ? `/domains/${domainId.value}/recipients` : null),
-  "id",
-  [domainId]
-);
+const { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sortBy, sortDir, load } =
+  usePaginatedList<RecipientRow>(
+    "recipients-list",
+    () => (domainId.value ? `/domains/${domainId.value}/recipients` : null),
+    "id",
+    [domainId]
+  );
 
 function isPostmaster(item: RecipientRow) {
   return item.email.toLowerCase().startsWith("postmaster@");
@@ -128,6 +129,7 @@ async function onDeleteConfirmed() {
       v-model:page="page"
       v-model:page-size="limit"
       v-model:search="search"
+      v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       :data="items"

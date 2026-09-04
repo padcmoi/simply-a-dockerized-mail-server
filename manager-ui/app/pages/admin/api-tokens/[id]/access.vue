@@ -24,19 +24,20 @@ const {
   page,
   limit,
   search,
+  searchBy,
   sortBy,
   sortDir,
 } = usePaginatedList<AccessEntry>(`api-token-access-${tokenId.value}`, `/api-tokens/${tokenId.value}/access`, "createdAt");
 
 const columns = computed<DataTableColumn<AccessEntry>[]>(() => [
-  { key: "createdAt", label: t("apiTokens.access.colWhen"), value: (row) => row.createdAt, primary: true },
+  { key: "createdAt", label: t("apiTokens.access.colWhen"), value: (row) => row.createdAt, primary: true, searchable: false },
   { key: "method", label: t("apiTokens.access.colMethod"), value: (row) => row.method },
   { key: "route", label: t("apiTokens.access.colRoute"), value: (row) => row.route },
-  { key: "statusCode", label: t("apiTokens.access.colStatus"), value: (row) => row.statusCode },
+  { key: "statusCode", label: t("apiTokens.access.colStatus"), value: (row) => row.statusCode, searchable: false },
   { key: "clientIp", label: t("apiTokens.access.colFrom"), value: (row) => row.clientIp },
   { key: "origin", label: t("apiTokens.access.colOrigin"), value: (row) => row.origin || row.referer, sortable: false },
   { key: "userAgent", label: t("apiTokens.access.colAgent"), value: (row) => row.userAgent, sortable: false },
-  { key: "durationMs", label: t("apiTokens.access.colDuration"), value: (row) => row.durationMs },
+  { key: "durationMs", label: t("apiTokens.access.colDuration"), value: (row) => row.durationMs, searchable: false },
 ]);
 
 watch(
@@ -94,6 +95,7 @@ function agentIcon(userAgent: string) {
       v-model:page="page"
       v-model:page-size="limit"
       v-model:search="search"
+      v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       :data="entries"

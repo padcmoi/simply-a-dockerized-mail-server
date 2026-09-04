@@ -14,6 +14,7 @@ const {
   page,
   limit,
   search,
+  searchBy,
   sortBy,
   sortDir,
   load,
@@ -59,8 +60,9 @@ const columns = computed<DataTableColumn<ManagerAccount>[]>(() => [
     label: t("accounts.table.group"),
     value: (row) => row.groups.map((group) => group.name).join(", "),
     sortable: false,
+    searchable: false,
   },
-  { key: "enabled", label: t("accounts.table.status"), value: (row) => row.enabled },
+  { key: "enabled", label: t("accounts.table.status"), value: (row) => row.enabled, searchable: false },
 ]);
 
 async function deleteAccount(acc: ManagerAccount) {
@@ -119,6 +121,7 @@ async function onDeleteConfirmed() {
       v-model:page="page"
       v-model:page-size="limit"
       v-model:search="search"
+      v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       :data="accounts"

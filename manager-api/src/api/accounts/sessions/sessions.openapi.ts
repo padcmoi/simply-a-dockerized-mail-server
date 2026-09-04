@@ -1,7 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../../core/common/pagination.openapi";
-import { SESSIONS_SORTABLE_COLUMNS } from "../../../core/auth/jwt/jwt.service";
+import { SESSIONS_SEARCHABLE_COLUMNS, SESSIONS_SORTABLE_COLUMNS } from "../../../core/auth/jwt/jwt.service";
 
 const sessionExample = {
   id: 42,
@@ -49,7 +49,7 @@ export const AccountActiveSessionsDocs = () =>
 export const AccountSessionHistoryDocs = () =>
   applyDecorators(
     ApiParam({ name: "id", type: String, description: "accounts.id (uuid)" }),
-    ApiPaginationQuery(SESSIONS_SORTABLE_COLUMNS),
+    ApiPaginationQuery(SESSIONS_SORTABLE_COLUMNS, SESSIONS_SEARCHABLE_COLUMNS),
     ApiOperation({
       summary: "One account's expired or revoked sessions, paginated + searchable (accounts:view-account-sessions)",
     }),

@@ -1,7 +1,11 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../core/common/pagination.openapi";
-import { RSPAMD_FACTORY_ACTIONS, RSPAMD_HISTORY_SORTABLE_COLUMNS } from "../../core/rspamd/rspamd.service";
+import {
+  RSPAMD_FACTORY_ACTIONS,
+  RSPAMD_HISTORY_SEARCHABLE_COLUMNS,
+  RSPAMD_HISTORY_SORTABLE_COLUMNS,
+} from "../../core/rspamd/rspamd.service";
 
 export const RspamdApi = () => applyDecorators(ApiTags("rspamd"), ApiSecurity("apiToken"));
 
@@ -99,7 +103,7 @@ const historyRowExample = {
 
 export const GetHistoryDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(RSPAMD_HISTORY_SORTABLE_COLUMNS),
+    ApiPaginationQuery(RSPAMD_HISTORY_SORTABLE_COLUMNS, RSPAMD_HISTORY_SEARCHABLE_COLUMNS),
     ApiOperation({
       summary: "Rspamd scan history, optionally filtered by recipient domain, paginated",
       description:

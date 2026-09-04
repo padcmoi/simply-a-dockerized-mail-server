@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Not, Repository } from "typeorm";
 import { ApiError } from "../../../core/common/api-error";
-import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
+import { resolveSearchColumn, resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { Account } from "../../../core/entities/account.entity";
 import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
@@ -24,6 +24,16 @@ function isPostmaster(source: string, domain: string) {
 // only `owner_id`, and sorting on that would order by uuid, which reads as
 // random. It sorts on the joined account's address instead, see `list()`.
 export const ALIASES_SORTABLE_COLUMNS = ["source", "destination", "ownerEmail", "lastActivity", "id"] as const;
+
+// The columns a `searchBy` may name, which are exactly the three the free-text
+// search spans when it names none.
+export const ALIASES_SEARCHABLE_COLUMNS = ["source", "destination", "ownerEmail"] as const;
+
+const ALIAS_SEARCH_EXPRESSIONS: Record<(typeof ALIASES_SEARCHABLE_COLUMNS)[number], string> = {
+  source: "a.source LIKE :search",
+  destination: "a.destination LIKE :search",
+  ownerEmail: "o.email LIKE :search",
+};
 
 @Injectable()
 export class AliasesService {
@@ -102,9 +112,9 @@ export class AliasesService {
       .addSelect("o.email", "ownerEmail")
       .where("a.domain = :domain", { domain });
     if (query.search) {
-      qb.andWhere("(a.source LIKE :search OR a.destination LIKE :search OR o.email LIKE :search)", {
-        search: `%${query.search}%`,
-      });
+      const searchBy = resolveSearchColumn(query.searchBy, ALIASES_SEARCHABLE_COLUMNS);
+      const expressions = searchBy ? [ALIAS_SEARCH_EXPRESSIONS[searchBy]] : Object.values(ALIAS_SEARCH_EXPRESSIONS);
+      qb.andWhere(`(${expressions.join(" OR ")})`, { search: `%${query.search}%` });
     }
 
     const total = await qb.getCount();

@@ -22,8 +22,20 @@ const pendingDelete = ref<GroupItem | null>(null);
 const columns = computed<DataTableColumn<GroupItem>[]>(() => [
   { key: "name", label: t("groups.table.name"), value: (row) => row.name, primary: true },
   { key: "description", label: t("groups.table.description"), value: (row) => row.description ?? "" },
-  { key: "ownerEmail", label: t("groups.table.owner"), value: (row) => row.ownerEmail ?? "", sortable: false },
-  { key: "memberCount", label: t("groups.table.members"), value: (row) => row.memberCount, sortable: false },
+  {
+    key: "ownerEmail",
+    label: t("groups.table.owner"),
+    value: (row) => row.ownerEmail ?? "",
+    sortable: false,
+    searchable: false,
+  },
+  {
+    key: "memberCount",
+    label: t("groups.table.members"),
+    value: (row) => row.memberCount,
+    sortable: false,
+    searchable: false,
+  },
 ]);
 
 // Ids of the groups the current account belongs to (its own memberships, from
@@ -49,6 +61,7 @@ const {
   page,
   limit,
   search,
+  searchBy,
   sortBy,
   sortDir,
   load,
@@ -118,6 +131,7 @@ async function onDeleteConfirmed() {
       v-model:page="page"
       v-model:page-size="limit"
       v-model:search="search"
+      v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       :data="groups"

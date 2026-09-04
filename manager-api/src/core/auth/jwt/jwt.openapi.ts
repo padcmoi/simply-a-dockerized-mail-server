@@ -1,7 +1,7 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery, paginatedExample } from "../../common/pagination.openapi";
-import { SESSIONS_SORTABLE_COLUMNS } from "./jwt.service";
+import { SESSIONS_SEARCHABLE_COLUMNS, SESSIONS_SORTABLE_COLUMNS } from "./jwt.service";
 
 export const JwtAuthApi = () => applyDecorators(ApiTags("auth-jwt"));
 
@@ -207,7 +207,7 @@ export const JwtMeSessionsDocs = () =>
 export const JwtMeSessionHistoryDocs = () =>
   applyDecorators(
     ApiSecurity("apiToken"),
-    ApiPaginationQuery(SESSIONS_SORTABLE_COLUMNS),
+    ApiPaginationQuery(SESSIONS_SORTABLE_COLUMNS, SESSIONS_SEARCHABLE_COLUMNS),
     ApiOperation({
       summary: "List the authenticated account's inactive sessions (paginated)",
       description:

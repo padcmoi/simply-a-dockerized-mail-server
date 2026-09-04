@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { ApiError } from "../../../core/common/api-error";
-import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
+import { resolveSearchColumn, resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { sha512crypt } from "../../../core/common/sha512-crypt";
 import { Account } from "../../../core/entities/account.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
@@ -31,6 +31,16 @@ function isPostmaster(email: string, domain: string) {
 // joined the same way, from `accounts`: the table carries only `owner_id`, and
 // ordering on a uuid reads as random.
 export const RECIPIENTS_SORTABLE_COLUMNS = ["email", "quota", "active", "usedBytes", "ownerEmail", "lastActivity", "id"] as const;
+
+// The columns a `searchBy` may name: the two addresses, which are what the
+// free-text search spans when it names none. A quota, a byte count and a
+// timestamp are read, not typed into a search box.
+export const RECIPIENTS_SEARCHABLE_COLUMNS = ["email", "ownerEmail"] as const;
+
+const RECIPIENT_SEARCH_EXPRESSIONS: Record<(typeof RECIPIENTS_SEARCHABLE_COLUMNS)[number], string> = {
+  email: "r.email LIKE :search",
+  ownerEmail: "o.email LIKE :search",
+};
 
 // VirtualUser is the ORM mapping for the `virtual_users` postfix table; the
 // table name is dictated by postfix conventions and not under our control.
@@ -126,7 +136,11 @@ export class RecipientsService {
       .addSelect("COALESCE(q.bytes, 0)", "usedBytes")
       .addSelect("o.email", "ownerEmail")
       .where("r.domain = :domain", { domain });
-    if (query.search) qb.andWhere("(r.email LIKE :search OR o.email LIKE :search)", { search: `%${query.search}%` });
+    if (query.search) {
+      const searchBy = resolveSearchColumn(query.searchBy, RECIPIENTS_SEARCHABLE_COLUMNS);
+      const expressions = searchBy ? [RECIPIENT_SEARCH_EXPRESSIONS[searchBy]] : Object.values(RECIPIENT_SEARCH_EXPRESSIONS);
+      qb.andWhere(`(${expressions.join(" OR ")})`, { search: `%${query.search}%` });
+    }
 
     const total = await qb.getCount();
     if (sortBy === "usedBytes") qb.orderBy("usedBytes", dir);

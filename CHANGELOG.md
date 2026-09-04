@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): every list's search carries a column selector beside the field, "all columns" by default, so a term can be matched against one column instead of the whole row. It reaches the lists whose rows come a page at a time as well, which had none: the choice rides on the query as `searchBy` and the endpoint narrows its own SQL to that column, refusing any name it does not know. A list the API searches on a single column shows no selector, since there would be nothing to choose (04-09-2026)
 - feat(ui): the Naskot beaver replaces lucide's envelope as the product's mark, drawn at three levels of detail since the full logo blurs below 64 px: a line icon in the sidebar header, the colour logo centred on the login card, and a favicon set whose 16 px entry drops the envelope to stay readable in a tab, with an apple-touch-icon for iOS (03-09-2026)
 - feat(invite): an open invitation link is taken with an external provider as well as with a password, the provider coming back to the invitation instead of the login screen so the grant lands on the account that just signed in (01-09-2026)
 - test(auth): the Passport layer ships with its own suites, covering provider usability, identity linking and provisioning, the credential registry's sealing and hot re-registration, the guard's refusals and the one-time exchange code (01-09-2026)

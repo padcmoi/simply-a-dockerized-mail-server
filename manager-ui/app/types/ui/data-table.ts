@@ -18,6 +18,11 @@ export interface DataTableColumn<T> {
   // otherwise, and a column nobody can sort or search is the exception.
   sortable?: boolean;
   searchable?: boolean;
+  // The name the API knows this column by, for a list whose rows come a page at
+  // a time and whose search therefore happens over there. Only for the columns
+  // whose two names differ: a session's device is read out of the user agent the
+  // server matches, so it narrows a search as `userAgent`.
+  searchKey?: string;
   // Heads its card on a narrow screen. One per table; the others become
   // label/value pairs underneath. Falls back to the first column.
   primary?: boolean;

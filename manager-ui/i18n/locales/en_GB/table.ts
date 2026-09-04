@@ -2,6 +2,7 @@ import type { Locales } from "../../Locales";
 
 export default {
   allColumns: "All columns",
+  searchIn: "Search in",
   sortBy: "Sort by",
   noSort: "No sorting",
   ascending: "Ascending",

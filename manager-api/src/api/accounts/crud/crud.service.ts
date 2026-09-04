@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, HttpStatus, Injectable, NotFoun
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Not, Repository } from "typeorm";
 import { ApiError } from "../../../core/common/api-error";
-import { resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
+import { resolveSearchColumn, resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { Account } from "../../../core/entities/account.entity";
 import { ACCOUNT_GENDERS, AccountProfile, composeDisplayName } from "../../../core/entities/account-profile.entity";
 import { GroupMember } from "../../../core/entities/group-member.entity";
@@ -30,6 +30,16 @@ const ACCOUNTS_SORT_EXPR: Record<(typeof ACCOUNTS_SORTABLE_COLUMNS)[number], str
   displayName: ["p.lastName", "p.firstName"],
   enabled: ["a.enabled"],
   createdAt: ["a.createdAt"],
+};
+
+// The columns a `searchBy` may name, matching the two the free-text search
+// spans when it names none. `displayName` is the joined pair of name columns,
+// concatenated so "jean dupont" matches across both.
+export const ACCOUNTS_SEARCHABLE_COLUMNS = ["email", "displayName"] as const;
+
+const ACCOUNTS_SEARCH_EXPR: Record<(typeof ACCOUNTS_SEARCHABLE_COLUMNS)[number], string> = {
+  email: "a.email LIKE :s",
+  displayName: "CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s",
 };
 
 @Injectable()
@@ -92,7 +102,9 @@ export class AccountsService {
       .addSelect("p.firstName")
       .addSelect("p.lastName");
     if (query.search) {
-      qb.andWhere("(a.email LIKE :s OR CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s)", { s: `%${query.search}%` });
+      const searchBy = resolveSearchColumn(query.searchBy, ACCOUNTS_SEARCHABLE_COLUMNS);
+      const expressions = searchBy ? [ACCOUNTS_SEARCH_EXPR[searchBy]] : Object.values(ACCOUNTS_SEARCH_EXPR);
+      qb.andWhere(`(${expressions.join(" OR ")})`, { s: `%${query.search}%` });
     }
     const sortBy = resolveSortColumn(query.sortBy, ACCOUNTS_SORTABLE_COLUMNS, "createdAt");
     const dir = query.sortDir === "asc" ? "ASC" : "DESC";

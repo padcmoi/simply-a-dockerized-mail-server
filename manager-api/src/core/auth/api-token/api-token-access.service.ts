@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Like, Repository } from "typeorm";
 import { countriesFor } from "../../common/geoip";
-import { resolveSortColumn, type PaginationQuery } from "../../common/pagination.validation";
+import { resolveSearchColumn, resolveSortColumn, type PaginationQuery } from "../../common/pagination.validation";
 import { ApiToken } from "./api-token.entity";
 import { ApiTokenAccess } from "./api-token-access.entity";
 
@@ -14,6 +14,10 @@ export const API_TOKEN_ACCESS_SORTABLE_COLUMNS = [
   "clientIp",
   "durationMs",
 ] as const;
+
+// The columns a `searchBy` may name, matching the five the free-text search
+// spans when it names none.
+export const API_TOKEN_ACCESS_SEARCHABLE_COLUMNS = ["route", "clientIp", "userAgent", "origin", "method"] as const;
 
 const PURGE_EVERY_MS = 3_600_000;
 const DEFAULT_RETENTION_DAYS = 90;
@@ -89,14 +93,12 @@ export class ApiTokenAccessService {
 
     const sortBy = resolveSortColumn(query.sortBy, API_TOKEN_ACCESS_SORTABLE_COLUMNS, "createdAt");
     const term = query.search ? Like(`%${query.search}%`) : null;
+    const searchBy = resolveSearchColumn(query.searchBy, API_TOKEN_ACCESS_SEARCHABLE_COLUMNS);
     const where = term
-      ? [
-          { tokenId, route: term },
-          { tokenId, clientIp: term },
-          { tokenId, userAgent: term },
-          { tokenId, origin: term },
-          { tokenId, method: term },
-        ]
+      ? API_TOKEN_ACCESS_SEARCHABLE_COLUMNS.filter((column) => !searchBy || column === searchBy).map((column) => ({
+          tokenId,
+          [column]: term,
+        }))
       : { tokenId };
 
     const [items, total] = await this.repo.findAndCount({

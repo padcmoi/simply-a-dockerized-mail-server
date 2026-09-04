@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Like, Not, Repository } from "typeorm";
-import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
+import { resolveSearchColumn, resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
 import type { GlobalAction } from "../../core/custom-permission-guard/permission-catalog";
@@ -21,6 +21,16 @@ export const GROUPS_SORTABLE_COLUMNS = ["name", "description", "createdAt"] as c
 // Real `accounts` columns a member row can be sorted/searched on -- a member is
 // just an account, so these are its own columns, no enrichment involved.
 export const GROUP_MEMBERS_SORTABLE_COLUMNS = ["email", "displayName"] as const;
+
+// The columns a `searchBy` may name on either list, matching what each search
+// spans when it names none.
+export const GROUPS_SEARCHABLE_COLUMNS = ["name", "description"] as const;
+export const GROUP_MEMBERS_SEARCHABLE_COLUMNS = ["email", "displayName"] as const;
+
+const GROUP_MEMBERS_SEARCH_EXPR: Record<(typeof GROUP_MEMBERS_SEARCHABLE_COLUMNS)[number], string> = {
+  email: "a.email LIKE :s",
+  displayName: "CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s",
+};
 
 @Injectable()
 export class GroupsService {
@@ -47,11 +57,13 @@ export class GroupsService {
       return this.enrichGroups(allGroups);
     }
 
-    const where = query.search
-      ? [
-          { ...base, name: Like(`%${query.search}%`) },
-          { ...base, description: Like(`%${query.search}%`) },
-        ]
+    const term = query.search ? Like(`%${query.search}%`) : null;
+    const searchBy = resolveSearchColumn(query.searchBy, GROUPS_SEARCHABLE_COLUMNS);
+    const where = term
+      ? GROUPS_SEARCHABLE_COLUMNS.filter((column) => !searchBy || column === searchBy).map((column) => ({
+          ...base,
+          [column]: term,
+        }))
       : base;
     const sortBy = resolveSortColumn(query.sortBy, GROUPS_SORTABLE_COLUMNS, "createdAt");
     const [rows, total] = await this.groups.findAndCount({
@@ -401,7 +413,9 @@ export class GroupsService {
       .leftJoin(AccountProfile, "p", "p.account_id = a.id")
       .where("gm.group_id = :id", { id });
     if (query.search) {
-      base.andWhere("(a.email LIKE :s OR CONCAT_WS(' ', p.first_name, p.last_name) LIKE :s)", { s: `%${query.search}%` });
+      const searchBy = resolveSearchColumn(query.searchBy, GROUP_MEMBERS_SEARCHABLE_COLUMNS);
+      const expressions = searchBy ? [GROUP_MEMBERS_SEARCH_EXPR[searchBy]] : Object.values(GROUP_MEMBERS_SEARCH_EXPR);
+      base.andWhere(`(${expressions.join(" OR ")})`, { s: `%${query.search}%` });
     }
     const dir = query.sortDir === "asc" ? "ASC" : "DESC";
     const rowsQb = base

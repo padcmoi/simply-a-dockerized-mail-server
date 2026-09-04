@@ -1,7 +1,11 @@
 import { applyDecorators } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiQuery, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery } from "../../core/common/pagination.openapi";
-import { NOTIFICATION_SORTABLE_COLUMNS, NOTIFICATION_SOURCES } from "../../core/notifications/notifications.service";
+import {
+  NOTIFICATION_SEARCHABLE_COLUMNS,
+  NOTIFICATION_SORTABLE_COLUMNS,
+  NOTIFICATION_SOURCES,
+} from "../../core/notifications/notifications.service";
 
 export const NotificationsApi = () => applyDecorators(ApiTags("notifications"), ApiSecurity("apiToken"));
 
@@ -9,7 +13,7 @@ const idParam = () => ApiParam({ name: "id", type: Number, example: 1, descripti
 
 export const ListNotificationsDocs = () =>
   applyDecorators(
-    ApiPaginationQuery(NOTIFICATION_SORTABLE_COLUMNS),
+    ApiPaginationQuery(NOTIFICATION_SORTABLE_COLUMNS, NOTIFICATION_SEARCHABLE_COLUMNS),
     ApiQuery({
       name: "read",
       required: false,

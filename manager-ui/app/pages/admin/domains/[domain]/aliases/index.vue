@@ -15,7 +15,7 @@ const columns = computed<DataTableColumn<AliasRow>[]>(() => [
   { key: "source", label: t("aliases.table.from"), value: (row) => row.source, primary: true },
   { key: "destination", label: t("aliases.table.to"), value: (row) => row.destination },
   { key: "ownerEmail", label: t("aliases.table.owner"), value: (row) => row.ownerEmail ?? "" },
-  { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity },
+  { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity, searchable: false },
 ]);
 
 // The create and edit pages demand aliases:create-alias / aliases:edit-alias. Hiding
@@ -45,7 +45,7 @@ watchEffect(() => {
   ]);
 });
 
-const { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load } = usePaginatedList<AliasRow>(
+const { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sortBy, sortDir, load } = usePaginatedList<AliasRow>(
   "aliases-list",
   () => (domainId.value ? `/domains/${domainId.value}/aliases` : null),
   "id",
@@ -101,6 +101,7 @@ function editAlias(alias: AliasRow) {
       v-model:page="page"
       v-model:page-size="limit"
       v-model:search="search"
+      v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       :data="items"

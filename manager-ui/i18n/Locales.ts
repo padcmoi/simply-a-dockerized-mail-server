@@ -1824,6 +1824,7 @@ export interface Locales {
   // things it can say when there is nothing to show.
   table: {
     allColumns: string;
+    searchIn: string;
     sortBy: string;
     noSort: string;
     ascending: string;

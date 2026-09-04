@@ -5,7 +5,10 @@ import { ApiQuery } from "@nestjs/swagger";
 // pagination.validation.ts). `limit` absent = legacy unpaginated array,
 // kept for internal-only consumers (dashboards, pickers) -- not part of
 // the documented public contract, so it isn't called out below.
-export const ApiPaginationQuery = (sortableColumns: readonly string[]) =>
+// `searchableColumns` is left out by the endpoints that match a single column:
+// there is nothing to narrow to, and an empty enum would document a parameter
+// with no value to give it.
+export const ApiPaginationQuery = (sortableColumns: readonly string[], searchableColumns: readonly string[] = []) =>
   applyDecorators(
     ApiQuery({ name: "limit", required: false, enum: [10, 25, 50], description: "Page size" }),
     ApiQuery({ name: "offset", required: false, type: Number, description: "Rows to skip" }),
@@ -21,7 +24,17 @@ export const ApiPaginationQuery = (sortableColumns: readonly string[]) =>
       required: false,
       enum: sortableColumns,
       description: "Column to sort by; falls back to the endpoint's default when absent or unrecognized",
-    })
+    }),
+    ...(searchableColumns.length
+      ? [
+          ApiQuery({
+            name: "searchBy",
+            required: false,
+            enum: searchableColumns,
+            description: "Narrows the search to one column; absent or unrecognized searches every matched column",
+          }),
+        ]
+      : [])
   );
 
 export function paginatedExample<T>(itemExample: T, total = 1) {

@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, IsNull, Like, Not, Repository } from "typeorm";
 import type { NotificationListQuery } from "../../api/notifications/notifications.validation";
-import { PaginatedResult, resolveSortColumn } from "../common/pagination.validation";
+import { PaginatedResult, resolveSearchColumn, resolveSortColumn } from "../common/pagination.validation";
 import { Account } from "../entities/account.entity";
 import { Notification } from "../entities/notification.entity";
 import { NotificationPreference } from "../entities/notification-preference.entity";
@@ -34,6 +34,11 @@ const DEFAULT_CHANNELS: Record<NotificationSource, NotificationChannels> = {
 };
 const FEED_LIMIT = 20;
 export const NOTIFICATION_SORTABLE_COLUMNS = ["createdAt", "source", "type", "readAt"] as const;
+
+// The fields a `searchBy` may name, matching what the free-text search spans
+// when it names none. `payload` and `link` have no column of their own in the
+// list: they are what a notification is about, searched but never picked.
+export const NOTIFICATION_SEARCHABLE_COLUMNS = ["source", "type", "payload", "link"] as const;
 
 @Injectable()
 export class NotificationsService {
@@ -114,8 +119,14 @@ export class NotificationsService {
     // The `source` branch is dropped, not neutralised, when a source is already
     // filtered on: left in it would widen to "every row of that source", which
     // is the search answering with rows that do not match it.
-    const searchable = query.source ? ["type", "payload", "link"] : ["source", "type", "payload", "link"];
-    const where = term ? searchable.map((field) => ({ ...base, [field]: term })) : base;
+    const searchable = NOTIFICATION_SEARCHABLE_COLUMNS.filter((field) => !(query.source && field === "source"));
+    // A `searchBy` naming the source while a source is already filtered on
+    // resolves to nothing and leaves the search as it was, which is the same
+    // answer the dropped branch above gives.
+    const searchBy = resolveSearchColumn(query.searchBy, searchable);
+    const where = term
+      ? searchable.filter((field) => !searchBy || field === searchBy).map((field) => ({ ...base, [field]: term }))
+      : base;
 
     if (query.limit === undefined) return this.notifications.find({ where, order });
     const [items, total] = await this.notifications.findAndCount({

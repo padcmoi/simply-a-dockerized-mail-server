@@ -13,6 +13,7 @@ const emit = defineEmits<{
 const page = defineModel<number>("page", { default: 1 });
 const limit = defineModel<number>("pageSize", { default: 10 });
 const search = defineModel<string>("search", { default: "" });
+const searchBy = defineModel<string>("searchBy", { default: ALL_COLUMNS });
 const sortKey = defineModel<string>("sortKey", { default: "" });
 const sortDirection = defineModel<"asc" | "desc">("sortDirection", { default: "asc" });
 
@@ -145,6 +146,7 @@ function onAdd() {
       v-model:page="page"
       v-model:page-size="limit"
       v-model:search="search"
+      v-model:search-by="searchBy"
       v-model:sort-key="sortKey"
       v-model:sort-direction="sortDirection"
       :data="members"

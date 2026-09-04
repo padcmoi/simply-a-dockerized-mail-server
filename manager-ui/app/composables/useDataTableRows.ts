@@ -45,7 +45,7 @@ export function useDataTableRows<T>(options: {
     const scoped =
       options.scope() === ALL_COLUMNS
         ? searchableColumns.value
-        : searchableColumns.value.filter((column) => column.key === options.scope());
+        : searchableColumns.value.filter((column) => dataTableSearchKey(column) === options.scope());
 
     return options.data().filter((row) => scoped.some((column) => dataTableText(column, row).toLowerCase().includes(term)));
   });

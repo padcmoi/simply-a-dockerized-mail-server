@@ -11,10 +11,10 @@ definePageMeta({
 const tableColumns = computed<DataTableColumn<RspamdHistoryItem>[]>(() => [
   { key: "sender_smtp", label: t("rspamdPage.col.from"), value: (row) => row.sender_smtp, primary: true },
   { key: "rcpt", label: t("rspamdPage.col.to"), value: (row) => row.rcpt },
-  { key: "action", label: t("rspamdPage.col.action"), value: (row) => row.action },
-  { key: "score", label: t("rspamdPage.col.score"), value: (row) => row.score },
-  { key: "size", label: t("rspamdPage.col.size"), value: (row) => row.size },
-  { key: "time", label: t("rspamdPage.col.time"), value: (row) => row.time },
+  { key: "action", label: t("rspamdPage.col.action"), value: (row) => row.action, searchable: false },
+  { key: "score", label: t("rspamdPage.col.score"), value: (row) => row.score, searchable: false },
+  { key: "size", label: t("rspamdPage.col.size"), value: (row) => row.size, searchable: false },
+  { key: "time", label: t("rspamdPage.col.time"), value: (row) => row.time, searchable: false },
 ]);
 
 const { domainId, domainFqdn } = useCurrentDomain();
@@ -29,6 +29,7 @@ const {
   page,
   limit,
   search,
+  searchBy,
   sortBy,
   sortDir,
 } = useRspamdPage(domainId);
@@ -69,6 +70,7 @@ watchEffect(() => {
         v-model:page="page"
         v-model:page-size="limit"
         v-model:search="search"
+        v-model:search-by="searchBy"
         v-model:sort-key="sortBy"
         v-model:sort-direction="sortDir"
         :data="historyItems"

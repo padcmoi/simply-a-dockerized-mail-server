@@ -14,9 +14,9 @@ const form = reactive({ sender: "" });
 // width rather than this page carrying one of each.
 const columns = computed<DataTableColumn<RejectedSender>[]>(() => [
   { key: "sender", label: t("sieve.table.sender"), value: (row) => row.sender, primary: true },
-  { key: "enabled", label: t("sieve.table.enabled"), value: (row) => row.enabled === 1 },
-  { key: "createdAt", label: t("sieve.table.created"), value: (row) => row.createdAt },
-  { key: "updatedAt", label: t("sieve.table.updated"), value: (row) => row.updatedAt },
+  { key: "enabled", label: t("sieve.table.enabled"), value: (row) => row.enabled === 1, searchable: false },
+  { key: "createdAt", label: t("sieve.table.created"), value: (row) => row.createdAt, searchable: false },
+  { key: "updatedAt", label: t("sieve.table.updated"), value: (row) => row.updatedAt, searchable: false },
 ]);
 
 const { t } = useI18n();

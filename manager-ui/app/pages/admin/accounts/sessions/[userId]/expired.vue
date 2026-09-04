@@ -35,6 +35,7 @@ const {
   page,
   limit,
   search,
+  searchBy,
   sortBy,
   sortDir,
   load,
@@ -53,17 +54,33 @@ const columns = computed<DataTableColumn<SessionRow>[]>(() => [
     label: t("profile.sessionsPage.colDevice"),
     value: (row) => deviceLabel(row.userAgent),
     sortable: false,
+    // The cell reads "Firefox on Windows"; the API matches the user agent
+    // string it was read out of, which is what narrowing to this column asks it
+    // to search.
+    searchKey: "userAgent",
     primary: true,
   },
   { key: "ip", label: t("profile.sessionsPage.colIp"), value: (row) => row.ip ?? "", sortable: false },
-  { key: "createdAt", label: t("profile.sessionsPage.colSignedIn"), value: (row) => row.createdAt },
-  { key: "lastSeen", label: t("accounts.allSessions.colLastSeen"), value: (row) => row.lastSeenAt ?? "", sortable: false },
-  { key: "expiresAt", label: t("profile.sessionsPage.colEnded"), value: (row) => row.revokedAt ?? row.expiresAt },
+  { key: "createdAt", label: t("profile.sessionsPage.colSignedIn"), value: (row) => row.createdAt, searchable: false },
+  {
+    key: "lastSeen",
+    label: t("accounts.allSessions.colLastSeen"),
+    value: (row) => row.lastSeenAt ?? "",
+    sortable: false,
+    searchable: false,
+  },
+  {
+    key: "expiresAt",
+    label: t("profile.sessionsPage.colEnded"),
+    value: (row) => row.revokedAt ?? row.expiresAt,
+    searchable: false,
+  },
   {
     key: "status",
     label: t("profile.sessionsPage.colStatus"),
     value: (row) => (row.revokedAt ? "revoked" : "expired"),
     sortable: false,
+    searchable: false,
   },
 ]);
 
@@ -157,6 +174,7 @@ onMounted(loadAccount);
       v-model:page="page"
       v-model:page-size="limit"
       v-model:search="search"
+      v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       :data="history"

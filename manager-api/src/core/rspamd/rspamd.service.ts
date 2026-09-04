@@ -1,11 +1,32 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import { resolveSortColumn, type PaginatedResult, type PaginationQuery } from "../common/pagination.validation";
+import {
+  resolveSearchColumn,
+  resolveSortColumn,
+  type PaginatedResult,
+  type PaginationQuery,
+} from "../common/pagination.validation";
 import { readDomainBayes, type RspamdDomainBayes } from "./bayes-redis";
 
 export type { BayesRecipientStat, RspamdDomainBayes } from "./bayes-redis";
 
 export const RSPAMD_HISTORY_SORTABLE_COLUMNS = ["sender_smtp", "rcpt", "action", "score", "size", "time"] as const;
 type RspamdSortableColumn = (typeof RSPAMD_HISTORY_SORTABLE_COLUMNS)[number];
+
+// The fields a `searchBy` may name, matching what the free-text search spans
+// when it names none. `subject` has no column in the list, which shows the
+// envelope and the verdict; it stays searchable, as it always was.
+export const RSPAMD_HISTORY_SEARCHABLE_COLUMNS = ["sender_smtp", "rcpt", "subject"] as const;
+
+function searchValues(row: RspamdHistoryRow, key: (typeof RSPAMD_HISTORY_SEARCHABLE_COLUMNS)[number]): string[] {
+  switch (key) {
+    case "sender_smtp":
+      return [row.sender_smtp ?? ""];
+    case "rcpt":
+      return row.rcpt_smtp ?? [];
+    case "subject":
+      return [row.subject ?? ""];
+  }
+}
 
 function sortValue(row: RspamdHistoryRow, key: RspamdSortableColumn): string | number {
   switch (key) {
@@ -233,11 +254,10 @@ export class RspamdService {
 
     if (query.search) {
       const term = query.search.toLowerCase();
-      rows = rows.filter(
-        (r) =>
-          r.sender_smtp?.toLowerCase().includes(term) ||
-          r.rcpt_smtp?.some((rcpt) => rcpt.toLowerCase().includes(term)) ||
-          r.subject?.toLowerCase().includes(term)
+      const searchBy = resolveSearchColumn(query.searchBy, RSPAMD_HISTORY_SEARCHABLE_COLUMNS);
+      const fields = searchBy ? [searchBy] : RSPAMD_HISTORY_SEARCHABLE_COLUMNS;
+      rows = rows.filter((r) =>
+        fields.some((field) => searchValues(r, field).some((value) => value.toLowerCase().includes(term)))
       );
     }
     const sortBy = resolveSortColumn(query.sortBy, RSPAMD_HISTORY_SORTABLE_COLUMNS, "time");

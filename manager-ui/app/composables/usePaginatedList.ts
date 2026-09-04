@@ -1,3 +1,5 @@
+import { ALL_COLUMNS } from "~/composables/useDataTableRows";
+
 // Shared across every list on the site -- a single "items per page"
 // preference the user sets once (in DataTable's toolbar) and keeps everywhere,
 // persisted with VueUse's useLocalStorage (SSR-safe, syncs from
@@ -38,6 +40,10 @@ export function usePaginatedList<T>(
   const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
   const search = ref("");
   const debouncedSearch = ref("");
+  // Which column the term is matched against, DataTable's scope select writing
+  // it. `ALL_COLUMNS` is every column the endpoint searches, which is what the
+  // query says by leaving `searchBy` out.
+  const searchBy = ref(ALL_COLUMNS);
   const sortBy = ref(defaultSortBy);
   const sortDir = ref<"asc" | "desc">("desc");
 
@@ -67,6 +73,7 @@ export function usePaginatedList<T>(
         sortBy: sortBy.value,
       });
       if (debouncedSearch.value) qs.set("search", debouncedSearch.value);
+      if (searchBy.value !== ALL_COLUMNS) qs.set("searchBy", searchBy.value);
       for (const [name, value] of Object.entries(extraParams())) qs.set(name, value);
       try {
         return await call<PaginatedResponse<T>>(`${path}?${qs.toString()}`);
@@ -75,7 +82,7 @@ export function usePaginatedList<T>(
         throw err;
       }
     },
-    { server: false, watch: [page, limit, sortBy, sortDir, debouncedSearch, useDataRefresh().tick, ...extraWatch] }
+    { server: false, watch: [page, limit, sortBy, sortDir, debouncedSearch, searchBy, useDataRefresh().tick, ...extraWatch] }
   );
 
   const items = computed(() => data.value?.items ?? []);
@@ -102,5 +109,5 @@ export function usePaginatedList<T>(
   // gone and only this drives feedback during reloads.
   const loading = computed(() => status.value === "pending");
 
-  return { items, total, loading, hasLoadedOnce, page, limit, search, sortBy, sortDir, load: refresh };
+  return { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sortBy, sortDir, load: refresh };
 }
