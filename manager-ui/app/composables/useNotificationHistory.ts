@@ -113,6 +113,7 @@ export function useNotificationHistory() {
   return {
     ...list,
     ALL,
+    writing,
     unread,
     readFilter,
     sourceFilter,

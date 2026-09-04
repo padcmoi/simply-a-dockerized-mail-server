@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t, locale } = useI18n();
-const { unread, items, refresh, markRead, markAllRead } = useNotifications();
+const { unread, items, writing, refresh, markRead, markAllRead } = useNotifications();
 const { label, icon } = useNotificationLabel();
 
 const open = ref(false);
@@ -52,6 +52,8 @@ onMounted(() => refresh().catch(() => undefined));
             variant="ghost"
             icon="i-lucide-check-check"
             :label="t('notifications.markAllRead')"
+            :loading="writing"
+            :disabled="writing"
             @click="markAllRead"
           />
         </div>
@@ -60,11 +62,12 @@ onMounted(() => refresh().catch(() => undefined));
           {{ t("notifications.empty") }}
         </p>
 
-        <div v-else class="overflow-y-auto divide-y divide-default">
+        <div v-else class="overflow-y-auto divide-y divide-default" :class="writing && 'animate-pulse pointer-events-none'">
           <button
             v-for="row in items"
             :key="row.id"
             type="button"
+            :disabled="writing"
             class="w-full text-left p-3 flex gap-3 hover:bg-elevated/50 transition-colors"
             @click="openNotification(row)"
           >

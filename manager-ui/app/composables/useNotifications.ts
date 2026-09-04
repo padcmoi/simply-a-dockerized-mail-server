@@ -1,3 +1,4 @@
+import { useRealtimeData } from "~/composables/useRealtime";
 import { useAuthStore } from "~/stores/auth";
 
 // Mirrors the API's own list, whose `GET /notifications/preferences` answers
@@ -13,12 +14,50 @@ export function useNotifications() {
   const { tick } = useDataRefresh();
 
   const accountId = computed(() => auth.session?.accountId ?? null);
-  const pushed = useRealtimeTopic<NotificationFeed>(() => (accountId.value ? `notifications:${accountId.value}` : null));
+  const topic = computed(() => (accountId.value ? `notifications:${accountId.value}` : null));
+  const pushed = useRealtimeTopic<NotificationFeed>(() => topic.value);
   const fetched = useState<NotificationFeed>("notifications-feed", () => ({ ...EMPTY }));
+  const realtime = useRealtimeData();
 
   const feed = computed<NotificationFeed>(() => pushed.value ?? fetched.value);
   const unread = computed(() => feed.value.unread);
   const items = computed(() => feed.value.items);
+
+  // A write is in flight. Shared like the feed itself, since the bell and the
+  // history page are two views of the same one: whichever asked, both know not
+  // to ask again until the answer lands.
+  const writing = useState("notifications-writing", () => false);
+
+  // What the bell shows is the PUSHED feed whenever there is one, so a write
+  // answering with the new feed was invisible: the counter only moved when the
+  // socket got round to saying the same thing, a second or two later, and the
+  // whole interface stood still until then. A local answer lands in both.
+  function publish(next: NotificationFeed) {
+    fetched.value = next;
+    if (topic.value) realtime.value = { ...realtime.value, [topic.value]: next };
+  }
+
+  // Every write answers with the whole feed, so one shape covers them all.
+  // `expected` is what the answer will say, applied at once: the read marks, the
+  // counter and the button that depends on it follow the click instead of the
+  // round trip, and there is nothing left to click twice. The request is still
+  // the truth -- its answer overwrites, and a failure puts back what was there.
+  async function write(request: () => Promise<NotificationFeed>, expected?: (_current: NotificationFeed) => NotificationFeed) {
+    if (writing.value) return;
+    const before = feed.value;
+    if (expected) publish(expected(before));
+    writing.value = true;
+    try {
+      publish(await request());
+    } catch (err) {
+      publish(before);
+      throw err;
+    } finally {
+      writing.value = false;
+    }
+  }
+
+  const readNow = (row: NotificationRow) => ({ ...row, readAt: row.readAt ?? new Date().toISOString() });
 
   // A session restored from storage before the account id was exposed carries no
   // accountId, so the realtime topic can never be built: re-read the profile once
@@ -26,29 +65,38 @@ export function useNotifications() {
   async function refresh() {
     if (!auth.isAuthenticated) return;
     if (!accountId.value) await auth.fetchProfile().catch(() => undefined);
-    fetched.value = await call<NotificationFeed>("/notifications/feed");
+    publish(await call<NotificationFeed>("/notifications/feed"));
   }
 
-  async function markRead(id: number) {
-    fetched.value = await call<NotificationFeed>(`/notifications/${id}/read`, { method: "POST" });
+  function markRead(id: number) {
+    return write(
+      () => call<NotificationFeed>(`/notifications/${id}/read`, { method: "POST" }),
+      (current) => ({
+        unread: Math.max(0, current.unread - (current.items.find((row) => row.id === id)?.readAt ? 0 : 1)),
+        items: current.items.map((row) => (row.id === id ? readNow(row) : row)),
+      })
+    );
   }
 
-  async function markAllRead() {
-    fetched.value = await call<NotificationFeed>("/notifications/read-all", { method: "POST" });
+  function markAllRead() {
+    return write(
+      () => call<NotificationFeed>("/notifications/read-all", { method: "POST" }),
+      (current) => ({ unread: 0, items: current.items.map(readNow) })
+    );
   }
 
-  async function markUnread(id: number) {
-    fetched.value = await call<NotificationFeed>(`/notifications/${id}/unread`, { method: "POST" });
+  function markUnread(id: number) {
+    return write(() => call<NotificationFeed>(`/notifications/${id}/unread`, { method: "POST" }));
   }
 
-  async function remove(id: number) {
-    fetched.value = await call<NotificationFeed>(`/notifications/${id}`, { method: "DELETE" });
+  function remove(id: number) {
+    return write(() => call<NotificationFeed>(`/notifications/${id}`, { method: "DELETE" }));
   }
 
   // Every write route answers with the feed, so the bell's counter follows a
   // purge without a second call and without waiting for the realtime push.
-  async function purge(scope: "all" | "read") {
-    fetched.value = await call<NotificationFeed>(`/notifications?scope=${scope}`, { method: "DELETE" });
+  function purge(scope: "all" | "read") {
+    return write(() => call<NotificationFeed>(`/notifications?scope=${scope}`, { method: "DELETE" }));
   }
 
   const safeRefresh = () => refresh().catch(() => undefined);
@@ -59,7 +107,7 @@ export function useNotifications() {
   );
   watch(tick, safeRefresh);
 
-  return { feed, unread, items, refresh, markRead, markUnread, markAllRead, remove, purge };
+  return { feed, unread, items, writing, refresh, markRead, markUnread, markAllRead, remove, purge };
 }
 
 export function useNotificationPreferences() {

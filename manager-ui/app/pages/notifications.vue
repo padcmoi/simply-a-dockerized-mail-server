@@ -24,6 +24,7 @@ const {
   readFilter,
   sourceFilter,
   busyId,
+  writing,
   filtering,
   toggleRead,
   deleteRow,
@@ -88,7 +89,8 @@ const onPurgeConfirmed = () => purgeScope(purgeChoice.value);
           color="neutral"
           variant="ghost"
           size="sm"
-          :disabled="unread === 0"
+          :loading="writing"
+          :disabled="unread === 0 || writing"
           @click="readEverything"
         >
           {{ t("notifications.markAllRead") }}
@@ -96,10 +98,10 @@ const onPurgeConfirmed = () => purgeScope(purgeChoice.value);
         <UButton icon="i-lucide-settings-2" color="neutral" variant="ghost" to="/profile/notifications" size="sm">
           {{ t("notifications.history.preferences") }}
         </UButton>
-        <UButton icon="i-lucide-eraser" color="neutral" variant="subtle" size="sm" @click="askPurge('read')">
+        <UButton icon="i-lucide-eraser" color="neutral" variant="subtle" size="sm" :disabled="writing" @click="askPurge('read')">
           {{ t("notifications.history.purgeRead") }}
         </UButton>
-        <UButton icon="i-lucide-trash-2" color="error" variant="subtle" size="sm" @click="askPurge('all')">
+        <UButton icon="i-lucide-trash-2" color="error" variant="subtle" size="sm" :disabled="writing" @click="askPurge('all')">
           {{ t("notifications.history.purgeAll") }}
         </UButton>
       </div>
