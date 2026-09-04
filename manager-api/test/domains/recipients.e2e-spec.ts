@@ -42,7 +42,13 @@ describe("RecipientsController (e2e: auth + ACL + behavior)", () => {
   const user = () => `Bearer ${h.token(USER)}`;
   const call = (m: Method, path: string) => {
     const agent = api();
-    return m === "get" ? agent.get(path) : m === "post" ? agent.post(path) : m === "patch" ? agent.patch(path) : agent.delete(path);
+    return m === "get"
+      ? agent.get(path)
+      : m === "post"
+        ? agent.post(path)
+        : m === "patch"
+          ? agent.patch(path)
+          : agent.delete(path);
   };
   // The whole chain a non-root needs on a :domainId route for a resource that
   // is not `domain` itself (see DomainPermissionGuard): global domains:access
@@ -180,7 +186,11 @@ describe("RecipientsController (e2e: auth + ACL + behavior)", () => {
     it("200 for ROOT, forwards id + parsed body + domain to the service", async () => {
       svc.resolveDomain.mockResolvedValueOnce(FQDN);
       svc.update.mockResolvedValueOnce({ id: 5, quota: "209715200" });
-      const res = await api().patch(`${base}/5`).set("Authorization", root()).send({ quota: 209715200, active: false }).expect(200);
+      const res = await api()
+        .patch(`${base}/5`)
+        .set("Authorization", root())
+        .send({ quota: 209715200, active: false })
+        .expect(200);
       expect(res.body).toMatchObject({ id: 5 });
       expect(svc.update).toHaveBeenCalledWith(5, expect.objectContaining({ quota: 209715200, active: false }), FQDN);
     });

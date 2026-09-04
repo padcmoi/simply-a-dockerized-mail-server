@@ -149,7 +149,9 @@ describe("CustomPermissionGuardService", () => {
 
     it("findDomainPermissions projects domainId/resource/action", async () => {
       domainPerms.find.mockResolvedValue([{ domainId: 1, resource: "recipients", action: "access", groupId: "g1" }]);
-      await expect(data.findDomainPermissions("g1")).resolves.toEqual([{ domainId: 1, resource: "recipients", action: "access" }]);
+      await expect(data.findDomainPermissions("g1")).resolves.toEqual([
+        { domainId: 1, resource: "recipients", action: "access" },
+      ]);
     });
 
     it("findOwnedDomainIds maps ids of the account's owned domains", async () => {
@@ -286,7 +288,9 @@ describe("CustomPermissionGuardService", () => {
     it("setGroupDomainPermissions replaces the set inside a transaction", async () => {
       await data.setGroupDomainPermissions("g1", [{ domainId: 1, resource: "recipients", action: "access" }]);
       expect(domainPermsTxInner.delete).toHaveBeenCalledWith({ groupId: "g1" });
-      expect(domainPermsTxInner.insert).toHaveBeenCalledWith([{ groupId: "g1", domainId: 1, resource: "recipients", action: "access" }]);
+      expect(domainPermsTxInner.insert).toHaveBeenCalledWith([
+        { groupId: "g1", domainId: 1, resource: "recipients", action: "access" },
+      ]);
     });
 
     it("setGroupDomainPermissions clears without inserting when empty", async () => {

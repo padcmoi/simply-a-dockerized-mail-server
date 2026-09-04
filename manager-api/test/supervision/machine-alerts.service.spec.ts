@@ -64,7 +64,9 @@ describe("MachineAlertsService", () => {
 
   it("notifies when the memory goes red", async () => {
     await svc.inspect(snapshot({ memoryUsed: 950 }));
-    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "machine-memory", payload: { metric: "memory", percent: 95 } }));
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "machine-memory", payload: { metric: "memory", percent: 95 } })
+    );
   });
 
   // The machine is sampled every second: a figure that stays red would otherwise

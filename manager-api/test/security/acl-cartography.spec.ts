@@ -44,6 +44,8 @@ const EXPECTED_PUBLIC = [
 const EXPECTED_NO_ACL_AUTHED = [
   "DELETE /api/v1/auth/jwt/me/sessions/:id",
   "DELETE /api/v1/auth/jwt/me/two-factor",
+  "GET /api/v1/auth/jwt/me/activity",
+  "GET /api/v1/auth/jwt/me/activity/actions",
   "GET /api/v1/auth/jwt/me/two-factor",
   "POST /api/v1/auth/jwt/me/two-factor/enable",
   "POST /api/v1/auth/jwt/me/two-factor/recovery-codes",

@@ -136,8 +136,14 @@ describe("DomainsRspamdController (e2e: auth + ACL + behavior)", () => {
 
     it("404 for root on both routes when the domain does not exist", async () => {
       const server = hnf.app.getHttpServer();
-      await request(server).get("/api/v1/domains/999/rspamd/stats").set("Authorization", `Bearer ${hnf.token(ROOT)}`).expect(404);
-      await request(server).get("/api/v1/domains/999/rspamd/history").set("Authorization", `Bearer ${hnf.token(ROOT)}`).expect(404);
+      await request(server)
+        .get("/api/v1/domains/999/rspamd/stats")
+        .set("Authorization", `Bearer ${hnf.token(ROOT)}`)
+        .expect(404);
+      await request(server)
+        .get("/api/v1/domains/999/rspamd/history")
+        .set("Authorization", `Bearer ${hnf.token(ROOT)}`)
+        .expect(404);
     });
   });
 });

@@ -5,6 +5,7 @@ import { ApiError } from "../../common/api-error";
 import { AccountTwoFactor } from "../../entities/account-two-factor.entity";
 import { decryptSecret, encryptSecret } from "../api-token/api-token.cipher";
 import { generateRecoveryCodes, generateTotpSecret, hashRecoveryCode, matchRecoveryCode, matchTotp, otpauthUri } from "./totp";
+import { ActivityLogService } from "../../activity/activity-log.service";
 
 // Consecutive refusals an account gets before its codes stop being checked for
 // a while. The login challenge has its own five attempts; this one covers the
@@ -23,7 +24,10 @@ export interface TwoFactorStatus {
 export class TwoFactorService {
   private readonly failures = new Map<string, { count: number; until: number }>();
 
-  constructor(@InjectRepository(AccountTwoFactor) private readonly rows: Repository<AccountTwoFactor>) {}
+  constructor(
+    @InjectRepository(AccountTwoFactor) private readonly rows: Repository<AccountTwoFactor>,
+    private readonly activity: ActivityLogService
+  ) {}
 
   private pepper() {
     const p = process.env.MANAGER_API_TOKEN_PEPPER;
@@ -95,6 +99,7 @@ export class TwoFactorService {
     row.lastUsedStep = String(step);
     row.recoveryCodes = recoveryCodes.map((code) => hashRecoveryCode(code, this.pepper()));
     await this.rows.save(row);
+    await this.activity.record({ action: "auth.two-factor.enabled", actorId: accountId });
     return { recoveryCodes };
   }
 
@@ -106,6 +111,7 @@ export class TwoFactorService {
     if (!(await this.consume(row, code))) this.refuse(accountId);
     this.failures.delete(accountId);
     await this.rows.delete({ accountId });
+    await this.activity.record({ action: "auth.two-factor.disabled", actorId: accountId });
     return { disabled: true };
   }
 
@@ -120,6 +126,7 @@ export class TwoFactorService {
     const recoveryCodes = generateRecoveryCodes();
     row.recoveryCodes = recoveryCodes.map((code) => hashRecoveryCode(code, this.pepper()));
     await this.rows.save(row);
+    await this.activity.record({ action: "auth.two-factor.recovery-codes-regenerated", actorId: accountId });
     return { recoveryCodes };
   }
 
@@ -136,7 +143,14 @@ export class TwoFactorService {
   // its password again. Nothing else is touched.
   async reset(accountId: string) {
     const result = await this.rows.delete({ accountId });
-    return { reset: (result.affected ?? 0) > 0 };
+    const reset = (result.affected ?? 0) > 0;
+    if (reset)
+      await this.activity.record({
+        action: "auth.two-factor.reset",
+        subjectId: accountId,
+        entity: { type: "account", id: accountId },
+      });
+    return { reset };
   }
 
   private async enabledRow(accountId: string) {
@@ -182,6 +196,7 @@ export class TwoFactorService {
     entry.count += 1;
     entry.until = Date.now() + LOCKOUT_MS;
     this.failures.set(accountId, entry);
+    void this.activity.record({ action: "auth.two-factor.refused", actorId: accountId });
     throw new ApiError(HttpStatus.BAD_REQUEST, "twoFactor.invalidCode", "This code is not valid");
   }
 }

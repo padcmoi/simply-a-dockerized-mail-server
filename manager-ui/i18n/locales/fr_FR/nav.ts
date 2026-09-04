@@ -20,6 +20,7 @@ export default {
   apiTokens: "Tokens API",
   config: "Configuration",
   supervision: "Supervision",
+  activity: "Journal d'activité",
   sectionMail: "Courrier",
   sectionAccess: "Accès",
   sectionSystem: "Système",

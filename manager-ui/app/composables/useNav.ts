@@ -43,8 +43,12 @@ export function useNav(onSignOut: () => Promise<void>) {
   }
 
   // One entry, when the account holds `access` on the resource behind it.
-  function entry(resource: string, label: string, icon: string, to: string) {
-    return canAccessGlobal(resource) ? [{ label: t(label), icon, to, active: isActive(to) }] : [];
+  // `action`, when given, is what the page itself demands beyond `access`: an
+  // entry to a page that would answer 403 is a door drawn on a wall.
+  function entry(resource: string, label: string, icon: string, to: string, action?: string) {
+    if (!canAccessGlobal(resource)) return [];
+    if (action && auth.session?.isRoot !== true && !perms.hasGlobal(resource, action)) return [];
+    return [{ label: t(label), icon, to, active: isActive(to) }];
   }
 
   // Eleven entries in one column is a list that gets scanned rather than read.
@@ -91,6 +95,7 @@ export function useNav(onSignOut: () => Promise<void>) {
           ]
         : []),
       ...entry("supervision", "nav.supervision", "i-lucide-activity", "/admin/supervision"),
+      ...entry("supervision", "nav.activity", "i-lucide-scroll-text", "/admin/activity", "view-activity-log"),
     ]),
   ]);
 

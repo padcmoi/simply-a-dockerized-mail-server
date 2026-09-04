@@ -27,11 +27,7 @@ describe("MailConfigController (e2e: root-only /config namespace)", () => {
   beforeAll(async () => {
     h = await buildHarness({
       controllers: [MailConfigController],
-      providers: [
-        RootGuard,
-        { provide: MailSettingsService, useValue: settings },
-        { provide: MailerService, useValue: mailer },
-      ],
+      providers: [RootGuard, { provide: MailSettingsService, useValue: settings }, { provide: MailerService, useValue: mailer }],
     });
   });
   afterAll(() => h.close());
@@ -114,7 +110,11 @@ describe("MailConfigController (e2e: root-only /config namespace)", () => {
 
     it("POST verify rejects a wrong code with mail.otpInvalid", async () => {
       settings.verify.mockResolvedValue(false);
-      const res = await api().post(`${base}/verify`).set("Authorization", root()).send({ provider: "brevo", otp: "000000" }).expect(400);
+      const res = await api()
+        .post(`${base}/verify`)
+        .set("Authorization", root())
+        .send({ provider: "brevo", otp: "000000" })
+        .expect(400);
       expect(res.body.code).toBe("mail.otpInvalid");
     });
 

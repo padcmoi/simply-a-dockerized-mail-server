@@ -44,12 +44,20 @@ describe("AdminDomainsController (e2e: auth + ACL + behavior)", () => {
 
   describe("PATCH /admin/domains/:domainId/quota (resizeQuota)", () => {
     it("403 for a user without the superadmin grant", async () => {
-      await api().patch(`/api/v1/admin/domains/${ID}/quota`).set(...asUser()).send({ quota: QUOTA }).expect(403);
+      await api()
+        .patch(`/api/v1/admin/domains/${ID}/quota`)
+        .set(...asUser())
+        .send({ quota: QUOTA })
+        .expect(403);
     });
 
     it("403 for a user with only domains:access (missing superadmin)", async () => {
       h.cpg.grantGlobal("domains", "access");
-      await api().patch(`/api/v1/admin/domains/${ID}/quota`).set(...asUser()).send({ quota: QUOTA }).expect(403);
+      await api()
+        .patch(`/api/v1/admin/domains/${ID}/quota`)
+        .set(...asUser())
+        .send({ quota: QUOTA })
+        .expect(403);
     });
 
     it("200 for root and forwards id + parsed body", async () => {
@@ -75,7 +83,11 @@ describe("AdminDomainsController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 on a below-minimum quota", async () => {
-      await api().patch(`/api/v1/admin/domains/${ID}/quota`).set(...asRoot()).send({ quota: 5 }).expect(400);
+      await api()
+        .patch(`/api/v1/admin/domains/${ID}/quota`)
+        .set(...asRoot())
+        .send({ quota: 5 })
+        .expect(400);
     });
 
     it("400 on an unknown extra key (strict schema)", async () => {
@@ -87,18 +99,28 @@ describe("AdminDomainsController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 when :domainId is not an integer", async () => {
-      await api().patch("/api/v1/admin/domains/abc/quota").set(...asRoot()).send({ quota: QUOTA }).expect(400);
+      await api()
+        .patch("/api/v1/admin/domains/abc/quota")
+        .set(...asRoot())
+        .send({ quota: QUOTA })
+        .expect(400);
     });
   });
 
   describe("DELETE /admin/domains/:domainId (remove)", () => {
     it("403 for a user without the superadmin grant", async () => {
-      await api().delete(`/api/v1/admin/domains/${ID}`).set(...asUser()).expect(403);
+      await api()
+        .delete(`/api/v1/admin/domains/${ID}`)
+        .set(...asUser())
+        .expect(403);
     });
 
     it("200 for root and forwards the parsed id", async () => {
       svc.remove.mockResolvedValueOnce({ ok: true });
-      await api().delete(`/api/v1/admin/domains/${ID}`).set(...asRoot()).expect(200);
+      await api()
+        .delete(`/api/v1/admin/domains/${ID}`)
+        .set(...asRoot())
+        .expect(200);
       expect(svc.remove).toHaveBeenCalledWith(ID);
     });
 
@@ -106,12 +128,18 @@ describe("AdminDomainsController (e2e: auth + ACL + behavior)", () => {
       h.cpg.grantGlobal("domains", "access");
       h.cpg.grantGlobal("superadmin", "access", "delete-any-domain");
       svc.remove.mockResolvedValueOnce({ ok: true });
-      await api().delete(`/api/v1/admin/domains/${ID}`).set(...asUser()).expect(200);
+      await api()
+        .delete(`/api/v1/admin/domains/${ID}`)
+        .set(...asUser())
+        .expect(200);
       expect(svc.remove).toHaveBeenCalledWith(ID);
     });
 
     it("400 when :domainId is not an integer", async () => {
-      await api().delete("/api/v1/admin/domains/abc").set(...asRoot()).expect(400);
+      await api()
+        .delete("/api/v1/admin/domains/abc")
+        .set(...asRoot())
+        .expect(400);
     });
   });
 });

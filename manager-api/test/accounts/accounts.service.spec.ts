@@ -12,6 +12,7 @@ import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import type { GeocodingService } from "../../src/core/geocoding/geocoding.service";
 import type { TwoFactorService } from "../../src/core/auth/two-factor/two-factor.service";
 import { providerMock, qbMock, repoMock } from "../helpers/mocks";
+import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
 // One typed double per constructor argument, in order. The repositories slot
 // straight into the service constructor (no `as never`), so a wrong repo type or
@@ -37,6 +38,8 @@ function makeMocks() {
   };
 }
 
+const activityMock = () => providerMock<ActivityLogService>({ record: vi.fn(async () => undefined) });
+
 describe("AccountsService", () => {
   let m: ReturnType<typeof makeMocks>;
   let svc: AccountsService;
@@ -52,7 +55,8 @@ describe("AccountsService", () => {
       m.domains,
       m.virtualUsers,
       m.aliases,
-      m.twoFactor
+      m.twoFactor,
+      activityMock()
     );
   });
 
@@ -244,6 +248,20 @@ describe("AccountsService", () => {
 
       expect(res).toMatchObject({ displayName: null, avatarUrl: null, phone: null, isRoot: false, enabled: false, groups: [] });
       expect(m.groups.findBy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("resetTwoFactor", () => {
+    it("throws NotFound when the account is absent, without touching the factor", async () => {
+      m.accounts.findOne.mockResolvedValue(null);
+      await expect(svc.resetTwoFactor("x")).rejects.toBeInstanceOf(NotFoundException);
+      expect(m.twoFactor.reset).not.toHaveBeenCalled();
+    });
+
+    it("removes the factor of an existing account and answers what the service did", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      await expect(svc.resetTwoFactor("a1")).resolves.toEqual({ reset: true });
+      expect(m.twoFactor.reset).toHaveBeenCalledWith("a1");
     });
   });
 

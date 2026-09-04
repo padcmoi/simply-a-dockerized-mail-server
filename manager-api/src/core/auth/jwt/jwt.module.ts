@@ -18,6 +18,7 @@ import { TwoFactorModule } from "../two-factor/two-factor.module";
 import { JwtAuthController } from "./jwt.controller";
 import { JwtAuthService } from "./jwt.service";
 import { JwtStrategy } from "./jwt.strategy";
+import { ActivityLogModule } from "../../activity/activity-log.module";
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { JwtStrategy } from "./jwt.strategy";
     GeocodingModule,
     MailerModule,
     TwoFactorModule,
+    ActivityLogModule,
   ],
   providers: [JwtAuthService, JwtStrategy],
   controllers: [JwtAuthController],

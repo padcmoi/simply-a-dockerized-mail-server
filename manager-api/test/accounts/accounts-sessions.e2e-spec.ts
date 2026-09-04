@@ -62,56 +62,86 @@ describe("AccountsSessionsController (e2e: auth + ACL + behavior)", () => {
 
   describe("GET /accounts/sessions/overview", () => {
     it("403 for a user without the permission", async () => {
-      await api().get("/api/v1/accounts/sessions/overview").set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+      await api()
+        .get("/api/v1/accounts/sessions/overview")
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(403);
     });
 
     it("200 for a user granted view-account-sessions", async () => {
       h.cpg.grantGlobal("accounts", "access", "view-account-sessions");
       jwtAuth.listSessionsOverview.mockResolvedValueOnce([]);
-      await api().get("/api/v1/accounts/sessions/overview").set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
+      await api()
+        .get("/api/v1/accounts/sessions/overview")
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(200);
     });
 
     it("200 for root", async () => {
       jwtAuth.listSessionsOverview.mockResolvedValueOnce([]);
-      await api().get("/api/v1/accounts/sessions/overview").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      await api()
+        .get("/api/v1/accounts/sessions/overview")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(200);
       expect(jwtAuth.listSessionsOverview).toHaveBeenCalled();
     });
   });
 
   describe("GET /accounts/:id/sessions/active", () => {
     it("403 for a user without the permission", async () => {
-      await api().get(`/api/v1/accounts/${UUID}/sessions/active`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+      await api()
+        .get(`/api/v1/accounts/${UUID}/sessions/active`)
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(403);
     });
 
     it("200 for a user granted view-account-sessions and forwards the id", async () => {
       h.cpg.grantGlobal("accounts", "access", "view-account-sessions");
       jwtAuth.listActiveSessions.mockResolvedValueOnce([]);
-      await api().get(`/api/v1/accounts/${UUID}/sessions/active`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
+      await api()
+        .get(`/api/v1/accounts/${UUID}/sessions/active`)
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(200);
       expect(jwtAuth.listActiveSessions).toHaveBeenCalledWith(UUID);
     });
 
     it("400 when :id is not a uuid", async () => {
-      await api().get("/api/v1/accounts/not-a-uuid/sessions/active").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+      await api()
+        .get("/api/v1/accounts/not-a-uuid/sessions/active")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(400);
     });
   });
 
   describe("GET /accounts/:id/sessions/history", () => {
     it("403 for a user without the permission", async () => {
-      await api().get(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+      await api()
+        .get(`/api/v1/accounts/${UUID}/sessions/history`)
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(403);
     });
 
     it("200 for root and forwards the validated pagination query", async () => {
       jwtAuth.listSessionHistory.mockResolvedValueOnce({ items: [], total: 0 });
-      await api().get(`/api/v1/accounts/${UUID}/sessions/history?limit=10`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      await api()
+        .get(`/api/v1/accounts/${UUID}/sessions/history?limit=10`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(200);
       expect(jwtAuth.listSessionHistory).toHaveBeenCalledWith(UUID, expect.objectContaining({ limit: 10, offset: 0 }));
     });
 
     it("400 on an invalid pagination query (zod)", async () => {
-      await api().get(`/api/v1/accounts/${UUID}/sessions/history?limit=7`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+      await api()
+        .get(`/api/v1/accounts/${UUID}/sessions/history?limit=7`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(400);
     });
 
     it("400 when :id is not a uuid", async () => {
-      await api().get("/api/v1/accounts/not-a-uuid/sessions/history").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+      await api()
+        .get("/api/v1/accounts/not-a-uuid/sessions/history")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(400);
     });
   });
 
@@ -134,46 +164,70 @@ describe("AccountsSessionsController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 when :sessionId is not an integer", async () => {
-      await api().delete(`/api/v1/accounts/${UUID}/sessions/abc`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+      await api()
+        .delete(`/api/v1/accounts/${UUID}/sessions/abc`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(400);
     });
   });
 
   describe("DELETE /accounts/:id/sessions/history", () => {
     it("403 for a user without the permission", async () => {
-      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+      await api()
+        .delete(`/api/v1/accounts/${UUID}/sessions/history`)
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(403);
     });
 
     it("403 for a user with only revoke (purge is a distinct action)", async () => {
       h.cpg.grantGlobal("accounts", "access", "revoke-account-sessions");
-      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+      await api()
+        .delete(`/api/v1/accounts/${UUID}/sessions/history`)
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(403);
     });
 
     it("200 for a user granted purge-account-sessions and forwards the id", async () => {
       h.cpg.grantGlobal("accounts", "access", "purge-account-sessions");
       jwtAuth.purgeAccountSessionHistory.mockResolvedValueOnce({ ok: true, purged: 42 });
-      await api().delete(`/api/v1/accounts/${UUID}/sessions/history`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
+      await api()
+        .delete(`/api/v1/accounts/${UUID}/sessions/history`)
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(200);
       expect(jwtAuth.purgeAccountSessionHistory).toHaveBeenCalledWith(UUID);
     });
 
     it("400 when :id is not a uuid", async () => {
-      await api().delete("/api/v1/accounts/not-a-uuid/sessions/history").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+      await api()
+        .delete("/api/v1/accounts/not-a-uuid/sessions/history")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(400);
     });
   });
 
   describe("DELETE /accounts/:id/sessions", () => {
     it("403 for a user without the permission", async () => {
-      await api().delete(`/api/v1/accounts/${UUID}/sessions`).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+      await api()
+        .delete(`/api/v1/accounts/${UUID}/sessions`)
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(403);
     });
 
     it("200 for a user granted revoke-account-sessions and forwards the id", async () => {
       h.cpg.grantGlobal("accounts", "access", "revoke-account-sessions");
       jwtAuth.revokeAllActiveSessions.mockResolvedValueOnce({ ok: true, revoked: 3 });
-      await api().delete(`/api/v1/accounts/${UUID}/sessions`).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
+      await api()
+        .delete(`/api/v1/accounts/${UUID}/sessions`)
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(200);
       expect(jwtAuth.revokeAllActiveSessions).toHaveBeenCalledWith(UUID);
     });
 
     it("400 when :id is not a uuid", async () => {
-      await api().delete("/api/v1/accounts/not-a-uuid/sessions").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+      await api()
+        .delete("/api/v1/accounts/not-a-uuid/sessions")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(400);
     });
   });
 });

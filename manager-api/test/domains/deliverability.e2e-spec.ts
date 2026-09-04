@@ -37,7 +37,10 @@ describe("DeliverabilityController (e2e: auth + ACL)", () => {
   });
 
   it("403 for an account holding nothing", async () => {
-    await api().get(base).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+    await api()
+      .get(base)
+      .set("Authorization", `Bearer ${h.token(USER)}`)
+      .expect(403);
     expect(svc.report).not.toHaveBeenCalled();
   });
 
@@ -46,7 +49,10 @@ describe("DeliverabilityController (e2e: auth + ACL)", () => {
   it("403 with access to the domain but no right to run diagnostics", async () => {
     h.cpg.grantGlobal("domains", "access");
     h.cpg.grantDomain(1, "domain", "access");
-    await api().get(base).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+    await api()
+      .get(base)
+      .set("Authorization", `Bearer ${h.token(USER)}`)
+      .expect(403);
     expect(svc.report).not.toHaveBeenCalled();
   });
 
@@ -54,7 +60,10 @@ describe("DeliverabilityController (e2e: auth + ACL)", () => {
   // account cannot see.
   it("403 with the right to run diagnostics but no access to the domain", async () => {
     h.cpg.grantGlobal("deliverability", "access", "run-diagnostics");
-    await api().get(base).set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+    await api()
+      .get(base)
+      .set("Authorization", `Bearer ${h.token(USER)}`)
+      .expect(403);
     expect(svc.report).not.toHaveBeenCalled();
   });
 
@@ -62,28 +71,43 @@ describe("DeliverabilityController (e2e: auth + ACL)", () => {
     h.cpg.grantGlobal("domains", "access");
     h.cpg.grantGlobal("deliverability", "access", "run-diagnostics");
     h.cpg.grantDomain(1, "domain", "access");
-    await api().get(base).set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
+    await api()
+      .get(base)
+      .set("Authorization", `Bearer ${h.token(USER)}`)
+      .expect(200);
   });
 
   it("runs against the domain's canonical lowercase name", async () => {
-    await api().get(base).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+    await api()
+      .get(base)
+      .set("Authorization", `Bearer ${h.token(ROOT)}`)
+      .expect(200);
     expect(svc.report).toHaveBeenCalledWith("example.org", false);
   });
 
   it("404 on a domain that does not exist", async () => {
     domains.findOne.mockResolvedValue(null);
-    await api().get(base).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(404);
+    await api()
+      .get(base)
+      .set("Authorization", `Bearer ${h.token(ROOT)}`)
+      .expect(404);
     expect(svc.report).not.toHaveBeenCalled();
   });
 
   // Opening the page reads the stored report; the re-run button is the only
   // thing that spends an SMTP session and a round of blocklist queries.
   it("only produces a new report when the caller asks for one", async () => {
-    await api().get(`${base}?refresh=true`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+    await api()
+      .get(`${base}?refresh=true`)
+      .set("Authorization", `Bearer ${h.token(ROOT)}`)
+      .expect(200);
     expect(svc.report).toHaveBeenCalledWith("example.org", true);
   });
 
   it("400 on a non-numeric domain id", async () => {
-    await api().get("/api/v1/domains/abc/deliverability").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(400);
+    await api()
+      .get("/api/v1/domains/abc/deliverability")
+      .set("Authorization", `Bearer ${h.token(ROOT)}`)
+      .expect(400);
   });
 });

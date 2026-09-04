@@ -13,6 +13,7 @@ import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { GeocodingService } from "../../../core/geocoding/geocoding.service";
 import { TwoFactorService } from "../../../core/auth/two-factor/two-factor.service";
 import type { UpdateAccountDto } from "./crud.validation";
+import { ActivityLogService } from "../../../core/activity/activity-log.service";
 
 // `group` (enriched post-query, see `enrichWithGroups`) isn't a real column
 // on `accounts` -- not sortable without a join/subquery, out of scope here.
@@ -54,7 +55,8 @@ export class AccountsService {
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>,
     @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>,
-    private readonly twoFactor: TwoFactorService
+    private readonly twoFactor: TwoFactorService,
+    private readonly activity: ActivityLogService
   ) {}
 
   // `notInGroup` (a group id) filters out accounts that are already members of
@@ -250,6 +252,12 @@ export class AccountsService {
       }
       await this.profiles.save(profile);
     }
+    await this.activity.record({
+      action: "accounts.updated",
+      subjectId: id,
+      entity: { type: "account", id, label: account.email },
+      details: { fields: Object.keys(input) },
+    });
     return this.getById(id);
   }
 
@@ -284,6 +292,11 @@ export class AccountsService {
     if (!account) throw new NotFoundException(`Account #${id} not found`);
     if (account.isRoot === 1) throw new BadRequestException("Cannot delete a root account");
     await this.accounts.delete({ id });
+    await this.activity.record({
+      action: "accounts.deleted",
+      subjectId: null,
+      entity: { type: "account", id, label: account.email },
+    });
     return { ok: true };
   }
 

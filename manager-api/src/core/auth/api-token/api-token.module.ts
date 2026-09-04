@@ -7,9 +7,10 @@ import { ApiTokenService } from "./api-token.service";
 import { ApiTokenAccess } from "./api-token-access.entity";
 import { ApiTokenAccessMiddleware } from "./api-token-access.middleware";
 import { ApiTokenAccessService } from "./api-token-access.service";
+import { ActivityLogModule } from "../../activity/activity-log.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ApiToken, ApiTokenAccess]), CustomPermissionGuardModule],
+  imports: [TypeOrmModule.forFeature([ApiToken, ApiTokenAccess]), CustomPermissionGuardModule, ActivityLogModule],
   providers: [ApiTokenService, ApiTokenAccessService, ApiTokenAccessMiddleware],
   controllers: [ApiTokenController],
   exports: [ApiTokenService, ApiTokenAccessService],

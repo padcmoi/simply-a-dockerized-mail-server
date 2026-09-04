@@ -5,6 +5,7 @@ import { Strategy } from "passport-local";
 import { Repository } from "typeorm";
 import { scryptVerify } from "../../../common/scrypt";
 import { Account } from "../../../entities/account.entity";
+import { ActivityLogService } from "../../../activity/activity-log.service";
 
 // Email and password, as a provider like every other way in. It lives beside
 // the external ones on purpose: local is not a separate mechanism, it is the
@@ -18,7 +19,10 @@ import { Account } from "../../../entities/account.entity";
 // or not yet through an invitation) can never be reached this way.
 @Injectable()
 export class LocalProvider extends PassportStrategy(Strategy, "local") {
-  constructor(@InjectRepository(Account) private readonly accounts: Repository<Account>) {
+  constructor(
+    @InjectRepository(Account) private readonly accounts: Repository<Account>,
+    private readonly activity: ActivityLogService
+  ) {
     // Passport's own field names are `username`/`password`; the login identity
     // here is the email, so the incoming field is renamed rather than the API
     // contract being bent to Passport's vocabulary.
@@ -30,8 +34,10 @@ export class LocalProvider extends PassportStrategy(Strategy, "local") {
     // Deliberately flat: a missing account, a disabled one, an account with no
     // password and a wrong password are one answer, so the form can never be
     // used to find out which addresses exist here.
-    if (!account || !account.password) throw new UnauthorizedException("Invalid credentials");
-    if (!(await scryptVerify(password, account.password))) throw new UnauthorizedException("Invalid credentials");
+    if (!account || !account.password || !(await scryptVerify(password, account.password))) {
+      await this.activity.record({ action: "auth.login.refused", actorId: account?.id ?? null, details: { email } });
+      throw new UnauthorizedException("Invalid credentials");
+    }
     return account;
   }
 }

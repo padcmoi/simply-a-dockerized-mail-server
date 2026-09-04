@@ -49,22 +49,42 @@ describe("DkimService (OpenDKIM sidecar over global fetch)", () => {
   describe("list", () => {
     it("returns persisted rows mapped to DkimKey without touching the sidecar", async () => {
       repo.find.mockResolvedValue([
-        { domain: "example.com", selector: "dkim202601", dnsName: "dkim202601._domainkey", txtRecord: "v=DKIM1; p=ABC", publicKey: "ABC" },
+        {
+          domain: "example.com",
+          selector: "dkim202601",
+          dnsName: "dkim202601._domainkey",
+          txtRecord: "v=DKIM1; p=ABC",
+          publicKey: "ABC",
+        },
       ]);
       const out = await svc.list("example.com");
       expect(repo.find).toHaveBeenCalledWith({ where: { domain: "example.com" }, order: { selector: "ASC" } });
-      expect(out).toEqual([{ domain: "example.com", selector: "dkim202601", dnsName: "dkim202601._domainkey", txtRecord: "v=DKIM1; p=ABC" }]);
+      expect(out).toEqual([
+        { domain: "example.com", selector: "dkim202601", dnsName: "dkim202601._domainkey", txtRecord: "v=DKIM1; p=ABC" },
+      ]);
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it("self-heals from the sidecar and persists when the table is empty", async () => {
       repo.find.mockResolvedValue([]);
-      const key = { domain: "example.com", selector: "dkim202602", dnsName: "dkim202602._domainkey", txtRecord: "v=DKIM1; p=XYZ" };
+      const key = {
+        domain: "example.com",
+        selector: "dkim202602",
+        dnsName: "dkim202602._domainkey",
+        txtRecord: "v=DKIM1; p=XYZ",
+      };
       fetchMock.mockResolvedValueOnce(okJson({ keys: [key] }));
       const out = await svc.list("example.com");
       expect(fetchMock).toHaveBeenCalledWith(`${BASE}/keys/example.com`, expect.objectContaining({ method: "GET" }));
       expect(repo.upsert).toHaveBeenCalledWith(
-        [expect.objectContaining({ domain: "example.com", selector: "dkim202602", publicKey: "XYZ", txtRecord: "v=DKIM1; p=XYZ" })],
+        [
+          expect.objectContaining({
+            domain: "example.com",
+            selector: "dkim202602",
+            publicKey: "XYZ",
+            txtRecord: "v=DKIM1; p=XYZ",
+          }),
+        ],
         ["domain", "selector"]
       );
       expect(out).toEqual([key]);
@@ -88,13 +108,29 @@ describe("DkimService (OpenDKIM sidecar over global fetch)", () => {
 
     it("returns [] when the sidecar body is not JSON (ok branch)", async () => {
       repo.find.mockResolvedValue([]);
-      fetchMock.mockResolvedValueOnce(res({ ok: true, status: 200, json: async () => { throw new Error("no json"); } }));
+      fetchMock.mockResolvedValueOnce(
+        res({
+          ok: true,
+          status: 200,
+          json: async () => {
+            throw new Error("no json");
+          },
+        })
+      );
       await expect(svc.list("example.com")).resolves.toEqual([]);
     });
 
     it("swallows a sidecar HTTP error and returns []", async () => {
       repo.find.mockResolvedValue([]);
-      fetchMock.mockResolvedValueOnce(res({ ok: false, status: 502, json: async () => { throw new Error("no json"); } }));
+      fetchMock.mockResolvedValueOnce(
+        res({
+          ok: false,
+          status: 502,
+          json: async () => {
+            throw new Error("no json");
+          },
+        })
+      );
       await expect(svc.list("example.com")).resolves.toEqual([]);
     });
   });
@@ -129,7 +165,15 @@ describe("DkimService (OpenDKIM sidecar over global fetch)", () => {
     });
 
     it("falls back to a synthetic message when the error body is not JSON", async () => {
-      fetchMock.mockResolvedValueOnce(res({ ok: false, status: 503, json: async () => { throw new Error("no json"); } }));
+      fetchMock.mockResolvedValueOnce(
+        res({
+          ok: false,
+          status: 503,
+          json: async () => {
+            throw new Error("no json");
+          },
+        })
+      );
       const err = (await svc.create("example.com").catch((e) => e)) as HttpException;
       expect(err).toBeInstanceOf(HttpException);
       expect(err.getStatus()).toBe(503);
@@ -139,7 +183,13 @@ describe("DkimService (OpenDKIM sidecar over global fetch)", () => {
 
   describe("remove", () => {
     it("DELETEs on the sidecar and clears the persisted row", async () => {
-      const result = { domain: "example.com", selector: "dkim202601", removedFiles: [], removedKeyTable: 1, removedSigningTable: 1 };
+      const result = {
+        domain: "example.com",
+        selector: "dkim202601",
+        removedFiles: [],
+        removedKeyTable: 1,
+        removedSigningTable: 1,
+      };
       fetchMock.mockResolvedValueOnce(okJson(result));
       const out = await svc.remove("example.com", "dkim202601");
       const [url, init] = fetchMock.mock.calls[0];

@@ -61,7 +61,11 @@ describe("SupervisionController (e2e: auth + ACL + behavior)", () => {
       const res = await api().get(live).set("Authorization", auth(USER)).expect(200);
       // The thresholds travel with the window: the interface paints its red
       // with the numbers the machine notifies on, not with its own copy.
-      expect(res.body).toEqual({ snapshot, points: [snapshot], thresholds: { busy: MACHINE_BUSY, saturated: MACHINE_SATURATED } });
+      expect(res.body).toEqual({
+        snapshot,
+        points: [snapshot],
+        thresholds: { busy: MACHINE_BUSY, saturated: MACHINE_SATURATED },
+      });
     });
     it("200 for root, and answers with a null snapshot before the first sample", async () => {
       recorder.latest.mockReturnValue(null);

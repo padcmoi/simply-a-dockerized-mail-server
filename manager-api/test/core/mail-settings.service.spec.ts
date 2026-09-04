@@ -41,8 +41,26 @@ describe("MailSettingsService", () => {
       const out = await svc.list();
       expect(out.selected).toBe("brevo");
       expect(out.configs).toEqual([
-        { provider: "brevo", host: null, port: null, secure: false, username: "u", fromAddress: null, hasPassword: true, validated: true },
-        { provider: "smtp", host: "mail-postfix", port: null, secure: false, username: null, fromAddress: null, hasPassword: false, validated: true },
+        {
+          provider: "brevo",
+          host: null,
+          port: null,
+          secure: false,
+          username: "u",
+          fromAddress: null,
+          hasPassword: true,
+          validated: true,
+        },
+        {
+          provider: "smtp",
+          host: "mail-postfix",
+          port: null,
+          secure: false,
+          username: null,
+          fromAddress: null,
+          hasPassword: false,
+          validated: true,
+        },
       ]);
     });
 

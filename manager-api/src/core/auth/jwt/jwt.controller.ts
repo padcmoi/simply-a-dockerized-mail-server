@@ -55,6 +55,9 @@ import {
 } from "./jwt.validation";
 import { TwoFactorLoginDocs } from "../two-factor/two-factor.openapi";
 import { TwoFactorLoginDto, twoFactorLoginSchema } from "../two-factor/two-factor.validation";
+import { ACTIVITY_ACTIONS, ActivityLogService } from "../../activity/activity-log.service";
+import { activityListQuerySchema, type ActivityListQuery } from "../../activity/activity-log.validation";
+import { ActivityActionsDocs, MyActivityDocs } from "../../../api/activity/activity.openapi";
 
 type AuthedRequest = Request & {
   user: { id: string; email: string; isRoot: boolean };
@@ -73,7 +76,8 @@ export class JwtAuthController {
     @InjectRepository(VirtualDomain) private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>,
     @InjectRepository(VirtualAlias) private readonly virtualAliases: Repository<VirtualAlias>,
-    @InjectRepository(VirtualQuotaUser) private readonly recipientQuotas: Repository<VirtualQuotaUser>
+    @InjectRepository(VirtualQuotaUser) private readonly recipientQuotas: Repository<VirtualQuotaUser>,
+    private readonly activity: ActivityLogService
   ) {}
 
   // Resolves each domain-scoped permission's domainId to its FQDN, server-side,
@@ -196,6 +200,22 @@ export class JwtAuthController {
   @JwtMeSessionHistoryDocs()
   meSessionHistory(@Req() req: AuthedRequest, @Query(new ZodValidationPipe(paginationQuerySchema)) query: PaginationQuery) {
     return this.auth.listSessionHistory(req.user.id, query);
+  }
+
+  // The caller's own journal: what it did, and what an administrator did to
+  // its account. Same paging as every list, plus a filter on one kind of event.
+  @Get("me/activity")
+  @MyActivityDocs()
+  meActivity(@Req() req: AuthedRequest, @Query(new ZodValidationPipe(activityListQuerySchema)) query: ActivityListQuery) {
+    return this.activity.listForAccount(req.user.id, query);
+  }
+
+  // Every kind of event a line may carry: what the journal's filter offers,
+  // to the account's own page and to the server page alike.
+  @Get("me/activity/actions")
+  @ActivityActionsDocs()
+  activityActions() {
+    return ACTIVITY_ACTIONS;
   }
 
   @Delete("me/sessions/:id")

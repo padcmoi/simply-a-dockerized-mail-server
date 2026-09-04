@@ -31,6 +31,7 @@ import config from "./fr_FR/config";
 import supervision from "./fr_FR/supervision";
 import table from "./fr_FR/table";
 import deliverability from "./fr_FR/deliverability";
+import activity from "./fr_FR/activity";
 
 // One file per top-level namespace under ./fr_FR/, this file only assembles
 // them. `satisfies Locales` still type-checks the whole tree here, and each
@@ -68,4 +69,5 @@ export default {
   supervision,
   table,
   deliverability,
+  activity,
 } satisfies Locales;

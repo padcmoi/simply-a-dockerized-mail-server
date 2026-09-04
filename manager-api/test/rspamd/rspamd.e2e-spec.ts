@@ -63,11 +63,7 @@ describe("RspamdController (e2e: auth + ACL + behavior)", () => {
     });
     it("200 for root, forwarding domain/size/query to the service", async () => {
       svc.history.mockResolvedValue({ items: [], total: 0 });
-      await api()
-        .get(url)
-        .query({ domain: "example.com", size: "50", limit: "10" })
-        .set("Authorization", auth(ROOT))
-        .expect(200);
+      await api().get(url).query({ domain: "example.com", size: "50", limit: "10" }).set("Authorization", auth(ROOT)).expect(200);
       expect(svc.history).toHaveBeenCalledWith("example.com", 50, expect.objectContaining({ limit: 10 }));
     });
     it("200 for root with no query params (unpaginated legacy call)", async () => {

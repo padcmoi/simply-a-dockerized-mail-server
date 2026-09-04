@@ -6,7 +6,8 @@ import type { PaginationQuery } from "../../src/core/common/pagination.validatio
 import { Account } from "../../src/core/entities/account.entity";
 import { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
-import { repoMock } from "../helpers/mocks";
+import { providerMock, repoMock } from "../helpers/mocks";
+import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
 // One typed double per constructor arg: the alias repo and the domain repo.
 // repoMock stubs every repository method, so the service constructor stays
@@ -40,6 +41,8 @@ function makeAccountRepo() {
 
 const q = (over: Partial<PaginationQuery> = {}): PaginationQuery => ({ offset: 0, sortDir: "desc", ...over });
 
+const activityMock = () => providerMock<ActivityLogService>({ record: vi.fn(async () => undefined) });
+
 describe("AliasesService", () => {
   let aliases: ReturnType<typeof makeAliasRepo>;
   let domains: ReturnType<typeof makeDomainRepo>;
@@ -52,7 +55,7 @@ describe("AliasesService", () => {
     aliases = makeAliasRepo(qb);
     domains = makeDomainRepo();
     accounts = makeAccountRepo();
-    svc = new AliasesService(aliases, domains, accounts);
+    svc = new AliasesService(aliases, domains, accounts, activityMock());
   });
 
   describe("resolveDomain", () => {
@@ -112,10 +115,9 @@ describe("AliasesService", () => {
 
     it("searches across source, destination and the owner address", async () => {
       await svc.list("example.test", q({ limit: 10, offset: 0, search: "foo" }));
-      expect(qb.andWhere).toHaveBeenCalledWith(
-        "(a.source LIKE :search OR a.destination LIKE :search OR o.email LIKE :search)",
-        { search: "%foo%" }
-      );
+      expect(qb.andWhere).toHaveBeenCalledWith("(a.source LIKE :search OR a.destination LIKE :search OR o.email LIKE :search)", {
+        search: "%foo%",
+      });
     });
 
     it("leaves the query unfiltered when no search term is given", async () => {
@@ -180,7 +182,9 @@ describe("AliasesService", () => {
 
     it("throws an ApiError(CONFLICT) when the source already exists", async () => {
       aliases.findOne.mockResolvedValue({ id: 1, source: "sales@example.test" });
-      await expect(svc.create({ localPart: "sales", destination: "team@example.test" }, "example.test")).rejects.toBeInstanceOf(ApiError);
+      await expect(svc.create({ localPart: "sales", destination: "team@example.test" }, "example.test")).rejects.toBeInstanceOf(
+        ApiError
+      );
       expect(aliases.save).not.toHaveBeenCalled();
     });
   });
@@ -207,9 +211,16 @@ describe("AliasesService", () => {
     });
 
     it("updates only the destination without touching the source", async () => {
-      aliases.findOne.mockResolvedValueOnce({ id: 5, source: "keep@example.test", destination: "old@b.com", domain: "example.test" });
+      aliases.findOne.mockResolvedValueOnce({
+        id: 5,
+        source: "keep@example.test",
+        destination: "old@b.com",
+        domain: "example.test",
+      });
       await svc.update(5, { destination: "new@b.com" }, "example.test");
-      expect(aliases.save).toHaveBeenCalledWith(expect.objectContaining({ source: "keep@example.test", destination: "new@b.com" }));
+      expect(aliases.save).toHaveBeenCalledWith(
+        expect.objectContaining({ source: "keep@example.test", destination: "new@b.com" })
+      );
       expect(aliases.findOne).toHaveBeenCalledTimes(1); // no free-check when source is untouched
     });
 

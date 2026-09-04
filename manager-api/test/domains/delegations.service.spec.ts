@@ -131,7 +131,12 @@ describe("DelegationsService", () => {
       accounts.findOne.mockResolvedValue(entity<Account>({ id: "acc", email: "acc@x.io" }));
       delegations.findOne.mockResolvedValue(null);
       await expect(
-        svc.grantOrInvite("admin", 1, { email: "acc@x.io", quotaMb: 999999, maxRecipients: null, maxAliases: null, expiresDays: null }, "http://x")
+        svc.grantOrInvite(
+          "admin",
+          1,
+          { email: "acc@x.io", quotaMb: 999999, maxRecipients: null, maxAliases: null, expiresDays: null },
+          "http://x"
+        )
       ).resolves.toMatchObject({ mode: "granted" });
     });
 
@@ -170,7 +175,9 @@ describe("DelegationsService", () => {
           delegationQuotaMb: 100,
         })
       );
-      expect(mailer.sendInvitation).toHaveBeenCalledWith(expect.objectContaining({ to: "new@x.io", fromDomain: FQDN, groupNames: [] }));
+      expect(mailer.sendInvitation).toHaveBeenCalledWith(
+        expect.objectContaining({ to: "new@x.io", fromDomain: FQDN, groupNames: [] })
+      );
       expect(delegations.save).not.toHaveBeenCalled();
     });
   });
@@ -208,7 +215,12 @@ describe("DelegationsService", () => {
     it("null expiresDays stores no expiry: the link stands until revoked", async () => {
       recipients.createQueryBuilder.mockReturnValue(qbSum(0));
       delegations.find.mockResolvedValue([]);
-      await svc.createToken("admin", 1, { maxRecipients: 1, maxAliases: 1, quotaMb: 10, expiresDays: null, note: null }, "http://x");
+      await svc.createToken(
+        "admin",
+        1,
+        { maxRecipients: 1, maxAliases: 1, quotaMb: 10, expiresDays: null, note: null },
+        "http://x"
+      );
       expect(invitations.save).toHaveBeenCalledWith(expect.objectContaining({ expiresAt: null }));
     });
 
@@ -222,13 +234,13 @@ describe("DelegationsService", () => {
   describe("editInvitation", () => {
     it("404s on an unknown or expired invitation", async () => {
       invitations.findOne.mockResolvedValue(null);
-      await expect(svc.editInvitation(1, 9, { maxRecipients: 1, maxAliases: 1, quotaMb: 10, expiresDays: null, note: null })).rejects.toBeInstanceOf(
-        NotFoundException
-      );
+      await expect(
+        svc.editInvitation(1, 9, { maxRecipients: 1, maxAliases: 1, quotaMb: 10, expiresDays: null, note: null })
+      ).rejects.toBeInstanceOf(NotFoundException);
       invitations.findOne.mockResolvedValue(entity<AccountInvitation>({ id: 9, acceptedAt: null, expiresAt: new Date(0) }));
-      await expect(svc.editInvitation(1, 9, { maxRecipients: 1, maxAliases: 1, quotaMb: 10, expiresDays: null, note: null })).rejects.toBeInstanceOf(
-        NotFoundException
-      );
+      await expect(
+        svc.editInvitation(1, 9, { maxRecipients: 1, maxAliases: 1, quotaMb: 10, expiresDays: null, note: null })
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("edits caps and expiry under anti-overcommit, its own promise excluded from the sum", async () => {
@@ -243,12 +255,24 @@ describe("DelegationsService", () => {
         ok: true,
       });
       expect(invitations.save).toHaveBeenCalledWith(
-        expect.objectContaining({ delegationMaxRecipients: 2, delegationMaxAliases: null, delegationQuotaMb: 500, expiresAt: null })
+        expect.objectContaining({
+          delegationMaxRecipients: 2,
+          delegationMaxAliases: null,
+          delegationQuotaMb: 500,
+          expiresAt: null,
+        })
       );
     });
 
     it("updates the note of an open link", async () => {
-      const inv = entity<AccountInvitation>({ id: 9, email: null, acceptedAt: null, expiresAt: null, delegationQuotaMb: 50, note: "old" });
+      const inv = entity<AccountInvitation>({
+        id: 9,
+        email: null,
+        acceptedAt: null,
+        expiresAt: null,
+        delegationQuotaMb: 50,
+        note: "old",
+      });
       invitations.findOne.mockResolvedValue(inv);
       recipients.createQueryBuilder.mockReturnValueOnce(qbSum(0));
       invitations.find.mockResolvedValue([inv]);
@@ -258,7 +282,14 @@ describe("DelegationsService", () => {
     });
 
     it("leaves the note of an email invitation untouched", async () => {
-      const inv = entity<AccountInvitation>({ id: 9, email: "a@x.io", acceptedAt: null, expiresAt: null, delegationQuotaMb: 50, note: null });
+      const inv = entity<AccountInvitation>({
+        id: 9,
+        email: "a@x.io",
+        acceptedAt: null,
+        expiresAt: null,
+        delegationQuotaMb: 50,
+        note: null,
+      });
       invitations.findOne.mockResolvedValue(inv);
       recipients.createQueryBuilder.mockReturnValueOnce(qbSum(0));
       invitations.find.mockResolvedValue([inv]);
@@ -296,14 +327,25 @@ describe("DelegationsService", () => {
       });
       delegations.findOne.mockResolvedValue(existing);
       delegations.find.mockResolvedValue([existing]);
-      await svc.grantOrInvite("admin", 1, { email: "a@x.io", maxRecipients: 5, maxAliases: 7, quotaMb: 100, expiresDays: 7 }, "http://x");
+      await svc.grantOrInvite(
+        "admin",
+        1,
+        { email: "a@x.io", maxRecipients: 5, maxAliases: 7, quotaMb: 100, expiresDays: 7 },
+        "http://x"
+      );
       expect(delegations.save).toHaveBeenCalledWith(
         expect.objectContaining({ maxRecipients: 10, maxAliases: null, quotaMb: 600, baseRecipients: 2 })
       );
     });
 
     it("meters usage beyond the baseline only", async () => {
-      const d = entity<DomainDelegation>({ accountId: "acc", quotaMb: 100, baseRecipients: 1, baseAliases: 1, baseBytes: String(10 * MB) });
+      const d = entity<DomainDelegation>({
+        accountId: "acc",
+        quotaMb: 100,
+        baseRecipients: 1,
+        baseAliases: 1,
+        baseBytes: String(10 * MB),
+      });
       recipients.count.mockResolvedValue(3);
       aliases.count.mockResolvedValue(1);
       recipients.createQueryBuilder.mockImplementation(() => qbSum(30 * MB));
@@ -358,7 +400,9 @@ describe("DelegationsService", () => {
       aliases.count.mockResolvedValue(0);
       accounts.findOne.mockResolvedValue(entity<Account>({ id: "a", email: "a@x.io" }));
       delegations.find.mockResolvedValue([entity<DomainDelegation>({ accountId: "a", quotaMb: 100 })]);
-      invitations.find.mockResolvedValue([entity<AccountInvitation>({ id: 5, email: null, delegationQuotaMb: 200, expiresAt: null })]);
+      invitations.find.mockResolvedValue([
+        entity<AccountInvitation>({ id: 5, email: null, delegationQuotaMb: 200, expiresAt: null }),
+      ]);
       const res = await svc.listForDomain(1);
       expect(res.grantableMb).toBe(700);
       expect(res.delegations[0]?.grantableMb).toBe(800);
@@ -439,14 +483,18 @@ describe("DelegationsService", () => {
         }),
         "acc"
       );
-      expect(delegations.save).toHaveBeenCalledWith(expect.objectContaining({ maxRecipients: 10, maxAliases: 10, quotaMb: 1000 }));
+      expect(delegations.save).toHaveBeenCalledWith(
+        expect.objectContaining({ maxRecipients: 10, maxAliases: 10, quotaMb: 1000 })
+      );
     });
   });
 
   describe("setCaps / revoke", () => {
     it("404s when no delegation exists", async () => {
       delegations.findOne.mockResolvedValue(null);
-      await expect(svc.setCaps(1, "acc", { maxRecipients: 5, maxAliases: 7, quotaMb: 100 })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(svc.setCaps(1, "acc", { maxRecipients: 5, maxAliases: 7, quotaMb: 100 })).rejects.toBeInstanceOf(
+        NotFoundException
+      );
       await expect(svc.revoke(1, "acc")).rejects.toBeInstanceOf(NotFoundException);
     });
 

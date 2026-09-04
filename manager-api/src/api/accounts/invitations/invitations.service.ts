@@ -16,6 +16,7 @@ import { MailerService } from "../../../core/mailer/mailer.service";
 import { AppSettingsService } from "../../../core/settings/app-settings.service";
 import { DelegationsService } from "../../domains/delegations/delegations.service";
 import type { AcceptInvitationDto, SendInvitationDto } from "./invitations.validation";
+import { ActivityLogService } from "../../../core/activity/activity-log.service";
 
 @Injectable()
 export class AccountsInvitationsService {
@@ -31,7 +32,8 @@ export class AccountsInvitationsService {
     private readonly cpg: CustomPermissionGuardService,
     private readonly antiEscalation: AntiEscalationService,
     private readonly appSettings: AppSettingsService,
-    private readonly delegationsSvc: DelegationsService
+    private readonly delegationsSvc: DelegationsService,
+    private readonly activity: ActivityLogService
   ) {}
 
   private parseGroupIds(inv: AccountInvitation): string[] {
@@ -252,6 +254,11 @@ export class AccountsInvitationsService {
     await this.delegationsSvc.grantFromInvitation(inv, account.id);
     inv.acceptedAt = new Date();
     await this.invitations.save(inv);
+    await this.activity.record({
+      action: "delegations.accepted",
+      actorId: account.id,
+      entity: { type: "domain", id: inv.delegationDomainId },
+    });
     return { ok: true, email: account.email };
   }
 
@@ -279,6 +286,11 @@ export class AccountsInvitationsService {
     await this.delegationsSvc.grantFromInvitation(inv, accountId);
     inv.acceptedAt = new Date();
     await this.invitations.save(inv);
+    await this.activity.record({
+      action: "delegations.claimed",
+      actorId: accountId,
+      entity: { type: "domain", id: inv.delegationDomainId },
+    });
     return { ok: true, domainId: inv.delegationDomainId };
   }
 }

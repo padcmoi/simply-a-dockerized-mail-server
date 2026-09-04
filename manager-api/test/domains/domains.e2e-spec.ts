@@ -64,22 +64,31 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
 
   describe("GET /domains (list)", () => {
     it("403 for a user without domains:access", async () => {
-      await api().get("/api/v1/domains").set(...asUser()).expect(403);
+      await api()
+        .get("/api/v1/domains")
+        .set(...asUser())
+        .expect(403);
     });
 
     it("200 for root and forwards query + canSeeAll=true (root bypass)", async () => {
       svc.list.mockResolvedValueOnce([]);
-      await api().get("/api/v1/domains").set(...asRoot()).expect(200);
-      expect(svc.list).toHaveBeenCalledWith(
-        expect.objectContaining({ offset: 0, sortDir: "desc" }),
-        { callerId: ROOT.id, canSeeAll: true }
-      );
+      await api()
+        .get("/api/v1/domains")
+        .set(...asRoot())
+        .expect(200);
+      expect(svc.list).toHaveBeenCalledWith(expect.objectContaining({ offset: 0, sortDir: "desc" }), {
+        callerId: ROOT.id,
+        canSeeAll: true,
+      });
     });
 
     it("200 for a granted user, scoped to owned rows when no list-all-domains", async () => {
       h.cpg.grantGlobal("domains", "access");
       svc.list.mockResolvedValueOnce([]);
-      await api().get("/api/v1/domains").set(...asUser()).expect(200);
+      await api()
+        .get("/api/v1/domains")
+        .set(...asUser())
+        .expect(200);
       expect(svc.list).toHaveBeenCalledWith(expect.anything(), { callerId: USER.id, canSeeAll: false });
     });
 
@@ -89,41 +98,62 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
         global: [{ resource: "domains", action: "list-all-domains" }],
       });
       svc.list.mockResolvedValueOnce([]);
-      await api().get("/api/v1/domains").set(...asUser()).expect(200);
+      await api()
+        .get("/api/v1/domains")
+        .set(...asUser())
+        .expect(200);
       expect(svc.list).toHaveBeenCalledWith(expect.anything(), { callerId: USER.id, canSeeAll: true });
     });
 
     it("400 on an invalid pagination query (limit not in 10/25/50)", async () => {
-      await api().get("/api/v1/domains?limit=7").set(...asRoot()).expect(400);
+      await api()
+        .get("/api/v1/domains?limit=7")
+        .set(...asRoot())
+        .expect(400);
     });
   });
 
   describe("GET /domains/disk", () => {
     it("403 for a user without domains:view-disk-usage", async () => {
-      await api().get("/api/v1/domains/disk").set(...asUser()).expect(403);
+      await api()
+        .get("/api/v1/domains/disk")
+        .set(...asUser())
+        .expect(403);
     });
 
     it("200 for root and calls the service", async () => {
       svc.disk.mockResolvedValueOnce({ totalBytes: 1, freeBytes: 1, reservedBytes: 0, assignableBytes: 1 });
-      await api().get("/api/v1/domains/disk").set(...asRoot()).expect(200);
+      await api()
+        .get("/api/v1/domains/disk")
+        .set(...asRoot())
+        .expect(200);
       expect(svc.disk).toHaveBeenCalledTimes(1);
     });
 
     it("200 for a user granted access + view-disk-usage", async () => {
       h.cpg.grantGlobal("domains", "access", "view-disk-usage");
       svc.disk.mockResolvedValueOnce({ totalBytes: 1, freeBytes: 1, reservedBytes: 0, assignableBytes: 1 });
-      await api().get("/api/v1/domains/disk").set(...asUser()).expect(200);
+      await api()
+        .get("/api/v1/domains/disk")
+        .set(...asUser())
+        .expect(200);
     });
   });
 
   describe("GET /domains/:domainId (get)", () => {
     it("403 for a user with no grant and no ownership", async () => {
-      await api().get(`/api/v1/domains/${ID}`).set(...asUser()).expect(403);
+      await api()
+        .get(`/api/v1/domains/${ID}`)
+        .set(...asUser())
+        .expect(403);
     });
 
     it("200 for root and forwards the parsed id", async () => {
       svc.get.mockResolvedValueOnce({ id: ID });
-      await api().get(`/api/v1/domains/${ID}`).set(...asRoot()).expect(200);
+      await api()
+        .get(`/api/v1/domains/${ID}`)
+        .set(...asRoot())
+        .expect(200);
       expect(svc.get).toHaveBeenCalledWith(ID);
     });
 
@@ -131,25 +161,38 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
       h.cpg.grantGlobal("domains", "access");
       h.cpg.grantDomain(ID, "domain", "access", "view-domain");
       svc.get.mockResolvedValueOnce({ id: ID });
-      await api().get(`/api/v1/domains/${ID}`).set(...asUser()).expect(200);
+      await api()
+        .get(`/api/v1/domains/${ID}`)
+        .set(...asUser())
+        .expect(200);
       expect(svc.get).toHaveBeenCalledWith(ID);
     });
 
     it("200 for a non-root owner via the ownership bypass (no grants)", async () => {
       h.setDomainOwner(ID, USER.id);
       svc.get.mockResolvedValueOnce({ id: ID });
-      await api().get(`/api/v1/domains/${ID}`).set(...asUser()).expect(200);
+      await api()
+        .get(`/api/v1/domains/${ID}`)
+        .set(...asUser())
+        .expect(200);
       h.setDomainOwner(ID, null);
     });
 
     it("400 when :domainId is not an integer", async () => {
-      await api().get("/api/v1/domains/abc").set(...asRoot()).expect(400);
+      await api()
+        .get("/api/v1/domains/abc")
+        .set(...asRoot())
+        .expect(400);
     });
   });
 
   describe("POST /domains (create)", () => {
     it("403 for a user without domains:create-domain", async () => {
-      await api().post("/api/v1/domains").set(...asUser()).send({ domain: "new.test", quota: 10485760 }).expect(403);
+      await api()
+        .post("/api/v1/domains")
+        .set(...asUser())
+        .send({ domain: "new.test", quota: 10485760 })
+        .expect(403);
     });
 
     it("201 for root and forwards the parsed body + caller id as owner", async () => {
@@ -159,10 +202,7 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
         .set(...asRoot())
         .send({ domain: "new.test", quota: 10485760 })
         .expect(201);
-      expect(svc.create).toHaveBeenCalledWith(
-        expect.objectContaining({ domain: "new.test", quota: 10485760 }),
-        ROOT.id
-      );
+      expect(svc.create).toHaveBeenCalledWith(expect.objectContaining({ domain: "new.test", quota: 10485760 }), ROOT.id);
     });
 
     it("201 for a user granted access + create-domain", async () => {
@@ -176,13 +216,21 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 on an invalid body (missing quota / not a FQDN)", async () => {
-      await api().post("/api/v1/domains").set(...asRoot()).send({}).expect(400);
+      await api()
+        .post("/api/v1/domains")
+        .set(...asRoot())
+        .send({})
+        .expect(400);
     });
   });
 
   describe("PATCH /domains/:domainId/active (setActive)", () => {
     it("403 for a user with no grant and no ownership", async () => {
-      await api().patch(`/api/v1/domains/${ID}/active`).set(...asUser()).send({ active: false }).expect(403);
+      await api()
+        .patch(`/api/v1/domains/${ID}/active`)
+        .set(...asUser())
+        .send({ active: false })
+        .expect(403);
     });
 
     it("200 for root and forwards id + { active }", async () => {
@@ -207,13 +255,21 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 on an invalid body (active not a boolean)", async () => {
-      await api().patch(`/api/v1/domains/${ID}/active`).set(...asRoot()).send({ active: "yes" }).expect(400);
+      await api()
+        .patch(`/api/v1/domains/${ID}/active`)
+        .set(...asRoot())
+        .send({ active: "yes" })
+        .expect(400);
     });
   });
 
   describe("PATCH /domains/:domainId/owner (transferOwner)", () => {
     it("403 for a user without the elevated global grant", async () => {
-      await api().patch(`/api/v1/domains/${ID}/owner`).set(...asUser()).send({ newOwnerId: UUID }).expect(403);
+      await api()
+        .patch(`/api/v1/domains/${ID}/owner`)
+        .set(...asUser())
+        .send({ newOwnerId: UUID })
+        .expect(403);
     });
 
     it("200 for root and forwards id, acting user, and new owner id", async () => {
@@ -227,7 +283,11 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 on an invalid body (newOwnerId not a uuid)", async () => {
-      await api().patch(`/api/v1/domains/${ID}/owner`).set(...asRoot()).send({ newOwnerId: "nope" }).expect(400);
+      await api()
+        .patch(`/api/v1/domains/${ID}/owner`)
+        .set(...asRoot())
+        .send({ newOwnerId: "nope" })
+        .expect(400);
     });
   });
 });

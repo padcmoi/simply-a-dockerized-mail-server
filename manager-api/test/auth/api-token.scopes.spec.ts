@@ -109,7 +109,12 @@ describe("api token scopes", () => {
 
     it("lets a root account scope a key to anything, root holding everything", async () => {
       const assert = grants([]);
-      const refused = await refuseScopesBeyondAccount(assert, "acc-1", true, scopes([{ resource: "accounts", actions: ["access"] }]));
+      const refused = await refuseScopesBeyondAccount(
+        assert,
+        "acc-1",
+        true,
+        scopes([{ resource: "accounts", actions: ["access"] }])
+      );
       expect(refused).toEqual([]);
       expect(assert.global).not.toHaveBeenCalled();
     });

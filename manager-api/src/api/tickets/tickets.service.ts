@@ -18,6 +18,7 @@ import { NotificationsService } from "../../core/notifications/notifications.ser
 import { AppSettingsService } from "../../core/settings/app-settings.service";
 import { TopicPresenceService } from "../../core/websocket/presence.service";
 import { CreateTicketDto, ReplyTicketDto, TicketListQuery } from "./tickets.validation";
+import { ActivityLogService } from "../../core/activity/activity-log.service";
 
 export const TICKET_SORTABLE_COLUMNS = ["subject", "status", "createdAt", "updatedAt"] as const;
 
@@ -64,7 +65,8 @@ export class TicketsService {
     private readonly cpg: CustomPermissionGuardService,
     private readonly notifications: NotificationsService,
     private readonly presence: TopicPresenceService,
-    private readonly appSettings: AppSettingsService
+    private readonly appSettings: AppSettingsService,
+    private readonly activity: ActivityLogService
   ) {}
 
   // Identity shown next to a message: the display name when the account set
@@ -549,6 +551,11 @@ export class TicketsService {
     }
     await this.messages.save(this.messages.create({ ticketId: ticket.id, authorId: caller.userId, body: input.body }));
     await this.notify(ticket, "ticket-created", caller.userId);
+    await this.activity.record({
+      action: "tickets.created",
+      actorId: caller.userId,
+      entity: { type: "ticket", id: ticket.id, label: ticket.subject },
+    });
     return ticket;
   }
 
@@ -573,6 +580,11 @@ export class TicketsService {
       .where("id = :id", { id })
       .execute();
     await this.notify(ticket, "ticket-replied", caller.userId);
+    await this.activity.record({
+      action: "tickets.replied",
+      actorId: caller.userId,
+      entity: { type: "ticket", id: ticket.id, label: ticket.subject },
+    });
     return message;
   }
 
@@ -596,7 +608,13 @@ export class TicketsService {
     message.body = body;
     message.updatedAt = new Date();
     message.editCount += 1;
-    return this.messages.save(message);
+    const saved = await this.messages.save(message);
+    await this.activity.record({
+      action: "tickets.message-edited",
+      actorId: caller.userId,
+      entity: { type: "ticket", id: ticketId },
+    });
+    return saved;
   }
 
   async take(id: number, caller: TicketCaller) {
@@ -608,6 +626,11 @@ export class TicketsService {
     if (ticket.status === "open") ticket.status = "in_progress";
     const saved = await this.tickets.save(ticket);
     await this.notify(saved, "ticket-taken", caller.userId);
+    await this.activity.record({
+      action: "tickets.taken",
+      actorId: caller.userId,
+      entity: { type: "ticket", id: saved.id, label: saved.subject },
+    });
     return saved;
   }
 
@@ -623,6 +646,12 @@ export class TicketsService {
     ticket.status = status;
     const saved = await this.tickets.save(ticket);
     await this.notify(saved, "ticket-status", caller.userId, { status });
+    await this.activity.record({
+      action: "tickets.status-changed",
+      actorId: caller.userId,
+      entity: { type: "ticket", id: saved.id, label: saved.subject },
+      details: { status },
+    });
     return saved;
   }
 }

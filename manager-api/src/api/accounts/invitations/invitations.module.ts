@@ -14,9 +14,11 @@ import { SettingsModule } from "../../../core/settings/settings.module";
 import { DomainsDelegationsModule } from "../../domains/delegations/delegations.module";
 import { AccountsInvitationsController } from "./invitations.controller";
 import { AccountsInvitationsService } from "./invitations.service";
+import { ActivityLogModule } from "../../../core/activity/activity-log.module";
 
 @Module({
   imports: [
+    ActivityLogModule,
     TypeOrmModule.forFeature([AccountInvitation, Account, AccountProfile, Group, VirtualDomain, VirtualUser, VirtualAlias]),
     MailerModule,
     SettingsModule,

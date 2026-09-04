@@ -68,7 +68,11 @@ describe("MailCadenceController (e2e: root-only /config namespace)", () => {
         .expect(400);
     });
     it("rejects a missing field", async () => {
-      await api().put(base).set("Authorization", root()).send({ offlineNotifyAfterMs: 300000, offlineSweepIntervalMs: 20000 }).expect(400);
+      await api()
+        .put(base)
+        .set("Authorization", root())
+        .send({ offlineNotifyAfterMs: 300000, offlineSweepIntervalMs: 20000 })
+        .expect(400);
     });
     it("rejects an anti-spam window longer than the notification delay", async () => {
       await api()

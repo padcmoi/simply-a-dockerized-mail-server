@@ -80,7 +80,11 @@ describe("MySpaceController (e2e: auth + behavior)", () => {
     });
 
     it("POST recipients: 400 on a missing password, service untouched", async () => {
-      await api().post(`${base}/domains/1/recipients`).set("Authorization", user()).send({ localPart: "j", quota: 1 }).expect(400);
+      await api()
+        .post(`${base}/domains/1/recipients`)
+        .set("Authorization", user())
+        .send({ localPart: "j", quota: 1 })
+        .expect(400);
       expect(svc.createRecipient).not.toHaveBeenCalled();
     });
 

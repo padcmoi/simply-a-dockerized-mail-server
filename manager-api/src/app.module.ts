@@ -24,6 +24,7 @@ import { PassportAuthModule } from "./core/auth/passport/passport.module";
 import { CustomPermissionGuardModule } from "./core/custom-permission-guard/custom-permission-guard.module";
 import { RefreshToken } from "./core/entities/refresh-token.entity";
 import { WebsocketModule } from "./core/websocket/websocket.module";
+import { ActivityApiModule } from "./api/activity/activity.module";
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { WebsocketModule } from "./core/websocket/websocket.module";
     ConfigApiModule,
     MySpaceModule,
     SupervisionApiModule,
+    ActivityApiModule,
     ThemeApiModule,
     WebsocketModule,
   ],

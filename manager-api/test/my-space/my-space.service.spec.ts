@@ -218,7 +218,13 @@ describe("MySpaceService", () => {
     it("createAlias checks the delegation then creates an owned alias", async () => {
       m.aliasesSvc.resolveDomain.mockResolvedValue("ex.com");
       m.aliasesSvc.create.mockResolvedValue({ id: 43 });
-      m.aliases.findOne.mockResolvedValue({ id: 43, source: "j@ex.com", destination: "d@ex.com", domain: "ex.com", ownerId: "u1" });
+      m.aliases.findOne.mockResolvedValue({
+        id: 43,
+        source: "j@ex.com",
+        destination: "d@ex.com",
+        domain: "ex.com",
+        ownerId: "u1",
+      });
       const dto = { localPart: "j", destination: "d@ex.com" };
       await svc.createAlias("u1", 1, dto);
       expect(m.delegationsSvc.assertCanCreateAlias).toHaveBeenCalledWith("u1", 1);

@@ -12,6 +12,7 @@ import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import type { MailStorageService } from "../../src/core/mail-storage/mail-storage.service";
 import type { DelegationsService } from "../../src/api/domains/delegations/delegations.service";
 import { type Loose, providerMock, repoMock } from "../helpers/mocks";
+import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
 // No openssl process is spawned: the crypt helper is replaced with a
 // deterministic, synchronous double so a saved `password` is assertable.
@@ -49,6 +50,8 @@ async function rejection(p: Promise<unknown>): Promise<unknown> {
   throw new Error("expected the promise to reject, but it resolved");
 }
 
+const activityMock = () => providerMock<ActivityLogService>({ record: vi.fn(async () => undefined) });
+
 describe("RecipientsService", () => {
   let recipients: ReturnType<typeof makeRecipientsRepo>;
   let domains: Loose<Repository<VirtualDomain>>;
@@ -75,7 +78,7 @@ describe("RecipientsService", () => {
     accounts = repoMock<Account>();
     storage = providerMock<MailStorageService>({ removeRecipient: vi.fn() });
     delegations = providerMock<DelegationsService>({ reservedForAccountsBytes: vi.fn(async () => 0) });
-    svc = new RecipientsService(recipients, domains, recipientQuotas, accounts, storage, delegations);
+    svc = new RecipientsService(recipients, domains, recipientQuotas, accounts, storage, delegations, activityMock());
   });
 
   describe("resolveDomain", () => {
@@ -117,7 +120,10 @@ describe("RecipientsService", () => {
     it("searches over the mailbox and its owner, sorts on the joined usedBytes column, and maps raw usedBytes (missing -> '0')", async () => {
       qb.getCount.mockResolvedValueOnce(2);
       qb.getRawAndEntities.mockResolvedValueOnce({
-        entities: [{ id: 1, email: "a@example.com" }, { id: 2, email: "b@example.com" }],
+        entities: [
+          { id: 1, email: "a@example.com" },
+          { id: 2, email: "b@example.com" },
+        ],
         raw: [{ usedBytes: "999", ownerEmail: "owner@example.com" }, {}],
       });
 
@@ -219,8 +225,12 @@ describe("RecipientsService", () => {
   });
 
   describe("create", () => {
-    const dto = (over: Partial<CreateRecipientDto> = {}): CreateRecipientDto =>
-      ({ localPart: "jdoe", password: "correcthorse", quota: 104857600, ...over });
+    const dto = (over: Partial<CreateRecipientDto> = {}): CreateRecipientDto => ({
+      localPart: "jdoe",
+      password: "correcthorse",
+      quota: 104857600,
+      ...over,
+    });
 
     it("409s when the local-part is postmaster (case-insensitive, reserved)", async () => {
       const e = await rejection(svc.create(dto({ localPart: "Postmaster" }), FQDN));
@@ -334,11 +344,7 @@ describe("RecipientsService", () => {
       recipientQuotas.findOne.mockResolvedValue({ bytes: "1000" });
       domains.findOne.mockResolvedValue({ quota: "1000000000" });
 
-      await svc.update(
-        5,
-        { password: "newpass", quota: 104857600, active: false, userEndDate: "2027-06-01" },
-        FQDN
-      );
+      await svc.update(5, { password: "newpass", quota: 104857600, active: false, userEndDate: "2027-06-01" }, FQDN);
 
       expect(recipients.save.mock.calls[0][0]).toMatchObject({
         password: "hashed:newpass",

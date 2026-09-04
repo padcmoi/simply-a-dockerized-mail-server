@@ -35,16 +35,25 @@ describe("RejectSendersController (e2e: auth + ACL + behavior)", () => {
 
   describe("ACL", () => {
     it("403 for an authenticated user without the permission", async () => {
-      await api().get("/api/v1/sieve/reject-senders").set("Authorization", `Bearer ${h.token(USER)}`).expect(403);
+      await api()
+        .get("/api/v1/sieve/reject-senders")
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(403);
     });
     it("200 for a user granted the exact permission", async () => {
       h.cpg.grantGlobal("sieve", "access", "list-reject-senders");
       svc.list.mockResolvedValueOnce([]);
-      await api().get("/api/v1/sieve/reject-senders").set("Authorization", `Bearer ${h.token(USER)}`).expect(200);
+      await api()
+        .get("/api/v1/sieve/reject-senders")
+        .set("Authorization", `Bearer ${h.token(USER)}`)
+        .expect(200);
     });
     it("200 for root regardless of grants (bypass)", async () => {
       svc.list.mockResolvedValueOnce([]);
-      await api().get("/api/v1/sieve/reject-senders").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      await api()
+        .get("/api/v1/sieve/reject-senders")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(200);
     });
   });
 
@@ -88,7 +97,10 @@ describe("RejectSendersController (e2e: auth + ACL + behavior)", () => {
 
     it("DELETE forwards to the service", async () => {
       svc.remove.mockResolvedValueOnce({ ok: true });
-      await api().delete("/api/v1/sieve/reject-senders/5").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      await api()
+        .delete("/api/v1/sieve/reject-senders/5")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(200);
       expect(svc.remove).toHaveBeenCalledWith(5);
     });
   });

@@ -117,6 +117,7 @@ export default {
       recipients: "Recipients",
       aliases: "Aliases",
       resetTwoFactor: "Reset two-factor authentication",
+      activity: "Activity log",
     },
     resetTwoFactorConfirm:
       "The account will sign in with its password alone until it turns two-factor authentication on again. For when its phone and its recovery codes are both lost.",

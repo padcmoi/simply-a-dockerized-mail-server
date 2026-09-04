@@ -15,6 +15,7 @@ import { PassportProviderGuard } from "./passport.guard";
 import { PassportAuthService } from "./passport.service";
 import { ProviderRegistryService } from "./provider-registry.service";
 import { LocalProvider } from "./providers/local.provider";
+import { ActivityLogModule } from "../../activity/activity-log.module";
 
 // Every way into this manager is a Passport strategy, and they all live here:
 // `local` verifies a password this server holds, the others verify an identity
@@ -37,6 +38,7 @@ import { LocalProvider } from "./providers/local.provider";
     // For JwtAuthService.openSessionFor: whichever provider proved the
     // identity, the session opened for it is the same one.
     JwtAuthModule,
+    ActivityLogModule,
   ],
   providers: [PassportAuthService, PassportExchangeStore, PassportProviderGuard, ProviderRegistryService, LocalProvider],
   controllers: [PassportAuthController],

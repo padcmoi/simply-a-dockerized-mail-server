@@ -31,6 +31,9 @@ const canEdit = computed(() => isRoot.value || hasGlobal("accounts", "edit-accou
 const canManageGroups = computed(() => isRoot.value || hasGlobal("accounts", "view-account"));
 const canManageRecipients = computed(() => isRoot.value || hasGlobal("accounts", "assign-recipient-owner"));
 const canManageAliases = computed(() => isRoot.value || hasGlobal("accounts", "assign-alias-owner"));
+const canReadActivity = computed(
+  () => isRoot.value || (hasGlobal("supervision", "access") && hasGlobal("supervision", "view-activity-log"))
+);
 
 watchEffect(() => {
   setBreadcrumb([{ label: t("nav.accounts"), to: "/admin/accounts" }, { label: account.value?.email ?? "..." }]);
@@ -163,6 +166,17 @@ onMounted(load);
           :description="t('accounts.overviewPage.resetTwoFactorConfirm')"
           @confirm="resetTwoFactor"
         />
+        <UCard
+          v-if="canReadActivity"
+          :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"
+          @click="navigateTo(`/admin/activity?actor=${accountId}`)"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-scroll-text" class="text-info text-xl" />
+            <span class="font-medium">{{ t("accounts.overviewPage.actions.activity") }}</span>
+            <UIcon name="i-lucide-arrow-right" class="ml-auto text-muted" />
+          </div>
+        </UCard>
         <UCard
           v-if="canManageGroups && !account.isRoot"
           :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }"

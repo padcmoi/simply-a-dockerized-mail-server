@@ -12,6 +12,7 @@ import { GeocodingModule } from "../../../core/geocoding/geocoding.module";
 import { TwoFactorModule } from "../../../core/auth/two-factor/two-factor.module";
 import { AccountsController } from "./crud.controller";
 import { AccountsService } from "./crud.service";
+import { ActivityLogModule } from "../../../core/activity/activity-log.module";
 
 // Core account management (CRUD): list/view/edit/revoke and the account
 // overview. Sessions and invitations are separate sibling modules; see
@@ -26,6 +27,7 @@ import { AccountsService } from "./crud.service";
     // longer uses the ACL layer itself, but the controller's guard still does).
     CustomPermissionGuardModule,
     TwoFactorModule,
+    ActivityLogModule,
   ],
   providers: [AccountsService],
   controllers: [AccountsController],

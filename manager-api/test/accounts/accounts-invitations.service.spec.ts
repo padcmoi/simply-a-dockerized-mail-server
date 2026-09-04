@@ -15,6 +15,7 @@ import type { MailerService } from "../../src/core/mailer/mailer.service";
 import type { AppSettingsService } from "../../src/core/settings/app-settings.service";
 import { scryptHash } from "../../src/core/common/scrypt";
 import { cpgMock, providerMock, repoMock } from "../helpers/mocks";
+import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
 vi.mock("../../src/core/common/scrypt", () => ({ scryptHash: vi.fn(async (pw: string) => `hashed:${pw}`) }));
 
@@ -43,6 +44,8 @@ function makeMocks() {
   };
 }
 
+const activityMock = () => providerMock<ActivityLogService>({ record: vi.fn(async () => undefined) });
+
 describe("AccountsInvitationsService", () => {
   let m: ReturnType<typeof makeMocks>;
   let svc: AccountsInvitationsService;
@@ -61,7 +64,8 @@ describe("AccountsInvitationsService", () => {
       m.cpg,
       m.antiEscalation,
       m.appSettings,
-      m.delegationsSvc
+      m.delegationsSvc,
+      activityMock()
     );
   });
 

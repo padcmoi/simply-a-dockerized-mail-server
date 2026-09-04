@@ -9,7 +9,9 @@ import type { Notification } from "../../src/core/entities/notification.entity";
 import { entity, providerMock, repoMock, type Loose } from "../helpers/mocks";
 
 const appSettings = providerMock<AppSettingsService>({
-  get: vi.fn().mockReturnValue({ offlineNotifyAfterMs: 300000, offlineSweepIntervalMs: 20000, mailMinIntervalMs: 30000, managerUrl: "" }),
+  get: vi
+    .fn()
+    .mockReturnValue({ offlineNotifyAfterMs: 300000, offlineSweepIntervalMs: 20000, mailMinIntervalMs: 30000, managerUrl: "" }),
 });
 
 const ALICE = "alice-id";

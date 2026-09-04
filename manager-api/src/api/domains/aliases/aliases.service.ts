@@ -7,6 +7,7 @@ import { Account } from "../../../core/entities/account.entity";
 import { VirtualAlias } from "../../../core/entities/virtual-alias.entity";
 import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { CreateAliasDto, UpdateAliasDto } from "./aliases.validation";
+import { ActivityLogService } from "../../../core/activity/activity-log.service";
 
 // postmaster@<domain> is provisioned automatically per domain and is never a
 // real, ownable mailbox.
@@ -43,7 +44,8 @@ export class AliasesService {
     @InjectRepository(VirtualDomain)
     private readonly domains: Repository<VirtualDomain>,
     @InjectRepository(Account)
-    private readonly accounts: Repository<Account>
+    private readonly accounts: Repository<Account>,
+    private readonly activity: ActivityLogService
   ) {}
 
   async resolveDomain(domainId: number): Promise<string> {
@@ -151,7 +153,7 @@ export class AliasesService {
   async create(input: CreateAliasDto, domain: string, opts: { ownerId?: string } = {}) {
     const source = `${input.localPart}@${domain}`;
     await this.assertSourceFree(source);
-    return this.aliases.save(
+    const saved = await this.aliases.save(
       this.aliases.create({
         source,
         destination: input.destination,
@@ -161,6 +163,8 @@ export class AliasesService {
         userEndDate: input.userEndDate ?? null,
       })
     );
+    await this.activity.record({ action: "aliases.created", entity: { type: "alias", id: saved.id, label: source } });
+    return saved;
   }
 
   // The new source is composed from the route's domain, never from the body:
@@ -175,11 +179,19 @@ export class AliasesService {
     }
     if (input.destination !== undefined) current.destination = input.destination;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
-    return this.aliases.save(current);
+    const saved = await this.aliases.save(current);
+    await this.activity.record({
+      action: "aliases.updated",
+      entity: { type: "alias", id, label: current.source },
+      details: { fields: Object.keys(input) },
+    });
+    return saved;
   }
 
   async remove(id: number, domain: string) {
-    await this.aliases.remove(await this.get(id, domain));
+    const current = await this.get(id, domain);
+    await this.aliases.remove(current);
+    await this.activity.record({ action: "aliases.deleted", entity: { type: "alias", id, label: current.source } });
     return { ok: true };
   }
 }

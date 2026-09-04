@@ -119,6 +119,7 @@ export default {
       recipients: "Destinataires",
       aliases: "Alias",
       resetTwoFactor: "Réinitialiser la double authentification",
+      activity: "Journal d'activité",
     },
     resetTwoFactorConfirm:
       "Le compte se connectera avec son seul mot de passe jusqu'à ce qu'il réactive la double authentification. À faire quand son téléphone et ses codes de secours sont perdus.",

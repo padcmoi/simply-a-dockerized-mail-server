@@ -18,18 +18,12 @@ describe("AccountPresenceService", () => {
 
   it("marks the profile online as 1, stamping when it flipped", async () => {
     await svc.setStatus("u1", true);
-    expect(repo.upsert).toHaveBeenCalledWith(
-      { accountId: "u1", presence: 1, presenceAt: expect.any(Date) },
-      ["accountId"]
-    );
+    expect(repo.upsert).toHaveBeenCalledWith({ accountId: "u1", presence: 1, presenceAt: expect.any(Date) }, ["accountId"]);
   });
 
   it("writes offline as 0", async () => {
     await svc.setStatus("u1", false);
-    expect(repo.upsert).toHaveBeenCalledWith(
-      { accountId: "u1", presence: 0, presenceAt: expect.any(Date) },
-      ["accountId"]
-    );
+    expect(repo.upsert).toHaveBeenCalledWith({ accountId: "u1", presence: 0, presenceAt: expect.any(Date) }, ["accountId"]);
   });
 
   describe("presenceState", () => {

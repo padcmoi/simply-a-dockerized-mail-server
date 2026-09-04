@@ -17,11 +17,6 @@ const ownedRecipients = ref<OwnedRecipientSummary[]>([]);
 
 const { isOnline } = usePresence();
 const avatarAlt = computed(() => auth.session?.displayName || auth.session?.email || "?");
-// Sections not built yet, surfaced as disabled cards so the roadmap is visible.
-const comingSoon = computed(() => [
-  { icon: "i-lucide-scroll-text", label: t("profile.auditLog"), hint: t("profile.auditLogHint") },
-]);
-
 setBreadcrumb([{ label: t("layout.profile") }]);
 
 function openGroupPermissions(group: { id: string; name: string }) {
@@ -135,12 +130,11 @@ useAsyncData(
         to="/profile/two-factor"
       />
       <ProfileActionCard
-        v-for="item in comingSoon"
-        :key="item.label"
-        :icon="item.icon"
-        :label="item.label"
-        :hint="item.hint"
-        soon
+        icon="i-lucide-scroll-text"
+        icon-color="text-info"
+        :label="t('profile.auditLog')"
+        :hint="t('profile.auditLogHint')"
+        to="/profile/activity"
       />
     </div>
 

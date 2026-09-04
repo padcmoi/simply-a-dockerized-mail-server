@@ -37,9 +37,36 @@ function rows(): RspamdHistoryRow[] {
     user: "",
   };
   return [
-    { ...base, sender_smtp: "bob@x.com", rcpt_smtp: ["carol@example.com"], action: "reject", score: 9, size: 300, unix_time: 30, subject: "hello" },
-    { ...base, sender_smtp: "amy@x.com", rcpt_smtp: ["dave@example.com"], action: "no action", score: 1, size: 100, unix_time: 10, subject: "world" },
-    { ...base, sender_smtp: "cid@x.com", rcpt_smtp: ["ed@other.com"], action: "greylist", score: 5, size: 200, unix_time: 20, subject: "meeting" },
+    {
+      ...base,
+      sender_smtp: "bob@x.com",
+      rcpt_smtp: ["carol@example.com"],
+      action: "reject",
+      score: 9,
+      size: 300,
+      unix_time: 30,
+      subject: "hello",
+    },
+    {
+      ...base,
+      sender_smtp: "amy@x.com",
+      rcpt_smtp: ["dave@example.com"],
+      action: "no action",
+      score: 1,
+      size: 100,
+      unix_time: 10,
+      subject: "world",
+    },
+    {
+      ...base,
+      sender_smtp: "cid@x.com",
+      rcpt_smtp: ["ed@other.com"],
+      action: "greylist",
+      score: 5,
+      size: 200,
+      unix_time: 20,
+      subject: "meeting",
+    },
   ] as RspamdHistoryRow[];
 }
 
@@ -194,7 +221,9 @@ describe("RspamdService", () => {
       );
       const res = await svc.history("sending.com", 50);
       expect(res).toHaveLength(2);
-      expect(res.every((r) => r.sender_smtp.endsWith("@sending.com") || r.rcpt_smtp.some((x) => x.endsWith("@sending.com")))).toBe(true);
+      expect(
+        res.every((r) => r.sender_smtp.endsWith("@sending.com") || r.rcpt_smtp.some((x) => x.endsWith("@sending.com")))
+      ).toBe(true);
     });
     it("tolerates rows without a rcpt_smtp array while filtering", async () => {
       fetchMock.mockResolvedValue(okJson({ rows: [{ ...rows()[0], rcpt_smtp: undefined }] }));

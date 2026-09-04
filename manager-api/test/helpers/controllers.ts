@@ -37,6 +37,7 @@ import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
 import { PassportAuthController } from "../../src/core/auth/passport/passport.controller";
 import { PassportConfigController } from "../../src/api/config/passport-config.controller";
 import { TwoFactorController } from "../../src/core/auth/two-factor/two-factor.controller";
+import { ActivityController } from "../../src/api/activity/activity.controller";
 
 export const ALL_CONTROLLERS = [
   AccountsController,
@@ -74,4 +75,5 @@ export const ALL_CONTROLLERS = [
   PassportAuthController,
   PassportConfigController,
   TwoFactorController,
+  ActivityController,
 ] as const;

@@ -94,6 +94,7 @@ describe("useNav global nav items", () => {
       "/admin/api-tokens",
       "/admin/config",
       "/admin/supervision",
+      "/admin/activity",
     ]);
   });
 

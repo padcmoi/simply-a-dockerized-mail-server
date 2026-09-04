@@ -8,6 +8,7 @@ import { KEY_PREFIX, normalizeIp, parseApiKey } from "./api-token.request";
 import { parseScopes, refuseScopesBeyondAccount, serialiseScopes, type TokenScopes } from "./api-token.scopes";
 import { CustomPermissionGuardService } from "../../custom-permission-guard/custom-permission-guard.service";
 import type { CreateApiTokenDto, UpdateApiTokenDto } from "./api-token.validation";
+import { ActivityLogService } from "../../activity/activity-log.service";
 
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
@@ -16,7 +17,8 @@ const LOCK_MINUTES = 15;
 export class ApiTokenService {
   constructor(
     @InjectRepository(ApiToken) private readonly repo: Repository<ApiToken>,
-    private readonly cpg: CustomPermissionGuardService
+    private readonly cpg: CustomPermissionGuardService,
+    private readonly activity: ActivityLogService
   ) {}
 
   private get pepper(): string {
@@ -83,6 +85,11 @@ export class ApiTokenService {
     });
     try {
       const saved = await this.repo.save(token);
+      await this.activity.record({
+        action: "api-tokens.created",
+        actorId: accountId,
+        entity: { type: "api-token", id: saved.id, label: saved.name },
+      });
       return {
         id: saved.id,
         name: saved.name,
@@ -129,6 +136,11 @@ export class ApiTokenService {
     if (!token.secretCipher) return { id: token.id, name: token.name, clientId: token.clientId, key: null };
 
     const secret = decryptSecret(token.secretCipher, this.pepper);
+    await this.activity.record({
+      action: "api-tokens.revealed",
+      actorId: accountId,
+      entity: { type: "api-token", id: token.id, label: token.name },
+    });
     return {
       id: token.id,
       name: token.name,
@@ -143,6 +155,11 @@ export class ApiTokenService {
     if (token.revokedAt) throw new BadRequestException("Token is already revoked");
     token.revokedAt = new Date();
     await this.repo.save(token);
+    await this.activity.record({
+      action: "api-tokens.revoked",
+      actorId: accountId,
+      entity: { type: "api-token", id: token.id, label: token.name },
+    });
     return this.toSafe(token);
   }
 
@@ -151,6 +168,11 @@ export class ApiTokenService {
     if (!token) throw new NotFoundException("Token not found");
     if (!token.revokedAt) throw new BadRequestException("Token must be revoked before deletion");
     await this.repo.delete(id);
+    await this.activity.record({
+      action: "api-tokens.deleted",
+      actorId: accountId,
+      entity: { type: "api-token", id, label: token.name },
+    });
   }
 
   async regenerate(accountId: string, id: number) {
@@ -163,6 +185,11 @@ export class ApiTokenService {
     token.failedAttempts = 0;
     token.lockedUntil = null;
     await this.repo.save(token);
+    await this.activity.record({
+      action: "api-tokens.regenerated",
+      actorId: accountId,
+      entity: { type: "api-token", id: token.id, label: token.name },
+    });
     return {
       id: token.id,
       name: token.name,

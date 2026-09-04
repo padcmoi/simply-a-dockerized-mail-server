@@ -18,7 +18,9 @@ const ENTRY = {
   durationMs: 42,
 };
 
-const query = (over: Partial<{ limit: number; offset: number; search: string; sortBy: string; sortDir: "asc" | "desc" }> = {}) => ({
+const query = (
+  over: Partial<{ limit: number; offset: number; search: string; sortBy: string; sortDir: "asc" | "desc" }> = {}
+) => ({
   offset: 0,
   sortDir: "desc" as const,
   ...over,

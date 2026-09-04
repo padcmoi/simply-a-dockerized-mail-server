@@ -105,7 +105,7 @@ export const GLOBAL_ACTIONS = {
   // figures (the websocket topic and the minute behind it),
   // `view-metrics-history` the recorded windows an hour or a week wide, which
   // are read from a table the live feed never touches.
-  supervision: ["access", "view-machine-metrics", "view-metrics-history"],
+  supervision: ["access", "view-machine-metrics", "view-metrics-history", "view-activity-log"],
   // Running the deliverability diagnostics is a global right, not a domain one:
   // one run opens an SMTP session against the server, fetches an HTTPS policy
   // and queries half a dozen public blocklists in the deployment's name. Who

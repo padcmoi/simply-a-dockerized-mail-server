@@ -4,6 +4,7 @@ import { NestExpressApplication } from "@nestjs/platform-express";
 import { WsAdapter } from "@nestjs/platform-ws";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
+import { activityContextMiddleware } from "./core/activity/activity-context";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -19,6 +20,9 @@ async function bootstrap() {
   // user. Requires the fronting proxy to forward X-Forwarded-For (Nuxt's nitro
   // proxy and the public reverse proxy both do).
   app.set("trust proxy", true);
+  // Opens the per-request store the activity log reads its actor, ip and user
+  // agent from, so no service has to be handed them.
+  app.use(activityContextMiddleware);
   app.setGlobalPrefix("api");
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
   app.enableCors({ origin: true, credentials: true });

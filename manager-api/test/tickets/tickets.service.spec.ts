@@ -16,12 +16,15 @@ import type { VirtualAlias } from "../../src/core/entities/virtual-alias.entity"
 import type { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import type { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { cpgMock, entity, providerMock, qbMock, repoMock, type CpgMock, type Loose } from "../helpers/mocks";
+import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
 const DOMAIN_ID = 12;
 const SUPPORT = "support-id";
 const CREATOR = "creator-id";
 const STRANGER = "stranger-id";
 const ROOT_ID = "root-id";
+
+const activityMock = () => providerMock<ActivityLogService>({ record: vi.fn(async () => undefined) });
 
 describe("TicketsService (row-level visibility)", () => {
   let tickets: ReturnType<typeof repoMock<SupportTicket>>;
@@ -94,7 +97,8 @@ describe("TicketsService (row-level visibility)", () => {
       cpg,
       notifications,
       presence,
-      appSettings
+      appSettings,
+      activityMock()
     );
   });
 

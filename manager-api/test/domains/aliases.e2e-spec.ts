@@ -65,10 +65,16 @@ describe("AliasesController (e2e: auth + ACL + behavior)", () => {
     it("200 for root and forwards the resolved domain + parsed query", async () => {
       svc.resolveDomain.mockResolvedValueOnce("example.test");
       svc.list.mockResolvedValueOnce({ items: [{ id: 1 }], total: 1 });
-      const res = await api().get("/api/v1/domains/3/aliases?limit=10&sortBy=source&sortDir=asc").set("Authorization", auth(ROOT)).expect(200);
+      const res = await api()
+        .get("/api/v1/domains/3/aliases?limit=10&sortBy=source&sortDir=asc")
+        .set("Authorization", auth(ROOT))
+        .expect(200);
       expect(res.body).toEqual({ items: [{ id: 1 }], total: 1 });
       expect(svc.resolveDomain).toHaveBeenCalledWith(3);
-      expect(svc.list).toHaveBeenCalledWith("example.test", expect.objectContaining({ limit: 10, offset: 0, sortBy: "source", sortDir: "asc" }));
+      expect(svc.list).toHaveBeenCalledWith(
+        "example.test",
+        expect.objectContaining({ limit: 10, offset: 0, sortBy: "source", sortDir: "asc" })
+      );
     });
 
     it("400 when :domainId is not an integer", async () => {
@@ -107,7 +113,11 @@ describe("AliasesController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 on an invalid body (missing localPart / bad email)", async () => {
-      await api().post("/api/v1/domains/1/aliases").set("Authorization", auth(ROOT)).send({ destination: "not-an-email" }).expect(400);
+      await api()
+        .post("/api/v1/domains/1/aliases")
+        .set("Authorization", auth(ROOT))
+        .send({ destination: "not-an-email" })
+        .expect(400);
     });
 
     it("400 on an unknown extra key (strict schema)", async () => {
@@ -132,7 +142,11 @@ describe("AliasesController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 when :id is not an integer", async () => {
-      await api().patch("/api/v1/domains/1/aliases/abc").set("Authorization", auth(ROOT)).send({ destination: "a@b.com" }).expect(400);
+      await api()
+        .patch("/api/v1/domains/1/aliases/abc")
+        .set("Authorization", auth(ROOT))
+        .send({ destination: "a@b.com" })
+        .expect(400);
     });
 
     it("400 on an invalid body (bad email)", async () => {

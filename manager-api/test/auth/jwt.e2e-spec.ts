@@ -10,6 +10,7 @@ import { VirtualQuotaUser } from "../../src/core/entities/virtual-quota-user.ent
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
+import { ACTIVITY_ACTIONS, ActivityLogService } from "../../src/core/activity/activity-log.service";
 
 // The login route verifies credentials through the real `local` provider, so it
 // is registered here with an account repo double. Only the hashing is stubbed:
@@ -27,6 +28,8 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
 
   const auth = {
     openSessionFor: vi.fn(),
+    completeTwoFactor: vi.fn(),
+    changePassword: vi.fn(),
     refresh: vi.fn(),
     revoke: vi.fn(),
     me: vi.fn(),
@@ -44,12 +47,14 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
   const virtualAliasRepo = { find: vi.fn() };
   const recipientQuotaRepo = { find: vi.fn().mockResolvedValue([]) };
   const accountRepo = { findOne: vi.fn() };
+  const activity = { record: vi.fn(async () => undefined), listForAccount: vi.fn() };
 
   beforeAll(async () => {
     h = await buildHarness({
       controllers: [JwtAuthController],
       providers: [
         { provide: JwtAuthService, useValue: auth },
+        { provide: ActivityLogService, useValue: activity },
         LocalProvider,
         { provide: getRepositoryToken(Account), useValue: accountRepo },
         { provide: getRepositoryToken(VirtualDomain), useValue: domainRepo },
@@ -78,10 +83,7 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
       accountRepo.findOne.mockResolvedValueOnce(account);
       verify.mockResolvedValueOnce(true);
       auth.openSessionFor.mockResolvedValueOnce({ accessToken: "a", refreshToken: "r", expiresAt: "2030-01-01T00:00:00.000Z" });
-      const res = await api()
-        .post("/api/v1/auth/jwt/login")
-        .send({ email: "user@test.local", password: "s3cret" })
-        .expect(200);
+      const res = await api().post("/api/v1/auth/jwt/login").send({ email: "user@test.local", password: "s3cret" }).expect(200);
       expect(res.body.accessToken).toBe("a");
       expect(accountRepo.findOne).toHaveBeenCalledWith({ where: { email: "user@test.local", enabled: 1 } });
       expect(verify).toHaveBeenCalledWith("s3cret", "hash");
@@ -101,6 +103,56 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
     });
     it("400 on a missing password (zod)", async () => {
       await api().post("/api/v1/auth/jwt/login").send({ email: "user@test.local" }).expect(400);
+    });
+  });
+
+  describe("POST login/two-factor (public)", () => {
+    const CHALLENGE = "c".repeat(43);
+    it("200 with no Authorization header and forwards (challenge, code)", async () => {
+      auth.completeTwoFactor.mockResolvedValueOnce({
+        accessToken: "a",
+        refreshToken: "r",
+        expiresAt: "2030-01-01T00:00:00.000Z",
+      });
+      const res = await api()
+        .post("/api/v1/auth/jwt/login/two-factor")
+        .send({ challenge: CHALLENGE, code: "123456" })
+        .expect(200);
+      expect(res.body.accessToken).toBe("a");
+      expect(auth.completeTwoFactor.mock.calls[0].slice(0, 2)).toEqual([CHALLENGE, "123456"]);
+    });
+    it("400 on a challenge that is too short (zod)", async () => {
+      await api().post("/api/v1/auth/jwt/login/two-factor").send({ challenge: "short", code: "123456" }).expect(400);
+      expect(auth.completeTwoFactor).not.toHaveBeenCalled();
+    });
+    it("400 on a code that is too short (zod)", async () => {
+      await api().post("/api/v1/auth/jwt/login/two-factor").send({ challenge: CHALLENGE, code: "12" }).expect(400);
+    });
+    it("400 on an unknown field (zod strict)", async () => {
+      await api().post("/api/v1/auth/jwt/login/two-factor").send({ challenge: CHALLENGE, code: "123456", x: 1 }).expect(400);
+    });
+  });
+
+  describe("PATCH me/password (authenticated, no ACL)", () => {
+    it("401 without a token", async () => {
+      await api().patch("/api/v1/auth/jwt/me/password").send({ currentPassword: "old", newPassword: "newpassword" }).expect(401);
+    });
+    it("200 with a token and forwards (callerId, body)", async () => {
+      auth.changePassword.mockResolvedValueOnce({ changed: true });
+      const res = await api()
+        .patch("/api/v1/auth/jwt/me/password")
+        .set(bearer(h.token(USER)))
+        .send({ currentPassword: "old", newPassword: "newpassword" })
+        .expect(200);
+      expect(res.body).toEqual({ changed: true });
+      expect(auth.changePassword).toHaveBeenCalledWith(USER.id, { currentPassword: "old", newPassword: "newpassword" });
+    });
+    it("400 on a missing new password (zod)", async () => {
+      await api()
+        .patch("/api/v1/auth/jwt/me/password")
+        .set(bearer(h.token(USER)))
+        .send({ currentPassword: "old" })
+        .expect(400);
     });
   });
 
@@ -136,7 +188,10 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
     });
     it("200 with a valid token (no grant needed) and forwards the caller id", async () => {
       auth.me.mockResolvedValueOnce({ email: "user@test.local", isRoot: false });
-      const res = await api().get("/api/v1/auth/jwt/me").set(bearer(h.token(USER))).expect(200);
+      const res = await api()
+        .get("/api/v1/auth/jwt/me")
+        .set(bearer(h.token(USER)))
+        .expect(200);
       expect(res.body.email).toBe("user@test.local");
       expect(auth.me).toHaveBeenCalledWith(USER.id);
     });
@@ -154,12 +209,17 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
       virtualUserRepo.find.mockResolvedValueOnce([{ id: 9, email: "j@ex.com", domain: "ex.com", active: 0, quota: "100" }]);
       virtualAliasRepo.find.mockResolvedValueOnce([{ id: 3, source: "c@ex.com", destination: "j@ex.com", domain: "ex.com" }]);
       recipientQuotaRepo.find.mockResolvedValueOnce([{ email: "j@ex.com", bytes: "42" }]);
-      const res = await api().get("/api/v1/auth/jwt/me/overview").set(bearer(h.token(USER))).expect(200);
+      const res = await api()
+        .get("/api/v1/auth/jwt/me/overview")
+        .set(bearer(h.token(USER)))
+        .expect(200);
       expect(domainRepo.find).toHaveBeenCalledWith({ where: { ownerId: USER.id }, order: { domain: "ASC" } });
       expect(virtualUserRepo.find).toHaveBeenCalledWith({ where: { ownerId: USER.id }, order: { email: "ASC" } });
       expect(virtualAliasRepo.find).toHaveBeenCalledWith({ where: { ownerId: USER.id }, order: { source: "ASC" } });
       expect(res.body.domains).toEqual([{ id: 5, domain: "ex.com", active: true, quota: "0" }]);
-      expect(res.body.recipients).toEqual([{ id: 9, email: "j@ex.com", domain: "ex.com", active: false, quota: "100", usedBytes: "42" }]);
+      expect(res.body.recipients).toEqual([
+        { id: 9, email: "j@ex.com", domain: "ex.com", active: false, quota: "100", usedBytes: "42" },
+      ]);
       expect(res.body.aliases).toEqual([{ id: 3, source: "c@ex.com", destination: "j@ex.com", domain: "ex.com" }]);
     });
   });
@@ -170,7 +230,10 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
     });
     it("200 with a token and forwards the caller id", async () => {
       auth.listActiveSessions.mockResolvedValueOnce([{ id: 1, userAgent: "UA", ip: "1.2.3.4", active: true }]);
-      const res = await api().get("/api/v1/auth/jwt/me/sessions").set(bearer(h.token(USER))).expect(200);
+      const res = await api()
+        .get("/api/v1/auth/jwt/me/sessions")
+        .set(bearer(h.token(USER)))
+        .expect(200);
       expect(res.body).toHaveLength(1);
       expect(auth.listActiveSessions).toHaveBeenCalledWith(USER.id);
     });
@@ -193,7 +256,48 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
       );
     });
     it("400 when limit is not 10/25/50 (zod)", async () => {
-      await api().get("/api/v1/auth/jwt/me/sessions/history?limit=7").set(bearer(h.token(USER))).expect(400);
+      await api()
+        .get("/api/v1/auth/jwt/me/sessions/history?limit=7")
+        .set(bearer(h.token(USER)))
+        .expect(400);
+    });
+  });
+
+  describe("GET me/activity (authenticated, no ACL, paginated)", () => {
+    it("401 without a token", async () => {
+      await api().get("/api/v1/auth/jwt/me/activity").expect(401);
+    });
+    it("200 with a token and forwards (callerId, parsed query with its action filter)", async () => {
+      activity.listForAccount.mockResolvedValueOnce({ items: [{ id: 1, action: "auth.login" }], total: 1 });
+      const res = await api()
+        .get("/api/v1/auth/jwt/me/activity?limit=10&offset=0&action=auth.login")
+        .set(bearer(h.token(USER)))
+        .expect(200);
+      expect(res.body).toEqual({ items: [{ id: 1, action: "auth.login" }], total: 1 });
+      expect(activity.listForAccount).toHaveBeenCalledWith(
+        USER.id,
+        expect.objectContaining({ limit: 10, offset: 0, action: "auth.login" })
+      );
+    });
+    it("400 when limit is not 10/25/50 (zod)", async () => {
+      await api()
+        .get("/api/v1/auth/jwt/me/activity?limit=7")
+        .set(bearer(h.token(USER)))
+        .expect(400);
+    });
+  });
+
+  describe("GET me/activity/actions (authenticated, no ACL)", () => {
+    it("401 without a token", async () => {
+      await api().get("/api/v1/auth/jwt/me/activity/actions").expect(401);
+    });
+    it("200 with a token and lists every kind of event", async () => {
+      const res = await api()
+        .get("/api/v1/auth/jwt/me/activity/actions")
+        .set(bearer(h.token(USER)))
+        .expect(200);
+      expect(res.body).toEqual(ACTIVITY_ACTIONS);
+      expect(res.body).toContain("auth.login");
     });
   });
 
@@ -203,11 +307,17 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
     });
     it("200 with a token and forwards (callerId, id)", async () => {
       auth.revokeSession.mockResolvedValueOnce({ ok: true });
-      await api().delete("/api/v1/auth/jwt/me/sessions/7").set(bearer(h.token(USER))).expect(200);
+      await api()
+        .delete("/api/v1/auth/jwt/me/sessions/7")
+        .set(bearer(h.token(USER)))
+        .expect(200);
       expect(auth.revokeSession).toHaveBeenCalledWith(USER.id, 7);
     });
     it("400 when :id is not an integer", async () => {
-      await api().delete("/api/v1/auth/jwt/me/sessions/nope").set(bearer(h.token(USER))).expect(400);
+      await api()
+        .delete("/api/v1/auth/jwt/me/sessions/nope")
+        .set(bearer(h.token(USER)))
+        .expect(400);
     });
   });
 
@@ -217,11 +327,19 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
     });
     it("200 with a token and forwards (callerId, body)", async () => {
       auth.updateProfile.mockResolvedValueOnce({ email: "user@test.local", displayName: "Bob Martin" });
-      await api().patch("/api/v1/auth/jwt/me").set(bearer(h.token(USER))).send({ lastName: "Bob" }).expect(200);
+      await api()
+        .patch("/api/v1/auth/jwt/me")
+        .set(bearer(h.token(USER)))
+        .send({ lastName: "Bob" })
+        .expect(200);
       expect(auth.updateProfile).toHaveBeenCalledWith(USER.id, { lastName: "Bob" });
     });
     it("400 on an invalid email (zod)", async () => {
-      await api().patch("/api/v1/auth/jwt/me").set(bearer(h.token(USER))).send({ email: "nope" }).expect(400);
+      await api()
+        .patch("/api/v1/auth/jwt/me")
+        .set(bearer(h.token(USER)))
+        .send({ email: "nope" })
+        .expect(400);
     });
   });
 
@@ -235,15 +353,24 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
         domain: [{ domainId: 1, resource: "recipients", action: "access" }],
       });
       domainRepo.findBy.mockResolvedValueOnce([{ id: 1, domain: "one.test" }]);
-      const res = await api().get("/api/v1/auth/jwt/me/permissions").set(bearer(h.token(USER))).expect(200);
+      const res = await api()
+        .get("/api/v1/auth/jwt/me/permissions")
+        .set(bearer(h.token(USER)))
+        .expect(200);
       expect(getEffectivePermissions).toHaveBeenCalledWith(USER.id);
       expect(res.body.global).toEqual([{ resource: "domains", action: "access" }]);
       expect(res.body.domain[0].domainName).toBe("one.test");
     });
     it("falls back to #<id> for a since-deleted domain", async () => {
-      getEffectivePermissions.mockResolvedValueOnce({ global: [], domain: [{ domainId: 42, resource: "domain", action: "access" }] });
+      getEffectivePermissions.mockResolvedValueOnce({
+        global: [],
+        domain: [{ domainId: 42, resource: "domain", action: "access" }],
+      });
       domainRepo.findBy.mockResolvedValueOnce([]);
-      const res = await api().get("/api/v1/auth/jwt/me/permissions").set(bearer(h.token(USER))).expect(200);
+      const res = await api()
+        .get("/api/v1/auth/jwt/me/permissions")
+        .set(bearer(h.token(USER)))
+        .expect(200);
       expect(res.body.domain[0].domainName).toBe("#42");
     });
   });
@@ -253,25 +380,37 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
       await api().get(`/api/v1/auth/jwt/me/groups/${GROUP_ID}/permissions`).expect(401);
     });
     it("400 when :id is not a UUID", async () => {
-      await api().get("/api/v1/auth/jwt/me/groups/not-a-uuid/permissions").set(bearer(h.token(ROOT))).expect(400);
+      await api()
+        .get("/api/v1/auth/jwt/me/groups/not-a-uuid/permissions")
+        .set(bearer(h.token(ROOT)))
+        .expect(400);
     });
     it("200 for root without a membership check", async () => {
       findGroupGlobalPermissions.mockResolvedValueOnce([{ resource: "domains", action: "access" }]);
       findGroupDomainPermissions.mockResolvedValueOnce([]);
-      const res = await api().get(`/api/v1/auth/jwt/me/groups/${GROUP_ID}/permissions`).set(bearer(h.token(ROOT))).expect(200);
+      const res = await api()
+        .get(`/api/v1/auth/jwt/me/groups/${GROUP_ID}/permissions`)
+        .set(bearer(h.token(ROOT)))
+        .expect(200);
       expect(findGroupMemberIds).not.toHaveBeenCalled();
       expect(res.body.globalPermissions).toEqual([{ resource: "domains", action: "access" }]);
     });
     it("403 for a non-member user", async () => {
       findGroupMemberIds.mockResolvedValueOnce(["someone-else"]);
-      await api().get(`/api/v1/auth/jwt/me/groups/${GROUP_ID}/permissions`).set(bearer(h.token(USER))).expect(403);
+      await api()
+        .get(`/api/v1/auth/jwt/me/groups/${GROUP_ID}/permissions`)
+        .set(bearer(h.token(USER)))
+        .expect(403);
     });
     it("200 for a member user and resolves domain FQDNs", async () => {
       findGroupMemberIds.mockResolvedValueOnce([USER.id]);
       findGroupGlobalPermissions.mockResolvedValueOnce([]);
       findGroupDomainPermissions.mockResolvedValueOnce([{ domainId: 2, action: "access" }]);
       domainRepo.findBy.mockResolvedValueOnce([{ id: 2, domain: "two.test" }]);
-      const res = await api().get(`/api/v1/auth/jwt/me/groups/${GROUP_ID}/permissions`).set(bearer(h.token(USER))).expect(200);
+      const res = await api()
+        .get(`/api/v1/auth/jwt/me/groups/${GROUP_ID}/permissions`)
+        .set(bearer(h.token(USER)))
+        .expect(200);
       expect(res.body.domainPermissions[0].domainName).toBe("two.test");
     });
   });

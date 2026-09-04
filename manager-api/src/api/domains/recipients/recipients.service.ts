@@ -11,6 +11,7 @@ import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { MailStorageService } from "../../../core/mail-storage/mail-storage.service";
 import { DelegationsService } from "../delegations/delegations.service";
 import { CreateRecipientDto, UpdateRecipientDto } from "./recipients.validation";
+import { ActivityLogService } from "../../../core/activity/activity-log.service";
 
 // postmaster@<domain> is provisioned automatically by DomainsService.reservePostmaster
 // (inactive, quota 0) and must stay that way for its lifetime: it's the
@@ -60,7 +61,8 @@ export class RecipientsService {
     @InjectRepository(Account)
     private readonly accounts: Repository<Account>,
     private readonly storage: MailStorageService,
-    private readonly delegations: DelegationsService
+    private readonly delegations: DelegationsService,
+    private readonly activity: ActivityLogService
   ) {}
 
   // Assign this recipient to an account. A recipient belongs to at most one
@@ -280,7 +282,7 @@ export class RecipientsService {
       throw new ApiError(HttpStatus.CONFLICT, "recipients.alreadyExists", `Recipient ${email} already exists`, { email });
     }
     if (!opts.skipDomainQuota) await this.assertQuotaFitsDomain(domain, input.quota);
-    return this.recipients.save(
+    const saved = await this.recipients.save(
       this.recipients.create({
         email,
         domain,
@@ -295,6 +297,8 @@ export class RecipientsService {
         userEndDate: input.userEndDate ?? null,
       })
     );
+    await this.activity.record({ action: "recipients.created", entity: { type: "recipient", id: saved.id, label: email } });
+    return saved;
   }
 
   // `opts.skipDomainQuota` mirrors create's: a delegate raising one of their
@@ -317,7 +321,13 @@ export class RecipientsService {
     }
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
-    return this.recipients.save(current);
+    const saved = await this.recipients.save(current);
+    await this.activity.record({
+      action: "recipients.updated",
+      entity: { type: "recipient", id, label: current.email },
+      details: { fields: Object.keys(input) },
+    });
+    return saved;
   }
 
   // Two things outlive the `virtual_users` row unless taken out by hand.
@@ -343,6 +353,7 @@ export class RecipientsService {
     await this.recipientQuotas.delete({ email: current.email });
     await this.recipients.remove(current);
     await this.storage.removeRecipient(current.maildir, current.email);
+    await this.activity.record({ action: "recipients.deleted", entity: { type: "recipient", id, label: current.email } });
     return { ok: true };
   }
 }

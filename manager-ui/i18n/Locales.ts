@@ -72,6 +72,7 @@ export interface Locales {
     apiTokens: string;
     config: string;
     supervision: string;
+    activity: string;
     sectionMail: string;
     sectionAccess: string;
     sectionSystem: string;
@@ -1254,7 +1255,7 @@ export interface Locales {
       noDomains: string;
       noRecipients: string;
       stats: { groupsSub: string; aliasesSub: string };
-      actions: { edit: string; groups: string; recipients: string; aliases: string; resetTwoFactor: string };
+      actions: { edit: string; groups: string; recipients: string; aliases: string; resetTwoFactor: string; activity: string };
       resetTwoFactorConfirm: string;
       toast: { loadFailed: string; twoFactorReset: string; twoFactorResetFailed: string };
     };
@@ -1883,6 +1884,22 @@ export interface Locales {
     count: string;
     empty: string;
     loading: string;
+  };
+  // The activity journal: the account's own page and the server page share
+  // the table, its columns, its filter and the sentence each line reads as.
+  activity: {
+    crumb: string;
+    title: string;
+    subtitle: string;
+    server: { title: string; subtitle: string; oneAccount: string; everyAccount: string };
+    col: { when: string; account: string; event: string; object: string; device: string; ip: string };
+    filterAll: string;
+    noAccount: string;
+    deviceOn: string;
+    unknownDevice: string;
+    empty: string;
+    action: Record<string, string>;
+    event: Record<string, string>;
   };
   supervision: {
     subtitle: string;

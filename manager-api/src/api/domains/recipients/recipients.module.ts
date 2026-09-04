@@ -9,11 +9,13 @@ import { CustomPermissionGuardModule } from "../../../core/custom-permission-gua
 import { DomainsDelegationsModule } from "../delegations/delegations.module";
 import { RecipientsController } from "./recipients.controller";
 import { RecipientsService } from "./recipients.service";
+import { ActivityLogModule } from "../../../core/activity/activity-log.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([VirtualUser, VirtualDomain, VirtualQuotaUser, Account]),
     CustomPermissionGuardModule,
+    ActivityLogModule,
     MailStorageModule,
     DomainsDelegationsModule,
   ],

@@ -84,9 +84,7 @@ describe("DomainsService", () => {
       const res = await svc.list(q(), { callerId: "acc1", canSeeAll: true });
 
       expect(m.repo.find).toHaveBeenCalledWith({ where: {}, order: { domain: "ASC" } });
-      expect(res).toEqual([
-        { id: 1, domain: "a.com", ownerId: "acc1", ownerEmail: "owner@a.com", usedBytes: "512" },
-      ]);
+      expect(res).toEqual([{ id: 1, domain: "a.com", ownerId: "acc1", ownerEmail: "owner@a.com", usedBytes: "512" }]);
     });
 
     it("scopes to owned rows only when not canSeeAll", async () => {
@@ -190,18 +188,14 @@ describe("DomainsService", () => {
   describe("create", () => {
     it("rejects a duplicate FQDN with 409 and never saves", async () => {
       m.repo.findOne.mockResolvedValueOnce({ id: 1, domain: "dup.com" });
-      await expect(svc.create({ domain: "dup.com", quota: 10485760 }, "owner-1")).rejects.toBeInstanceOf(
-        ConflictException
-      );
+      await expect(svc.create({ domain: "dup.com", quota: 10485760 }, "owner-1")).rejects.toBeInstanceOf(ConflictException);
       expect(m.txSave).not.toHaveBeenCalled();
     });
 
     it("rejects a quota above the assignable headroom with 400", async () => {
       m.repo.findOne.mockResolvedValueOnce(null);
       vi.spyOn(svc, "disk").mockResolvedValueOnce({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 100 });
-      await expect(svc.create({ domain: "new.com", quota: 10485760 }, "owner-1")).rejects.toBeInstanceOf(
-        BadRequestException
-      );
+      await expect(svc.create({ domain: "new.com", quota: 10485760 }, "owner-1")).rejects.toBeInstanceOf(BadRequestException);
       expect(m.txSave).not.toHaveBeenCalled();
     });
 
@@ -310,17 +304,13 @@ describe("DomainsService", () => {
   describe("transferOwner", () => {
     it("throws NotFound when the domain does not exist", async () => {
       m.repo.findOne.mockResolvedValueOnce(null);
-      await expect(svc.transferOwner(5, { id: "actor", isRoot: true }, "new-owner")).rejects.toBeInstanceOf(
-        NotFoundException
-      );
+      await expect(svc.transferOwner(5, { id: "actor", isRoot: true }, "new-owner")).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("throws NotFound when the target account does not exist", async () => {
       m.repo.findOne.mockResolvedValueOnce({ id: 5, domain: "d.com", ownerId: "old" });
       m.accounts.findOne.mockResolvedValueOnce(null);
-      await expect(svc.transferOwner(5, { id: "actor", isRoot: true }, "ghost")).rejects.toBeInstanceOf(
-        NotFoundException
-      );
+      await expect(svc.transferOwner(5, { id: "actor", isRoot: true }, "ghost")).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it("reassigns the owner, persists, and writes an audit record", async () => {

@@ -12,13 +12,17 @@ import type { MailSettingsService } from "../../src/core/mailer/mail-settings.se
 import type { TwoFactorService } from "../../src/core/auth/two-factor/two-factor.service";
 import type { TwoFactorChallengeStore } from "../../src/core/auth/two-factor/two-factor-challenge.store";
 import { entity, providerMock, qbMock, repoMock } from "../helpers/mocks";
+import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
 // scryptVerify is the only crypto the password-change path relies on; stub it so tests stay
 // pure and fast (no real hashing). Hoisted with an explicit signature so the mock
 // exists before vi.mock replaces the module AND mockResolvedValue stays type-checked
 // to a boolean.
-const { verify } = vi.hoisted(() => ({ verify: vi.fn<(plain: string, stored: string) => Promise<boolean>>() }));
-vi.mock("../../src/core/common/scrypt", () => ({ scryptVerify: verify }));
+const { verify, hash } = vi.hoisted(() => ({
+  verify: vi.fn<(plain: string, stored: string) => Promise<boolean>>(),
+  hash: vi.fn<(plain: string) => Promise<string>>(),
+}));
+vi.mock("../../src/core/common/scrypt", () => ({ scryptVerify: verify, scryptHash: hash }));
 
 // One typed double per constructor argument, in order. Every dependency slots
 // straight into the service constructor with no structural cast, so a wrong
@@ -61,6 +65,8 @@ function makeMocks() {
   };
 }
 
+const activityMock = () => providerMock<ActivityLogService>({ record: vi.fn(async () => undefined) });
+
 describe("JwtAuthService", () => {
   let m: ReturnType<typeof makeMocks>;
   let svc: JwtAuthService;
@@ -68,6 +74,8 @@ describe("JwtAuthService", () => {
   beforeEach(() => {
     m = makeMocks();
     verify.mockReset();
+    hash.mockReset();
+    hash.mockImplementation(async (plain) => `hashed:${plain}`);
     svc = new JwtAuthService(
       m.jwt,
       m.accounts,
@@ -78,7 +86,8 @@ describe("JwtAuthService", () => {
       m.geocoding,
       m.mailSettings,
       m.twoFactor,
-      m.challenges
+      m.challenges,
+      activityMock()
     );
   });
 
@@ -117,6 +126,54 @@ describe("JwtAuthService", () => {
     it("skips device consolidation when no ua/ip fingerprint is available", async () => {
       await svc.openSessionFor(entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 }));
       expect(m.refreshTokens.update).not.toHaveBeenCalled();
+    });
+    it("answers a challenge instead of a session when the account asks for two factors", async () => {
+      m.twoFactor.isEnabled.mockResolvedValueOnce(true);
+      const res = await svc.openSessionFor(
+        entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 }),
+        "UA",
+        "1.2.3.4"
+      );
+      expect(res).toEqual({ twoFactorRequired: true, challenge: "challenge-1", expiresAt: "1970-01-01T00:00:00.000Z" });
+      expect(m.challenges.mint).toHaveBeenCalledWith("a1");
+      expect(m.refreshTokens.insert).not.toHaveBeenCalled();
+      expect(m.accounts.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("completeTwoFactor", () => {
+    it("401 when the challenge is unknown, expired or out of attempts", async () => {
+      m.challenges.attempt.mockReturnValueOnce(null);
+      await expect(svc.completeTwoFactor("nope", "123456")).rejects.toMatchObject({
+        status: 401,
+        response: { code: "twoFactor.challengeExpired" },
+      });
+      expect(m.twoFactor.verifyForLogin).not.toHaveBeenCalled();
+    });
+    it("400 on a wrong code and keeps the challenge alive", async () => {
+      m.twoFactor.verifyForLogin.mockResolvedValueOnce(false);
+      await expect(svc.completeTwoFactor("challenge-1", "000000")).rejects.toMatchObject({
+        status: 400,
+        response: { code: "twoFactor.invalidCode" },
+      });
+      expect(m.challenges.settle).not.toHaveBeenCalled();
+      expect(m.refreshTokens.insert).not.toHaveBeenCalled();
+    });
+    it("401 when the account behind the challenge is gone or disabled", async () => {
+      m.accounts.findOne.mockResolvedValueOnce(null);
+      await expect(svc.completeTwoFactor("challenge-1", "123456")).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(m.accounts.findOne).toHaveBeenCalledWith({ where: { id: "a1", enabled: 1 } });
+      expect(m.challenges.settle).toHaveBeenCalledWith("challenge-1");
+    });
+    it("settles the challenge and opens the session on the right code", async () => {
+      const account = entity<Account>({ id: "a1", email: "a@b.com", isRoot: 0 });
+      m.accounts.findOne.mockResolvedValueOnce(account);
+      const res = await svc.completeTwoFactor("challenge-1", "123456", "UA/1.0", "1.2.3.4");
+      expect(m.twoFactor.verifyForLogin).toHaveBeenCalledWith("a1", "123456");
+      expect(m.challenges.settle).toHaveBeenCalledWith("challenge-1");
+      expect(res.accessToken).toBe("access-token");
+      expect(m.accounts.save).toHaveBeenCalledWith(expect.objectContaining({ lastLogin: expect.any(Date) }));
+      expect(m.refreshTokens.insert.mock.calls[0][0]).toMatchObject({ accountId: "a1", userAgent: "UA/1.0", ip: "1.2.3.4" });
     });
   });
 
@@ -272,10 +329,135 @@ describe("JwtAuthService", () => {
     });
   });
 
+  describe("listSessionsOverview", () => {
+    it("answers an empty list without looking accounts up when no session exists", async () => {
+      const qb = qbMock<RefreshToken>();
+      qb.getRawMany.mockResolvedValueOnce([]);
+      m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb);
+      await expect(svc.listSessionsOverview()).resolves.toEqual([]);
+      expect(m.accounts.findBy).not.toHaveBeenCalled();
+    });
+    it("joins email and display name, keeps each bucket's last-seen apart and sorts by activity", async () => {
+      const qb = qbMock<RefreshToken>();
+      const recent = new Date(Date.now() - 5_000).toISOString();
+      const old = new Date(Date.now() - 3_600_000).toISOString();
+      qb.getRawMany.mockResolvedValueOnce([
+        { accountId: "a1", activeCount: "1", expiredCount: "0", lastActiveSeenAt: recent, lastExpiredSeenAt: null },
+        { accountId: "a2", activeCount: "2", expiredCount: "3", lastActiveSeenAt: old, lastExpiredSeenAt: old },
+        { accountId: "gone", activeCount: "0", expiredCount: "1", lastActiveSeenAt: null, lastExpiredSeenAt: null },
+      ]);
+      m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb);
+      m.accounts.findBy.mockResolvedValueOnce([
+        { id: "a1", email: "a@b.com" },
+        { id: "a2", email: "c@d.com" },
+      ]);
+      m.profiles.find.mockResolvedValueOnce([{ accountId: "a2", firstName: "Bob", lastName: "Martin" }]);
+      const res = await svc.listSessionsOverview();
+      expect(res.map((r) => r.accountId)).toEqual(["a2", "a1", "gone"]);
+      expect(res[0]).toMatchObject({
+        email: "c@d.com",
+        displayName: "Bob Martin",
+        activeCount: 2,
+        expiredCount: 3,
+        online: false,
+        lastSeenAt: old,
+        expiredLastSeenAt: old,
+      });
+      expect(res[1]).toMatchObject({
+        email: "a@b.com",
+        displayName: null,
+        online: true,
+        lastSeenAt: recent,
+        expiredLastSeenAt: null,
+      });
+      expect(res[2]).toMatchObject({ email: null, displayName: null, online: false, lastSeenAt: null });
+    });
+  });
+
+  describe("purgeAccountSessionHistory", () => {
+    it("deletes the account's expired and revoked rows and answers the count", async () => {
+      const qb = qbMock<RefreshToken>();
+      qb.execute.mockResolvedValueOnce({ affected: 4 });
+      m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb);
+      await expect(svc.purgeAccountSessionHistory("a1")).resolves.toEqual({ ok: true, purged: 4 });
+      expect(qb.where).toHaveBeenCalledWith("account_id = :accountId", { accountId: "a1" });
+    });
+    it("answers zero when the driver reports no count", async () => {
+      const qb = qbMock<RefreshToken>();
+      qb.execute.mockResolvedValueOnce({});
+      m.refreshTokens.createQueryBuilder.mockReturnValueOnce(qb);
+      await expect(svc.purgeAccountSessionHistory("a1")).resolves.toEqual({ ok: true, purged: 0 });
+    });
+  });
+
+  describe("revokeAllActiveSessions", () => {
+    it("stamps revokedAt on every live session of the account", async () => {
+      m.refreshTokens.update.mockResolvedValueOnce({ affected: 2 });
+      await expect(svc.revokeAllActiveSessions("a1")).resolves.toEqual({ ok: true, revoked: 2 });
+      const [criteria, patch] = m.refreshTokens.update.mock.calls[0];
+      expect(criteria).toMatchObject({ accountId: "a1" });
+      expect(patch.revokedAt).toBeInstanceOf(Date);
+    });
+    it("answers zero when the driver reports no count", async () => {
+      m.refreshTokens.update.mockResolvedValueOnce({});
+      await expect(svc.revokeAllActiveSessions("a1")).resolves.toEqual({ ok: true, revoked: 0 });
+    });
+  });
+
+  describe("changePassword", () => {
+    it("404 when the account is gone", async () => {
+      m.accounts.findOne.mockResolvedValueOnce(null);
+      await expect(svc.changePassword("a1", { currentPassword: "old", newPassword: "newpassword" })).rejects.toBeInstanceOf(
+        NotFoundException
+      );
+    });
+    it("400 auth.wrongPassword when the current password is missing on an account that has one", async () => {
+      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", password: "hash" });
+      await expect(svc.changePassword("a1", { newPassword: "newpassword" })).rejects.toMatchObject({
+        status: 400,
+        response: { code: "auth.wrongPassword" },
+      });
+      expect(m.accounts.save).not.toHaveBeenCalled();
+    });
+    it("400 auth.wrongPassword when the current password does not match", async () => {
+      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", password: "hash" });
+      verify.mockResolvedValueOnce(false);
+      await expect(svc.changePassword("a1", { currentPassword: "nope", newPassword: "newpassword" })).rejects.toMatchObject({
+        response: { code: "auth.wrongPassword" },
+      });
+      expect(verify).toHaveBeenCalledWith("nope", "hash");
+    });
+    it("stores the new hash once the current password is verified", async () => {
+      const account = { id: "a1", password: "hash" };
+      m.accounts.findOne.mockResolvedValueOnce(account);
+      verify.mockResolvedValueOnce(true);
+      await expect(svc.changePassword("a1", { currentPassword: "old", newPassword: "newpassword" })).resolves.toEqual({
+        changed: true,
+      });
+      expect(account.password).toBe("hashed:newpassword");
+      expect(m.accounts.save).toHaveBeenCalledWith(account);
+    });
+    it("sets a first password without asking for one on an account created by a provider", async () => {
+      const account = { id: "a1", password: null };
+      m.accounts.findOne.mockResolvedValueOnce(account);
+      await expect(svc.changePassword("a1", { newPassword: "newpassword" })).resolves.toEqual({ changed: true });
+      expect(verify).not.toHaveBeenCalled();
+      expect(account.password).toBe("hashed:newpassword");
+    });
+  });
+
   describe("me", () => {
     it("404 when the account is gone", async () => {
       m.accounts.findOne.mockResolvedValueOnce(null);
       await expect(svc.me("a1")).rejects.toBeInstanceOf(NotFoundException);
+    });
+    it("reports whether the account asks for two factors", async () => {
+      m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", isRoot: 0 });
+      m.profiles.findOne.mockResolvedValueOnce(null);
+      m.twoFactor.isEnabled.mockResolvedValueOnce(true);
+      const res = await svc.me("a1");
+      expect(res.twoFactorEnabled).toBe(true);
+      expect(m.twoFactor.isEnabled).toHaveBeenCalledWith("a1");
     });
     it("returns a null-filled profile with no groups", async () => {
       m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", isRoot: 0 });
@@ -286,7 +468,13 @@ describe("JwtAuthService", () => {
     });
     it("hydrates profile fields and group memberships", async () => {
       m.accounts.findOne.mockResolvedValueOnce({ id: "a1", email: "a@b.com", isRoot: 1, password: "hash" });
-      m.profiles.findOne.mockResolvedValueOnce({ firstName: "Bob", lastName: "Martin", city: "Paris", latitude: "48.8", longitude: "2.3" });
+      m.profiles.findOne.mockResolvedValueOnce({
+        firstName: "Bob",
+        lastName: "Martin",
+        city: "Paris",
+        latitude: "48.8",
+        longitude: "2.3",
+      });
       m.groupMembers.find.mockResolvedValueOnce([{ groupId: "g1" }]);
       m.groups.findBy.mockResolvedValueOnce([{ id: "g1", name: "Admins" }]);
       const res = await svc.me("a1");

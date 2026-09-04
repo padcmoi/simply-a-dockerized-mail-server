@@ -98,7 +98,12 @@ describe("MailerService", () => {
 
     it("sendInvitation names the target groups and sends from postmaster@<fromDomain>", async () => {
       settings.toConfig.mockResolvedValue(SMTP);
-      await svc.sendInvitation({ to: "to@x.test", link: "https://link", fromDomain: "example.com", groupNames: ["Admins", "Support"] });
+      await svc.sendInvitation({
+        to: "to@x.test",
+        link: "https://link",
+        fromDomain: "example.com",
+        groupNames: ["Admins", "Support"],
+      });
       const msg = sendMail.mock.calls[0][0];
       expect(msg.from).toBe("postmaster@example.com");
       expect(msg.subject).toBe("Invitation to manage the mail server");

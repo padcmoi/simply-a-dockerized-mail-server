@@ -85,16 +85,7 @@ describe("GroupsService", () => {
 
   beforeEach(() => {
     m = makeMocks();
-    svc = new GroupsService(
-      m.groups,
-      m.accounts,
-      m.profiles,
-      m.groupMembers,
-      m.domains,
-      m.cpg,
-      m.auditLog,
-      m.antiEscalation
-    );
+    svc = new GroupsService(m.groups, m.accounts, m.profiles, m.groupMembers, m.domains, m.cpg, m.auditLog, m.antiEscalation);
     // Sensible defaults so the many collaborators a method touches never blow up
     // on undefined; individual tests override the ones they assert on.
     m.groups.findOne.mockResolvedValue(makeGroup());
@@ -150,7 +141,14 @@ describe("GroupsService", () => {
 
       expect(m.groups.find).toHaveBeenCalledWith({ where: { isInvisible: 0 }, order: { name: "ASC" } });
       expect(res).toEqual([
-        expect.objectContaining({ id: "g1", ownerEmail: "o1@x.com", memberCount: 2, isDefault: true, protected: true, invisible: true }),
+        expect.objectContaining({
+          id: "g1",
+          ownerEmail: "o1@x.com",
+          memberCount: 2,
+          isDefault: true,
+          protected: true,
+          invisible: true,
+        }),
         expect.objectContaining({ id: "g2", ownerEmail: null, memberCount: 1 }),
         expect.objectContaining({ id: "g3", ownerId: null, ownerEmail: null, memberCount: 0 }),
       ]);

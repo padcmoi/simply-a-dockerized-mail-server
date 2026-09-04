@@ -27,10 +27,13 @@ function makeCpg(): GuardCpg {
   cpg.guard.assertOne.global.mockImplementation(async (_uid: string, resource: string, opts: { acrud: string[] }) => {
     for (const a of opts.acrud) if (!granted.has(`${resource}:${a}`)) throw new ForbiddenException(`Missing ${resource}:${a}`);
   });
-  cpg.guard.assertOne.domain.mockImplementation(async (_uid: string, domainId: number, resource: string, opts: { acrud: string[] }) => {
-    for (const a of opts.acrud)
-      if (!grantedDomain.has(`${domainId}:${resource}:${a}`)) throw new ForbiddenException(`Missing ${domainId}:${resource}:${a}`);
-  });
+  cpg.guard.assertOne.domain.mockImplementation(
+    async (_uid: string, domainId: number, resource: string, opts: { acrud: string[] }) => {
+      for (const a of opts.acrud)
+        if (!grantedDomain.has(`${domainId}:${resource}:${a}`))
+          throw new ForbiddenException(`Missing ${domainId}:${resource}:${a}`);
+    }
+  );
   return Object.assign(cpg, {
     grantGlobal: (resource: string, ...actions: string[]) => actions.forEach((a) => granted.add(`${resource}:${a}`)),
     grantDomain: (domainId: number, resource: string, ...actions: string[]) =>
@@ -570,7 +573,12 @@ describe("WebsocketGateway", () => {
 
   describe("typing signal", () => {
     beforeEach(() => {
-      gateway.registerTopic("ticket", { permissions: [], scope: "global", parameterized: true, authorize: () => Promise.resolve(true) });
+      gateway.registerTopic("ticket", {
+        permissions: [],
+        scope: "global",
+        parameterized: true,
+        authorize: () => Promise.resolve(true),
+      });
       gateway.setDynamicHandlers({ start: vi.fn(), stop: vi.fn() });
     });
 

@@ -67,7 +67,14 @@ describe("GroupsController (e2e: auth + ACL + behavior)", () => {
     { m: "get", p: `/api/v1/groups`, actions: ["access", "list-groups"], svcKey: "list", ok: 200 },
     { m: "get", p: `/api/v1/groups/permissions/catalog`, actions: ["access", "view-group"], svcKey: null, ok: 200 },
     { m: "post", p: `/api/v1/groups`, actions: ["access", "create-group"], svcKey: "create", body: { name: "G" }, ok: 201 },
-    { m: "patch", p: `/api/v1/groups/${GID}`, actions: ["access", "edit-group"], svcKey: "update", body: { name: "G2" }, ok: 200 },
+    {
+      m: "patch",
+      p: `/api/v1/groups/${GID}`,
+      actions: ["access", "edit-group"],
+      svcKey: "update",
+      body: { name: "G2" },
+      ok: 200,
+    },
     { m: "delete", p: `/api/v1/groups/${GID}`, actions: ["access", "delete-group"], svcKey: "remove", ok: 200 },
     { m: "get", p: `/api/v1/groups/${GID}`, actions: ["access", "view-group"], svcKey: "getDetail", ok: 200 },
     {
@@ -161,7 +168,10 @@ describe("GroupsController (e2e: auth + ACL + behavior)", () => {
   describe("behavior: the controller forwards the right arguments", () => {
     it("GET /groups forwards the acting user and the validated pagination query", async () => {
       svc.list.mockResolvedValueOnce({ items: [], total: 0 });
-      await api().get("/api/v1/groups?limit=10&sortBy=name").set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      await api()
+        .get("/api/v1/groups?limit=10&sortBy=name")
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(200);
       expect(svc.list).toHaveBeenCalledWith(
         expect.objectContaining({ id: ROOT.id, isRoot: true }),
         expect.objectContaining({ limit: 10, offset: 0, sortDir: "desc", sortBy: "name" })
@@ -201,13 +211,19 @@ describe("GroupsController (e2e: auth + ACL + behavior)", () => {
 
     it("DELETE /groups/:id forwards id and acting user", async () => {
       svc.remove.mockResolvedValueOnce({ ok: true });
-      await api().delete(`/api/v1/groups/${GID}`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      await api()
+        .delete(`/api/v1/groups/${GID}`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(200);
       expect(svc.remove).toHaveBeenCalledWith(GID, expect.objectContaining({ id: ROOT.id }));
     });
 
     it("GET /groups/:id forwards id and acting user", async () => {
       svc.getDetail.mockResolvedValueOnce({ id: GID });
-      await api().get(`/api/v1/groups/${GID}`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      await api()
+        .get(`/api/v1/groups/${GID}`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(200);
       expect(svc.getDetail).toHaveBeenCalledWith(GID, expect.objectContaining({ id: ROOT.id }));
     });
 
@@ -287,13 +303,19 @@ describe("GroupsController (e2e: auth + ACL + behavior)", () => {
 
     it("POST /groups/:id/members/all forwards to addAllAccounts (id, acting user)", async () => {
       svc.addAllAccounts.mockResolvedValueOnce([]);
-      await api().post(`/api/v1/groups/${GID}/members/all`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(201);
+      await api()
+        .post(`/api/v1/groups/${GID}/members/all`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(201);
       expect(svc.addAllAccounts).toHaveBeenCalledWith(GID, expect.objectContaining({ id: ROOT.id, isRoot: true }));
     });
 
     it("DELETE /groups/:id/members/all forwards to removeAllMembers (id, acting user)", async () => {
       svc.removeAllMembers.mockResolvedValueOnce([]);
-      await api().delete(`/api/v1/groups/${GID}/members/all`).set("Authorization", `Bearer ${h.token(ROOT)}`).expect(200);
+      await api()
+        .delete(`/api/v1/groups/${GID}/members/all`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .expect(200);
       expect(svc.removeAllMembers).toHaveBeenCalledWith(GID, expect.objectContaining({ id: ROOT.id, isRoot: true }));
     });
   });

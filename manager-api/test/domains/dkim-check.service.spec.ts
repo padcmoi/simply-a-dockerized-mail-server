@@ -30,7 +30,14 @@ describe("DkimCheckService (DNS TXT verification)", () => {
   it("reports no key (both expected and found null) when the DB has none", async () => {
     repo.findOne.mockResolvedValue(null);
     const out = await svc.check("example.com");
-    expect(out).toMatchObject({ hasKeyInDatabase: false, match: false, expected: null, found: null, error: null, staleSelectorFound: null });
+    expect(out).toMatchObject({
+      hasKeyInDatabase: false,
+      match: false,
+      expected: null,
+      found: null,
+      error: null,
+      staleSelectorFound: null,
+    });
     expect(resolveTxtMock).not.toHaveBeenCalled();
   });
 
@@ -42,7 +49,11 @@ describe("DkimCheckService (DNS TXT verification)", () => {
     expect(out.match).toBe(true);
     expect(out.hasKeyInDatabase).toBe(true);
     expect(out.found).toEqual({ value: "v=DKIM1; k=rsa; p=ABC123" });
-    expect(out.expected).toEqual({ selector: "dkim202602", queriedName: "dkim202602._domainkey.example.com", value: KEY.txtRecord });
+    expect(out.expected).toEqual({
+      selector: "dkim202602",
+      queriedName: "dkim202602._domainkey.example.com",
+      value: KEY.txtRecord,
+    });
   });
 
   it("flags a mismatch when the published p= value differs", async () => {
@@ -71,9 +82,7 @@ describe("DkimCheckService (DNS TXT verification)", () => {
 
   it("on a DNS error, surfaces the previous monthly selector still published (stale hint)", async () => {
     repo.findOne.mockResolvedValue(KEY);
-    resolveTxtMock
-      .mockRejectedValueOnce(new Error("ENOTFOUND"))
-      .mockResolvedValueOnce([["v=DKIM1; p=STALEKEY"]]);
+    resolveTxtMock.mockRejectedValueOnce(new Error("ENOTFOUND")).mockResolvedValueOnce([["v=DKIM1; p=STALEKEY"]]);
     const out = await svc.check("example.com");
     expect(resolveTxtMock).toHaveBeenNthCalledWith(2, "dkim202601._domainkey.example.com");
     expect(out.error).toBe("ENOTFOUND");

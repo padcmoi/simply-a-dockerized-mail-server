@@ -72,10 +72,7 @@ export interface Harness {
 // permission guards wired, and everything below the guards mocked: the caller
 // passes the controller's own service/repository mocks in `providers`, and gets
 // back handles to mint tokens and grant permissions. No database, no network.
-export async function buildHarness(opts: {
-  controllers: Type[];
-  providers?: ModuleMetadata["providers"];
-}): Promise<Harness> {
+export async function buildHarness(opts: { controllers: Type[]; providers?: ModuleMetadata["providers"] }): Promise<Harness> {
   const cpg = makeCpgMock();
   const owners = new Map<number, string | null>();
   // Default VirtualDomain repo double. Serves the DomainPermissionGuard's

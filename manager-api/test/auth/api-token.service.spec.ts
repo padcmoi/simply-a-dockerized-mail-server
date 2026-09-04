@@ -7,6 +7,7 @@ import { decryptSecret } from "../../src/core/auth/api-token/api-token.cipher";
 import type { ApiToken } from "../../src/core/auth/api-token/api-token.entity";
 import type { Account } from "../../src/core/entities/account.entity";
 import { entity, repoMock, providerMock } from "../helpers/mocks";
+import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
 const PEPPER = "test-pepper";
 process.env.MANAGER_API_TOKEN_PEPPER = PEPPER;
@@ -46,6 +47,8 @@ function tokenFor(secret: string, over: Partial<ApiToken> = {}): ApiToken {
   });
 }
 
+const activityMock = () => providerMock<ActivityLogService>({ record: vi.fn(async () => undefined) });
+
 describe("ApiTokenService", () => {
   let repo: ReturnType<typeof makeRepo>;
   let svc: ApiTokenService;
@@ -58,7 +61,7 @@ describe("ApiTokenService", () => {
     // is never consulted.
     cpg = providerMock<CustomPermissionGuardService>({});
     (cpg as { guard?: unknown }).guard = { assertOne: { global: vi.fn(), domain: vi.fn() } };
-    svc = new ApiTokenService(repo, cpg);
+    svc = new ApiTokenService(repo, cpg, activityMock());
   });
 
   describe("pepper", () => {
@@ -96,7 +99,11 @@ describe("ApiTokenService", () => {
     });
 
     it("serialises allowedIps and parses expiresAt", async () => {
-      const res = await svc.create("acc-1", false, { name: "ci", allowedIps: ["10.0.0.1"], expiresAt: "2030-01-01T00:00:00.000Z" });
+      const res = await svc.create("acc-1", false, {
+        name: "ci",
+        allowedIps: ["10.0.0.1"],
+        expiresAt: "2030-01-01T00:00:00.000Z",
+      });
       const persisted = repo.create.mock.calls[0][0] as Partial<ApiToken>;
       expect(persisted.allowedIps).toBe(JSON.stringify(["10.0.0.1"]));
       expect(persisted.expiresAt).toBeInstanceOf(Date);
@@ -242,7 +249,12 @@ describe("ApiTokenService", () => {
       await expect(svc.regenerate("acc-1", 1)).rejects.toBeInstanceOf(BadRequestException);
     });
     it("mints a fresh key on the same clientId and clears the lockout counters", async () => {
-      const row = tokenFor("s", { clientId: "keepme", failedAttempts: 3, lockedUntil: new Date(), allowedIps: JSON.stringify(["1.1.1.1"]) });
+      const row = tokenFor("s", {
+        clientId: "keepme",
+        failedAttempts: 3,
+        lockedUntil: new Date(),
+        allowedIps: JSON.stringify(["1.1.1.1"]),
+      });
       repo.findOne.mockResolvedValueOnce(row);
       const res = await svc.regenerate("acc-1", 1);
       expect(res.clientId).toBe("keepme");
@@ -306,7 +318,9 @@ describe("ApiTokenService", () => {
       expect(await svc.validate("sms_cid.s3cret", "1.2.3.4")).toBeNull();
     });
     it("rejects a token on a disabled account", async () => {
-      repo.findOne.mockResolvedValueOnce(tokenFor("s3cret", { account: entity<Account>({ id: "acc-1", email: "a@b.com", isRoot: 0, enabled: 0 }) }));
+      repo.findOne.mockResolvedValueOnce(
+        tokenFor("s3cret", { account: entity<Account>({ id: "acc-1", email: "a@b.com", isRoot: 0, enabled: 0 }) })
+      );
       expect(await svc.validate("sms_cid.s3cret", "1.2.3.4")).toBeNull();
     });
     it("accepts a valid key, normalises the IP through the allow-list, and stamps last use", async () => {

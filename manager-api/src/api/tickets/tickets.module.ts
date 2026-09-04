@@ -17,9 +17,11 @@ import { SettingsModule } from "../../core/settings/settings.module";
 import { TopicPresenceModule } from "../../core/websocket/presence.module";
 import { TicketsController } from "./tickets.controller";
 import { TicketsService } from "./tickets.service";
+import { ActivityLogModule } from "../../core/activity/activity-log.module";
 
 @Module({
   imports: [
+    ActivityLogModule,
     TypeOrmModule.forFeature([
       SupportTicket,
       SupportTicketMessage,

@@ -16,6 +16,7 @@ import { MailSettingsService } from "../../mailer/mail-settings.service";
 import { TwoFactorChallengeStore } from "../two-factor/two-factor-challenge.store";
 import { TwoFactorService } from "../two-factor/two-factor.service";
 import { ChangeMyPasswordDto, UpdateProfileDto } from "./jwt.validation";
+import { ActivityLogService } from "../../activity/activity-log.service";
 
 // Columns the session-history list may sort by, mapped to their real SQL
 // expressions (never interpolate the raw request value -- see resolveSortColumn).
@@ -82,7 +83,8 @@ export class JwtAuthService {
     private readonly geocoding: GeocodingService,
     private readonly mailSettings: MailSettingsService,
     private readonly twoFactor: TwoFactorService,
-    private readonly challenges: TwoFactorChallengeStore
+    private readonly challenges: TwoFactorChallengeStore,
+    private readonly activity: ActivityLogService
   ) {}
 
   // The tail every way in shares, whichever strategy proved the identity: the
@@ -114,6 +116,7 @@ export class JwtAuthService {
       throw new ApiError(HttpStatus.UNAUTHORIZED, "twoFactor.challengeExpired", "Start the sign-in again");
     }
     if (!(await this.twoFactor.verifyForLogin(accountId, code))) {
+      await this.activity.record({ action: "auth.two-factor.refused", actorId: accountId });
       throw new ApiError(HttpStatus.BAD_REQUEST, "twoFactor.invalidCode", "This code is not valid");
     }
     this.challenges.settle(challenge);
@@ -125,6 +128,7 @@ export class JwtAuthService {
   private async finishSession(account: Account, ua?: string, ip?: string) {
     account.lastLogin = new Date();
     await this.accounts.save(account);
+    await this.activity.record({ action: "auth.login", actorId: account.id });
     // One live session per device: a re-login from the same device (same UA +
     // IP) revokes that device's earlier still-valid tokens first. Without this
     // every sign-in stacked another active token, so the list showed many
@@ -182,6 +186,7 @@ export class JwtAuthService {
     if (stored && !stored.revokedAt) {
       stored.revokedAt = new Date();
       await this.refreshTokens.save(stored);
+      await this.activity.record({ action: "auth.logout", actorId: stored.accountId });
     }
   }
 
@@ -261,6 +266,7 @@ export class JwtAuthService {
       stored.revokedAt = new Date();
       await this.refreshTokens.save(stored);
     }
+    await this.activity.record({ action: "auth.session.revoked", actorId: accountId, details: { sessionId: id } });
     return { ok: true };
   }
 
@@ -362,6 +368,7 @@ export class JwtAuthService {
     }
     account.password = await scryptHash(input.newPassword);
     await this.accounts.save(account);
+    await this.activity.record({ action: "auth.password.changed", actorId: accountId });
     return { changed: true };
   }
 
@@ -374,8 +381,14 @@ export class JwtAuthService {
     if (input.email !== undefined && input.email !== account.email) {
       const clash = await this.accounts.findOne({ where: { email: input.email, id: Not(accountId) } });
       if (clash) throw new ConflictException(`Email ${input.email} is already used by another account`);
+      const previous = account.email;
       account.email = input.email;
       await this.accounts.save(account);
+      await this.activity.record({
+        action: "auth.email.changed",
+        actorId: accountId,
+        details: { from: previous, to: input.email },
+      });
     }
 
     const profile = (await this.profiles.findOne({ where: { accountId } })) ?? this.profiles.create({ accountId });
@@ -405,6 +418,10 @@ export class JwtAuthService {
       }
     }
     await this.profiles.save(profile);
+    const fields = (Object.keys(input) as (keyof UpdateProfileDto)[]).filter(
+      (key) => key !== "email" && input[key] !== undefined
+    );
+    if (fields.length) await this.activity.record({ action: "profile.updated", actorId: accountId, details: { fields } });
 
     return this.toProfile(account);
   }
