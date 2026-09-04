@@ -42,6 +42,12 @@ export default {
   pageDescription:
     "Choisissez par quel canal chaque source vous joint. Décochez les deux et cette source cesse totalement de vous notifier, dans l'application comme par email.",
   channel: { inApp: "Notification", email: "Email" },
+  sound: {
+    title: "Son",
+    hint: "Un bip à chaque notification qui arrive, quelle que soit sa source. Réglé sur cet appareil, pas sur le compte.",
+    on: "Activé",
+    off: "Désactivé",
+  },
   source: { support: "Support", supervision: "Machine" },
   sourceHint: {
     support: "Nouveaux tickets, réponses, prises en charge et changements de statut, sur les domaines auxquels vous avez accès.",

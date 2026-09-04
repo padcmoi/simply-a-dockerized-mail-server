@@ -2,12 +2,15 @@
 const { t, locale } = useI18n();
 const { unread, items, writing, refresh, markRead, markAllRead } = useNotifications();
 const { label, icon } = useNotificationLabel();
+const { notice } = useNotificationSound();
 
 const open = ref(false);
 
 const formatter = computed(
   () => new Intl.DateTimeFormat(locale.value.replace("_", "-"), { dateStyle: "medium", timeStyle: "short" })
 );
+
+watch(items, notice, { immediate: true });
 
 function closePopover() {
   open.value = false;

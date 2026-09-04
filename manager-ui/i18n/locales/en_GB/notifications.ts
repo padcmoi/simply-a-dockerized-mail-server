@@ -42,6 +42,12 @@ export default {
   pageDescription:
     "Pick how each source reaches you. Turn both channels off and that source stops notifying you entirely, in the app and by email.",
   channel: { inApp: "Notification", email: "Email" },
+  sound: {
+    title: "Sound",
+    hint: "A beep for every notification that arrives, whatever its source. Set on this device, not on the account.",
+    on: "On",
+    off: "Off",
+  },
   source: { support: "Support", supervision: "Machine" },
   sourceHint: {
     support: "New tickets, replies, assignments and status changes, on the domains you have access to.",

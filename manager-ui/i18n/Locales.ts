@@ -496,6 +496,7 @@ export interface Locales {
     pageHint: string;
     pageDescription: string;
     channel: { inApp: string; email: string };
+    sound: { title: string; hint: string; on: string; off: string };
     source: { support: string; supervision: string };
     sourceHint: { support: string; supervision: string };
     event: {

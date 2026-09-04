@@ -9,6 +9,12 @@ const auth = useAuthStore();
 const { hasGlobal, isRoot } = usePermissions();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { load, save } = useNotificationPreferences();
+const { enabled: soundEnabled, play: playSound } = useNotificationSound();
+
+function setSound(value: boolean) {
+  soundEnabled.value = value;
+  if (value) playSound();
+}
 
 setBreadcrumb([{ label: t("layout.profile"), to: "/profile" }, { label: t("notifications.title") }]);
 
@@ -77,6 +83,27 @@ async function update(source: NotificationSource, channel: "inApp" | "email", va
       variant="subtle"
       :description="t('config.mailOffNotice')"
     />
+
+    <UCard>
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div class="flex items-start gap-3 min-w-0 flex-1">
+          <UTooltip :text="t('notifications.sound.hint')">
+            <UIcon :name="soundEnabled ? 'i-lucide-volume-2' : 'i-lucide-volume-x'" class="size-5 text-primary mt-0.5 shrink-0" />
+          </UTooltip>
+          <div class="min-w-0">
+            <p class="font-medium">{{ t("notifications.sound.title") }}</p>
+            <p class="text-sm text-muted">{{ t("notifications.sound.hint") }}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-6 shrink-0">
+          <USwitch
+            :model-value="soundEnabled"
+            :label="t(soundEnabled ? 'notifications.sound.on' : 'notifications.sound.off')"
+            @update:model-value="setSound($event === true)"
+          />
+        </div>
+      </div>
+    </UCard>
 
     <UCard>
       <div v-if="status === 'pending'" class="space-y-4">
