@@ -74,7 +74,7 @@ async function onSignOut() {
     <template #header>
       <UButton :label="t('app.name')" color="neutral" variant="ghost" square to="/my-space" class="w-full overflow-hidden">
         <template #leading>
-          <NaskotMailIcon class="text-primary size-6 shrink-0" />
+          <img src="~/assets/favicon.svg" alt="" width="24" height="24" class="size-6 shrink-0" />
         </template>
       </UButton>
     </template>

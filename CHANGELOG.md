@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- feat(ui): the sidebar header carries the favicon's beaver, the orange tile the browser tab shows, in place of the line drawing: at 24 px the tile reads at a glance where the outline read as a sketch, and the tab and the menu now carry one mark. The line icon and its component stay in the repository for the next place that needs a monochrome mark (05-09-2026)
 - feat(delegations): a new grant opens with no mailboxes and no aliases rather than five of each, so what a delegate may create is decided by whoever grants it; unticking "unlimited" on an existing grant lands on zero for the same reason (04-09-2026)
 - refactor(ui): the breadcrumb drops its Accueil crumb and starts at the page's own section, "Domaines > gestionpratique.ovh > Délégations" rather than an Accueil that names a page nobody reaches from there; the browser tab already left it out and reads the same as before (03-09-2026)
 - refactor(ui): the header shows the breadcrumb where it used to repeat a title, its own bar and the eleven-path title map both gone, and the browser tab takes the trail with it: "Simply Mail Server :: Configuration > Connexion externe" (02-09-2026)
