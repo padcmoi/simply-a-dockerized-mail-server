@@ -2,6 +2,7 @@ import type { DropdownMenuItem, NavigationMenuItem } from "@nuxt/ui";
 import { useAuthStore } from "~/stores/auth";
 import { useDomainStore } from "~/stores/domain";
 import { usePermissionsStore } from "~/stores/permissions";
+import { useCodeVersion } from "~/composables/useCodeVersion";
 
 export function useNav(onSignOut: () => Promise<void>) {
   const auth = useAuthStore();
@@ -12,6 +13,7 @@ export function useNav(onSignOut: () => Promise<void>) {
   const { preference: localePreference, options: localeOptions, setPreference: setLocalePreference } = useLocalePreference();
   const colorMode = useColorMode();
   const { unread } = useNotifications();
+  const { version, pending: versionPending } = useCodeVersion();
 
   // Nested account/group detail routes (e.g. /accounts/3/groups) are separate
   // leaf pages, not children of /accounts in the router's matched chain, so
@@ -96,6 +98,14 @@ export function useNav(onSignOut: () => Promise<void>) {
         : []),
       ...entry("supervision", "nav.supervision", "i-lucide-activity", "/admin/supervision"),
       ...entry("supervision", "nav.activity", "i-lucide-scroll-text", "/admin/activity", "view-activity-log"),
+      // The release this server runs, the same tag the login screen shows, last
+      // in the section and behind no ACL: the page has none, the login screen
+      // names it before anyone has signed in. Its text is drawn by the
+      // sidebar's `version-label` slot, a skeleton while the API has not
+      // answered; the entry is left out once it has answered nothing.
+      ...(versionPending.value || version.value
+        ? [{ slot: "version", label: version.value ?? "", icon: "i-lucide-tag", to: "/about", active: isActive("/about") }]
+        : []),
     ]),
   ]);
 
@@ -294,5 +304,5 @@ export function useNav(onSignOut: () => Promise<void>) {
     ],
   ]);
 
-  return { personalNavItems, adminNavItems, openAdminSections, domainNavItems, userItems };
+  return { personalNavItems, adminNavItems, openAdminSections, domainNavItems, userItems, version, versionPending };
 }

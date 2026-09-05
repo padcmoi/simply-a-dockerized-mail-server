@@ -626,6 +626,26 @@ export interface Locales {
     rootBadge: string;
     noGroupBadge: string;
   };
+  about: {
+    title: string;
+    subtitle: string;
+    onGithub: string;
+    unavailable: string;
+    preRelease: string;
+    stable: string;
+    draft: string;
+    published: string;
+    publishedAgo: string;
+    unpublished: string;
+    noNotes: string;
+    noRelease: string;
+    viewTag: string;
+    loadFailed: string;
+    rateLimited: string;
+    retry: string;
+    changelog: string;
+    changelogMissing: string;
+  };
   preferences: {
     title: string;
     subtitle: string;

@@ -3,7 +3,8 @@ import { useAuthStore } from "~/stores/auth";
 import { useDomainStore } from "~/stores/domain";
 
 const { open, close } = useSidebar();
-const { personalNavItems, adminNavItems, openAdminSections, domainNavItems, userItems } = useNav(onSignOut);
+const { personalNavItems, adminNavItems, openAdminSections, domainNavItems, userItems, version, versionPending } =
+  useNav(onSignOut);
 
 const domainStore = useDomainStore();
 const auth = useAuthStore();
@@ -148,7 +149,12 @@ async function onSignOut() {
                 popover
                 :collapsed="state === 'collapsed'"
                 :ui="{ link: 'p-1.5 overflow-hidden' }"
-              />
+              >
+                <template #version-label>
+                  <USkeleton v-if="versionPending" class="h-4 w-16" />
+                  <template v-else>{{ version }}</template>
+                </template>
+              </UNavigationMenu>
             </div>
           </template>
 
@@ -163,7 +169,12 @@ async function onSignOut() {
               popover
               :collapsed="state === 'collapsed'"
               :ui="{ link: 'p-1.5 overflow-hidden' }"
-            />
+            >
+              <template #version-label>
+                <USkeleton v-if="versionPending" class="h-4 w-16" />
+                <template v-else>{{ version }}</template>
+              </template>
+            </UNavigationMenu>
           </template>
         </div>
       </div>

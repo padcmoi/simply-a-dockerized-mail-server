@@ -8,6 +8,14 @@ import { usePermissionsStore } from "~/stores/permissions";
 // useNav statically imports the domain store, whose module calls the bare
 // `defineStore` auto-import at eval time -- stub it before the dynamic import.
 vi.stubGlobal("defineStore", defineStore);
+// The Système section names the release the server runs, read by useCodeVersion
+// through useAsyncData, which has no Nuxt app here: hand it a settled answer.
+vi.mock("~/composables/useCodeVersion", async () => {
+  const { ref } = await import("vue");
+  return {
+    useCodeVersion: () => ({ version: ref("2.0.0"), pending: ref(false), releaseUrl: ref(null) }),
+  };
+});
 const unread = ref(0);
 const { useNav } = await import("~/composables/useNav");
 const { useDomainStore } = await import("~/stores/domain");
@@ -95,6 +103,7 @@ describe("useNav global nav items", () => {
       "/admin/config",
       "/admin/supervision",
       "/admin/activity",
+      "/about",
     ]);
   });
 
@@ -104,10 +113,14 @@ describe("useNav global nav items", () => {
     expect(personalNavItems.value.map((i) => i.to)).toEqual(["/my-space"]);
   });
 
-  it("shows no admin section for a permissionless non-root account", () => {
+  // The release the server runs is behind no ACL: it is all a permissionless
+  // account gets, and a folder around a single page is a click for nothing, so
+  // it stands on its own.
+  it("shows nothing but the release for a permissionless non-root account", () => {
     asUser();
     const { adminNavItems } = useNav(noop);
-    expect(adminNavItems.value).toEqual([]);
+    expect(adminNavItems.value.map((i) => i.to)).toEqual(["/about"]);
+    expect(adminNavItems.value[0]?.children).toBeUndefined();
   });
 
   it("reveals exactly the admin sections the account holds `access` on", () => {
@@ -120,19 +133,19 @@ describe("useNav global nav items", () => {
       domain: [],
     };
     const { adminNavItems } = useNav(noop);
-    expect(adminNavItems.value.map((i) => i.value)).toEqual(["access"]);
-    expect(pathsOf(adminNavItems.value)).toEqual(["/admin/accounts", "/admin/groups"]);
+    expect(adminNavItems.value.map((i) => i.to ?? i.value)).toEqual(["access", "/about"]);
+    expect(pathsOf(adminNavItems.value)).toEqual(["/admin/accounts", "/admin/groups", "/about"]);
   });
 
   // The machine is gated like any other section: on `access` alone. A non-root
-  // account sees nothing else under System, and a folder around a single page is
-  // a click for nothing, so the entry stands on its own.
+  // account sees nothing else under System but the release the server runs,
+  // which follows the machine, so the section folds around the two of them.
   it("reveals the machine section on supervision access, root or not", () => {
     asUser();
     usePermissionsStore().data = { global: [{ resource: "supervision", action: "access" }], domain: [] };
     const { adminNavItems } = useNav(noop);
-    expect(adminNavItems.value.map((i) => i.to)).toEqual(["/admin/supervision"]);
-    expect(adminNavItems.value[0]?.children).toBeUndefined();
+    expect(adminNavItems.value.map((i) => i.to ?? i.value)).toEqual(["system"]);
+    expect(pathsOf(adminNavItems.value)).toEqual(["/admin/supervision", "/about"]);
   });
 
   // A section holding the page on screen has to be open, or the sidebar hides

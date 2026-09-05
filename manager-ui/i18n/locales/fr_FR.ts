@@ -5,6 +5,7 @@ import nav from "./fr_FR/nav";
 import myspace from "./fr_FR/myspace";
 import presence from "./fr_FR/presence";
 import layout from "./fr_FR/layout";
+import about from "./fr_FR/about";
 import common from "./fr_FR/common";
 import error from "./fr_FR/error";
 import confirm from "./fr_FR/confirm";
@@ -43,6 +44,7 @@ export default {
   myspace,
   presence,
   layout,
+  about,
   common,
   error,
   confirm,

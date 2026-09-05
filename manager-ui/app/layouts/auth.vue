@@ -1,17 +1,12 @@
 <script setup lang="ts">
+import { useCodeVersion } from "~/composables/useCodeVersion";
+
 const colorMode = useColorMode();
 function toggleColorMode() {
   colorMode.preference = colorMode.value === "dark" ? "light" : "dark";
 }
 
-// The release the server is running, named before anyone has signed in. It is
-// the API's answer and not a constant on this side: the front would otherwise
-// show the version it was built from, not the one answering it.
-const RELEASES_URL = "https://github.com/padcmoi/simply-a-dockerized-mail-server/releases/tag";
-
-const { call } = useApi();
-
-const { data: info, pending } = useAsyncData("api-info", () => call<{ code_version: string }>(""), { server: false });
+const { version, pending, releaseUrl } = useCodeVersion();
 </script>
 
 <template>
@@ -23,18 +18,18 @@ const { data: info, pending } = useAsyncData("api-info", () => call<{ code_versi
     <div class="fixed bottom-3 right-3">
       <USkeleton v-if="pending" class="h-6 w-28" />
       <UButton
-        v-else-if="info"
-        :to="`${RELEASES_URL}/${info.code_version}`"
+        v-else-if="releaseUrl"
+        :to="releaseUrl"
         target="_blank"
         rel="noopener noreferrer"
         external
-        color="secondary"
+        color="neutral"
         variant="subtle"
         size="xs"
         icon="i-lucide-tag"
         :ui="{ leadingIcon: 'size-3' }"
       >
-        {{ info.code_version }}
+        {{ version }}
       </UButton>
     </div>
 
