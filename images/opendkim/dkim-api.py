@@ -67,10 +67,11 @@ def _read_txt(domain: str, selector: str) -> str:
 
 
 def _reload_opendkim() -> None:
-    # Send SIGHUP to every running opendkim process in this container so it
-    # reloads key.table / signing.table. The sidecar runs in the same PID
-    # namespace as opendkim itself (tini supervises both). Read /proc directly
-    # to avoid depending on procps-ng (busybox alpine ships only a stub).
+    # Send SIGUSR1 to every running opendkim process in this container so it
+    # reloads key.table / signing.table (SIGHUP stops it, and the container
+    # with it). The sidecar runs in the same PID namespace as opendkim itself
+    # (tini supervises both). Read /proc directly to avoid depending on
+    # procps-ng (busybox alpine ships only a stub).
     for entry in os.listdir("/proc"):
         if not entry.isdigit():
             continue
@@ -81,7 +82,7 @@ def _reload_opendkim() -> None:
             continue
         if name == "opendkim":
             try:
-                os.kill(int(entry), signal.SIGHUP)
+                os.kill(int(entry), signal.SIGUSR1)
             except (OSError, ProcessLookupError):
                 pass
 
