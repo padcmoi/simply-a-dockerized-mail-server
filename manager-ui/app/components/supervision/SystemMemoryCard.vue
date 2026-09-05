@@ -23,7 +23,7 @@ const max = 100;
 // over time, but nobody reads memory in percent: both ends of the scale are
 // written in bytes, and the top of the scale is what the host has installed.
 function inBytes(percent: number) {
-  return preciseBytes((percent / 100) * (snapshot?.memory.total ?? 0));
+  return formatBytes((percent / 100) * (snapshot?.memory.total ?? 0));
 }
 
 const ratio = computed(() => {
@@ -32,7 +32,7 @@ const ratio = computed(() => {
 });
 
 const alert = computed(() => metricAlert(ratio.value, thresholds));
-const value = computed(() => (snapshot ? preciseBytes(snapshot.memory.used) : ""));
+const value = computed(() => (snapshot ? formatBytes(snapshot.memory.used) : ""));
 
 // The legend carries figures rather than a description: "of what is installed"
 // left the reader to go and find what that was, when the two numbers say it.
@@ -40,7 +40,7 @@ const legend = computed(() => {
   const memory = snapshot?.memory;
   if (!memory) return [];
 
-  return [`${preciseBytes(memory.used)} ${t("supervision.memoryDetail", { total: preciseBytes(memory.total) })}`];
+  return [`${formatBytes(memory.used)} ${t("supervision.memoryDetail", { total: formatBytes(memory.total) })}`];
 });
 </script>
 
@@ -69,7 +69,7 @@ const legend = computed(() => {
         :series="series"
         :max="max"
         :max-label="inBytes(max)"
-        :min-label="preciseBytes(0)"
+        :min-label="formatBytes(0)"
         :legend="legend"
         :names="['']"
         :format="inBytes"

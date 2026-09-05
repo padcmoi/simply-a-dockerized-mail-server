@@ -93,7 +93,9 @@ async function revoke() {
         <template #mailboxes="{ row }">{{ capLabel(row.usedRecipients, row.maxRecipients) }}</template>
         <template #aliases="{ row }">{{ capLabel(row.usedAliases, row.maxAliases) }}</template>
         <template #quota="{ row }">
-          {{ t("domains.delegations.usedQuota", { used: Math.round(Number(row.usedBytes) / MB), total: row.quotaMb }) }}
+          {{
+            t("domains.delegations.usedQuota", { used: formatBytes(Number(row.usedBytes)), total: formatBytes(row.quotaMb * MB) })
+          }}
         </template>
         <template #actions="{ row }">
           <div class="flex justify-end gap-1">

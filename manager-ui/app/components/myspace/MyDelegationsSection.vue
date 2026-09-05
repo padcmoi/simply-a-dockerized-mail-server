@@ -52,7 +52,9 @@ function aliasCapReached(row: MyDelegation) {
       <template #mailboxes="{ row }">{{ capText(row.usedRecipients, row.maxRecipients) }}</template>
       <template #aliases="{ row }">{{ capText(row.usedAliases, row.maxAliases) }}</template>
       <template #quota="{ row }">
-        {{ t("myspace.delegations.usedQuota", { used: Math.round(Number(row.usedBytes) / MB), total: row.quotaMb }) }}
+        {{
+          t("myspace.delegations.usedQuota", { used: formatBytes(Number(row.usedBytes)), total: formatBytes(row.quotaMb * MB) })
+        }}
       </template>
 
       <template #actions="{ row }">

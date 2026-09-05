@@ -35,7 +35,7 @@ export default {
     aliases: "Aliases",
     used: "{used} / {max}",
     usedUnlimited: "{used} / unlimited",
-    usedQuota: "{used} / {total} MB",
+    usedQuota: "{used} / {total}",
     expires: "Expires {date}",
     expiresColumn: "Expires",
     showInvitations: "Pending invitations and links",

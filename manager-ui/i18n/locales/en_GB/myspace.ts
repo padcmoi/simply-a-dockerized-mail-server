@@ -73,7 +73,7 @@ export default {
     quota: "Disk quota",
     used: "{used} / {max}",
     unlimited: "{used} / unlimited",
-    usedQuota: "{used} / {total} MB",
+    usedQuota: "{used} / {total}",
     newRecipient: "New mailbox",
     newAlias: "New alias",
     createRecipientTitle: "New mailbox on {domain}",

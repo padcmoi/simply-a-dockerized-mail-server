@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bitsPerSecond, metricAlert, metricCeiling, metricKnown, preciseBytes, BUSY, SATURATED } from "~/utils/metrics";
+import { bitsPerSecond, metricAlert, metricCeiling, metricKnown, BUSY, SATURATED } from "~/utils/metrics";
 
 describe("metricAlert", () => {
   it("says nothing at all below the busy threshold, since an outline always on says nothing", () => {
@@ -67,18 +67,5 @@ describe("bitsPerSecond", () => {
   it("drops the decimal past ten, where it stops meaning anything", () => {
     expect(bitsPerSecond(2_000)).toBe("16 kb/s");
     expect(bitsPerSecond(1_000_000_000)).toBe("8.0 Gb/s");
-  });
-});
-
-describe("preciseBytes", () => {
-  // 24 616 660 992 bytes is 24.6 GB, and rounding it to 25 GB makes the card
-  // argue with the invoice.
-  it("keeps one decimal whatever the scale", () => {
-    expect(preciseBytes(24_616_660_992)).toBe("24.6 GB");
-    expect(preciseBytes(101_800_000_000)).toBe("101.8 GB");
-  });
-
-  it("writes plain bytes without a decimal that would mean nothing", () => {
-    expect(preciseBytes(512)).toBe("512 B");
   });
 });

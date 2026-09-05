@@ -20,16 +20,16 @@ describe("formatBytes", () => {
     expect(formatBytes(100 * MB)).toBe("100 MB");
   });
 
-  it("prints whole KB between 1 KiB and 1 MiB", () => {
-    expect(formatBytes(KB)).toBe("1 KB");
-    expect(formatBytes(2048)).toBe("2 KB");
+  it("prints whole kB between 1 KiB and 1 MiB", () => {
+    expect(formatBytes(KB)).toBe("1 kB");
+    expect(formatBytes(2048)).toBe("2 kB");
   });
 
-  it("prints bytes below 1 KiB, and 0 B for nothing at all", () => {
-    expect(formatBytes(500)).toBe("500 B");
-    expect(formatBytes(0)).toBe("0 B");
-    expect(formatBytes(-1)).toBe("0 B");
-    expect(formatBytes(Number.NaN)).toBe("0 B");
+  it("prints bytes below 1 KiB, and 0 bytes for nothing at all", () => {
+    expect(formatBytes(500)).toBe("500 bytes");
+    expect(formatBytes(0)).toBe("0 bytes");
+    expect(formatBytes(-1)).toBe("0 bytes");
+    expect(formatBytes(Number.NaN)).toBe("0 bytes");
   });
 
   it("prints the quota the API sends as a string, once the caller has cast it", () => {

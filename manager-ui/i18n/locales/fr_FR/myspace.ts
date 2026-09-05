@@ -73,7 +73,7 @@ export default {
     quota: "Quota disque",
     used: "{used} / {max}",
     unlimited: "{used} / illimité",
-    usedQuota: "{used} / {total} Mo",
+    usedQuota: "{used} / {total}",
     newRecipient: "Nouvelle boîte",
     newAlias: "Nouvel alias",
     createRecipientTitle: "Nouvelle boîte sur {domain}",

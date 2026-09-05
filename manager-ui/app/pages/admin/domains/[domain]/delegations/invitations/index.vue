@@ -112,7 +112,7 @@ async function revoke() {
         </template>
         <template #mailboxes="{ row }">{{ row.maxRecipients ?? t("domains.delegations.unlimited") }}</template>
         <template #aliases="{ row }">{{ row.maxAliases ?? t("domains.delegations.unlimited") }}</template>
-        <template #quota="{ row }">{{ row.quotaMb }} MB</template>
+        <template #quota="{ row }">{{ formatBytes(row.quotaMb * MB) }}</template>
         <template #expires="{ row }">
           {{ row.expiresAt === null ? t("domains.delegations.noExpiryShort") : formatDateTime(row.expiresAt) }}
         </template>

@@ -73,18 +73,3 @@ export function bitsPerSecond(bytes: number) {
 
   return `${size < 10 ? size.toFixed(1) : Math.round(size)} ${units[unit]}`;
 }
-
-// One decimal, always, whatever the scale: 24 616 660 992 bytes is 24.6 GB, and
-// rounding it to 25 GB makes the card argue with the invoice.
-export function preciseBytes(bytes: number) {
-  const units = ["B", "kB", "MB", "GB", "TB"];
-  let size = bytes;
-  let unit = 0;
-
-  while (size >= 1000 && unit < units.length - 1) {
-    size /= 1000;
-    unit += 1;
-  }
-
-  return `${unit === 0 ? size : size.toFixed(1)} ${units[unit]}`;
-}
