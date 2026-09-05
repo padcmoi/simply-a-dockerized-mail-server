@@ -1197,6 +1197,7 @@ export interface Locales {
       noGroup: string;
       manageGroups: string;
       editAccount: string;
+      resetTwoFactor: string;
       rootAccess: string;
       status: string;
       lastLogin: string;

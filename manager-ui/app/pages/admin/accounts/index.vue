@@ -23,6 +23,12 @@ const {
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 
+// The account whose second factor is about to be removed: the way back in
+// for someone whose phone and recovery codes are both gone. Ten clicks, like
+// a deletion, since it strips what protects that account's sign-in.
+const resetTwoFactorOpen = ref(false);
+const resetTwoFactorTarget = ref<ManagerAccount | null>(null);
+
 const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
@@ -37,6 +43,7 @@ const canInvite = computed(() => isRoot.value || hasGlobal("accounts", "invite-a
 const canEditAccount = computed(() => isRoot.value || hasGlobal("accounts", "view-account"));
 const canRevokeAccount = computed(() => isRoot.value || hasGlobal("accounts", "revoke-account"));
 const canViewSessions = computed(() => isRoot.value || hasGlobal("accounts", "view-account-sessions"));
+const canResetTwoFactor = computed(() => isRoot.value || hasGlobal("accounts", "edit-account"));
 
 const inviteMenu = computed(() => [
   [
@@ -83,6 +90,28 @@ function requestDelete(fn: () => Promise<void>) {
 async function onDeleteConfirmed() {
   await pendingDeleteFn.value?.();
   pendingDeleteFn.value = null;
+}
+
+function requestResetTwoFactor(acc: ManagerAccount) {
+  resetTwoFactorTarget.value = acc;
+  resetTwoFactorOpen.value = true;
+}
+
+async function onResetTwoFactorConfirmed() {
+  const acc = resetTwoFactorTarget.value;
+  resetTwoFactorTarget.value = null;
+  if (!acc) return;
+  try {
+    await call(`/accounts/${acc.id}/two-factor`, { method: "DELETE" });
+    toast.add({ title: t("accounts.overviewPage.toast.twoFactorReset"), color: "success" });
+    await load();
+  } catch (e) {
+    toast.add({
+      title: t("accounts.overviewPage.toast.twoFactorResetFailed"),
+      description: (e as Error).message,
+      color: "error",
+    });
+  }
 }
 </script>
 
@@ -168,6 +197,15 @@ async function onDeleteConfirmed() {
 
       <template #actions="{ row }">
         <UButton
+          v-if="row.twoFactorEnabled && canResetTwoFactor"
+          icon="i-lucide-shield-off"
+          size="xs"
+          color="warning"
+          variant="ghost"
+          :title="t('accounts.table.resetTwoFactor')"
+          @click="requestResetTwoFactor(row)"
+        />
+        <UButton
           v-if="!row.isRoot && canEditAccount"
           icon="i-lucide-users-round"
           size="xs"
@@ -202,6 +240,14 @@ async function onDeleteConfirmed() {
       :title="t('accounts.confirmDelete')"
       :description="t('accounts.confirmDeleteHint')"
       @confirm="onDeleteConfirmed"
+    />
+
+    <ConfirmModal
+      v-model:open="resetTwoFactorOpen"
+      type="warning"
+      :title="t('accounts.overviewPage.actions.resetTwoFactor')"
+      :description="t('accounts.overviewPage.resetTwoFactorConfirm')"
+      @confirm="onResetTwoFactorConfirmed"
     />
   </div>
 </template>

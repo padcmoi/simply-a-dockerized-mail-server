@@ -120,9 +120,12 @@ export class AccountsService {
 
   private async enrichWithGroups(allAccounts: Account[]) {
     const accountIds = allAccounts.map((acc) => acc.id);
-    const [memberRows, profileRows] = await Promise.all([
+    const [memberRows, profileRows, twoFactorOn] = await Promise.all([
       accountIds.length ? this.groupMembers.find({ where: { accountId: In(accountIds) } }) : [],
       accountIds.length ? this.profiles.find({ where: { accountId: In(accountIds) } }) : [],
+      // Which rows have the second factor on, so the list can offer to remove
+      // it, and only where there is one to remove.
+      accountIds.length ? this.twoFactor.enabledAmong(accountIds) : new Set<string>(),
     ]);
     const displayByAccount = new Map(profileRows.map((p) => [p.accountId, composeDisplayName(p.firstName, p.lastName)]));
     const avatarByAccount = new Map(profileRows.map((p) => [p.accountId, p.avatarUrl ?? null]));
@@ -150,6 +153,7 @@ export class AccountsService {
       enabled: acc.enabled === 1,
       lastLogin: acc.lastLogin,
       createdAt: acc.createdAt,
+      twoFactorEnabled: twoFactorOn.has(acc.id),
       groups: groupsByAccount.get(acc.id) ?? [],
     }));
   }

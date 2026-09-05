@@ -33,6 +33,7 @@ function makeMocks() {
     aliases: repoMock<VirtualAlias>(),
     twoFactor: providerMock<TwoFactorService>({
       isEnabled: vi.fn(async () => false),
+      enabledAmong: vi.fn(async () => new Set<string>()),
       reset: vi.fn(async () => ({ reset: true })),
     }),
   };
@@ -120,9 +121,28 @@ describe("AccountsService", () => {
           enabled: true,
           lastLogin: null,
           createdAt: null,
+          twoFactorEnabled: false,
           groups: [{ id: "g1", name: "Admins" }],
         },
       ]);
+    });
+
+    // One read for the whole page rather than one per row: the list only needs
+    // to know where there is a factor to remove.
+    it("flags the accounts whose second factor is on, from one lookup", async () => {
+      m.accounts.find.mockResolvedValue([
+        { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null },
+        { id: "a2", email: "c@d.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null },
+      ]);
+      m.groupMembers.find.mockResolvedValue([]);
+      m.profiles.find.mockResolvedValue([]);
+      m.twoFactor.enabledAmong.mockResolvedValueOnce(new Set(["a2"]));
+
+      const res = await svc.list({ offset: 0, sortDir: "desc" });
+      if (!Array.isArray(res)) throw new Error("expected the unpaginated list");
+
+      expect(m.twoFactor.enabledAmong).toHaveBeenCalledWith(["a1", "a2"]);
+      expect(res.map((row) => row.twoFactorEnabled)).toEqual([false, true]);
     });
 
     it("paginates, searches and sorts on a whitelisted column", async () => {
@@ -169,6 +189,7 @@ describe("AccountsService", () => {
       expect(m.groupMembers.find).not.toHaveBeenCalled();
       expect(m.profiles.find).not.toHaveBeenCalled();
       expect(m.groups.findBy).not.toHaveBeenCalled();
+      expect(m.twoFactor.enabledAmong).not.toHaveBeenCalled();
     });
 
     it("names an unresolved group '' and defaults absent members/profiles", async () => {

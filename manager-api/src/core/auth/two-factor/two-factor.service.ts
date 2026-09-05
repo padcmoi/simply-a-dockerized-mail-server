@@ -1,6 +1,6 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { ApiError } from "../../common/api-error";
 import { AccountTwoFactor } from "../../entities/account-two-factor.entity";
 import { decryptSecret, encryptSecret } from "../api-token/api-token.cipher";
@@ -54,6 +54,14 @@ export class TwoFactorService {
   async isEnabled(accountId: string) {
     const row = await this.rows.findOne({ where: { accountId } });
     return !!row?.enabledAt;
+  }
+
+  // The accounts of a list that have the factor on, in one read: a list of
+  // fifty rows asking one by one would be fifty queries for a badge.
+  async enabledAmong(accountIds: string[]) {
+    if (!accountIds.length) return new Set<string>();
+    const rows = await this.rows.find({ where: { accountId: In(accountIds) } });
+    return new Set(rows.filter((row) => row.enabledAt).map((row) => row.accountId));
   }
 
   // A fresh secret, shown to be scanned, proved by nothing yet: the account

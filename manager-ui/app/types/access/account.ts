@@ -11,6 +11,9 @@ export interface ManagerAccount {
   enabled: boolean;
   lastLogin: string | null;
   createdAt: string;
+  // Whether every sign-in asks for a code: the list offers to remove the
+  // factor only where there is one.
+  twoFactorEnabled: boolean;
   groups: { id: string; name: string }[];
 }
 

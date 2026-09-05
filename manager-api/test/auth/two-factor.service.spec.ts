@@ -87,6 +87,18 @@ describe("TwoFactorService", () => {
     });
   });
 
+  describe("enabledAmong", () => {
+    it("asks nothing for an empty list", async () => {
+      await expect(svc.enabledAmong([])).resolves.toEqual(new Set());
+      expect(rows.find).not.toHaveBeenCalled();
+    });
+    it("names the accounts whose factor is on, in one read, leaving pending setups out", async () => {
+      rows.find.mockResolvedValue([row({ accountId: "a1", enabledAt: NOW }), row({ accountId: "a2" })]);
+      await expect(svc.enabledAmong(["a1", "a2", "a3"])).resolves.toEqual(new Set(["a1"]));
+      expect(rows.find).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("beginSetup", () => {
     it("409 when the factor is already enabled", async () => {
       rows.findOne.mockResolvedValue(row({ enabledAt: NOW }));

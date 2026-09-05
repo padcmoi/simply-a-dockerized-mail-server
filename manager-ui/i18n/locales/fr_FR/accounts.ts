@@ -50,6 +50,7 @@ export default {
     noGroup: "Aucun groupe",
     manageGroups: "Gérer les groupes",
     editAccount: "Modifier le compte",
+    resetTwoFactor: "Retirer la double authentification",
     rootAccess: "Accès complet",
     status: "Statut",
     lastLogin: "Dernière connexion",
