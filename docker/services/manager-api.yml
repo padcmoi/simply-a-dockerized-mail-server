@@ -28,6 +28,14 @@ services:
       # mounted here, the network card would report this container's veth
       # instead of the NIC, and it reports nothing at all rather than that.
       - /proc:/host/proc:ro
+      # The entrypoint makes VERSION at every start from the repository's last
+      # tag, writes it to /app/VERSION for GET /api/v1 and back to the host as
+      # manager-api/VERSION, so the version is right whatever launched the
+      # stack, service.sh or a bare docker compose. Directories, never the
+      # file itself: a bind mount of a file that does not exist yet is a
+      # directory Docker creates in its place, and a start that fails.
+      - ../../.git:/host/.git:ro
+      - ../../manager-api:/host/manager-api
     networks:
       mail:
         ipv4_address: 172.200.0.19

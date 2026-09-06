@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- fix(docker): manager-api makes its VERSION file itself at every start, from the repository's last tag, and writes it back to the host; a stack launched without service.sh no longer fails on a directory Docker created in the file's place, and never reads unknown (06-09-2026)
+
 ## [2.0.0-rc.3] - 2026-09-06
 
 ### Added
