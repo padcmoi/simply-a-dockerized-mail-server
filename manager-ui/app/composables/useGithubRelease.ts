@@ -1,6 +1,7 @@
 import type { Ref } from "vue";
 import { GITHUB_REPO } from "~/composables/useCodeVersion";
-import type { GithubCommit, GithubRelease, ReleaseLookup } from "~/types/system/release";
+import type { GithubCommit, GithubRelease, GithubTag, ReleaseLookup } from "~/types/system/release";
+import * as semver from "~/utils/semverTags";
 
 // The release GitHub holds for the tag the server runs, read by the browser
 // itself: the repository is public, the endpoint needs no key and answers with
@@ -53,4 +54,21 @@ export function useGithubChangelog(version: Ref<string | null>) {
   );
   const missing = computed(() => (error.value ? statusOf(error.value) === 404 : false));
   return { changelog: data, status, missing, refresh };
+}
+
+// Every tag of the line the server runs, newest first, so the page can show
+// any of them and not only the one answering. One call, no quota to speak of;
+// a hundred tags is more than this repository will carry for years. The line
+// is the running version's major, or the newest there is when the version is
+// unknown.
+export function useGithubTags(version: Ref<string | null>) {
+  const { data, status, refresh } = useAsyncData<GithubTag[]>(
+    "github-tags",
+    () => $fetch<GithubTag[]>(`${API}/tags?per_page=100`, { headers: HEADERS }),
+    { server: false, default: () => [] }
+  );
+  const names = computed(() => data.value.map((tag) => tag.name));
+  const major = computed(() => semver.majorOf(version.value) ?? semver.newestMajor(names.value));
+  const tags = computed(() => (major.value === null ? [] : semver.tagsOfMajor(names.value, major.value)));
+  return { tags, major, status, refresh };
 }

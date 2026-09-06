@@ -681,6 +681,8 @@ export interface Locales {
     rateLimited: string;
     retry: string;
     release: string;
+    tagSelect: string;
+    tagSelectHint: string;
     changelog: string;
     changelogMissing: string;
   };

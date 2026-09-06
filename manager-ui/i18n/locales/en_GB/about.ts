@@ -18,6 +18,8 @@ export default {
   rateLimited: "The anonymous GitHub API limit is reached for your address. Try again in an hour.",
   retry: "Retry",
   release: "Release",
+  tagSelect: "Version shown",
+  tagSelectHint: "Every version of the v{major} line, newest first.",
   changelog: "Changelog",
   changelogMissing: "No CHANGELOG.md file in tag {version}.",
 } satisfies Locales["about"];

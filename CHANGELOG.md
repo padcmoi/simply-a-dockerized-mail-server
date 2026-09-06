@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- feat(ui): /about lists every tag of the running major line in a select above the tabs, newest first and open on the newest, so any version of the line can be read there, its release and its changelog, and not only the one answering (06-09-2026)
+
 ### Changed
 
 - feat(ui): the release and the changelog of the running tag are two tabs on /about, the hidden one kept mounted so switching back costs no second call to GitHub, and the GitHub release and CHANGELOG.md are never on screen together (06-09-2026)

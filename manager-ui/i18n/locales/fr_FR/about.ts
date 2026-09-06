@@ -18,6 +18,8 @@ export default {
   rateLimited: "La limite d'appels anonymes à l'API GitHub est atteinte pour votre adresse. Réessayez dans une heure.",
   retry: "Réessayer",
   release: "Release",
+  tagSelect: "Version consultée",
+  tagSelectHint: "Toutes les versions de la ligne v{major}, la plus récente en premier.",
   changelog: "Changelog",
   changelogMissing: "Aucun fichier CHANGELOG.md dans le tag {version}.",
 } satisfies Locales["about"];

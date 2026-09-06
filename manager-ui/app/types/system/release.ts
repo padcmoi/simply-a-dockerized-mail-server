@@ -26,3 +26,9 @@ export interface ReleaseLookup {
   release: GithubRelease | null;
   commit: GithubCommit | null;
 }
+
+// One entry of GET /repos/{repo}/tags: the name is all the page reads.
+export interface GithubTag {
+  name: string;
+  commit: { sha: string };
+}
