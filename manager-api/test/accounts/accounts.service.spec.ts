@@ -11,6 +11,8 @@ import { VirtualAlias } from "../../src/core/entities/virtual-alias.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import type { GeocodingService } from "../../src/core/geocoding/geocoding.service";
 import type { TwoFactorService } from "../../src/core/auth/two-factor/two-factor.service";
+import type { MfaService } from "../../src/core/auth/mfa/mfa.service";
+import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
 import { providerMock, qbMock, repoMock } from "../helpers/mocks";
 import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
@@ -36,6 +38,13 @@ function makeMocks() {
       enabledAmong: vi.fn(async () => new Set<string>()),
       reset: vi.fn(async () => ({ reset: true })),
     }),
+    mfa: providerMock<MfaService>({
+      questionSetAmong: vi.fn(async () => new Set<string>()),
+      resetQuestion: vi.fn(async () => ({ reset: true })),
+    }),
+    jwtAuth: providerMock<JwtAuthService>({
+      revokeAllActiveSessions: vi.fn(async () => ({ ok: true as const, revoked: 2 })),
+    }),
   };
 }
 
@@ -57,7 +66,9 @@ describe("AccountsService", () => {
       m.virtualUsers,
       m.aliases,
       m.twoFactor,
-      activityMock()
+      m.mfa,
+      activityMock(),
+      m.jwtAuth
     );
   });
 
@@ -122,6 +133,7 @@ describe("AccountsService", () => {
           lastLogin: null,
           createdAt: null,
           twoFactorEnabled: false,
+          securityQuestionSet: false,
           groups: [{ id: "g1", name: "Admins" }],
         },
       ]);
@@ -143,6 +155,24 @@ describe("AccountsService", () => {
 
       expect(m.twoFactor.enabledAmong).toHaveBeenCalledWith(["a1", "a2"]);
       expect(res.map((row) => row.twoFactorEnabled)).toEqual([false, true]);
+    });
+
+    // Same read, same reason: the list offers to clear a question only where
+    // there is one to clear.
+    it("flags the accounts that carry a security question, from one lookup", async () => {
+      m.accounts.find.mockResolvedValue([
+        { id: "a1", email: "a@b.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null },
+        { id: "a2", email: "c@d.com", isRoot: 0, enabled: 1, lastLogin: null, createdAt: null },
+      ]);
+      m.groupMembers.find.mockResolvedValue([]);
+      m.profiles.find.mockResolvedValue([]);
+      m.mfa.questionSetAmong.mockResolvedValueOnce(new Set(["a1"]));
+
+      const res = await svc.list({ offset: 0, sortDir: "desc" });
+      if (!Array.isArray(res)) throw new Error("expected the unpaginated list");
+
+      expect(m.mfa.questionSetAmong).toHaveBeenCalledWith(["a1", "a2"]);
+      expect(res.map((row) => row.securityQuestionSet)).toEqual([true, false]);
     });
 
     it("paginates, searches and sorts on a whitelisted column", async () => {
@@ -283,6 +313,27 @@ describe("AccountsService", () => {
       m.accounts.findOne.mockResolvedValue({ id: "a1" });
       await expect(svc.resetTwoFactor("a1")).resolves.toEqual({ reset: true });
       expect(m.twoFactor.reset).toHaveBeenCalledWith("a1");
+    });
+  });
+
+  describe("resetSecurityQuestion", () => {
+    it("throws NotFound when the account is absent, without touching the question", async () => {
+      m.accounts.findOne.mockResolvedValue(null);
+      await expect(svc.resetSecurityQuestion("x")).rejects.toBeInstanceOf(NotFoundException);
+      expect(m.mfa.resetQuestion).not.toHaveBeenCalled();
+      expect(m.jwtAuth.revokeAllActiveSessions).not.toHaveBeenCalled();
+    });
+
+    it("clears the question of an existing account and answers what the service did", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      await expect(svc.resetSecurityQuestion("a1")).resolves.toEqual({ reset: true, revoked: 2 });
+      expect(m.mfa.resetQuestion).toHaveBeenCalledWith("a1");
+    });
+
+    it("signs the account out, so the next sign-in is the one that asks for a new question", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      await svc.resetSecurityQuestion("a1");
+      expect(m.jwtAuth.revokeAllActiveSessions).toHaveBeenCalledWith("a1");
     });
   });
 

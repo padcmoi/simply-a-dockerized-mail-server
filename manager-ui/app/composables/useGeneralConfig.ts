@@ -42,7 +42,10 @@ export function useGeneralConfig() {
     if (!valid.value) return;
     saving.value = true;
     try {
-      await call("/config/general", { method: "PUT", body: { managerUrl: form.managerUrl.trim() } });
+      await call("/config/general", {
+        method: "PUT",
+        body: { managerUrl: form.managerUrl.trim() },
+      });
       toast.add({ title: t("config.general.saved"), color: "success", icon: "i-lucide-check" });
     } catch (err) {
       toast.add({ title: t("config.general.saveFailed"), description: apiErrorMessage(err), color: "error" });

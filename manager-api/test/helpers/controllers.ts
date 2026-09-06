@@ -8,6 +8,7 @@ import { AccountsSessionsController } from "../../src/api/accounts/sessions/sess
 import { MailConfigController } from "../../src/api/config/mail-config.controller";
 import { MailCadenceController } from "../../src/api/config/mail-cadence.controller";
 import { GeneralController } from "../../src/api/config/general.controller";
+import { LoginRiskController } from "../../src/api/config/login-risk.controller";
 import { SupervisionRetentionController } from "../../src/api/config/supervision-retention.controller";
 import { TicketsConfigController } from "../../src/api/config/tickets-config.controller";
 import { AdminDomainsController } from "../../src/api/domains/admin-domains/admin-domains.controller";
@@ -37,6 +38,7 @@ import { JwtAuthController } from "../../src/core/auth/jwt/jwt.controller";
 import { PassportAuthController } from "../../src/core/auth/passport/passport.controller";
 import { PassportConfigController } from "../../src/api/config/passport-config.controller";
 import { TwoFactorController } from "../../src/core/auth/two-factor/two-factor.controller";
+import { MfaController } from "../../src/core/auth/mfa/mfa.controller";
 import { ActivityController } from "../../src/api/activity/activity.controller";
 
 export const ALL_CONTROLLERS = [
@@ -46,6 +48,7 @@ export const ALL_CONTROLLERS = [
   MailConfigController,
   MailCadenceController,
   GeneralController,
+  LoginRiskController,
   SupervisionRetentionController,
   TicketsConfigController,
   AdminDomainsController,
@@ -75,5 +78,6 @@ export const ALL_CONTROLLERS = [
   PassportAuthController,
   PassportConfigController,
   TwoFactorController,
+  MfaController,
   ActivityController,
 ] as const;

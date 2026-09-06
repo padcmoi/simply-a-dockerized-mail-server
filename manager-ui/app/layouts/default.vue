@@ -8,6 +8,9 @@ provideBreadcrumb();
   <UMain class="flex flex-1 min-h-dvh">
     <AppNavigation />
 
+    <!-- Nothing else on the page matters until this one is answered. -->
+    <SecurityQuestionPrompt />
+
     <div class="flex-1 flex flex-col min-w-0">
       <AppHeader />
 

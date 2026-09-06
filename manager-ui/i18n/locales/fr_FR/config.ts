@@ -12,6 +12,8 @@ export default {
   cadenceCardHint: "Délais d'envoi et anti-spam",
   generalCardLabel: "Général",
   generalCardHint: "Adresse publique de l'interface",
+  loginRiskCardLabel: "Connexion inhabituelle",
+  loginRiskCardHint: "Distance au-delà de laquelle une connexion doit se confirmer",
   supervisionCardLabel: "Supervision",
   supervisionCardHint: "Rétention des mesures machine",
   themeCardLabel: "Thème",
@@ -108,6 +110,35 @@ export default {
     resetDesc:
       "Les couleurs du mode affiché reviennent à celles livrées avec l'interface, pour tout le serveur une fois enregistré.",
     hint: "Enregistré pour tout le serveur. Une couleur laissée telle quelle n'est pas stockée : elle reste celle livrée avec l'interface, et « Rétablir » suivi de « Enregistrer » ramène le mode affiché à cet état.",
+  },
+  loginRisk: {
+    cardTitle: "Rayon de connexion habituelle",
+    alertTitle: "Connexion depuis un lieu inhabituel.",
+    alertDescription:
+      "Chaque connexion réussie déplace le lieu habituel du compte là où elle s'est ouverte. Une connexion plus éloignée que ce rayon doit fournir une chose de plus que le mot de passe : le code de l'application d'authentification, un code envoyé par mail, ou la question de sécurité. Stocké en base, réservé aux comptes root.",
+    radius: "Rayon",
+    radiusHint:
+      "De 0 à 20037 km. La valeur est relue à chaque connexion : un changement s'applique à la suivante, pas au prochain redémarrage.",
+    radiusUnit: "km",
+    radiusInvalid: "Un nombre entier de kilomètres, entre 0 et 20037",
+    order: "Ordre de priorité",
+    orderHint:
+      "Ce qui est demandé en premier à une connexion trop éloignée. Si le premier ne peut pas être proposé, l'envoi de mail n'étant pas configuré ou la question n'ayant jamais été choisie, le second prend le relais.",
+    orderMailFirst: "1. Le code par mail, 2. la question de sécurité",
+    orderQuestionFirst: "1. La question de sécurité, 2. le code par mail",
+    twoFactorTitle: "La double authentification passe toujours devant.",
+    twoFactorDescription:
+      "Un compte muni de l'application d'authentification n'est jamais interrogé en plus : son code répond déjà à la distance, et cet ordre ne le concerne pas. La connexion éloignée reste inscrite au journal d'activité.",
+    offTitle: "Contrôle désactivé.",
+    offDescription:
+      "À zéro, plus aucune connexion n'est interrogée, quelle que soit la distance. Le mot de passe seul suffit à ouvrir une session.",
+    accuracyNote:
+      "La distance est mesurée localement, sans appel réseau ni service tiers, puis élargie à la précision que la base de géolocalisation annonce : un fournisseur qui répond le centre du pays ne transforme jamais un déplacement de quartier en demande de code.",
+    save: "Enregistrer",
+    saved: "Rayon enregistré",
+    saveFailed: "Échec de l'enregistrement",
+    loadFailed: "Échec du chargement",
+    reset: "Valeur d'usine",
   },
   supervision: {
     cardTitle: "Historique de la machine",

@@ -4,6 +4,9 @@
 // caught up with shows its raw name rather than a placeholder key.
 const ICONS: [prefix: string, icon: string][] = [
   ["auth.login.refused", "i-lucide-shield-alert"],
+  ["auth.login.far", "i-lucide-map-pin"],
+  ["auth.mfa", "i-lucide-shield-alert"],
+  ["auth.security-question", "i-lucide-shield-question-mark"],
   ["auth.two-factor", "i-lucide-smartphone"],
   ["auth.login", "i-lucide-log-in"],
   ["auth.logout", "i-lucide-log-out"],
@@ -38,6 +41,13 @@ export function useActivityLabel() {
         typeof details.status === "string" && te(`tickets.status.${details.status}`) ? t(`tickets.status.${details.status}`) : "",
       fields: Array.isArray(details.fields) ? details.fields.join(", ") : "",
       email: typeof details.email === "string" ? details.email : "",
+      distanceKm: typeof details.distanceKm === "number" ? details.distanceKm : "",
+      // What answered the distance, in the reader's language: the raw key would
+      // say "two-factor" in the middle of a French sentence.
+      method:
+        typeof details.method === "string" && te(`activity.method.${details.method}`)
+          ? t(`activity.method.${details.method}`)
+          : "",
     });
   }
 

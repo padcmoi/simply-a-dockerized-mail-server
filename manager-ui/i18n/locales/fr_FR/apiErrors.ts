@@ -32,6 +32,18 @@ export default {
   auth: {
     wrongPassword: "Le mot de passe actuel est incorrect",
   },
+  mfa: {
+    challengeExpired: "La connexion a expiré, recommencez depuis le début",
+    invalidCode: "Ce code n'est pas valide",
+    invalidAnswer: "Cette réponse n'est pas la bonne",
+    tooManyAttempts: "Trop de réponses refusées, réessayez dans quelques minutes",
+    resendTooSoon: "Un code vient d'être envoyé, patientez un instant",
+    methodUnavailable: "Cette méthode n'est pas disponible pour ce compte",
+  },
+  securityQuestion: {
+    alreadySet: "Votre question de sécurité est déjà enregistrée et ne peut plus changer",
+    required: "Choisissez d'abord votre question de sécurité",
+  },
   twoFactor: {
     alreadyEnabled: "L'authentification à deux facteurs est déjà activée",
     notEnabled: "L'authentification à deux facteurs n'est pas activée",

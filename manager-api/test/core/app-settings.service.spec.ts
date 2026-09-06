@@ -31,6 +31,8 @@ describe("AppSettingsService", () => {
       row("ticket_resources_required", "boolean", "false"),
       row("passport_enabled", "boolean", "true"),
       row("passport_auto_provision", "boolean", "false"),
+      row("login_radius_km", "number", "250"),
+      row("login_challenge_order", "string", "email,question"),
     ]);
     await svc.reload();
     expect(svc.get()).toEqual({
@@ -42,6 +44,8 @@ describe("AppSettingsService", () => {
       ticketResourcesRequired: false,
       passportEnabled: true,
       passportAutoProvision: false,
+      loginRadiusKm: 250,
+      loginChallengeOrder: "email,question",
     });
   });
 
@@ -49,6 +53,15 @@ describe("AppSettingsService", () => {
     repo.find.mockResolvedValue([row("manager_url", "string", "https://mgr.test")]);
     await svc.reload();
     expect(svc.get()).toEqual({ ...APP_SETTINGS_DEFAULTS, managerUrl: "https://mgr.test" });
+  });
+
+  // A hand-edited row, or one left by a version that spelled the orders another
+  // way: an order nobody can act on would leave the sign-in with no method at
+  // all, so the default stands in.
+  it("keeps the default when the stored challenge order is not one it knows", async () => {
+    repo.find.mockResolvedValue([row("login_challenge_order", "string", "carrier-pigeon")]);
+    await svc.reload();
+    expect(svc.get().loginChallengeOrder).toBe(APP_SETTINGS_DEFAULTS.loginChallengeOrder);
   });
 
   it("keeps the default when a numeric value is unparseable", async () => {

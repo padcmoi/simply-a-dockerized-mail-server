@@ -130,6 +130,13 @@ useAsyncData(
         to="/profile/two-factor"
       />
       <ProfileActionCard
+        icon="i-lucide-shield-question-mark"
+        icon-color="text-warning"
+        :label="t('profile.securityQuestion')"
+        :hint="t('profile.securityQuestionHint')"
+        to="/profile/security-question"
+      />
+      <ProfileActionCard
         icon="i-lucide-scroll-text"
         icon-color="text-info"
         :label="t('profile.auditLog')"

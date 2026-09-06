@@ -12,6 +12,8 @@ import { VirtualDomain } from "../../../core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { GeocodingService } from "../../../core/geocoding/geocoding.service";
 import { TwoFactorService } from "../../../core/auth/two-factor/two-factor.service";
+import { MfaService } from "../../../core/auth/mfa/mfa.service";
+import { JwtAuthService } from "../../../core/auth/jwt/jwt.service";
 import type { UpdateAccountDto } from "./crud.validation";
 import { ActivityLogService } from "../../../core/activity/activity-log.service";
 
@@ -56,7 +58,9 @@ export class AccountsService {
     @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>,
     @InjectRepository(VirtualAlias) private readonly aliases: Repository<VirtualAlias>,
     private readonly twoFactor: TwoFactorService,
-    private readonly activity: ActivityLogService
+    private readonly mfa: MfaService,
+    private readonly activity: ActivityLogService,
+    private readonly jwtAuth: JwtAuthService
   ) {}
 
   // `notInGroup` (a group id) filters out accounts that are already members of
@@ -120,12 +124,15 @@ export class AccountsService {
 
   private async enrichWithGroups(allAccounts: Account[]) {
     const accountIds = allAccounts.map((acc) => acc.id);
-    const [memberRows, profileRows, twoFactorOn] = await Promise.all([
+    const [memberRows, profileRows, twoFactorOn, questionOn] = await Promise.all([
       accountIds.length ? this.groupMembers.find({ where: { accountId: In(accountIds) } }) : [],
       accountIds.length ? this.profiles.find({ where: { accountId: In(accountIds) } }) : [],
       // Which rows have the second factor on, so the list can offer to remove
       // it, and only where there is one to remove.
       accountIds.length ? this.twoFactor.enabledAmong(accountIds) : new Set<string>(),
+      // Same, for the security question: an administrator clears it for an
+      // owner who has forgotten their own answer.
+      accountIds.length ? this.mfa.questionSetAmong(accountIds) : new Set<string>(),
     ]);
     const displayByAccount = new Map(profileRows.map((p) => [p.accountId, composeDisplayName(p.firstName, p.lastName)]));
     const avatarByAccount = new Map(profileRows.map((p) => [p.accountId, p.avatarUrl ?? null]));
@@ -154,6 +161,7 @@ export class AccountsService {
       lastLogin: acc.lastLogin,
       createdAt: acc.createdAt,
       twoFactorEnabled: twoFactorOn.has(acc.id),
+      securityQuestionSet: questionOn.has(acc.id),
       groups: groupsByAccount.get(acc.id) ?? [],
     }));
   }
@@ -202,6 +210,23 @@ export class AccountsService {
     const account = await this.accounts.findOne({ where: { id } });
     if (!account) throw new NotFoundException(`Account #${id} not found`);
     return this.twoFactor.reset(id);
+  }
+
+  // The one way back for an account whose owner no longer remembers the answer
+  // to their own question. The account's usual sign-in place is left alone:
+  // forgetting an answer says nothing about where it signs in from.
+  //
+  // Every session of that account goes with the question. Clearing it is the
+  // answer to an account one is no longer sure of, so leaving its open sessions
+  // running would keep the door open for whoever is behind them; and the point
+  // of the reset is the sign-in that asks for a new question, which only the
+  // next sign-in can do.
+  async resetSecurityQuestion(id: string) {
+    const account = await this.accounts.findOne({ where: { id } });
+    if (!account) throw new NotFoundException(`Account #${id} not found`);
+    const reset = await this.mfa.resetQuestion(id);
+    const { revoked } = await this.jwtAuth.revokeAllActiveSessions(id);
+    return { ...reset, revoked };
   }
 
   // Admin-facing account edit: the full set of a user's editable fields. email

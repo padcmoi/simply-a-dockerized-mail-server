@@ -10,6 +10,8 @@ import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { CustomPermissionGuardModule } from "../../../core/custom-permission-guard/custom-permission-guard.module";
 import { GeocodingModule } from "../../../core/geocoding/geocoding.module";
 import { TwoFactorModule } from "../../../core/auth/two-factor/two-factor.module";
+import { MfaModule } from "../../../core/auth/mfa/mfa.module";
+import { JwtAuthModule } from "../../../core/auth/jwt/jwt.module";
 import { AccountsController } from "./crud.controller";
 import { AccountsService } from "./crud.service";
 import { ActivityLogModule } from "../../../core/activity/activity-log.module";
@@ -27,6 +29,10 @@ import { ActivityLogModule } from "../../../core/activity/activity-log.module";
     // longer uses the ACL layer itself, but the controller's guard still does).
     CustomPermissionGuardModule,
     TwoFactorModule,
+    MfaModule,
+    // Clearing a security question also signs the account out, which is the
+    // JWT service's to do.
+    JwtAuthModule,
     ActivityLogModule,
   ],
   providers: [AccountsService],

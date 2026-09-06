@@ -12,6 +12,9 @@ export interface Session {
   avatarUrl?: string | null;
   isRoot?: boolean;
   mailEnabled?: boolean;
+  // False while the account has chosen no security question. The API refuses
+  // almost everything until it has one, so the interface takes it there first.
+  securityQuestionSet?: boolean;
   groups?: { id: string; name: string }[];
 }
 
@@ -25,6 +28,7 @@ export interface Profile {
   isRoot: boolean;
   mailEnabled: boolean;
   twoFactorEnabled: boolean;
+  securityQuestionSet: boolean;
   groups: { id: string; name: string }[];
 }
 
@@ -40,6 +44,32 @@ export interface TwoFactorChallenge {
   twoFactorRequired: true;
   challenge: string;
   expiresAt: string;
+}
+
+// What a sign-in answers when it came from further away than the account
+// usually signs in from: no session yet, and one more thing to prove. `method`
+// says which, `hint` names the masked address a code went to, `question` is
+// what to answer when there is no mail to send one.
+export interface MfaChallenge {
+  mfaRequired: true;
+  method: "email" | "question";
+  challenge: string;
+  expiresAt: string;
+  hint?: string;
+  question?: string;
+  // The other proof this same challenge could switch to, when the server can
+  // offer it: absent on a server that cannot send mail, or for an account with
+  // no security question. The button appears only where this does.
+  alternative?: "email" | "question";
+}
+
+export interface SecurityQuestionStatus {
+  set: boolean;
+  // The key of the chosen question, translated on this side. Never a sentence:
+  // the wording belongs to whoever reads it, in their own language.
+  question: string | null;
+  // The keys the API offers. The interface carries no list of its own.
+  catalogue: string[];
 }
 
 export interface TwoFactorStatus {

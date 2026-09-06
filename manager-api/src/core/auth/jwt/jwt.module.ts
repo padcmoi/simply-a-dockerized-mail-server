@@ -15,6 +15,7 @@ import { CustomPermissionGuardModule } from "../../custom-permission-guard/custo
 import { GeocodingModule } from "../../geocoding/geocoding.module";
 import { MailerModule } from "../../mailer/mailer.module";
 import { TwoFactorModule } from "../two-factor/two-factor.module";
+import { MfaModule } from "../mfa/mfa.module";
 import { JwtAuthController } from "./jwt.controller";
 import { JwtAuthService } from "./jwt.service";
 import { JwtStrategy } from "./jwt.strategy";
@@ -39,6 +40,7 @@ import { ActivityLogModule } from "../../activity/activity-log.module";
     GeocodingModule,
     MailerModule,
     TwoFactorModule,
+    MfaModule,
     ActivityLogModule,
   ],
   providers: [JwtAuthService, JwtStrategy],

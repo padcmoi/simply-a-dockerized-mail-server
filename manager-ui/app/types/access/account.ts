@@ -14,6 +14,9 @@ export interface ManagerAccount {
   // Whether every sign-in asks for a code: the list offers to remove the
   // factor only where there is one.
   twoFactorEnabled: boolean;
+  // Whether the account has a security question, so the list only offers to
+  // clear one where there is one to clear.
+  securityQuestionSet: boolean;
   groups: { id: string; name: string }[];
 }
 

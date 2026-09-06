@@ -5,6 +5,7 @@ import { SettingsModule } from "../../core/settings/settings.module";
 import { MailConfigController } from "./mail-config.controller";
 import { MailCadenceController } from "./mail-cadence.controller";
 import { GeneralController } from "./general.controller";
+import { LoginRiskController } from "./login-risk.controller";
 import { PassportConfigController } from "./passport-config.controller";
 import { SupervisionRetentionController } from "./supervision-retention.controller";
 import { TicketsConfigController } from "./tickets-config.controller";
@@ -15,6 +16,7 @@ import { TicketsConfigController } from "./tickets-config.controller";
     MailConfigController,
     MailCadenceController,
     GeneralController,
+    LoginRiskController,
     SupervisionRetentionController,
     TicketsConfigController,
     PassportConfigController,

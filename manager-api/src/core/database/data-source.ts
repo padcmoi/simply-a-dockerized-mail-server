@@ -2,6 +2,7 @@ import { DataSource } from "typeorm";
 import { Account } from "../entities/account.entity";
 import { AccountIdentity } from "../entities/account-identity.entity";
 import { AccountProfile } from "../entities/account-profile.entity";
+import { AccountMfa } from "../entities/account-mfa.entity";
 import { RefreshToken } from "../entities/refresh-token.entity";
 import { DkimKeyEntity } from "../entities/dkim-key.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
@@ -59,6 +60,7 @@ export default new DataSource({
     Account,
     AccountIdentity,
     AccountProfile,
+    AccountMfa,
     RefreshToken,
     DkimKeyEntity,
     VirtualDomain,

@@ -11,6 +11,8 @@ export default {
   cadenceCardHint: "Send delays and anti-spam",
   generalCardLabel: "General",
   generalCardHint: "Public interface address",
+  loginRiskCardLabel: "Sign-in from far away",
+  loginRiskCardHint: "How far a sign-in may be before it has to prove itself",
   supervisionCardLabel: "Supervision",
   supervisionCardHint: "Machine history retention",
   ticketsCardLabel: "Support",
@@ -106,6 +108,35 @@ export default {
       "What everyone lands on, signed in or not. This interface's own server reads these colours before rendering the first page, so they are there from the first paint. An account can lay its own over them from its preferences.",
     resetDesc: "The colours of the mode on screen go back to the ones the interface ships with, for the whole server once saved.",
     hint: "Saved for the whole server. A colour left alone is not stored: it stays the one the interface ships with, and Reset followed by Save returns the mode on screen to that state.",
+  },
+  loginRisk: {
+    cardTitle: "The usual sign-in radius",
+    alertTitle: "A sign-in from an unusual place.",
+    alertDescription:
+      "Every session that opens moves the account's usual place to where it opened. A sign-in further from it than this radius has to hand over one thing more than the password: the authenticator app's code, a code sent by mail, or the security question. Stored in the database, root accounts only.",
+    radius: "Radius",
+    radiusHint:
+      "From 0 to 20037 km. The value is read on every sign-in: a change applies to the next one, not at the next restart.",
+    radiusUnit: "km",
+    radiusInvalid: "A whole number of kilometres, between 0 and 20037",
+    order: "Priority order",
+    orderHint:
+      "What a sign-in from too far away is asked for first. When the first cannot be offered, because outbound mail is not configured or the question has never been chosen, the second stands in.",
+    orderMailFirst: "1. The code by mail, 2. the security question",
+    orderQuestionFirst: "1. The security question, 2. the code by mail",
+    twoFactorTitle: "Two-factor authentication always comes first.",
+    twoFactorDescription:
+      "An account carrying the authenticator app is never asked anything more: its code already answers the distance, and this order does not concern it. The far-away sign-in is still written to the activity log.",
+    offTitle: "The check is off.",
+    offDescription:
+      "At zero no sign-in is ever asked anything, however far it comes from. The password alone opens a session.",
+    accuracyNote:
+      "The distance is measured locally, with no network call and no third party, then widened by the accuracy the geolocation dataset admits to: a provider answering the middle of the country never turns a move across town into a code request.",
+    save: "Save",
+    saved: "Radius saved",
+    saveFailed: "Failed to save",
+    loadFailed: "Failed to load",
+    reset: "Factory value",
   },
   supervision: {
     cardTitle: "Machine history",

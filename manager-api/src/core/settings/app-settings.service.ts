@@ -3,6 +3,19 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { AppSetting, AppSettingType } from "../entities/app-setting.entity";
 
+/**
+ * Which proof a far-away sign-in is asked for first, when the account has no
+ * authenticator app. Written as the order itself so a third method later is
+ * another entry, not another shape. The one that cannot be offered -- no mail
+ * configured, no question chosen -- is skipped for the next.
+ */
+export const LOGIN_CHALLENGE_ORDERS = ["email,question", "question,email"] as const;
+export type LoginChallengeOrder = (typeof LOGIN_CHALLENGE_ORDERS)[number];
+
+export function isLoginChallengeOrder(value: string): value is LoginChallengeOrder {
+  return (LOGIN_CHALLENGE_ORDERS as readonly string[]).includes(value);
+}
+
 export interface AppSettingsView {
   offlineNotifyAfterMs: number;
   offlineSweepIntervalMs: number;
@@ -22,6 +35,13 @@ export interface AppSettingsView {
    * Off means a provider only signs in accounts that already exist.
    */
   passportAutoProvision: boolean;
+  /**
+   * How far a sign-in may be from where the account usually signs in before it
+   * has to prove itself with more than a password. Zero turns the check off.
+   */
+  loginRadiusKm: number;
+  /** In what order the two proofs are offered when neither is the app's code. */
+  loginChallengeOrder: LoginChallengeOrder;
 }
 
 interface FieldSpec {
@@ -38,6 +58,8 @@ const FIELDS: Record<keyof AppSettingsView, FieldSpec> = {
   ticketResourcesRequired: { key: "ticket_resources_required", type: "boolean" },
   passportEnabled: { key: "passport_enabled", type: "boolean" },
   passportAutoProvision: { key: "passport_auto_provision", type: "boolean" },
+  loginRadiusKm: { key: "login_radius_km", type: "number" },
+  loginChallengeOrder: { key: "login_challenge_order", type: "string" },
 };
 
 export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
@@ -59,6 +81,14 @@ export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
   // otherwise walk into the manager. Turning it on is a deliberate act by a
   // root admin, for a deployment that wants open sign-up.
   passportAutoProvision: false,
+  // A hundred kilometres: far enough that a commute, a holiday down the coast
+  // or an ISP that moves a subscriber between two of its ranges is not a
+  // challenge, close enough that another country always is.
+  loginRadiusKm: 100,
+  // The question first: every account has one, it is asked for and answered on
+  // the spot, and it costs no outbound mail. The code stands in behind it, for
+  // an account whose question a reset has just cleared.
+  loginChallengeOrder: "question,email",
 };
 
 @Injectable()
@@ -84,6 +114,10 @@ export class AppSettingsService implements OnModuleInit {
       return Number.isFinite(n) ? n : fallback;
     };
     const str = (spec: FieldSpec, fallback: string) => stored.get(spec.key) ?? fallback;
+    const order = (spec: FieldSpec, fallback: LoginChallengeOrder): LoginChallengeOrder => {
+      const raw = stored.get(spec.key);
+      return raw !== undefined && isLoginChallengeOrder(raw) ? raw : fallback;
+    };
     const bool = (spec: FieldSpec, fallback: boolean) => {
       const raw = stored.get(spec.key);
       return raw === undefined ? fallback : raw === "true";
@@ -97,6 +131,8 @@ export class AppSettingsService implements OnModuleInit {
       ticketResourcesRequired: bool(FIELDS.ticketResourcesRequired, APP_SETTINGS_DEFAULTS.ticketResourcesRequired),
       passportEnabled: bool(FIELDS.passportEnabled, APP_SETTINGS_DEFAULTS.passportEnabled),
       passportAutoProvision: bool(FIELDS.passportAutoProvision, APP_SETTINGS_DEFAULTS.passportAutoProvision),
+      loginRadiusKm: num(FIELDS.loginRadiusKm, APP_SETTINGS_DEFAULTS.loginRadiusKm),
+      loginChallengeOrder: order(FIELDS.loginChallengeOrder, APP_SETTINGS_DEFAULTS.loginChallengeOrder),
     };
     return this.cache;
   }

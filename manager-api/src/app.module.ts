@@ -19,6 +19,8 @@ import { TicketsModule } from "./api/tickets/tickets.module";
 import { RejectSendersModule } from "./api/sieve/reject-senders/reject-senders.module";
 import { ApiTokenModule } from "./core/auth/api-token/api-token.module";
 import { CombinedAuthGuard } from "./core/auth/auth.guard";
+import { MfaModule } from "./core/auth/mfa/mfa.module";
+import { SecurityQuestionGuard } from "./core/auth/mfa/security-question.guard";
 import { JwtAuthModule } from "./core/auth/jwt/jwt.module";
 import { PassportAuthModule } from "./core/auth/passport/passport.module";
 import { CustomPermissionGuardModule } from "./core/custom-permission-guard/custom-permission-guard.module";
@@ -48,6 +50,7 @@ import { ActivityApiModule } from "./api/activity/activity.module";
     HealthModule,
     InfoModule,
     JwtAuthModule,
+    MfaModule,
     PassportAuthModule,
     ApiTokenModule,
     CustomPermissionGuardModule,
@@ -66,6 +69,11 @@ import { ActivityApiModule } from "./api/activity/activity.module";
     ThemeApiModule,
     WebsocketModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: CombinedAuthGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: CombinedAuthGuard },
+    // After the authentication guard, which is what puts the account on the
+    // request: this one only reads it.
+    { provide: APP_GUARD, useClass: SecurityQuestionGuard },
+  ],
 })
 export class AppModule {}

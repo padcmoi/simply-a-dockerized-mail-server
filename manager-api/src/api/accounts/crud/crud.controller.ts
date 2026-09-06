@@ -19,6 +19,7 @@ import {
 import { AccountsService } from "./crud.service";
 import { UpdateAccountDto, updateAccountSchema } from "./crud.validation";
 import { AdminResetTwoFactorDocs } from "../../../core/auth/two-factor/two-factor.openapi";
+import { AdminResetSecurityQuestionDocs } from "../../../core/auth/mfa/mfa.openapi";
 
 // Core account management (CRUD). Session views live in AccountsSessionsModule
 // and invitations in AccountsInvitationsModule (same folder), both aggregated by
@@ -92,6 +93,15 @@ export class AccountsController {
   @AdminResetTwoFactorDocs()
   resetTwoFactor(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.resetTwoFactor(id);
+  }
+
+  // And the way back in for an account whose owner no longer remembers the
+  // answer to their own question. Same gate, same reason.
+  @Delete(":id/security-question")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "edit-account"] }])
+  @AdminResetSecurityQuestionDocs()
+  resetSecurityQuestion(@Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.resetSecurityQuestion(id);
   }
 
   // Ownership management (global): a recipient/alias belongs to at most one

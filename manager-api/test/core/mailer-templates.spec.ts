@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { invitationEmail } from "../../src/core/mailer/templates/invitation.template";
+import { loginCodeEmail } from "../../src/core/mailer/templates/login-code.template";
 import { notificationHtml } from "../../src/core/mailer/templates/notification-layout.template";
 import { pendingNotificationsEmail } from "../../src/core/mailer/templates/pending-notifications.template";
 
@@ -17,6 +18,25 @@ describe("invitationEmail", () => {
     const mail = invitationEmail({ link: "https://link", groupNames: [] });
     expect(mail.text).toContain("no group (no permissions until assigned)");
     expect(mail.html).toContain("no group (no permissions until assigned)");
+  });
+});
+
+describe("loginCodeEmail", () => {
+  it("explains the distance and carries the code in both the text and the HTML", () => {
+    const mail = loginCodeEmail({ code: "483920", minutes: 10, distanceKm: 691 });
+    expect(mail.subject).toBe("Your sign-in code");
+    expect(mail.text).toContain("about 691 km away");
+    expect(mail.text).toContain("Your sign-in code: 483920");
+    expect(mail.text).toContain("valid for 10 minutes");
+    expect(mail.html).toContain(">483920</code>");
+  });
+
+  // A resend has already said how far away it was: repeating it would be the
+  // only difference between the two mails.
+  it("says only that it came from further away when no distance is passed", () => {
+    const mail = loginCodeEmail({ code: "483920", minutes: 10 });
+    expect(mail.text).toContain("further away than this account usually signs in from");
+    expect(mail.text).not.toContain("km away");
   });
 });
 

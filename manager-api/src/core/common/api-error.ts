@@ -41,6 +41,14 @@ export const API_ERROR_CODES = [
   "twoFactor.invalidCode",
   "twoFactor.tooManyAttempts",
   "twoFactor.challengeExpired",
+  "mfa.challengeExpired",
+  "mfa.invalidCode",
+  "mfa.invalidAnswer",
+  "mfa.tooManyAttempts",
+  "mfa.resendTooSoon",
+  "mfa.methodUnavailable",
+  "securityQuestion.alreadySet",
+  "securityQuestion.required",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

@@ -51,6 +51,7 @@ export default {
     manageGroups: "Gérer les groupes",
     editAccount: "Modifier le compte",
     resetTwoFactor: "Retirer la double authentification",
+    resetSecurityQuestion: "Réinitialiser la question de sécurité",
     rootAccess: "Accès complet",
     status: "Statut",
     lastLogin: "Dernière connexion",
@@ -120,14 +121,19 @@ export default {
       recipients: "Destinataires",
       aliases: "Alias",
       resetTwoFactor: "Réinitialiser la double authentification",
+      resetSecurityQuestion: "Réinitialiser la question de sécurité",
       activity: "Journal d'activité",
     },
     resetTwoFactorConfirm:
       "Le compte se connectera avec son seul mot de passe jusqu'à ce qu'il réactive la double authentification. À faire quand son téléphone et ses codes de secours sont perdus.",
+    resetSecurityQuestionConfirm:
+      "La question et sa réponse sont effacées, et le compte est déconnecté de toutes ses sessions. À sa prochaine connexion, il devra en choisir une nouvelle avant d'accéder à quoi que ce soit. À faire quand son titulaire ne se souvient plus de sa propre réponse.",
     toast: {
       loadFailed: "Échec du chargement de la vue d'ensemble",
       twoFactorReset: "Double authentification réinitialisée",
+      securityQuestionReset: "Question de sécurité réinitialisée",
       twoFactorResetFailed: "Échec de la réinitialisation",
+      securityQuestionResetFailed: "Échec de la réinitialisation",
     },
   },
   ownership: {

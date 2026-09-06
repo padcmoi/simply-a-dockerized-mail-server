@@ -10,6 +10,9 @@ import { RefreshToken } from "../../src/core/entities/refresh-token.entity";
 import type { GeocodingService } from "../../src/core/geocoding/geocoding.service";
 import type { MailSettingsService } from "../../src/core/mailer/mail-settings.service";
 import type { TwoFactorService } from "../../src/core/auth/two-factor/two-factor.service";
+import type { MfaService } from "../../src/core/auth/mfa/mfa.service";
+import type { LoginRiskService } from "../../src/core/auth/mfa/login-risk.service";
+import type { MfaLoginService } from "../../src/core/auth/mfa/mfa-login.service";
 import type { TwoFactorChallengeStore } from "../../src/core/auth/two-factor/two-factor-challenge.store";
 import { entity, providerMock, qbMock, repoMock } from "../helpers/mocks";
 import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
@@ -62,6 +65,29 @@ function makeMocks() {
       attempt: vi.fn(() => "a1"),
       settle: vi.fn(),
     }),
+    // The far-away check answers "not far" unless a test says otherwise: every
+    // sign-in spec here is about a sign-in from the usual place.
+    mfa: providerMock<MfaService>({
+      hasQuestion: vi.fn(async () => true),
+      rememberPlace: vi.fn(async () => undefined),
+    }),
+    risk: providerMock<LoginRiskService>({
+      locate: vi.fn(async () => null),
+      isFar: vi.fn(async () => null),
+    }),
+    mfaLogin: providerMock<MfaLoginService>({
+      open: vi.fn(async () => null),
+      noteTwoFactor: vi.fn(async () => undefined),
+      verify: vi.fn(async () => "a1"),
+      resend: vi.fn(async () => ({ sent: true, hint: "a***@b.com" })),
+      switchTo: vi.fn(async () => ({
+        mfaRequired: true as const,
+        method: "email" as const,
+        challenge: "mfa-1",
+        expiresAt: "1970-01-01T00:00:00.000Z",
+        hint: "a***@b.com",
+      })),
+    }),
   };
 }
 
@@ -87,7 +113,10 @@ describe("JwtAuthService", () => {
       m.mailSettings,
       m.twoFactor,
       m.challenges,
-      activityMock()
+      activityMock(),
+      m.mfa,
+      m.risk,
+      m.mfaLogin
     );
   });
 
@@ -138,6 +167,103 @@ describe("JwtAuthService", () => {
       expect(m.challenges.mint).toHaveBeenCalledWith("a1");
       expect(m.refreshTokens.insert).not.toHaveBeenCalled();
       expect(m.accounts.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("a sign-in from far away", () => {
+    const account = () => entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
+    const FAR = { distanceKm: 691, thresholdKm: 100 };
+    const NICE = { latitude: 43.7, longitude: 7.26, accuracyKm: 5 };
+
+    it("moves the account's usual place to wherever a session opens", async () => {
+      m.risk.locate.mockResolvedValue(NICE);
+      await svc.openSessionFor(account(), "UA", "1.2.3.4");
+      expect(m.mfa.rememberPlace).toHaveBeenCalledWith("a1", NICE);
+    });
+
+    it("looks the address up once, and hands what it found to the place it remembers", async () => {
+      m.risk.locate.mockResolvedValue(NICE);
+      await svc.openSessionFor(account(), "UA", "1.2.3.4");
+      expect(m.risk.locate).toHaveBeenCalledTimes(1);
+    });
+
+    it("asks for a proof instead of opening the session", async () => {
+      m.risk.isFar.mockResolvedValue(FAR);
+      m.mfaLogin.open.mockResolvedValue({
+        mfaRequired: true,
+        method: "email",
+        challenge: "mfa-1",
+        expiresAt: "1970-01-01T00:00:00.000Z",
+        hint: "a***@b.com",
+      });
+      const res = await svc.openSessionFor(account(), "UA", "1.2.3.4");
+      expect(res).toMatchObject({ mfaRequired: true, method: "email", challenge: "mfa-1" });
+      expect(m.refreshTokens.insert).not.toHaveBeenCalled();
+      expect(m.mfa.rememberPlace).not.toHaveBeenCalled();
+    });
+
+    // A server with no mail and an account with no question: refusing would
+    // lock its owner out over a move they made themselves.
+    it("opens the session anyway when there is nothing to ask", async () => {
+      m.risk.isFar.mockResolvedValue(FAR);
+      m.mfaLogin.open.mockResolvedValue(null);
+      const res = (await svc.openSessionFor(account(), "UA", "1.2.3.4")) as { accessToken: string };
+      expect(res.accessToken).toBe("access-token");
+    });
+
+    // The authenticator app is already the strongest proof there is.
+    it("never asks for a code on top of a second factor", async () => {
+      m.twoFactor.isEnabled.mockResolvedValueOnce(true);
+      m.risk.isFar.mockResolvedValue(FAR);
+      await svc.openSessionFor(account(), "UA", "1.2.3.4");
+      expect(m.mfaLogin.open).not.toHaveBeenCalled();
+    });
+
+    // Asked nothing extra, but not unnoticed: the journal is where the owner
+    // of an account with a second factor sees it signed in from far away.
+    it("still records the distance for an account carrying a second factor", async () => {
+      m.twoFactor.isEnabled.mockResolvedValueOnce(true);
+      m.risk.isFar.mockResolvedValue(FAR);
+      await svc.openSessionFor(account(), "UA", "1.2.3.4");
+      expect(m.mfaLogin.noteTwoFactor).toHaveBeenCalledWith(expect.objectContaining({ id: "a1" }), FAR);
+    });
+
+    it("records nothing when a second-factor sign-in came from its usual place", async () => {
+      m.twoFactor.isEnabled.mockResolvedValueOnce(true);
+      m.risk.isFar.mockResolvedValue(null);
+      await svc.openSessionFor(account(), "UA", "1.2.3.4");
+      expect(m.mfaLogin.noteTwoFactor).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("completeMfa", () => {
+    it("opens the session of the account the challenge names", async () => {
+      m.accounts.findOne.mockResolvedValue(entity<Account>({ id: "a1", email: "a@b.com", isRoot: 0 }));
+      const res = (await svc.completeMfa("mfa-1", "123456", "UA", "1.2.3.4")) as { accessToken: string };
+      expect(m.mfaLogin.verify).toHaveBeenCalledWith("mfa-1", "123456");
+      expect(res.accessToken).toBe("access-token");
+    });
+
+    it("takes the place it was answered from as the account's new usual place", async () => {
+      m.accounts.findOne.mockResolvedValue(entity<Account>({ id: "a1", email: "a@b.com", isRoot: 0 }));
+      m.risk.locate.mockResolvedValue({ latitude: 55.7, longitude: 37.6, accuracyKm: 20 });
+      await svc.completeMfa("mfa-1", "123456", "UA", "5.6.7.8");
+      expect(m.mfa.rememberPlace).toHaveBeenCalledWith("a1", { latitude: 55.7, longitude: 37.6, accuracyKm: 20 });
+    });
+
+    it("refuses a disabled account even with the right answer", async () => {
+      m.accounts.findOne.mockResolvedValue(null);
+      await expect(svc.completeMfa("mfa-1", "123456")).rejects.toMatchObject({ status: 401 });
+    });
+
+    it("hands a resend straight to the challenge that owns it", async () => {
+      expect(await svc.resendMfaCode("mfa-1")).toEqual({ sent: true, hint: "a***@b.com" });
+      expect(m.mfaLogin.resend).toHaveBeenCalledWith("mfa-1");
+    });
+
+    it("hands a change of proof to the challenge that owns it", async () => {
+      expect(await svc.switchMfaMethod("mfa-1", "email")).toMatchObject({ method: "email" });
+      expect(m.mfaLogin.switchTo).toHaveBeenCalledWith("mfa-1", "email");
     });
   });
 

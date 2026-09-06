@@ -55,6 +55,8 @@ import {
 } from "./jwt.validation";
 import { TwoFactorLoginDocs } from "../two-factor/two-factor.openapi";
 import { TwoFactorLoginDto, twoFactorLoginSchema } from "../two-factor/two-factor.validation";
+import { MfaLoginDocs, MfaMethodDocs, MfaResendDocs } from "../mfa/mfa.openapi";
+import { MfaLoginDto, MfaMethodDto, MfaResendDto, mfaLoginSchema, mfaMethodSchema, mfaResendSchema } from "../mfa/mfa.validation";
 import { ACTIVITY_ACTIONS, ActivityLogService } from "../../activity/activity-log.service";
 import { activityListQuerySchema, type ActivityListQuery } from "../../activity/activity-log.validation";
 import { ActivityActionsDocs, MyActivityDocs } from "../../../api/activity/activity.openapi";
@@ -117,6 +119,40 @@ export class JwtAuthController {
     @Ip() ip: string
   ) {
     return this.auth.completeTwoFactor(body.challenge, body.code, ua, ip);
+  }
+
+  // The second step of a sign-in that came from an unusual place: the same
+  // shape as the two-factor step, with the code received by mail or the answer
+  // to the security question, whichever the first step announced.
+  @Post("login/mfa")
+  @Public()
+  @HttpCode(200)
+  @MfaLoginDocs()
+  loginMfa(
+    @Body(new ZodValidationPipe(mfaLoginSchema)) body: MfaLoginDto,
+    @Headers("user-agent") ua: string | undefined,
+    @Ip() ip: string
+  ) {
+    return this.auth.completeMfa(body.challenge, body.answer, ua, ip);
+  }
+
+  @Post("login/mfa/resend")
+  @Public()
+  @HttpCode(200)
+  @MfaResendDocs()
+  resendMfaCode(@Body(new ZodValidationPipe(mfaResendSchema)) body: MfaResendDto) {
+    return this.auth.resendMfaCode(body.challenge);
+  }
+
+  // The same sign-in, proved the other way: a mailbox that cannot be reached
+  // right now is answered by the question, and a question whose answer escapes
+  // its owner by the code.
+  @Post("login/mfa/method")
+  @Public()
+  @HttpCode(200)
+  @MfaMethodDocs()
+  switchMfaMethod(@Body(new ZodValidationPipe(mfaMethodSchema)) body: MfaMethodDto) {
+    return this.auth.switchMfaMethod(body.challenge, body.method);
   }
 
   @Post("refresh")

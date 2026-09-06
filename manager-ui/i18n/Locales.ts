@@ -27,6 +27,18 @@ export interface Locales {
     auth: {
       wrongPassword: string;
     };
+    mfa: {
+      challengeExpired: string;
+      invalidCode: string;
+      invalidAnswer: string;
+      tooManyAttempts: string;
+      resendTooSoon: string;
+      methodUnavailable: string;
+    };
+    securityQuestion: {
+      alreadySet: string;
+      required: string;
+    };
     twoFactor: {
       alreadyEnabled: string;
       notEnabled: string;
@@ -186,6 +198,8 @@ export interface Locales {
     cadenceCardHint: string;
     generalCardLabel: string;
     generalCardHint: string;
+    loginRiskCardLabel: string;
+    loginRiskCardHint: string;
     supervisionCardLabel: string;
     ticketsCardLabel: string;
     ticketsCardHint: string;
@@ -271,6 +285,29 @@ export interface Locales {
       saveFailed: string;
       loadFailed: string;
       cannotExceedDelay: string;
+      reset: string;
+    };
+    loginRisk: {
+      cardTitle: string;
+      alertTitle: string;
+      alertDescription: string;
+      radius: string;
+      radiusHint: string;
+      radiusUnit: string;
+      radiusInvalid: string;
+      order: string;
+      orderHint: string;
+      orderMailFirst: string;
+      orderQuestionFirst: string;
+      twoFactorTitle: string;
+      twoFactorDescription: string;
+      offTitle: string;
+      offDescription: string;
+      accuracyNote: string;
+      save: string;
+      saved: string;
+      saveFailed: string;
+      loadFailed: string;
       reset: string;
     };
     supervision: {
@@ -755,6 +792,17 @@ export interface Locales {
     verify: string;
     backToLogin: string;
     twoFactorFailed: string;
+    mfaTitle: string;
+    mfaMailHint: string;
+    mfaQuestionHint: string;
+    mfaQuestionLabel: string;
+    mfaResend: string;
+    mfaResent: string;
+    mfaResendFailed: string;
+    mfaFailed: string;
+    mfaSwitchToMail: string;
+    mfaSwitchToQuestion: string;
+    mfaSwitchFailed: string;
   };
   dashboard: {
     subtitle: string;
@@ -1066,6 +1114,39 @@ export interface Locales {
       changed: string;
       failed: string;
     };
+    securityQuestion: string;
+    securityQuestionHint: string;
+    securityQuestionPage: {
+      breadcrumb: string;
+      title: string;
+      alertTitle: string;
+      alertDescription: string;
+      stateSet: string;
+      stateUnset: string;
+      question: string;
+      answer: string;
+      answerHint: string;
+      immutableWarning: string;
+      immutableNotice: string;
+      confirmTitle: string;
+      confirmDescription: string;
+      questionPlaceholder: string;
+      questions: {
+        father: string;
+        mother: string;
+        grandfather: string;
+        grandmother: string;
+        birthCity: string;
+      };
+      submit: string;
+      submitChange: string;
+      saved: string;
+      failed: string;
+    };
+    securityQuestionPrompt: {
+      title: string;
+      hint: string;
+    };
     twoFactor: string;
     twoFactorHint: string;
     twoFactorPage: {
@@ -1218,6 +1299,7 @@ export interface Locales {
       manageGroups: string;
       editAccount: string;
       resetTwoFactor: string;
+      resetSecurityQuestion: string;
       rootAccess: string;
       status: string;
       lastLogin: string;
@@ -1277,9 +1359,24 @@ export interface Locales {
       noDomains: string;
       noRecipients: string;
       stats: { groupsSub: string; aliasesSub: string };
-      actions: { edit: string; groups: string; recipients: string; aliases: string; resetTwoFactor: string; activity: string };
+      actions: {
+        edit: string;
+        groups: string;
+        recipients: string;
+        aliases: string;
+        resetTwoFactor: string;
+        resetSecurityQuestion: string;
+        activity: string;
+      };
       resetTwoFactorConfirm: string;
-      toast: { loadFailed: string; twoFactorReset: string; twoFactorResetFailed: string };
+      resetSecurityQuestionConfirm: string;
+      toast: {
+        loadFailed: string;
+        twoFactorReset: string;
+        twoFactorResetFailed: string;
+        securityQuestionReset: string;
+        securityQuestionResetFailed: string;
+      };
     };
     ownership: {
       backToAccount: string;
@@ -1920,6 +2017,7 @@ export interface Locales {
     deviceOn: string;
     unknownDevice: string;
     empty: string;
+    method: Record<string, string>;
     action: Record<string, string>;
     event: Record<string, string>;
   };

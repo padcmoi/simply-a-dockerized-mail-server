@@ -6,6 +6,7 @@ import { In, IsNull, MoreThan, Not, Repository } from "typeorm";
 import { PaginationQuery, resolveSearchColumn, resolveSortColumn } from "../../common/pagination.validation";
 import { scryptHash, scryptVerify } from "../../common/scrypt";
 import { ApiError } from "../../common/api-error";
+import { IpLocation } from "../../common/geoip";
 import { Account } from "../../entities/account.entity";
 import { ACCOUNT_GENDERS, AccountGender, AccountProfile, composeDisplayName } from "../../entities/account-profile.entity";
 import { GroupMember } from "../../entities/group-member.entity";
@@ -15,6 +16,10 @@ import { GeocodingService } from "../../geocoding/geocoding.service";
 import { MailSettingsService } from "../../mailer/mail-settings.service";
 import { TwoFactorChallengeStore } from "../two-factor/two-factor-challenge.store";
 import { TwoFactorService } from "../two-factor/two-factor.service";
+import { LoginRiskService } from "../mfa/login-risk.service";
+import { MfaMethod } from "../mfa/mfa-challenge.store";
+import { MfaLoginService } from "../mfa/mfa-login.service";
+import { MfaService } from "../mfa/mfa.service";
 import { ChangeMyPasswordDto, UpdateProfileDto } from "./jwt.validation";
 import { ActivityLogService } from "../../activity/activity-log.service";
 
@@ -64,6 +69,12 @@ export type ProfileResponse = {
   mailEnabled: boolean;
   /** Whether every sign-in of this account asks for a code from its authenticator app. */
   twoFactorEnabled: boolean;
+  /**
+   * Whether the account has a security question on record. False is what the
+   * interface reads to send it and set one before anything else: it is the
+   * only way back in for a server that cannot send mail.
+   */
+  securityQuestionSet: boolean;
   groups: { id: string; name: string }[];
 };
 
@@ -84,7 +95,10 @@ export class JwtAuthService {
     private readonly mailSettings: MailSettingsService,
     private readonly twoFactor: TwoFactorService,
     private readonly challenges: TwoFactorChallengeStore,
-    private readonly activity: ActivityLogService
+    private readonly activity: ActivityLogService,
+    private readonly mfa: MfaService,
+    private readonly risk: LoginRiskService,
+    private readonly mfaLogin: MfaLoginService
   ) {}
 
   // The tail every way in shares, whichever strategy proved the identity: the
@@ -97,12 +111,45 @@ export class JwtAuthService {
   // once `completeTwoFactor` has seen a code for it. This sits here, on the
   // shared tail, so a provider sign-in is asked for its code exactly as the
   // password form is.
+  // A sign-in from far away asks for one more proof, but only when the account
+  // has no authenticator app: that app is already the strongest answer there
+  // is, and asking for a mailed code on top of it would add nothing.
   async openSessionFor(account: Account, ua?: string, ip?: string) {
+    const where = await this.risk.locate(ip);
+    const far = await this.risk.isFar(account.id, where);
+    // The authenticator app answers the distance on its own: an account that
+    // carries one is never asked for a code by mail or its question on top, so
+    // a far-away sign-in costs it nothing beyond the code it was going to type
+    // anyway. The journal still says it came from far away.
     if (await this.twoFactor.isEnabled(account.id)) {
+      if (far) await this.mfaLogin.noteTwoFactor(account, far);
       const { challenge, expiresAt } = this.challenges.mint(account.id);
       return { twoFactorRequired: true as const, challenge, expiresAt: expiresAt.toISOString() };
     }
+    if (far) {
+      const asked = await this.mfaLogin.open(account, far);
+      if (asked) return asked;
+    }
+    return this.finishSession(account, ua, ip, where);
+  }
+
+  // The far-away sign-in's second step: the challenge names the account whose
+  // password was accepted, the code or the answer proves the rest. The place it
+  // came from becomes the account's new usual place, so the next sign-in from
+  // there walks straight in.
+  async completeMfa(challenge: string, answer: string, ua?: string, ip?: string) {
+    const accountId = await this.mfaLogin.verify(challenge, answer);
+    const account = await this.accounts.findOne({ where: { id: accountId, enabled: 1 } });
+    if (!account) throw new UnauthorizedException("This account is disabled");
     return this.finishSession(account, ua, ip);
+  }
+
+  resendMfaCode(challenge: string) {
+    return this.mfaLogin.resend(challenge);
+  }
+
+  switchMfaMethod(challenge: string, method: MfaMethod) {
+    return this.mfaLogin.switchTo(challenge, method);
   }
 
   // The second step: the challenge names the account whose first factor was
@@ -125,10 +172,15 @@ export class JwtAuthService {
     return this.finishSession(account, ua, ip);
   }
 
-  private async finishSession(account: Account, ua?: string, ip?: string) {
+  private async finishSession(account: Account, ua?: string, ip?: string, where?: IpLocation | null) {
     account.lastLogin = new Date();
     await this.accounts.save(account);
     await this.activity.record({ action: "auth.login", actorId: account.id });
+    // Every session that opens moves the account's usual place to where it
+    // opened, whether it walked straight in or answered a challenge first.
+    // `where` is passed in when the caller has already looked the address up,
+    // so a plain sign-in reads the dataset once rather than twice.
+    await this.mfa.rememberPlace(account.id, where === undefined ? await this.risk.locate(ip) : where);
     // One live session per device: a re-login from the same device (same UA +
     // IP) revokes that device's earlier still-valid tokens first. Without this
     // every sign-in stacked another active token, so the list showed many
@@ -456,6 +508,7 @@ export class JwtAuthService {
       isRoot: account.isRoot === 1,
       mailEnabled,
       twoFactorEnabled: await this.twoFactor.isEnabled(account.id),
+      securityQuestionSet: await this.mfa.hasQuestion(account.id),
       groups: groupRows.map((g) => ({ id: g.id, name: g.name })),
     };
   }

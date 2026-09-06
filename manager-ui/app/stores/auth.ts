@@ -28,7 +28,7 @@ export const useAuthStore = defineStore("auth", {
     // opens. The email is left to fetchProfile: the one that counts is the
     // account's, not whatever address was typed or a provider signed.
     async login(email: string, password: string) {
-      const data = await $fetch<TokenPair | TwoFactorChallenge>("/api/v1/auth/jwt/login", {
+      const data = await $fetch<TokenPair | TwoFactorChallenge | MfaChallenge>("/api/v1/auth/jwt/login", {
         method: "POST",
         body: { email, password },
       });
@@ -39,7 +39,7 @@ export const useAuthStore = defineStore("auth", {
     // gets, so everything downstream -- the refresh rotation, the 401 retry, the
     // session list -- is unaware there was ever a second way in.
     async loginWithPassportProvider(code: string) {
-      const data = await $fetch<TokenPair | TwoFactorChallenge>("/api/v1/auth/passport/exchange", {
+      const data = await $fetch<TokenPair | TwoFactorChallenge | MfaChallenge>("/api/v1/auth/passport/exchange", {
         method: "POST",
         body: { code },
       });
@@ -54,10 +54,35 @@ export const useAuthStore = defineStore("auth", {
       });
       await this.openOrChallenge(data, email);
     },
+    // The second step of a sign-in from an unusual place: the code that came by
+    // mail, or the answer to the security question. What opens is the same
+    // session as any other way in.
+    async loginMfa(challenge: string, answer: string, email = "") {
+      const data = await $fetch<TokenPair>("/api/v1/auth/jwt/login/mfa", {
+        method: "POST",
+        body: { challenge, answer },
+      });
+      await this.openOrChallenge(data, email);
+    },
+    // A fresh code for the same challenge. The previous one stops working.
+    async resendMfaCode(challenge: string) {
+      return $fetch<{ sent: boolean; hint: string }>("/api/v1/auth/jwt/login/mfa/resend", {
+        method: "POST",
+        body: { challenge },
+      });
+    },
+    // The same sign-in, proved the other way. What comes back is a challenge of
+    // the same shape, on the same identifier, with the tries already spent.
+    async switchMfaMethod(challenge: string, method: "email" | "question") {
+      return $fetch<MfaChallenge>("/api/v1/auth/jwt/login/mfa/method", {
+        method: "POST",
+        body: { challenge, method },
+      });
+    },
     // The email the session opens on is the one typed, when there was one, until
     // the profile answers with the account's own; a provider sign-in typed none.
-    async openOrChallenge(data: TokenPair | TwoFactorChallenge, email: string) {
-      if ("twoFactorRequired" in data) return data;
+    async openOrChallenge(data: TokenPair | TwoFactorChallenge | MfaChallenge, email: string) {
+      if ("twoFactorRequired" in data || "mfaRequired" in data) return data;
       this.session = { ...data, email };
       await this.fetchProfile().catch(() => undefined);
       return null;
@@ -75,6 +100,7 @@ export const useAuthStore = defineStore("auth", {
         avatarUrl: me.avatarUrl,
         isRoot: me.isRoot,
         mailEnabled: me.mailEnabled,
+        securityQuestionSet: me.securityQuestionSet,
         groups: me.groups,
       };
     },
@@ -93,6 +119,7 @@ export const useAuthStore = defineStore("auth", {
         avatarUrl: me.avatarUrl,
         isRoot: me.isRoot,
         mailEnabled: me.mailEnabled,
+        securityQuestionSet: me.securityQuestionSet,
         groups: me.groups,
       };
     },

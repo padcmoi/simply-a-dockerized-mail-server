@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useAuthStore } from "~/stores/auth";
+
 definePageMeta({
   requiredGlobal: [
     { resource: "accounts", action: "access" },
@@ -28,10 +30,13 @@ const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 // a deletion, since it strips what protects that account's sign-in.
 const resetTwoFactorOpen = ref(false);
 const resetTwoFactorTarget = ref<ManagerAccount | null>(null);
+const resetQuestionOpen = ref(false);
+const resetQuestionTarget = ref<ManagerAccount | null>(null);
 
 const { t } = useI18n();
 const { call } = useApi();
 const toast = useToast();
+const auth = useAuthStore();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("nav.accounts") }]);
 const { isRoot, hasGlobal } = usePermissions();
@@ -90,6 +95,39 @@ function requestDelete(fn: () => Promise<void>) {
 async function onDeleteConfirmed() {
   await pendingDeleteFn.value?.();
   pendingDeleteFn.value = null;
+}
+
+// Clearing the security question is the only way back for an owner who no
+// longer remembers their own answer: nothing in their own session can change
+// it, by design. The next sign-in asks them for a new one before anything else.
+function requestResetQuestion(acc: ManagerAccount) {
+  resetQuestionTarget.value = acc;
+  resetQuestionOpen.value = true;
+}
+
+async function onResetQuestionConfirmed() {
+  const acc = resetQuestionTarget.value;
+  resetQuestionTarget.value = null;
+  if (!acc) return;
+  try {
+    await call(`/accounts/${acc.id}/security-question`, { method: "DELETE" });
+    toast.add({ title: t("accounts.overviewPage.toast.securityQuestionReset"), color: "success" });
+    // The API signs that account out of everything. When it is the administrator
+    // doing it to their own account, the session in this browser is one of the
+    // revoked ones: better to land on the sign-in page than to wait for the
+    // first refusal.
+    if (acc.id === auth.session?.accountId) {
+      await auth.logout();
+      return await navigateTo("/login");
+    }
+    await load();
+  } catch (e) {
+    toast.add({
+      title: t("accounts.overviewPage.toast.securityQuestionResetFailed"),
+      description: (e as Error).message,
+      color: "error",
+    });
+  }
 }
 
 function requestResetTwoFactor(acc: ManagerAccount) {
@@ -197,6 +235,15 @@ async function onResetTwoFactorConfirmed() {
 
       <template #actions="{ row }">
         <UButton
+          v-if="row.securityQuestionSet && canResetTwoFactor"
+          icon="i-lucide-shield-question-mark"
+          size="xs"
+          color="warning"
+          variant="ghost"
+          :title="t('accounts.table.resetSecurityQuestion')"
+          @click="requestResetQuestion(row)"
+        />
+        <UButton
           v-if="row.twoFactorEnabled && canResetTwoFactor"
           icon="i-lucide-shield-off"
           size="xs"
@@ -240,6 +287,14 @@ async function onResetTwoFactorConfirmed() {
       :title="t('accounts.confirmDelete')"
       :description="t('accounts.confirmDeleteHint')"
       @confirm="onDeleteConfirmed"
+    />
+
+    <ConfirmModal
+      v-model:open="resetQuestionOpen"
+      type="warning"
+      :title="t('accounts.overviewPage.actions.resetSecurityQuestion')"
+      :description="t('accounts.overviewPage.resetSecurityQuestionConfirm')"
+      @confirm="onResetQuestionConfirmed"
     />
 
     <ConfirmModal

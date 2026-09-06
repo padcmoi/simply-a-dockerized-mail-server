@@ -3,7 +3,7 @@ import * as nodemailer from "nodemailer";
 import { ApiError } from "../common/api-error";
 import { MailConfig } from "./providers";
 import { MailSettingsService } from "./mail-settings.service";
-import { invitationEmail, notificationHtml } from "./templates";
+import { invitationEmail, loginCodeEmail, notificationHtml } from "./templates";
 import { AppSettingsService } from "../settings/app-settings.service";
 
 @Injectable()
@@ -69,6 +69,14 @@ export class MailerService {
 
   async sendNotification(input: { to: string; subject: string; text: string; html?: string }) {
     await this.sendWith(await this.settings.toConfig(), input);
+  }
+
+  // The code that answers a sign-in from an unusual place. It goes out through
+  // the selected provider like any other mail, and the per-recipient interval
+  // applies: a resend asked for too soon is dropped rather than sent twice.
+  async sendLoginCode(input: { to: string; code: string; minutes: number; distanceKm?: number }) {
+    const { subject, text, html } = loginCodeEmail(input);
+    await this.sendWith(await this.settings.toConfig(), { to: input.to, subject, text, html });
   }
 
   async sendInvitation(input: { to: string; link: string; fromDomain: string; groupNames: string[] }) {

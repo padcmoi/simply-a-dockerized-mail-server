@@ -47,6 +47,13 @@ setBreadcrumb([{ label: t("nav.config") }]);
       />
 
       <ProfileActionCard
+        icon="i-lucide-map-pin"
+        :label="t('config.loginRiskCardLabel')"
+        :hint="t('config.loginRiskCardHint')"
+        to="/admin/config/login-risk"
+      />
+
+      <ProfileActionCard
         icon="i-lucide-palette"
         :label="t('config.themeCardLabel')"
         :hint="t('config.themeCardHint')"

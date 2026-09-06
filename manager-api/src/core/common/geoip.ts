@@ -1,7 +1,17 @@
 import { Logger } from "@nestjs/common";
 
 interface GeoipDataset {
-  lookup(ip: string): Promise<{ country?: string } | null>;
+  lookup(ip: string): Promise<{ country?: string; ll?: [number, number]; area?: number } | null>;
+}
+
+// Where an address sits, as the dataset believes, with the radius it admits to
+// being sure to within. That radius is wide for a residential range -- a French
+// subscriber comes back as Paris wherever they live -- so a caller comparing two
+// places must widen its own threshold by it rather than trust the point.
+export interface IpLocation {
+  latitude: number;
+  longitude: number;
+  accuracyKm: number;
 }
 
 const logger = new Logger("Geoip");
@@ -78,6 +88,25 @@ export async function countryOf(ip: string): Promise<string> {
     return found?.country ?? "";
   } catch {
     return "";
+  }
+}
+
+// The same lookup as `countryOf`, kept to the coordinates. Null wherever the
+// country would be empty: a reserved range, an address the dataset has never
+// heard of, or a dataset that could not be loaded at all.
+export async function locationOf(ip: string): Promise<IpLocation | null> {
+  if (typeof ip !== "string") return null;
+  const address = normalise(ip);
+  if (address.length === 0 || isReserved(address)) return null;
+
+  try {
+    const found = await (await load())?.lookup(address);
+    const [latitude, longitude] = found?.ll ?? [];
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+    const area = Number(found?.area);
+    return { latitude: latitude!, longitude: longitude!, accuracyKm: Number.isFinite(area) ? area : 0 };
+  } catch {
+    return null;
   }
 }
 

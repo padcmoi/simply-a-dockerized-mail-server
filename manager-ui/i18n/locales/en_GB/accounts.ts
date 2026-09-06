@@ -51,6 +51,7 @@ export default {
     manageGroups: "Manage groups",
     editAccount: "Edit account",
     resetTwoFactor: "Remove two-factor authentication",
+    resetSecurityQuestion: "Reset the security question",
     rootAccess: "Full access",
     status: "Status",
     lastLogin: "Last login",
@@ -118,14 +119,19 @@ export default {
       recipients: "Recipients",
       aliases: "Aliases",
       resetTwoFactor: "Reset two-factor authentication",
+      resetSecurityQuestion: "Reset the security question",
       activity: "Activity log",
     },
     resetTwoFactorConfirm:
       "The account will sign in with its password alone until it turns two-factor authentication on again. For when its phone and its recovery codes are both lost.",
+    resetSecurityQuestionConfirm:
+      "The question and its answer are cleared, and every session of the account is signed out. At its next sign-in it has to choose a new one before reaching anything. For when its owner no longer remembers their own answer.",
     toast: {
       loadFailed: "Failed to load the account overview",
       twoFactorReset: "Two-factor authentication reset",
+      securityQuestionReset: "Security question reset",
       twoFactorResetFailed: "The reset failed",
+      securityQuestionResetFailed: "The reset failed",
     },
   },
   ownership: {
