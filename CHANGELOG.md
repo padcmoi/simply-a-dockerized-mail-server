@@ -9,15 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- feat(ui): /about lists every tag of the running major line in a select above the tabs, newest first and open on the newest, so any version of the line can be read there, its release and its changelog, and not only the one answering (06-09-2026)
-
-### Changed
-
-- feat(ui): the release and the changelog of the running tag are two tabs on /about, the hidden one kept mounted so switching back costs no second call to GitHub, and the GitHub release and CHANGELOG.md are never on screen together (06-09-2026)
+- Every tag of the running line can be read on /about _(ui)_ [6e8cbc9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6e8cbc9e1a3f3bb07ac642d56fc5ab8342da1d18) (06-09-2026)
+- The release and the changelog of the running tag are two tabs on /about _(ui)_ [cba91bd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cba91bd8bc5cef622a3d1ca26a4eb7c007bf5812) (06-09-2026)
 
 ### Fixed
 
-- fix(docker): manager-api makes its VERSION file itself at every start, from the repository's last tag, and writes it back to the host; a stack launched without service.sh no longer fails on a directory Docker created in the file's place, and never reads unknown (06-09-2026)
+- Manager-api makes its VERSION file itself at every start _(docker)_ [e1dd530](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e1dd530313de3605288854d7785ae04a8b2fea67) (06-09-2026)
 
 ## [2.0.0-rc.3] - 2026-09-06
 
@@ -41,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- The sign-in from far away and the rest of the week are the 2.0.0-rc.3 release _(changelog)_ [4f99c0b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4f99c0b009ae8c4a5018a46be13604bdd8e68baa) (06-09-2026)
 - The sign-in from far away, and the question that answers it _(auth)_ [5ff8ec3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5ff8ec32350f088c4578aa84fea80b74b051cc2d) (06-09-2026)
 - The breadcrumb starts at the page's own section, not at Accueil _(ui)_ [4f15174](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4f151748752e3b2a1f0c9bef0b4023888b391895) (03-09-2026)
 - The breadcrumb is the page's title, in the header and in the tab _(ui)_ [4f2966a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4f2966abcb022c6d93eac7bcebf2dd22b3d5bb14) (03-09-2026)
@@ -635,6 +633,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban host-net jails for postfix and dovecot _(security)_ [9695664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/969566492b99ceb9cfee3ed4bac32bb477f35b32) (27-06-2026)
 - Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [974519a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/974519a4a91a0d2a44c7595a530e2f4c9fa70506) (08-01-2025)
 - Merge branch 'main' into feature/security-fail2ban-firewall [cf7c1a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf7c1a1d6f9d90db6b3a71e852aeeba06668f623) (07-01-2025)
-[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.2...HEAD
+[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.3...HEAD
+[2.0.0-rc.3]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.2...v2.0.0-rc.3
 [2.0.0-rc.2]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.1...v2.0.0-rc.2
 [2.0.0-rc.1]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/1.1.7...v2.0.0-rc.1
