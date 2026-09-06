@@ -17,6 +17,7 @@ export default {
   loadFailed: "GitHub did not answer.",
   rateLimited: "The anonymous GitHub API limit is reached for your address. Try again in an hour.",
   retry: "Retry",
+  release: "Release",
   changelog: "Changelog",
   changelogMissing: "No CHANGELOG.md file in tag {version}.",
 } satisfies Locales["about"];

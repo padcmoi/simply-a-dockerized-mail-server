@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- feat(ui): the release and the changelog of the running tag are two tabs on /about, the hidden one kept mounted so switching back costs no second call to GitHub, and the GitHub release and CHANGELOG.md are never on screen together (06-09-2026)
+
 ### Fixed
 
 - fix(docker): manager-api makes its VERSION file itself at every start, from the repository's last tag, and writes it back to the host; a stack launched without service.sh no longer fails on a directory Docker created in the file's place, and never reads unknown (06-09-2026)

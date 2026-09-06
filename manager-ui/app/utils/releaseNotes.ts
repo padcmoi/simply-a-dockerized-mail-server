@@ -26,3 +26,8 @@ export function linkifyReleaseNotes(body: string, repo: string) {
     return `${before}[${labelFor(url, repo)}](${url})${tail}`;
   });
 }
+
+// The heading sizes the release notes and the changelog are drawn with: both
+// come from GitHub as Markdown whose "###" is a section, not a page title.
+export const RELEASE_MARKDOWN_CLASS =
+  "text-sm leading-relaxed [&_h3]:text-xl [&_h4]:text-lg [&_h4]:mt-6 [&_h4]:border-b [&_h4]:border-default [&_h4]:pb-1 [&_h5]:text-base [&_h5]:mt-4";

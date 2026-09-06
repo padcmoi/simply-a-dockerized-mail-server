@@ -680,6 +680,7 @@ export interface Locales {
     loadFailed: string;
     rateLimited: string;
     retry: string;
+    release: string;
     changelog: string;
     changelogMissing: string;
   };
