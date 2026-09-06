@@ -87,6 +87,90 @@ The mail stack does **not** consume manager-api auth -- a dead
 manager-api leaves mail working. Manager-api can be rebooted without
 disconnecting any user.
 
+### Sign-in from far away
+
+A stolen password opens a session from anywhere, so every sign-in is
+measured against the place the account usually signs in from. Two
+points and a radius, nothing more:
+
+- **The account's usual place** -- `account_mfa.login_latitude` /
+  `login_longitude`, one row per account at most, next to the security
+  question below. Every session that opens moves the point to where it
+  opened (`JwtAuthService.finishSession`), so it walks with its owner.
+  The first sign-in poses it and is never challenged. Never
+  `account_profiles`: the coordinates there are the profile's own city,
+  geocoded by Nominatim, and this check neither reads nor writes them.
+- **Where the sign-in comes from** -- the IP, resolved locally by
+  `fast-geoip` (`core/common/geoip.ts`, `locationOf`), the dataset the
+  access trails already use. No network call, no third party, no file
+  to refresh. Private ranges, loopback and the docker bridge resolve to
+  nothing, and nothing is ever blocked on a missing point.
+- **The radius** -- `login_radius_km` in `app_settings`, 100 by default,
+  0 turns the check off. Widened to the accuracy the dataset admits to
+  (`max(radius, area)`): a residential French range resolves to Paris
+  with `area` 1000, and comparing two such points to within 100 km would
+  challenge a move across town. Both points come from the same dataset,
+  so the bias cancels.
+
+Past the radius (`LoginRiskService.isFar`, great-circle distance in
+`core/common/haversine.ts`) the password alone is not a session:
+
+1. **The authenticator app**, when the account has one -- first, and
+   alone. Its code already answers the distance, nothing is asked on
+   top of it. The journal still records the sign-in as far away.
+2. Otherwise **the security question** or **a six-digit code by mail**,
+   in the order `login_challenge_order` holds (`question,email` by
+   default, root-settable on `/admin/config/login-risk` beside the
+   radius). The order is a preference: whatever cannot be offered (no
+   outbound mail configured, no question chosen) stands aside for the
+   other, and the login screen offers the other way under the form
+   whenever the server can actually provide it.
+3. Neither available: the session opens and the journal says so
+   (`auth.login.far` with `method: none`). Refusing would lock the owner
+   of a server with no mail out of their own manager.
+
+The challenge in between is the two-factor store's shape
+(`mfa-challenge.store.ts`): an opaque string worth nothing to the auth
+guard, ten minutes, five tries, the mailed code kept as a keyed hash.
+Switching a live challenge between the code and the question
+(`POST /auth/jwt/login/mfa/method`) keeps its identifier, its deadline
+and the tries already spent, so it changes the proof and never buys a
+fresh set of guesses.
+
+**The security question** is one of five keys (`SECURITY_QUESTIONS`:
+father's first name, mother's maiden name, paternal grandfather's and
+maternal grandmother's first names, town of birth), facts fixed for life
+whose answer is a proper name. The answer is normalised (case, accents,
+spacing) and stored as HMAC-SHA256 keyed with
+`security-answer:` + `MANAGER_API_TOKEN_PEPPER`; the API returns the
+question, never the answer, and five wrong answers shut it for fifteen
+minutes. Every account is made to choose one, once: `SecurityQuestionGuard`
+(second `APP_GUARD`) refuses every session route except reading or
+setting the question and `GET /auth/jwt/me` until it has one, the
+interface shows a modal that nothing closes but answering it, and a
+second `PUT` is refused with 409. An API key is never stopped: it acts
+for a machine that will never see a question. The only way back for an
+owner who forgets their answer is an administrator's:
+`DELETE /accounts/:id/security-question` (`accounts:edit-account`)
+clears it and revokes every live session of the account, so its next
+sign-in asks for a new one.
+
+Routes, all under `/api/v1`:
+
+| route                                        | auth                    | what                                                                |
+| -------------------------------------------- | ----------------------- | ------------------------------------------------------------------- |
+| `POST /auth/jwt/login/mfa`                   | public                  | `{ challenge, answer }` -> the same token pair a plain sign-in gets |
+| `POST /auth/jwt/login/mfa/resend`            | public                  | a fresh code, paced by `mail_min_interval_ms`                       |
+| `POST /auth/jwt/login/mfa/method`            | public                  | `{ challenge, method }` -> the same challenge, proved the other way |
+| `GET` / `PUT /auth/jwt/me/security-question` | JWT                     | read (never the answer) / choose, once                              |
+| `DELETE /accounts/:id/security-question`     | `accounts:edit-account` | clear it and sign the account out everywhere                        |
+| `GET` / `PUT /config/login-risk`             | root                    | the radius and the order                                            |
+
+Every step leaves a line in the activity log: `auth.login.far` (distance,
+threshold and what was asked), `auth.mfa.refused`,
+`auth.security-question.set` and `.reset`. Details and the reasoning
+behind each choice: [`.trash/FEATURES/login-risk.md`](../../.trash/FEATURES/login-risk.md).
+
 ## Password rotation playbook
 
 Via manager-api (recommended):
