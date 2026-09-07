@@ -37,4 +37,9 @@ export interface LoginRiskView {
   // is asked for more than a password. Zero turns the check off.
   loginRadiusKm: number;
   loginChallengeOrder: LoginChallengeOrder;
+  loginChallengeExclusive: boolean;
+  // How long an address keeps the answer the geolocation provider gave for it.
+  geoipCacheDays: number;
+  loginAddressDays: number;
+  loginNetworkDays: number;
 }

@@ -65,15 +65,13 @@ function makeMocks() {
       attempt: vi.fn(() => "a1"),
       settle: vi.fn(),
     }),
-    // The far-away check answers "not far" unless a test says otherwise: every
-    // sign-in spec here is about a sign-in from the usual place.
     mfa: providerMock<MfaService>({
       hasQuestion: vi.fn(async () => true),
-      rememberPlace: vi.fn(async () => undefined),
     }),
     risk: providerMock<LoginRiskService>({
       locate: vi.fn(async () => null),
-      isFar: vi.fn(async () => null),
+      assess: vi.fn(async () => ({ far: false, unknownNetwork: false, expired: false, suspicious: null })),
+      remember: vi.fn(async () => undefined),
     }),
     mfaLogin: providerMock<MfaLoginService>({
       open: vi.fn(async () => null),
@@ -172,23 +170,43 @@ describe("JwtAuthService", () => {
 
   describe("a sign-in from far away", () => {
     const account = () => entity<Account>({ id: "a1", email: "a@b.com", password: "hash", isRoot: 0 });
-    const FAR = { distanceKm: 691, thresholdKm: 100 };
-    const NICE = { latitude: 43.7, longitude: 7.26, accuracyKm: 5 };
+    const FAR = {
+      distanceKm: 691,
+      thresholdKm: 100,
+      countryCode: "FR",
+      asn: 3215,
+      asnOrg: "Orange",
+      city: "Paris",
+      reasons: ["distance" as const],
+    };
+    const SUSPICIOUS = { far: true, unknownNetwork: false, expired: false, suspicious: FAR };
+    const NICE = {
+      ip: "1.2.3.4",
+      latitude: 43.7,
+      longitude: 7.26,
+      countryCode: "FR",
+      country: "France",
+      region: "PACA",
+      city: "Nice",
+      asn: 3215,
+      asnOrg: "Orange",
+    };
 
-    it("moves the account's usual place to wherever a session opens", async () => {
+    it("remembers the address and the operator wherever a session opens", async () => {
       m.risk.locate.mockResolvedValue(NICE);
       await svc.openSessionFor(account(), "UA", "1.2.3.4");
-      expect(m.mfa.rememberPlace).toHaveBeenCalledWith("a1", NICE);
+      expect(m.risk.remember).toHaveBeenCalledWith("a1", NICE, "1.2.3.4");
     });
 
-    it("looks the address up once, and hands what it found to the place it remembers", async () => {
+    it("looks the address up once, and hands what it found to the assessment and the memory", async () => {
       m.risk.locate.mockResolvedValue(NICE);
       await svc.openSessionFor(account(), "UA", "1.2.3.4");
       expect(m.risk.locate).toHaveBeenCalledTimes(1);
+      expect(m.risk.assess).toHaveBeenCalledWith(expect.objectContaining({ id: "a1" }), NICE);
     });
 
     it("asks for a proof instead of opening the session", async () => {
-      m.risk.isFar.mockResolvedValue(FAR);
+      m.risk.assess.mockResolvedValue(SUSPICIOUS);
       m.mfaLogin.open.mockResolvedValue({
         mfaRequired: true,
         method: "email",
@@ -198,39 +216,34 @@ describe("JwtAuthService", () => {
       });
       const res = await svc.openSessionFor(account(), "UA", "1.2.3.4");
       expect(res).toMatchObject({ mfaRequired: true, method: "email", challenge: "mfa-1" });
+      expect(m.mfaLogin.open).toHaveBeenCalledWith(expect.objectContaining({ id: "a1" }), FAR);
       expect(m.refreshTokens.insert).not.toHaveBeenCalled();
-      expect(m.mfa.rememberPlace).not.toHaveBeenCalled();
+      expect(m.risk.remember).not.toHaveBeenCalled();
     });
 
-    // A server with no mail and an account with no question: refusing would
-    // lock its owner out over a move they made themselves.
     it("opens the session anyway when there is nothing to ask", async () => {
-      m.risk.isFar.mockResolvedValue(FAR);
+      m.risk.assess.mockResolvedValue(SUSPICIOUS);
       m.mfaLogin.open.mockResolvedValue(null);
       const res = (await svc.openSessionFor(account(), "UA", "1.2.3.4")) as { accessToken: string };
       expect(res.accessToken).toBe("access-token");
     });
 
-    // The authenticator app is already the strongest proof there is.
     it("never asks for a code on top of a second factor", async () => {
       m.twoFactor.isEnabled.mockResolvedValueOnce(true);
-      m.risk.isFar.mockResolvedValue(FAR);
+      m.risk.assess.mockResolvedValue(SUSPICIOUS);
       await svc.openSessionFor(account(), "UA", "1.2.3.4");
       expect(m.mfaLogin.open).not.toHaveBeenCalled();
     });
 
-    // Asked nothing extra, but not unnoticed: the journal is where the owner
-    // of an account with a second factor sees it signed in from far away.
     it("still records the distance for an account carrying a second factor", async () => {
       m.twoFactor.isEnabled.mockResolvedValueOnce(true);
-      m.risk.isFar.mockResolvedValue(FAR);
+      m.risk.assess.mockResolvedValue(SUSPICIOUS);
       await svc.openSessionFor(account(), "UA", "1.2.3.4");
       expect(m.mfaLogin.noteTwoFactor).toHaveBeenCalledWith(expect.objectContaining({ id: "a1" }), FAR);
     });
 
-    it("records nothing when a second-factor sign-in came from its usual place", async () => {
+    it("records nothing when a second-factor sign-in came from a known place", async () => {
       m.twoFactor.isEnabled.mockResolvedValueOnce(true);
-      m.risk.isFar.mockResolvedValue(null);
       await svc.openSessionFor(account(), "UA", "1.2.3.4");
       expect(m.mfaLogin.noteTwoFactor).not.toHaveBeenCalled();
     });
@@ -244,11 +257,22 @@ describe("JwtAuthService", () => {
       expect(res.accessToken).toBe("access-token");
     });
 
-    it("takes the place it was answered from as the account's new usual place", async () => {
+    it("remembers the address it was answered from, so the next sign-in from there walks in", async () => {
+      const moscow = {
+        ip: "5.6.7.8",
+        latitude: 55.7,
+        longitude: 37.6,
+        countryCode: "RU",
+        country: "Russia",
+        region: "Moscow",
+        city: "Moscow",
+        asn: 8359,
+        asnOrg: "MTS",
+      };
       m.accounts.findOne.mockResolvedValue(entity<Account>({ id: "a1", email: "a@b.com", isRoot: 0 }));
-      m.risk.locate.mockResolvedValue({ latitude: 55.7, longitude: 37.6, accuracyKm: 20 });
+      m.risk.locate.mockResolvedValue(moscow);
       await svc.completeMfa("mfa-1", "123456", "UA", "5.6.7.8");
-      expect(m.mfa.rememberPlace).toHaveBeenCalledWith("a1", { latitude: 55.7, longitude: 37.6, accuracyKm: 20 });
+      expect(m.risk.remember).toHaveBeenCalledWith("a1", moscow, "5.6.7.8");
     });
 
     it("refuses a disabled account even with the right answer", async () => {

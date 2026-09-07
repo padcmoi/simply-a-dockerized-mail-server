@@ -13,6 +13,7 @@ import type { GeocodingService } from "../../src/core/geocoding/geocoding.servic
 import type { TwoFactorService } from "../../src/core/auth/two-factor/two-factor.service";
 import type { MfaService } from "../../src/core/auth/mfa/mfa.service";
 import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
+import type { LoginRiskService } from "../../src/core/auth/mfa/login-risk.service";
 import { providerMock, qbMock, repoMock } from "../helpers/mocks";
 import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 
@@ -45,6 +46,10 @@ function makeMocks() {
     jwtAuth: providerMock<JwtAuthService>({
       revokeAllActiveSessions: vi.fn(async () => ({ ok: true as const, revoked: 2 })),
     }),
+    risk: providerMock<LoginRiskService>({
+      listFor: vi.fn(async () => []),
+      forget: vi.fn(async () => ({ forgotten: true })),
+    }),
   };
 }
 
@@ -68,7 +73,8 @@ describe("AccountsService", () => {
       m.twoFactor,
       m.mfa,
       activityMock(),
-      m.jwtAuth
+      m.jwtAuth,
+      m.risk
     );
   });
 

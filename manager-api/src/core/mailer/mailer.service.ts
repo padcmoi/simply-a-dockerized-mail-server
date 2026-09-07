@@ -74,7 +74,14 @@ export class MailerService {
   // The code that answers a sign-in from an unusual place. It goes out through
   // the selected provider like any other mail, and the per-recipient interval
   // applies: a resend asked for too soon is dropped rather than sent twice.
-  async sendLoginCode(input: { to: string; code: string; minutes: number; distanceKm?: number }) {
+  async sendLoginCode(input: {
+    to: string;
+    code: string;
+    minutes: number;
+    distanceKm?: number;
+    network?: string;
+    absence?: boolean;
+  }) {
     const { subject, text, html } = loginCodeEmail(input);
     await this.sendWith(await this.settings.toConfig(), { to: input.to, subject, text, html });
   }

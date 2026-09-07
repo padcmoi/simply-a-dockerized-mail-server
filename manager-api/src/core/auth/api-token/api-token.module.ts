@@ -8,9 +8,10 @@ import { ApiTokenAccess } from "./api-token-access.entity";
 import { ApiTokenAccessMiddleware } from "./api-token-access.middleware";
 import { ApiTokenAccessService } from "./api-token-access.service";
 import { ActivityLogModule } from "../../activity/activity-log.module";
+import { GeoipModule } from "../../geoip/geoip.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ApiToken, ApiTokenAccess]), CustomPermissionGuardModule, ActivityLogModule],
+  imports: [TypeOrmModule.forFeature([ApiToken, ApiTokenAccess]), CustomPermissionGuardModule, ActivityLogModule, GeoipModule],
   providers: [ApiTokenService, ApiTokenAccessService, ApiTokenAccessMiddleware],
   controllers: [ApiTokenController],
   exports: [ApiTokenService, ApiTokenAccessService],

@@ -194,3 +194,40 @@ export const DetachResourceDocs = () =>
     }),
     ApiResponse({ status: 404, description: "Resource not owned by this account" })
   );
+
+const accountNetworkExample = {
+  countryCode: "FR",
+  asn: 3215,
+  asnOrg: "Orange S.A.",
+  lastCity: "Sainte-Maxime",
+  lastIp: "90.116.244.74",
+  loginCount: 12,
+  firstSeenAt: "2026-09-01T08:00:00.000Z",
+  lastSeenAt: "2026-09-07T07:10:00.000Z",
+};
+
+export const AdminAccountNetworksDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: String, description: "accounts.id (uuid)" }),
+    ApiOperation({
+      summary: "List the operators an account signs in from",
+      description:
+        "One row per country and autonomous system this account has already signed in from. A sign-in from an " +
+        "operator absent from this list is asked for a second proof, whatever the distance.",
+    }),
+    ApiResponse({ status: 200, schema: { example: [accountNetworkExample] } }),
+    ApiResponse({ status: 403, description: "Missing accounts:edit-account" })
+  );
+
+export const AdminForgetAccountNetworkDocs = () =>
+  applyDecorators(
+    ApiParam({ name: "id", type: String, description: "accounts.id (uuid)" }),
+    ApiParam({ name: "countryCode", type: String, description: "ISO 3166-1 alpha-2 country of the network" }),
+    ApiParam({ name: "asn", type: Number, description: "Autonomous system number of the network" }),
+    ApiOperation({
+      summary: "Forget one of an account's operators",
+      description: "The next sign-in of that account from that operator asks for a proof again. Idempotent.",
+    }),
+    ApiResponse({ status: 200, schema: { example: { forgotten: true } } }),
+    ApiResponse({ status: 403, description: "Missing accounts:edit-account" })
+  );

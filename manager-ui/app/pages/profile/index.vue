@@ -130,6 +130,13 @@ useAsyncData(
         to="/profile/two-factor"
       />
       <ProfileActionCard
+        icon="i-lucide-network"
+        icon-color="text-info"
+        :label="t('known.networksTitle')"
+        :hint="t('known.networksCardHint')"
+        to="/profile/networks"
+      />
+      <ProfileActionCard
         icon="i-lucide-shield-question-mark"
         icon-color="text-warning"
         :label="t('profile.securityQuestion')"

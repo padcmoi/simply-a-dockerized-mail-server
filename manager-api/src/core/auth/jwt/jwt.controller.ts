@@ -38,6 +38,8 @@ import {
   JwtMeOverviewDocs,
   JwtMePermissionsDocs,
   JwtMeSessionHistoryDocs,
+  JwtForgetMyNetworkDocs,
+  JwtMeNetworksDocs,
   JwtMeSessionsDocs,
   JwtMyGroupPermissionsDocs,
   JwtRefreshDocs,
@@ -58,6 +60,7 @@ import { TwoFactorLoginDto, twoFactorLoginSchema } from "../two-factor/two-facto
 import { MfaLoginDocs, MfaMethodDocs, MfaResendDocs } from "../mfa/mfa.openapi";
 import { MfaLoginDto, MfaMethodDto, MfaResendDto, mfaLoginSchema, mfaMethodSchema, mfaResendSchema } from "../mfa/mfa.validation";
 import { ACTIVITY_ACTIONS, ActivityLogService } from "../../activity/activity-log.service";
+import { LoginRiskService } from "../mfa/login-risk.service";
 import { activityListQuerySchema, type ActivityListQuery } from "../../activity/activity-log.validation";
 import { ActivityActionsDocs, MyActivityDocs } from "../../../api/activity/activity.openapi";
 
@@ -79,7 +82,8 @@ export class JwtAuthController {
     @InjectRepository(VirtualUser) private readonly virtualUsers: Repository<VirtualUser>,
     @InjectRepository(VirtualAlias) private readonly virtualAliases: Repository<VirtualAlias>,
     @InjectRepository(VirtualQuotaUser) private readonly recipientQuotas: Repository<VirtualQuotaUser>,
-    private readonly activity: ActivityLogService
+    private readonly activity: ActivityLogService,
+    private readonly risk: LoginRiskService
   ) {}
 
   // Resolves each domain-scoped permission's domainId to its FQDN, server-side,
@@ -252,6 +256,20 @@ export class JwtAuthController {
   @ActivityActionsDocs()
   activityActions() {
     return ACTIVITY_ACTIONS;
+  }
+
+  // The operators this account already signs in from: a sign-in from a new one
+  // is asked for a proof, whatever the distance.
+  @Get("me/networks")
+  @JwtMeNetworksDocs()
+  meNetworks(@Req() req: AuthedRequest) {
+    return this.risk.listFor(req.user.id);
+  }
+
+  @Delete("me/networks/:countryCode/:asn")
+  @JwtForgetMyNetworkDocs()
+  forgetMyNetwork(@Req() req: AuthedRequest, @Param("countryCode") countryCode: string, @Param("asn", ParseIntPipe) asn: number) {
+    return this.risk.forget(req.user.id, countryCode.toUpperCase().slice(0, 2), asn);
   }
 
   @Delete("me/sessions/:id")

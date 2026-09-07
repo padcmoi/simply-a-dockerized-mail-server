@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- feat(auth): a sign-in from an operator the account has never used is asked for a proof, whatever the distance (07-09-2026)
+- feat(auth): in development only, the unusual sign-in screen shows the measured distance, both places and the reasons (07-09-2026)
+- feat(auth): the first proof of the order can be made the only one, with no fallback and no switch on the sign-in screen (07-09-2026)
+- feat(auth): the number of days an address and an operator stay known to an account, on the unusual sign-in page (07-09-2026)
+
+### Changed
+
+- feat(auth): the coordinates and the operator of an address come from a live provider and are cached in the database (07-09-2026)
+- feat(auth): a sign-in is measured against the record of its own address when the account already knows it, otherwise against the nearest known address, so a proof given once from an address holds until it expires (07-09-2026)
+- feat(auth): an account coming back after all its addresses or all its operators have expired is asked for a proof (07-09-2026)
+
+### Fixed
+
+- fix(auth): an IPv6 sign-in is located at all, where every address that was not four octets read as reserved (07-09-2026)
+- fix(hooks): the pre-commit hook no longer refuses the section headings the first entry after a release brings back (07-09-2026)
+
 ## [2.0.0-rc.4] - 2026-09-06
 
 ### Added

@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Like, Repository } from "typeorm";
-import { countriesFor } from "../../common/geoip";
+import { GeoipService } from "../../geoip/geoip.service";
 import { resolveSearchColumn, resolveSortColumn, type PaginationQuery } from "../../common/pagination.validation";
 import { ApiToken } from "./api-token.entity";
 import { ApiTokenAccess } from "./api-token-access.entity";
@@ -42,7 +42,8 @@ export class ApiTokenAccessService {
 
   constructor(
     @InjectRepository(ApiTokenAccess) private readonly repo: Repository<ApiTokenAccess>,
-    @InjectRepository(ApiToken) private readonly tokens: Repository<ApiToken>
+    @InjectRepository(ApiToken) private readonly tokens: Repository<ApiToken>,
+    private readonly geoip: GeoipService
   ) {}
 
   private get retentionDays(): number {
@@ -108,7 +109,7 @@ export class ApiTokenAccessService {
       take: query.limit ?? DEFAULT_PAGE_SIZE,
     });
 
-    const countries = await countriesFor(items.map((row) => row.clientIp));
+    const countries = await this.geoip.countriesFor(items.map((row) => row.clientIp));
 
     return { items: items.map((row) => ({ ...row, country: countries.get(row.clientIp) ?? "" })), total };
   }

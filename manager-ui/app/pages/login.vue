@@ -177,7 +177,8 @@ async function onMfaSwitch() {
   if (!pending?.alternative) return;
   switching.value = true;
   try {
-    mfa.value = await auth.switchMfaMethod(pending.challenge, pending.alternative);
+    const next = await auth.switchMfaMethod(pending.challenge, pending.alternative);
+    mfa.value = { ...next, debug: next.debug ?? pending.debug };
     mfaAnswer.value = "";
   } catch (err) {
     if (apiErrorBody(err)?.code === "mfa.challengeExpired") mfa.value = null;
@@ -216,6 +217,7 @@ onMounted(resumeProviderSignIn);
         <p class="text-sm text-muted mt-1">
           {{ mfa.method === "email" ? t("login.mfaMailHint", { hint: mfa.hint ?? "" }) : t("login.mfaQuestionHint") }}
         </p>
+        <SecurityMfaDebug v-if="mfa.debug" :debug="mfa.debug" />
       </div>
 
       <template v-if="mfa.method === 'email'">

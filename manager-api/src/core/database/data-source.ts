@@ -31,6 +31,9 @@ import { GroupDomainPermission } from "../entities/group-domain-permission.entit
 import { GroupGlobalPermission } from "../entities/group-global-permission.entity";
 import { GroupMember } from "../entities/group-member.entity";
 import { MetricsHistory } from "../entities/metrics-history.entity";
+import { GeoipCache } from "../entities/geoip-cache.entity";
+import { AccountNetwork } from "../entities/account-network.entity";
+import { AccountAddress } from "../entities/account-address.entity";
 
 // Stand-alone DataSource used exclusively by the TypeORM CLI (migration:generate,
 // migration:run, migration:revert, migration:show). The Nest runtime keeps its
@@ -89,6 +92,9 @@ export default new DataSource({
     GroupGlobalPermission,
     GroupMember,
     MetricsHistory,
+    GeoipCache,
+    AccountNetwork,
+    AccountAddress,
   ],
   migrations: ["src/core/database/migrations/*.ts"],
   migrationsTableName: "migrations",

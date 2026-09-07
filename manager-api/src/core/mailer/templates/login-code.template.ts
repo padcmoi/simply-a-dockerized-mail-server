@@ -5,15 +5,23 @@
 export interface LoginCodeTemplateInput {
   code: string;
   minutes: number;
-  /** Left out on a resend, where the distance has already been explained. */
+  /** Left out on a resend, where the reason has already been explained. */
   distanceKm?: number;
+  /** The operator the sign-in came from, when it is one this account never used. */
+  network?: string;
+  absence?: boolean;
 }
 
 export function loginCodeEmail(input: LoginCodeTemplateInput) {
-  const { code, minutes, distanceKm } = input;
+  const { code, minutes, distanceKm, network, absence } = input;
 
-  const why = distanceKm
-    ? `This sign-in came from about ${distanceKm} km away from where this account usually signs in, so it has to be confirmed with a code.`
+  const reasons = [
+    distanceKm ? `about ${distanceKm} km away from where this account usually signs in` : "",
+    network ? `a network this account has never used (${network})` : "",
+    absence ? "somewhere this account has not signed in from for a long while" : "",
+  ].filter(Boolean);
+  const why = reasons.length
+    ? `This sign-in came from ${reasons.join(" and from ")}, so it has to be confirmed with a code.`
     : "This sign-in came from further away than this account usually signs in from, so it has to be confirmed with a code.";
 
   const text = [

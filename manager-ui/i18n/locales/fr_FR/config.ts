@@ -115,25 +115,50 @@ export default {
     cardTitle: "Rayon de connexion habituelle",
     alertTitle: "Connexion depuis un lieu inhabituel.",
     alertDescription:
-      "Chaque connexion réussie déplace le lieu habituel du compte là où elle s'est ouverte. Une connexion plus éloignée que ce rayon doit fournir une chose de plus que le mot de passe : le code de l'application d'authentification, un code envoyé par mail, ou la question de sécurité. Stocké en base, réservé aux comptes root.",
+      "Chaque session qui s'ouvre retient l'adresse d'où elle vient, avec ses coordonnées, et l'opérateur qui la détient. Une connexion depuis une adresse retenue est mesurée contre la fiche de cette adresse ; depuis une adresse inconnue, contre le lieu retenu le plus proche. Plus éloignée que ce rayon, ou venue d'un opérateur que le compte n'a jamais utilisé, elle doit fournir une chose de plus que le mot de passe : le code de l'application d'authentification, un code envoyé par mail, ou la question de sécurité. Stocké en base, réservé aux comptes root.",
     radius: "Rayon",
     radiusHint:
       "De 0 à 20037 km. La valeur est relue à chaque connexion : un changement s'applique à la suivante, pas au prochain redémarrage.",
     radiusUnit: "km",
     radiusInvalid: "Un nombre entier de kilomètres, entre 0 et 20037",
+    address: "Mémoire d'une adresse",
+    addressHint:
+      "De 1 à 365 jours, à compter de la dernière connexion depuis l'adresse. Tant qu'elle est retenue, y revenir ne demande rien : un défi réussi une fois vaut pour la suite. Passé ce délai, elle est oubliée et se mesure contre l'adresse retenue la plus proche ; s'il n'en reste aucune, la connexion demande une preuve.",
+    addressUnit: "jours",
+    addressInvalid: "Un nombre entier de jours, entre 1 et 365",
+    network: "Mémoire d'un opérateur",
+    networkHint:
+      "De 1 à 365 jours, à compter de la dernière connexion par l'opérateur, 180 jours par défaut, six mois. Passé ce délai, l'opérateur est oublié et sa ligne supprimée. Un compte qui revient alors que toutes ses adresses ou tous ses opérateurs ont expiré doit fournir une preuve, comme s'il venait de loin.",
+    networkUnit: "jours",
+    networkInvalid: "Un nombre entier de jours, entre 1 et 365",
     order: "Ordre de priorité",
     orderHint:
-      "Ce qui est demandé en premier à une connexion trop éloignée. Si le premier ne peut pas être proposé, l'envoi de mail n'étant pas configuré ou la question n'ayant jamais été choisie, le second prend le relais.",
+      "Ce qui est demandé en premier à une connexion trop éloignée. Si le premier ne peut pas être proposé, l'envoi de mail n'étant pas configuré ou la question n'ayant jamais été choisie, le second prend le relais, sauf si l'exclusivité ci-dessous est activée.",
     orderMailFirst: "1. Le code par mail, 2. la question de sécurité",
     orderQuestionFirst: "1. La question de sécurité, 2. le code par mail",
+    exclusive: "Uniquement l'un ou l'autre",
+    exclusiveHint:
+      "Activé, seule la première preuve de l'ordre est proposée : la question de sécurité sans jamais envoyer de code, ou le code par mail sans jamais poser la question. Le second ne prend plus le relais et la bascule sous le formulaire de connexion disparaît. Désactivé par défaut.",
+    exclusiveOn: "Activé, une seule preuve",
+    exclusiveOff: "Désactivé, le second prend le relais",
+    exclusiveTitle: "Une seule preuve, sans secours.",
+    exclusiveQuestionOnly:
+      "Seule la question de sécurité est posée, aucun code n'est envoyé par mail. Un compte dont un administrateur a réinitialisé la question ouvre sa session sans preuve jusqu'à ce qu'il en choisisse une nouvelle, et le journal d'activité l'inscrit.",
+    exclusiveMailOnly:
+      "Seul le code par mail est envoyé, la question de sécurité n'est jamais posée. Envoi de mail non configuré ou en échec : la session s'ouvre sans preuve, et le journal d'activité l'inscrit.",
     twoFactorTitle: "La double authentification passe toujours devant.",
     twoFactorDescription:
       "Un compte muni de l'application d'authentification n'est jamais interrogé en plus : son code répond déjà à la distance, et cet ordre ne le concerne pas. La connexion éloignée reste inscrite au journal d'activité.",
     offTitle: "Contrôle désactivé.",
     offDescription:
-      "À zéro, plus aucune connexion n'est interrogée, quelle que soit la distance. Le mot de passe seul suffit à ouvrir une session.",
-    accuracyNote:
-      "La distance est mesurée localement, sans appel réseau ni service tiers, puis élargie à la précision que la base de géolocalisation annonce : un fournisseur qui répond le centre du pays ne transforme jamais un déplacement de quartier en demande de code.",
+      "À zéro, la distance n'est plus regardée, quelle qu'elle soit. Un opérateur jamais utilisé par le compte demande toujours une preuve.",
+    cache: "Durée du cache",
+    cacheHint:
+      "De 1 à 365 jours. Une adresse garde la réponse du fournisseur pendant ce temps, dans une table que tout le serveur partage : une adresse déjà vue ne ressort jamais du serveur.",
+    cacheUnit: "jours",
+    cacheInvalid: "Un nombre entier de jours, entre 1 et 365",
+    providerNote:
+      "Les coordonnées et l'opérateur sont demandés à un service de géolocalisation d'IP, ipwho.is par défaut, gratuit et sans clé. Une adresse inconnue en sort une fois, puis vit en cache. Panne, quota épuisé ou adresse non résolue : la session s'ouvre et l'événement est journalisé, une donnée absente n'enferme jamais personne dehors.",
     save: "Enregistrer",
     saved: "Rayon enregistré",
     saveFailed: "Échec de l'enregistrement",

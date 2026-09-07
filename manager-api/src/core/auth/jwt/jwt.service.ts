@@ -6,7 +6,7 @@ import { In, IsNull, MoreThan, Not, Repository } from "typeorm";
 import { PaginationQuery, resolveSearchColumn, resolveSortColumn } from "../../common/pagination.validation";
 import { scryptHash, scryptVerify } from "../../common/scrypt";
 import { ApiError } from "../../common/api-error";
-import { IpLocation } from "../../common/geoip";
+import { IpLocation } from "../../geoip/geoip.service";
 import { Account } from "../../entities/account.entity";
 import { ACCOUNT_GENDERS, AccountGender, AccountProfile, composeDisplayName } from "../../entities/account-profile.entity";
 import { GroupMember } from "../../entities/group-member.entity";
@@ -116,27 +116,27 @@ export class JwtAuthService {
   // is, and asking for a mailed code on top of it would add nothing.
   async openSessionFor(account: Account, ua?: string, ip?: string) {
     const where = await this.risk.locate(ip);
-    const far = await this.risk.isFar(account.id, where);
-    // The authenticator app answers the distance on its own: an account that
-    // carries one is never asked for a code by mail or its question on top, so
-    // a far-away sign-in costs it nothing beyond the code it was going to type
-    // anyway. The journal still says it came from far away.
+    const { suspicious } = await this.risk.assess(account, where);
+    // The authenticator app answers the distance and the operator on its own:
+    // an account that carries one is never asked for a code by mail or its
+    // question on top, so a suspicious sign-in costs it nothing beyond the code
+    // it was going to type anyway. The journal still says where it came from.
     if (await this.twoFactor.isEnabled(account.id)) {
-      if (far) await this.mfaLogin.noteTwoFactor(account, far);
+      if (suspicious) await this.mfaLogin.noteTwoFactor(account, suspicious);
       const { challenge, expiresAt } = this.challenges.mint(account.id);
       return { twoFactorRequired: true as const, challenge, expiresAt: expiresAt.toISOString() };
     }
-    if (far) {
-      const asked = await this.mfaLogin.open(account, far);
+    if (suspicious) {
+      const asked = await this.mfaLogin.open(account, suspicious);
       if (asked) return asked;
     }
     return this.finishSession(account, ua, ip, where);
   }
 
   // The far-away sign-in's second step: the challenge names the account whose
-  // password was accepted, the code or the answer proves the rest. The place it
-  // came from becomes the account's new usual place, so the next sign-in from
-  // there walks straight in.
+  // password was accepted, the code or the answer proves the rest. The address
+  // it came from is then one the account knows, so the next sign-in from there
+  // walks straight in.
   async completeMfa(challenge: string, answer: string, ua?: string, ip?: string) {
     const accountId = await this.mfaLogin.verify(challenge, answer);
     const account = await this.accounts.findOne({ where: { id: accountId, enabled: 1 } });
@@ -176,11 +176,8 @@ export class JwtAuthService {
     account.lastLogin = new Date();
     await this.accounts.save(account);
     await this.activity.record({ action: "auth.login", actorId: account.id });
-    // Every session that opens moves the account's usual place to where it
-    // opened, whether it walked straight in or answered a challenge first.
-    // `where` is passed in when the caller has already looked the address up,
-    // so a plain sign-in reads the dataset once rather than twice.
-    await this.mfa.rememberPlace(account.id, where === undefined ? await this.risk.locate(ip) : where);
+    const seen = where === undefined ? await this.risk.locate(ip) : where;
+    await this.risk.remember(account.id, seen, ip);
     // One live session per device: a re-login from the same device (same UA +
     // IP) revokes that device's earlier still-valid tokens first. Without this
     // every sign-in stacked another active token, so the list showed many

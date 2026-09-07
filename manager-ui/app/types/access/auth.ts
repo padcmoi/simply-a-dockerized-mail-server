@@ -61,6 +61,17 @@ export interface MfaChallenge {
   // offer it: absent on a server that cannot send mail, or for an account with
   // no security question. The button appears only where this does.
   alternative?: "email" | "question";
+  // Development only, never sent by a production API: the two places and the
+  // measure between them, so a challenge can be traced while developing.
+  debug?: MfaDebug;
+}
+
+export interface MfaDebug {
+  distanceKm: number | null;
+  thresholdKm: number;
+  reasons: ("distance" | "network" | "expired")[];
+  from: { kind: "address" | "nearest"; ip: string; city: string; latitude: number; longitude: number } | null;
+  to: { city: string; countryCode: string; latitude: number; longitude: number; asn: number | null; asnOrg: string } | null;
 }
 
 export interface SecurityQuestionStatus {

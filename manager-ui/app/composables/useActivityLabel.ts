@@ -31,6 +31,33 @@ function keyOf(action: string) {
 export function useActivityLabel() {
   const { t, te } = useI18n();
 
+  // What made a sign-in suspicious, in the reader's language: the distance,
+  // the operator, or both. A line written before the operator existed carries
+  // no reasons and reads as the distance it always was.
+  function whereOf(details: Record<string, unknown>) {
+    const reasons = Array.isArray(details.reasons) ? details.reasons : ["distance"];
+    const operator =
+      typeof details.asnOrg === "string" && details.asnOrg
+        ? details.asnOrg
+        : typeof details.asn === "number"
+          ? `AS${details.asn}`
+          : "";
+    const parts: string[] = [];
+    if (reasons.includes("distance")) {
+      parts.push(t("activity.farByDistance", { distanceKm: typeof details.distanceKm === "number" ? details.distanceKm : "" }));
+    }
+    if (reasons.includes("network")) {
+      parts.push(
+        t("activity.farByNetwork", {
+          operator,
+          countryCode: typeof details.countryCode === "string" ? details.countryCode : "",
+        })
+      );
+    }
+    if (reasons.includes("expired")) parts.push(t("activity.farByExpired"));
+    return parts.join(t("activity.farJoin"));
+  }
+
   function label(row: ActivityRow) {
     const key = `activity.event.${keyOf(row.action)}`;
     if (!te(key)) return row.action;
@@ -42,6 +69,7 @@ export function useActivityLabel() {
       fields: Array.isArray(details.fields) ? details.fields.join(", ") : "",
       email: typeof details.email === "string" ? details.email : "",
       distanceKm: typeof details.distanceKm === "number" ? details.distanceKm : "",
+      where: whereOf(details),
       // What answered the distance, in the reader's language: the raw key would
       // say "two-factor" in the middle of a French sentence.
       method:

@@ -212,6 +212,8 @@ onMounted(load);
         </UCard>
       </div>
 
+      <SecurityKnownNetworks v-if="canEdit" :account-id="accountId" />
+
       <OwnedResourcesCards :domains="domains" :recipients="recipients" />
     </template>
   </div>

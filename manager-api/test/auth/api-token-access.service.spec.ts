@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { NotFoundException } from "@nestjs/common";
 import { Like } from "typeorm";
 import { ApiTokenAccessService } from "../../src/core/auth/api-token/api-token-access.service";
 import type { ApiToken } from "../../src/core/auth/api-token/api-token.entity";
 import type { ApiTokenAccess } from "../../src/core/auth/api-token/api-token-access.entity";
-import { entity, repoMock } from "../helpers/mocks";
+import type { GeoipService } from "../../src/core/geoip/geoip.service";
+import { entity, providerMock, repoMock } from "../helpers/mocks";
 
 const ENTRY = {
   clientId: "cid",
@@ -31,6 +32,7 @@ const flush = () => new Promise((resolve) => setImmediate(resolve));
 describe("ApiTokenAccessService", () => {
   let trail: ReturnType<typeof repoMock<ApiTokenAccess>>;
   let tokens: ReturnType<typeof repoMock<ApiToken>>;
+  let geoip: ReturnType<typeof providerMock<GeoipService>>;
   let svc: ApiTokenAccessService;
 
   beforeEach(() => {
@@ -38,7 +40,10 @@ describe("ApiTokenAccessService", () => {
     tokens = repoMock<ApiToken>();
     tokens.findOne.mockResolvedValue(entity<ApiToken>({ id: 7, accountId: "acc-1", clientId: "cid" }));
     trail.findAndCount.mockResolvedValue([[], 0]);
-    svc = new ApiTokenAccessService(trail, tokens);
+    geoip = providerMock<GeoipService>({
+      countriesFor: vi.fn(async (ips: string[]) => new Map(ips.map((ip) => [ip, ip === "8.8.8.8" ? "US" : ""]))),
+    });
+    svc = new ApiTokenAccessService(trail, tokens, geoip);
   });
 
   afterEach(() => {

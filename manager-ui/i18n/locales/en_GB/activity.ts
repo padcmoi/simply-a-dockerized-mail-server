@@ -24,6 +24,10 @@ export default {
   deviceOn: "{browser} on {os}",
   unknownDevice: "Unknown device",
   empty: "No activity.",
+  farByDistance: "{distanceKm} km from their usual place",
+  farByNetwork: "from an operator never used before ({operator}, {countryCode})",
+  farByExpired: "after a long absence, its address or operator memory having expired",
+  farJoin: " and ",
   method: {
     email: "code sent by mail",
     question: "security question",
@@ -71,7 +75,7 @@ export default {
   event: {
     auth_login: "Signed in",
     auth_login_refused: "Sign-in refused for {email}",
-    auth_login_far: "Signed in {distanceKm} km from their usual place: {method}",
+    auth_login_far: "Signed in {where}: {method}",
     auth_mfa_refused: "Far-away sign-in verification refused",
     "auth_security-question_set": "Chose their security question",
     "auth_security-question_reset": "Security question reset by an administrator",

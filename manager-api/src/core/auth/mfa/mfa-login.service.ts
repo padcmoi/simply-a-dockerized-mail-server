@@ -7,7 +7,7 @@ import { Account } from "../../entities/account.entity";
 import { ActivityLogService } from "../../activity/activity-log.service";
 import { MailerService } from "../../mailer/mailer.service";
 import { AppSettingsService } from "../../settings/app-settings.service";
-import { FarAway } from "./login-risk.service";
+import { FarAway, LoginRiskDebug } from "./login-risk.service";
 import { MfaChallengeStore, MfaMethod } from "./mfa-challenge.store";
 import { MfaService } from "./mfa.service";
 
@@ -32,6 +32,8 @@ export interface MfaRequired {
    * cannot be offered at all -- no mail configured, no question chosen.
    */
   alternative?: MfaMethod;
+  /** Development only: the two places and the measure, for tracing a sign-in. */
+  debug?: LoginRiskDebug;
 }
 
 // "julien@gestionpratique.ovh" -> "j***@gestionpratique.ovh". Enough for the
@@ -43,6 +45,11 @@ function maskEmail(email: string) {
 }
 
 const sixDigits = () => String(randomInt(0, 1_000_000)).padStart(6, "0");
+
+function operatorOf(far: FarAway) {
+  const name = far.asnOrg || (far.asn ? `AS${far.asn}` : "");
+  return name && far.countryCode ? `${name}, ${far.countryCode}` : name;
+}
 
 @Injectable()
 export class MfaLoginService {
@@ -65,7 +72,16 @@ export class MfaLoginService {
     return this.activity.record({
       action: "auth.login.far",
       actorId: account.id,
-      details: { distanceKm: far.distanceKm, thresholdKm: far.thresholdKm, method },
+      details: {
+        distanceKm: far.distanceKm,
+        thresholdKm: far.thresholdKm,
+        countryCode: far.countryCode,
+        asn: far.asn,
+        asnOrg: far.asnOrg,
+        city: far.city,
+        reasons: far.reasons,
+        method,
+      },
     });
   }
 
@@ -73,15 +89,15 @@ export class MfaLoginService {
     return this.note(account, far, "two-factor");
   }
 
-  // What to ask of a sign-in that came from too far away, in the order the
-  // server was told to prefer, skipping whatever cannot be offered: no mail
-  // configured or a send that fails, no question chosen. Null when neither can
-  // be asked -- the session then opens, because refusing would lock the owner
-  // of a server that has no mail configured out of their own manager, and the
-  // event is on record either way.
+  private offered(): MfaMethod[] {
+    const { loginChallengeOrder, loginChallengeExclusive } = this.appSettings.get();
+    const order = loginChallengeOrder.split(",") as MfaMethod[];
+    return loginChallengeExclusive ? order.slice(0, 1) : order;
+  }
+
   async open(account: Account, far: FarAway): Promise<MfaRequired | null> {
-    for (const method of this.appSettings.get().loginChallengeOrder.split(",") as MfaMethod[]) {
-      const asked = method === "email" ? await this.askByMail(account, far) : await this.askTheQuestion(account);
+    for (const method of this.offered()) {
+      const asked = method === "email" ? await this.askByMail(account, far) : await this.askTheQuestion(account, far);
       if (asked) {
         await this.note(account, far, method);
         return { ...asked, alternative: (await this.otherWay(account.id, method)) ?? undefined };
@@ -89,7 +105,7 @@ export class MfaLoginService {
     }
 
     await this.note(account, far, "none");
-    this.log.warn(`Account ${account.id} signed in from ${far.distanceKm} km away with nothing to prove it with`);
+    this.log.warn(`Account ${account.id} signed in (${far.reasons.join("+")}) with nothing to prove it with`);
     return null;
   }
 
@@ -101,7 +117,9 @@ export class MfaLoginService {
       await this.mailer.sendLoginCode({
         to: account.email,
         code,
-        distanceKm: far.distanceKm,
+        distanceKm: far.reasons.includes("distance") ? (far.distanceKm ?? undefined) : undefined,
+        network: far.reasons.includes("network") ? operatorOf(far) : undefined,
+        absence: far.reasons.includes("expired"),
         minutes: CODE_TTL_MINUTES,
       });
       return {
@@ -110,6 +128,7 @@ export class MfaLoginService {
         challenge,
         expiresAt: expiresAt.toISOString(),
         hint: maskEmail(account.email),
+        debug: far.debug,
       };
     } catch (e) {
       this.challenges.settle(challenge);
@@ -118,29 +137,34 @@ export class MfaLoginService {
     }
   }
 
-  private async askTheQuestion(account: Account): Promise<MfaRequired | null> {
+  private async askTheQuestion(account: Account, far: FarAway): Promise<MfaRequired | null> {
     const question = await this.mfa.questionOf(account.id);
     if (!question) return null;
     const { challenge, expiresAt } = this.challenges.mint(account.id, "question");
-    return { mfaRequired: true, method: "question", challenge, expiresAt: expiresAt.toISOString(), question };
+    return {
+      mfaRequired: true,
+      method: "question",
+      challenge,
+      expiresAt: expiresAt.toISOString(),
+      question,
+      debug: far.debug,
+    };
   }
 
-  // Whether the proof this challenge is not using could be offered instead:
-  // mail only where mail is configured, the question only where one has been
-  // chosen. Null when there is no other way, and the browser then offers none.
   private async otherWay(accountId: string, current: MfaMethod): Promise<MfaMethod | null> {
-    if (current === "email") return (await this.mfa.questionOf(accountId)) ? "question" : null;
+    const other: MfaMethod = current === "email" ? "question" : "email";
+    if (!this.offered().includes(other)) return null;
+    if (other === "question") return (await this.mfa.questionOf(accountId)) ? "question" : null;
     return (await this.mailer.isEnabled()) ? "email" : null;
   }
 
-  // The same challenge, proved the other way. The identifier, the deadline and
-  // the tries already spent are the ones it had: switching swaps the proof, it
-  // never buys a fresh set of guesses. Asking for the method it already uses is
-  // a resend of the code, or the question said again.
   async switchTo(challenge: string, method: MfaMethod): Promise<MfaRequired> {
     const entry = this.challenges.peek(challenge);
     if (!entry) {
       throw new ApiError(HttpStatus.UNAUTHORIZED, "mfa.challengeExpired", "Start the sign-in again");
+    }
+    if (!this.offered().includes(method)) {
+      throw new ApiError(HttpStatus.CONFLICT, "mfa.methodUnavailable", "This server offers no other proof");
     }
     const account = await this.accounts.findOne({ where: { id: entry.accountId } });
     if (!account) {

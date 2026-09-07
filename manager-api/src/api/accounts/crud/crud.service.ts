@@ -13,6 +13,7 @@ import { VirtualUser } from "../../../core/entities/virtual-user.entity";
 import { GeocodingService } from "../../../core/geocoding/geocoding.service";
 import { TwoFactorService } from "../../../core/auth/two-factor/two-factor.service";
 import { MfaService } from "../../../core/auth/mfa/mfa.service";
+import { LoginRiskService } from "../../../core/auth/mfa/login-risk.service";
 import { JwtAuthService } from "../../../core/auth/jwt/jwt.service";
 import type { UpdateAccountDto } from "./crud.validation";
 import { ActivityLogService } from "../../../core/activity/activity-log.service";
@@ -60,8 +61,17 @@ export class AccountsService {
     private readonly twoFactor: TwoFactorService,
     private readonly mfa: MfaService,
     private readonly activity: ActivityLogService,
-    private readonly jwtAuth: JwtAuthService
+    private readonly jwtAuth: JwtAuthService,
+    private readonly risk: LoginRiskService
   ) {}
+
+  networksOf(id: string) {
+    return this.risk.listFor(id);
+  }
+
+  forgetNetwork(id: string, countryCode: string, asn: number) {
+    return this.risk.forget(id, countryCode.toUpperCase().slice(0, 2), asn);
+  }
 
   // `notInGroup` (a group id) filters out accounts that are already members of
   // that group, so a group's "add member" picker only offers assignable

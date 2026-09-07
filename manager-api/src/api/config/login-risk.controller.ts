@@ -14,14 +14,25 @@ export class LoginRiskController {
   @Get()
   @GetLoginRiskDocs()
   get() {
-    const view = this.settings.get();
-    return { loginRadiusKm: view.loginRadiusKm, loginChallengeOrder: view.loginChallengeOrder };
+    return this.view();
   }
 
   @Put()
   @UpdateLoginRiskDocs()
   async update(@Body(new ZodValidationPipe(updateLoginRiskSchema)) body: UpdateLoginRiskDto) {
-    const view = await this.settings.update(body);
-    return { loginRadiusKm: view.loginRadiusKm, loginChallengeOrder: view.loginChallengeOrder };
+    await this.settings.update(body);
+    return this.view();
+  }
+
+  private view() {
+    const view = this.settings.get();
+    return {
+      loginRadiusKm: view.loginRadiusKm,
+      loginChallengeOrder: view.loginChallengeOrder,
+      loginChallengeExclusive: view.loginChallengeExclusive,
+      geoipCacheDays: view.geoipCacheDays,
+      loginAddressDays: view.loginAddressDays,
+      loginNetworkDays: view.loginNetworkDays,
+    };
   }
 }

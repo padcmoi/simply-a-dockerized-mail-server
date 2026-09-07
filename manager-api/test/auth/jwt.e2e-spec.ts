@@ -11,6 +11,7 @@ import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
 import { ACTIVITY_ACTIONS, ActivityLogService } from "../../src/core/activity/activity-log.service";
+import { LoginRiskService } from "../../src/core/auth/mfa/login-risk.service";
 
 // The login route verifies credentials through the real `local` provider, so it
 // is registered here with an account repo double. Only the hashing is stubbed:
@@ -48,6 +49,10 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
   const recipientQuotaRepo = { find: vi.fn().mockResolvedValue([]) };
   const accountRepo = { findOne: vi.fn() };
   const activity = { record: vi.fn(async () => undefined), listForAccount: vi.fn() };
+  const risk = {
+    listFor: vi.fn(async (): Promise<unknown[]> => []),
+    forget: vi.fn(async () => ({ forgotten: true })),
+  };
 
   beforeAll(async () => {
     h = await buildHarness({
@@ -55,6 +60,7 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
       providers: [
         { provide: JwtAuthService, useValue: auth },
         { provide: ActivityLogService, useValue: activity },
+        { provide: LoginRiskService, useValue: risk },
         LocalProvider,
         { provide: getRepositoryToken(Account), useValue: accountRepo },
         { provide: getRepositoryToken(VirtualDomain), useValue: domainRepo },
@@ -412,6 +418,35 @@ describe("JwtAuthController (e2e: public + authenticated, no ACL)", () => {
         .set(bearer(h.token(USER)))
         .expect(200);
       expect(res.body.domainPermissions[0].domainName).toBe("two.test");
+    });
+  });
+
+  describe("me/networks (authenticated, no ACL)", () => {
+    it("401 without a token", async () => {
+      await api().get("/api/v1/auth/jwt/me/networks").expect(401);
+      await api().delete("/api/v1/auth/jwt/me/networks/FR/3215").expect(401);
+    });
+    it("lists the caller's own operators", async () => {
+      risk.listFor.mockResolvedValueOnce([{ countryCode: "FR", asn: 3215, asnOrg: "Orange", addresses: [] }]);
+      const res = await api()
+        .get("/api/v1/auth/jwt/me/networks")
+        .set(bearer(h.token(USER)))
+        .expect(200);
+      expect(res.body).toEqual([{ countryCode: "FR", asn: 3215, asnOrg: "Orange", addresses: [] }]);
+      expect(risk.listFor).toHaveBeenCalledWith(USER.id);
+    });
+    it("forgets one of the caller's operators, the number parsed", async () => {
+      await api()
+        .delete("/api/v1/auth/jwt/me/networks/FR/3215")
+        .set(bearer(h.token(USER)))
+        .expect(200);
+      expect(risk.forget).toHaveBeenCalledWith(USER.id, "FR", 3215);
+    });
+    it("400 on an operator number that is not one", async () => {
+      await api()
+        .delete("/api/v1/auth/jwt/me/networks/FR/orange")
+        .set(bearer(h.token(USER)))
+        .expect(400);
     });
   });
 });

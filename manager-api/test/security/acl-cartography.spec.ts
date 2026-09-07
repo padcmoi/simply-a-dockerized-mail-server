@@ -51,6 +51,8 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/auth/jwt/me/activity/actions",
   "GET /api/v1/auth/jwt/me/security-question",
   "PUT /api/v1/auth/jwt/me/security-question",
+  "GET /api/v1/auth/jwt/me/networks",
+  "DELETE /api/v1/auth/jwt/me/networks/:countryCode/:asn",
   "GET /api/v1/auth/jwt/me/two-factor",
   "POST /api/v1/auth/jwt/me/two-factor/enable",
   "POST /api/v1/auth/jwt/me/two-factor/recovery-codes",

@@ -33,6 +33,10 @@ describe("AppSettingsService", () => {
       row("passport_auto_provision", "boolean", "false"),
       row("login_radius_km", "number", "250"),
       row("login_challenge_order", "string", "email,question"),
+      row("login_challenge_exclusive", "boolean", "true"),
+      row("geoip_cache_days", "number", "45"),
+      row("login_address_days", "number", "15"),
+      row("login_network_days", "number", "90"),
     ]);
     await svc.reload();
     expect(svc.get()).toEqual({
@@ -46,6 +50,10 @@ describe("AppSettingsService", () => {
       passportAutoProvision: false,
       loginRadiusKm: 250,
       loginChallengeOrder: "email,question",
+      loginChallengeExclusive: true,
+      geoipCacheDays: 45,
+      loginAddressDays: 15,
+      loginNetworkDays: 90,
     });
   });
 

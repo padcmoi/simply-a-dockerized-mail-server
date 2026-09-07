@@ -1,13 +1,25 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import request from "supertest";
 import { LoginRiskController } from "../../src/api/config/login-risk.controller";
-import { MAX_LOGIN_RADIUS_KM } from "../../src/api/config/login-risk.validation";
+import {
+  MAX_GEOIP_CACHE_DAYS,
+  MAX_LOGIN_ADDRESS_DAYS,
+  MAX_LOGIN_NETWORK_DAYS,
+  MAX_LOGIN_RADIUS_KM,
+} from "../../src/api/config/login-risk.validation";
 import { RootGuard } from "../../src/core/auth/root.guard";
 import { AppSettingsService } from "../../src/core/settings/app-settings.service";
 import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
 
 const base = "/api/v1/config/login-risk";
-const SETTINGS = { loginRadiusKm: 100, loginChallengeOrder: "email,question" };
+const SETTINGS = {
+  loginRadiusKm: 100,
+  loginChallengeOrder: "email,question",
+  loginChallengeExclusive: false,
+  geoipCacheDays: 90,
+  loginAddressDays: 30,
+  loginNetworkDays: 180,
+};
 
 describe("LoginRiskController (e2e: root-only /config namespace)", () => {
   let h: Harness;
@@ -30,14 +42,13 @@ describe("LoginRiskController (e2e: root-only /config namespace)", () => {
   const root = () => `Bearer ${h.token(ROOT)}`;
   const user = () => `Bearer ${h.token(USER)}`;
   const attach = (t: request.Test, auth?: string) => (auth ? t.set("Authorization", auth) : t);
+  const put = (body: Record<string, unknown>) => api().put(base).set("Authorization", root()).send(body);
 
   const routes: { name: string; send: (auth?: string) => request.Test }[] = [
     { name: "GET", send: (a) => attach(api().get(base), a) },
     { name: "PUT", send: (a) => attach(api().put(base).send(SETTINGS), a) },
   ];
 
-  // Widening the radius is loosening what every account's sign-in has to prove:
-  // it belongs to root alone, and no account permission reaches it.
   describe("root-only guard", () => {
     for (const r of routes) {
       it(`401 without a token -- ${r.name}`, async () => {
@@ -55,14 +66,21 @@ describe("LoginRiskController (e2e: root-only /config namespace)", () => {
   });
 
   describe("as root", () => {
-    it("GET returns the radius and the order", async () => {
+    it("GET returns the radius, the order, the exclusivity and the three durations", async () => {
       const res = await api().get(base).set("Authorization", root()).expect(200);
       expect(res.body).toEqual(SETTINGS);
     });
 
-    it("PUT stores the radius and the order together", async () => {
-      const body = { loginRadiusKm: 250, loginChallengeOrder: "question,email" };
-      await api().put(base).set("Authorization", root()).send(body).expect(200);
+    it("PUT stores every field together", async () => {
+      const body = {
+        loginRadiusKm: 250,
+        loginChallengeOrder: "question,email",
+        loginChallengeExclusive: true,
+        geoipCacheDays: 45,
+        loginAddressDays: 15,
+        loginNetworkDays: 365,
+      };
+      await put(body).expect(200);
       expect(settings.update).toHaveBeenCalledWith(body);
     });
   });
@@ -73,51 +91,54 @@ describe("LoginRiskController (e2e: root-only /config namespace)", () => {
       ["further than half the globe", MAX_LOGIN_RADIUS_KM + 1],
       ["fractional", 12.5],
     ])("rejects a radius %s", async (_case, value) => {
-      await api()
-        .put(base)
-        .set("Authorization", root())
-        .send({ ...SETTINGS, loginRadiusKm: value })
-        .expect(400);
+      await put({ ...SETTINGS, loginRadiusKm: value }).expect(400);
       expect(settings.update).not.toHaveBeenCalled();
     });
 
-    // The authenticator app is never in the order: it comes first when the
-    // account has one, and it is then the only thing asked.
-    it.each([["an unknown method", "sms,email"], ["the app itself", "two-factor,email"], ["one method alone", "email"]])(
-      "rejects an order naming %s",
-      async (_case, value) => {
-        await api()
-          .put(base)
-          .set("Authorization", root())
-          .send({ ...SETTINGS, loginChallengeOrder: value })
-          .expect(400);
-        expect(settings.update).not.toHaveBeenCalled();
-      }
-    );
+    it.each([
+      ["an unknown method", "sms,email"],
+      ["the app itself", "two-factor,email"],
+      ["one method alone", "email"],
+    ])("rejects an order naming %s", async (_case, value) => {
+      await put({ ...SETTINGS, loginChallengeOrder: value }).expect(400);
+      expect(settings.update).not.toHaveBeenCalled();
+    });
 
     it("accepts either of the two orders", async () => {
       for (const order of ["email,question", "question,email"]) {
-        await api()
-          .put(base)
-          .set("Authorization", root())
-          .send({ ...SETTINGS, loginChallengeOrder: order })
-          .expect(200);
+        await put({ ...SETTINGS, loginChallengeOrder: order }).expect(200);
       }
     });
 
-    // Zero is the way to turn the check off, not a mistake.
+    it("rejects an exclusivity that is not a boolean", async () => {
+      for (const value of ["yes", 1, null]) {
+        await put({ ...SETTINGS, loginChallengeExclusive: value }).expect(400);
+      }
+      expect(settings.update).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["geoipCacheDays", MAX_GEOIP_CACHE_DAYS],
+      ["loginAddressDays", MAX_LOGIN_ADDRESS_DAYS],
+      ["loginNetworkDays", MAX_LOGIN_NETWORK_DAYS],
+    ])("keeps %s between one day and its ceiling", async (field, max) => {
+      for (const value of [0, max + 1, 1.5]) {
+        await put({ ...SETTINGS, [field]: value }).expect(400);
+      }
+      expect(settings.update).not.toHaveBeenCalled();
+      for (const value of [1, max]) {
+        await put({ ...SETTINGS, [field]: value }).expect(200);
+      }
+    });
+
     it("accepts zero and both ends of the allowed range", async () => {
       for (const loginRadiusKm of [0, MAX_LOGIN_RADIUS_KM]) {
-        await api()
-          .put(base)
-          .set("Authorization", root())
-          .send({ ...SETTINGS, loginRadiusKm })
-          .expect(200);
+        await put({ ...SETTINGS, loginRadiusKm }).expect(200);
       }
     });
 
     it("rejects a missing field rather than storing NaN", async () => {
-      await api().put(base).set("Authorization", root()).send({}).expect(400);
+      await put({}).expect(400);
       expect(settings.update).not.toHaveBeenCalled();
     });
   });

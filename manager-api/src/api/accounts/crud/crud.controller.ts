@@ -5,6 +5,8 @@ import { GlobalPermissionGuard } from "../../../core/custom-permission-guard/glo
 import { RequireGlobalPermissions } from "../../../core/custom-permission-guard/require-permissions.decorator";
 import {
   AccountsApi,
+  AdminAccountNetworksDocs,
+  AdminForgetAccountNetworkDocs,
   AssignableResourcesDocs,
   AttachResourceDocs,
   DetachResourceDocs,
@@ -102,6 +104,26 @@ export class AccountsController {
   @AdminResetSecurityQuestionDocs()
   resetSecurityQuestion(@Param("id", ParseUUIDPipe) id: string) {
     return this.svc.resetSecurityQuestion(id);
+  }
+
+  // The operators an account signs in from, for whoever may edit it, with the
+  // same power the account has to forget one.
+  @Get(":id/networks")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "edit-account"] }])
+  @AdminAccountNetworksDocs()
+  accountNetworks(@Param("id", ParseUUIDPipe) id: string) {
+    return this.svc.networksOf(id);
+  }
+
+  @Delete(":id/networks/:countryCode/:asn")
+  @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "edit-account"] }])
+  @AdminForgetAccountNetworkDocs()
+  forgetAccountNetwork(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("countryCode") countryCode: string,
+    @Param("asn", ParseIntPipe) asn: number
+  ) {
+    return this.svc.forgetNetwork(id, countryCode, asn);
   }
 
   // Ownership management (global): a recipient/alias belongs to at most one

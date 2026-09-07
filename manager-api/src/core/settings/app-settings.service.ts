@@ -42,6 +42,11 @@ export interface AppSettingsView {
   loginRadiusKm: number;
   /** In what order the two proofs are offered when neither is the app's code. */
   loginChallengeOrder: LoginChallengeOrder;
+  loginChallengeExclusive: boolean;
+  /** How long an address keeps the answer the geolocation provider gave for it. */
+  geoipCacheDays: number;
+  loginAddressDays: number;
+  loginNetworkDays: number;
 }
 
 interface FieldSpec {
@@ -60,6 +65,10 @@ const FIELDS: Record<keyof AppSettingsView, FieldSpec> = {
   passportAutoProvision: { key: "passport_auto_provision", type: "boolean" },
   loginRadiusKm: { key: "login_radius_km", type: "number" },
   loginChallengeOrder: { key: "login_challenge_order", type: "string" },
+  loginChallengeExclusive: { key: "login_challenge_exclusive", type: "boolean" },
+  geoipCacheDays: { key: "geoip_cache_days", type: "number" },
+  loginAddressDays: { key: "login_address_days", type: "number" },
+  loginNetworkDays: { key: "login_network_days", type: "number" },
 };
 
 export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
@@ -89,6 +98,10 @@ export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
   // the spot, and it costs no outbound mail. The code stands in behind it, for
   // an account whose question a reset has just cleared.
   loginChallengeOrder: "question,email",
+  loginChallengeExclusive: false,
+  geoipCacheDays: 90,
+  loginAddressDays: 30,
+  loginNetworkDays: 180,
 };
 
 @Injectable()
@@ -133,6 +146,10 @@ export class AppSettingsService implements OnModuleInit {
       passportAutoProvision: bool(FIELDS.passportAutoProvision, APP_SETTINGS_DEFAULTS.passportAutoProvision),
       loginRadiusKm: num(FIELDS.loginRadiusKm, APP_SETTINGS_DEFAULTS.loginRadiusKm),
       loginChallengeOrder: order(FIELDS.loginChallengeOrder, APP_SETTINGS_DEFAULTS.loginChallengeOrder),
+      loginChallengeExclusive: bool(FIELDS.loginChallengeExclusive, APP_SETTINGS_DEFAULTS.loginChallengeExclusive),
+      geoipCacheDays: num(FIELDS.geoipCacheDays, APP_SETTINGS_DEFAULTS.geoipCacheDays),
+      loginAddressDays: num(FIELDS.loginAddressDays, APP_SETTINGS_DEFAULTS.loginAddressDays),
+      loginNetworkDays: num(FIELDS.loginNetworkDays, APP_SETTINGS_DEFAULTS.loginNetworkDays),
     };
     return this.cache;
   }

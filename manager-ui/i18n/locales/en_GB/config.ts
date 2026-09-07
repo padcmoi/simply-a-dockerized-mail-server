@@ -113,25 +113,50 @@ export default {
     cardTitle: "The usual sign-in radius",
     alertTitle: "A sign-in from an unusual place.",
     alertDescription:
-      "Every session that opens moves the account's usual place to where it opened. A sign-in further from it than this radius has to hand over one thing more than the password: the authenticator app's code, a code sent by mail, or the security question. Stored in the database, root accounts only.",
+      "Every session that opens remembers the address it came from, with its coordinates, and the operator holding it. A sign-in from a known address is measured against that address's own record; one from an unknown address, against the nearest known place. Further than this radius, or from an operator the account has never used, it has to hand over one thing more than the password: the authenticator app's code, a code sent by mail, or the security question. Stored in the database, root accounts only.",
     radius: "Radius",
     radiusHint:
       "From 0 to 20037 km. The value is read on every sign-in: a change applies to the next one, not at the next restart.",
     radiusUnit: "km",
     radiusInvalid: "A whole number of kilometres, between 0 and 20037",
+    address: "Address memory",
+    addressHint:
+      "From 1 to 365 days, counted from the last sign-in from the address. While it is known, coming back from it asks for nothing: a challenge passed once holds. Past that, it is forgotten and measured against the nearest known address; when none is left, the sign-in asks for a proof.",
+    addressUnit: "days",
+    addressInvalid: "A whole number of days, between 1 and 365",
+    network: "Operator memory",
+    networkHint:
+      "From 1 to 365 days, counted from the last sign-in through the operator, 180 days by default, six months. Past that, the operator is forgotten and its row deleted. An account coming back once all its addresses or all its operators have expired has to hand over a proof, as if it came from far away.",
+    networkUnit: "days",
+    networkInvalid: "A whole number of days, between 1 and 365",
     order: "Priority order",
     orderHint:
-      "What a sign-in from too far away is asked for first. When the first cannot be offered, because outbound mail is not configured or the question has never been chosen, the second stands in.",
+      "What a sign-in from too far away is asked for first. When the first cannot be offered, because outbound mail is not configured or the question has never been chosen, the second stands in, unless the exclusivity below is on.",
     orderMailFirst: "1. The code by mail, 2. the security question",
     orderQuestionFirst: "1. The security question, 2. the code by mail",
+    exclusive: "Only one or the other",
+    exclusiveHint:
+      "On, only the first proof of the order is offered: the security question with no code ever sent, or the code by mail with the question never asked. The second no longer stands in and the switch under the sign-in form disappears. Off by default.",
+    exclusiveOn: "On, a single proof",
+    exclusiveOff: "Off, the second stands in",
+    exclusiveTitle: "A single proof, with nothing behind it.",
+    exclusiveQuestionOnly:
+      "Only the security question is asked, no code is ever sent by mail. An account whose question an administrator has reset opens its session without a proof until it chooses a new one, and the activity log records it.",
+    exclusiveMailOnly:
+      "Only the code by mail is sent, the security question is never asked. Outbound mail not configured or failing: the session opens without a proof, and the activity log records it.",
     twoFactorTitle: "Two-factor authentication always comes first.",
     twoFactorDescription:
       "An account carrying the authenticator app is never asked anything more: its code already answers the distance, and this order does not concern it. The far-away sign-in is still written to the activity log.",
     offTitle: "The check is off.",
     offDescription:
-      "At zero no sign-in is ever asked anything, however far it comes from. The password alone opens a session.",
-    accuracyNote:
-      "The distance is measured locally, with no network call and no third party, then widened by the accuracy the geolocation dataset admits to: a provider answering the middle of the country never turns a move across town into a code request.",
+      "At zero the distance is no longer looked at, whatever it is. An operator the account has never used still asks for a proof.",
+    cache: "Cache duration",
+    cacheHint:
+      "From 1 to 365 days. An address keeps the provider's answer for that long, in a table the whole server shares: an address already seen never leaves the server again.",
+    cacheUnit: "days",
+    cacheInvalid: "A whole number of days, between 1 and 365",
+    providerNote:
+      "The coordinates and the operator are asked of an IP geolocation service, ipwho.is by default, free and without a key. An unknown address leaves the server once, then lives in the cache. An outage, an exhausted quota or an address that says nothing: the session opens and the event is journalled, missing data never locks anyone out.",
     save: "Save",
     saved: "Radius saved",
     saveFailed: "Failed to save",

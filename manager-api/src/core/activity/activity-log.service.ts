@@ -4,7 +4,7 @@ import { Repository } from "typeorm";
 import { resolveSearchColumn, resolveSortColumn, type PaginatedResult } from "../common/pagination.validation";
 import { Account } from "../entities/account.entity";
 import { ActivityLog } from "../entities/activity-log.entity";
-import { countriesFor } from "../common/geoip";
+import { GeoipService } from "../geoip/geoip.service";
 import { currentActivityContext } from "./activity-context";
 import type { ActivityListQuery } from "./activity-log.validation";
 
@@ -97,7 +97,10 @@ export interface ActivityRow {
 export class ActivityLogService {
   private readonly logger = new Logger(ActivityLogService.name);
 
-  constructor(@InjectRepository(ActivityLog) private readonly rows: Repository<ActivityLog>) {}
+  constructor(
+    @InjectRepository(ActivityLog) private readonly rows: Repository<ActivityLog>,
+    private readonly geoip: GeoipService
+  ) {}
 
   // Never throws: a journal that could fail the action it describes would be
   // a second way for that action to fail, and the action is what matters.
@@ -157,7 +160,7 @@ export class ActivityLogService {
       .skip(query.offset)
       .take(query.limit ?? DEFAULT_PAGE_SIZE)
       .getRawAndEntities();
-    const countries = await countriesFor(entities.map((row) => row.ip).filter((ip): ip is string => !!ip));
+    const countries = await this.geoip.countriesFor(entities.map((row) => row.ip).filter((ip): ip is string => !!ip));
     const items = entities.map((row, i) => ({
       id: row.id,
       action: row.action as ActivityAction,

@@ -2,7 +2,6 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { ApiError } from "../../common/api-error";
-import { GeoPoint } from "../../common/haversine";
 import { AccountMfa } from "../../entities/account-mfa.entity";
 import { ActivityLogService } from "../../activity/activity-log.service";
 import { hashAnswer, matchAnswer } from "./security-answer";
@@ -41,33 +40,6 @@ export class MfaService {
   // image running ahead of its migration must serve sign-ins, not refuse them.
   private rowOf(accountId: string) {
     return this.rows.findOne({ where: { accountId } }).catch(() => null);
-  }
-
-  async placeOf(accountId: string): Promise<GeoPoint | null> {
-    const row = await this.rowOf(accountId);
-    if (!row?.loginLatitude || !row.loginLongitude) return null;
-    const latitude = Number(row.loginLatitude);
-    const longitude = Number(row.loginLongitude);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-    return { latitude, longitude };
-  }
-
-  // Every session that opens moves the point to where it opened, whether it
-  // walked straight in or answered a challenge first. The place therefore
-  // travels with its owner, and only a jump longer than the radius costs a
-  // proof. Best effort: a sign-in must not fail because this could not be
-  // written.
-  async rememberPlace(accountId: string, place: GeoPoint | null) {
-    if (!place) return;
-    try {
-      const row = (await this.rowOf(accountId)) ?? this.rows.create({ accountId });
-      row.loginLatitude = place.latitude.toFixed(7);
-      row.loginLongitude = place.longitude.toFixed(7);
-      row.loginSeenAt = new Date();
-      await this.rows.save(row);
-    } catch {
-      // The place is a convenience, not a credential.
-    }
   }
 
   async status(accountId: string): Promise<SecurityQuestionStatus> {
@@ -144,8 +116,7 @@ export class MfaService {
 
   // The only way back for someone who no longer remembers their own answer,
   // and it is an administrator's, never the account's own: a question a session
-  // could rewrite would protect nothing. The account's usual sign-in place is
-  // left alone, and the next sign-in asks for a new question.
+  // could rewrite would protect nothing. The next sign-in asks for a new question.
   async resetQuestion(accountId: string) {
     const row = await this.rowOf(accountId);
     if (!row?.answerHash) return { reset: false };

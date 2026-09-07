@@ -24,57 +24,6 @@ describe("MfaService", () => {
     svc = new MfaService(m.rows, m.activity);
   });
 
-  describe("the place a sign-in is compared against", () => {
-    it("is null while the account has none", async () => {
-      m.rows.findOne.mockResolvedValue(null);
-      expect(await svc.placeOf("a1")).toBeNull();
-    });
-
-    it("is read back as numbers, whatever the driver hands over as strings", async () => {
-      m.rows.findOne.mockResolvedValue(entity<AccountMfa>({ loginLatitude: "43.4330308", loginLongitude: "6.7360182" }));
-      expect(await svc.placeOf("a1")).toEqual({ latitude: 43.4330308, longitude: 6.7360182 });
-    });
-
-    it("is null when the stored pair is not a pair of numbers", async () => {
-      m.rows.findOne.mockResolvedValue(entity<AccountMfa>({ loginLatitude: "north", loginLongitude: "6.7" }));
-      expect(await svc.placeOf("a1")).toBeNull();
-    });
-
-    // A table that does not exist yet is the state of every server between the
-    // deploy and its migration. A sign-in must go through it.
-    it("is null rather than an error when the row cannot be read at all", async () => {
-      m.rows.findOne.mockRejectedValue(new Error("Table 'account_mfa' doesn't exist"));
-      expect(await svc.placeOf("a1")).toBeNull();
-    });
-  });
-
-  describe("remembering where a session opened", () => {
-    it("writes the point on the account's row, to seven decimals", async () => {
-      m.rows.findOne.mockResolvedValue(null);
-      await svc.rememberPlace("a1", { latitude: 43.7009358, longitude: 7.2683912 });
-      expect(m.rows.save).toHaveBeenCalledWith(
-        expect.objectContaining({ accountId: "a1", loginLatitude: "43.7009358", loginLongitude: "7.2683912" })
-      );
-    });
-
-    it("moves the point of an account that already had one", async () => {
-      m.rows.findOne.mockResolvedValue(entity<AccountMfa>({ accountId: "a1", loginLatitude: "1", loginLongitude: "2" }));
-      await svc.rememberPlace("a1", { latitude: 48.8566, longitude: 2.3522 });
-      expect(m.rows.save).toHaveBeenCalledWith(expect.objectContaining({ loginLatitude: "48.8566000" }));
-    });
-
-    it("writes nothing when the address could not be placed", async () => {
-      await svc.rememberPlace("a1", null);
-      expect(m.rows.save).not.toHaveBeenCalled();
-    });
-
-    it("swallows a write that fails: a place is a convenience, not a credential", async () => {
-      m.rows.findOne.mockResolvedValue(null);
-      m.rows.save.mockRejectedValue(new Error("disk full"));
-      await expect(svc.rememberPlace("a1", { latitude: 1, longitude: 2 })).resolves.toBeUndefined();
-    });
-  });
-
   describe("the security question", () => {
     it("is reported as unset when no row carries an answer, catalogue included", async () => {
       m.rows.findOne.mockResolvedValue(entity<AccountMfa>({ question: "father", answerHash: null }));
@@ -145,12 +94,8 @@ describe("MfaService", () => {
       expect(m.rows.save).not.toHaveBeenCalled();
     });
 
-    // A row can exist carrying only the account's usual place: that is not a
-    // question, and choosing one then is the first choice, not a replacement.
-    it("takes the first question on a row that only holds a place", async () => {
-      m.rows.findOne.mockResolvedValue(
-        entity<AccountMfa>({ accountId: "a1", loginLatitude: "43.4", loginLongitude: "6.7", answerHash: null })
-      );
+    it("takes the first question on a row that carries none yet", async () => {
+      m.rows.findOne.mockResolvedValue(entity<AccountMfa>({ accountId: "a1", question: null, answerHash: null }));
       await expect(svc.setQuestion("a1", "father", "Joel")).resolves.toMatchObject({ set: true });
     });
   });
@@ -177,20 +122,10 @@ describe("MfaService", () => {
   });
 
   describe("an administrator clearing the question", () => {
-    it("removes the question and the answer, and leaves the place alone", async () => {
-      m.rows.findOne.mockResolvedValue(
-        entity<AccountMfa>({
-          accountId: "a1",
-          question: "father",
-          answerHash: "h",
-          loginLatitude: "43.4",
-          loginLongitude: "6.7",
-        })
-      );
+    it("removes the question and the answer", async () => {
+      m.rows.findOne.mockResolvedValue(entity<AccountMfa>({ accountId: "a1", question: "father", answerHash: "h" }));
       expect(await svc.resetQuestion("a1")).toEqual({ reset: true });
-      expect(m.rows.save).toHaveBeenCalledWith(
-        expect.objectContaining({ question: null, answerHash: null, loginLatitude: "43.4" })
-      );
+      expect(m.rows.save).toHaveBeenCalledWith(expect.objectContaining({ accountId: "a1", question: null, answerHash: null }));
       expect(m.activity.record).toHaveBeenCalledWith(expect.objectContaining({ action: "auth.security-question.reset" }));
     });
 

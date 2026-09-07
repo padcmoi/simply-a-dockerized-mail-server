@@ -295,15 +295,34 @@ export interface Locales {
       radiusHint: string;
       radiusUnit: string;
       radiusInvalid: string;
+      address: string;
+      addressHint: string;
+      addressUnit: string;
+      addressInvalid: string;
+      network: string;
+      networkHint: string;
+      networkUnit: string;
+      networkInvalid: string;
       order: string;
       orderHint: string;
       orderMailFirst: string;
       orderQuestionFirst: string;
+      exclusive: string;
+      exclusiveHint: string;
+      exclusiveOn: string;
+      exclusiveOff: string;
+      exclusiveTitle: string;
+      exclusiveQuestionOnly: string;
+      exclusiveMailOnly: string;
       twoFactorTitle: string;
       twoFactorDescription: string;
       offTitle: string;
       offDescription: string;
-      accuracyNote: string;
+      cache: string;
+      cacheHint: string;
+      cacheUnit: string;
+      cacheInvalid: string;
+      providerNote: string;
       save: string;
       saved: string;
       saveFailed: string;
@@ -806,6 +825,16 @@ export interface Locales {
     mfaSwitchToMail: string;
     mfaSwitchToQuestion: string;
     mfaSwitchFailed: string;
+    mfaDebugTitle: string;
+    mfaDebugDistance: string;
+    mfaDebugThreshold: string;
+    mfaDebugFrom: string;
+    mfaDebugFromAddress: string;
+    mfaDebugFromNearest: string;
+    mfaDebugTo: string;
+    mfaDebugOperator: string;
+    mfaDebugReasons: string;
+    mfaDebugUnknown: string;
   };
   dashboard: {
     subtitle: string;
@@ -2020,6 +2049,10 @@ export interface Locales {
     deviceOn: string;
     unknownDevice: string;
     empty: string;
+    farByDistance: string;
+    farByNetwork: string;
+    farByExpired: string;
+    farJoin: string;
     method: Record<string, string>;
     action: Record<string, string>;
     event: Record<string, string>;
@@ -2066,5 +2099,25 @@ export interface Locales {
     postfix: string;
     postfixWaiting: string;
     postfixUnavailable: string;
+  };
+  // The operators an account signs in from: the list a sign-in is measured
+  // against, shown to the account itself and to whoever may edit it.
+  known: {
+    networksTitle: string;
+    networksCardHint: string;
+    networksAlertTitle: string;
+    networksAlertDescription: string;
+    networksEmpty: string;
+    networksEmptyHint: string;
+    networksFooter: string;
+    seenCount: string;
+    lastSeen: string;
+    forgetNetwork: string;
+    networkForgotten: string;
+    forgetFailed: string;
+    loadFailed: string;
+    networkKeptUntil: string;
+    addressKeptUntil: string;
+    addressesNone: string;
   };
 }

@@ -25,6 +25,10 @@ export default {
   deviceOn: "{browser} sur {os}",
   unknownDevice: "Appareil inconnu",
   empty: "Aucune activité.",
+  farByDistance: "à {distanceKm} km de son lieu habituel",
+  farByNetwork: "depuis un opérateur jamais utilisé ({operator}, {countryCode})",
+  farByExpired: "après une longue absence, sa mémoire d'adresses ou d'opérateurs ayant expiré",
+  farJoin: " et ",
   method: {
     email: "code envoyé par mail",
     question: "question de sécurité",
@@ -72,7 +76,7 @@ export default {
   event: {
     auth_login: "S'est connecté",
     auth_login_refused: "Connexion refusée pour {email}",
-    auth_login_far: "S'est connecté à {distanceKm} km de son lieu habituel : {method}",
+    auth_login_far: "S'est connecté {where} : {method}",
     auth_mfa_refused: "Vérification de connexion éloignée refusée",
     "auth_security-question_set": "A choisi sa question de sécurité",
     "auth_security-question_reset": "Question de sécurité réinitialisée par un administrateur",

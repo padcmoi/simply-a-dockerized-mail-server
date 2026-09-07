@@ -431,3 +431,42 @@ export const JwtUpdateProfileDocs = () =>
       },
     })
   );
+
+const networkExample = {
+  countryCode: "FR",
+  asn: 3215,
+  asnOrg: "Orange S.A.",
+  lastCity: "Sainte-Maxime",
+  lastIp: "90.116.244.74",
+  loginCount: 12,
+  firstSeenAt: "2026-09-01T08:00:00.000Z",
+  lastSeenAt: "2026-09-07T07:10:00.000Z",
+};
+
+export const JwtMeNetworksDocs = () =>
+  applyDecorators(
+    ApiSecurity("apiToken"),
+    ApiOperation({
+      summary: "List the operators the authenticated account signs in from",
+      description:
+        "Self-scoped: one row per country and autonomous system the account has already signed in from, newest " +
+        "first. A sign-in from an operator absent from this list is asked for a second proof, whatever the distance.",
+    }),
+    ApiResponse({ status: 200, description: "Known networks returned", schema: { example: [networkExample] } }),
+    ApiResponse({ status: 401, description: "Missing or invalid access token / API key" })
+  );
+
+export const JwtForgetMyNetworkDocs = () =>
+  applyDecorators(
+    ApiSecurity("apiToken"),
+    ApiParam({ name: "countryCode", type: String, description: "ISO 3166-1 alpha-2 country of the network" }),
+    ApiParam({ name: "asn", type: Number, description: "Autonomous system number of the network" }),
+    ApiOperation({
+      summary: "Forget one of the authenticated account's operators",
+      description:
+        "Self-scoped: the next sign-in from that operator asks for a proof again. Idempotent; forgetting an " +
+        "operator that is not known answers that nothing was forgotten.",
+    }),
+    ApiResponse({ status: 200, description: "Network forgotten", schema: { example: { forgotten: true } } }),
+    ApiResponse({ status: 401, description: "Missing or invalid access token / API key" })
+  );

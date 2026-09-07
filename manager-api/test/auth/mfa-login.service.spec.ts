@@ -5,11 +5,20 @@ import { APP_SETTINGS_DEFAULTS, type AppSettingsService } from "../../src/core/s
 import type { ActivityLogService } from "../../src/core/activity/activity-log.service";
 import type { MailerService } from "../../src/core/mailer/mailer.service";
 import type { MfaService } from "../../src/core/auth/mfa/mfa.service";
+import type { FarAway } from "../../src/core/auth/mfa/login-risk.service";
 import type { Account } from "../../src/core/entities/account.entity";
 import { entity, providerMock, repoMock } from "../helpers/mocks";
 
 const ACCOUNT = entity<Account>({ id: "a1", email: "julien@example.com" });
-const FAR = { distanceKm: 680, thresholdKm: 100 };
+const FAR: FarAway = {
+  distanceKm: 680,
+  thresholdKm: 100,
+  countryCode: "FR",
+  asn: 3215,
+  asnOrg: "Orange",
+  city: "Paris",
+  reasons: ["distance"],
+};
 
 function makeMocks() {
   const accounts = repoMock<Account>();
@@ -36,12 +45,18 @@ describe("MfaLoginService.open", () => {
   const preferring = (loginChallengeOrder: "email,question" | "question,email") =>
     m.settings.get.mockReturnValue({ ...APP_SETTINGS_DEFAULTS, loginChallengeOrder });
 
-  it("records the distance and what it ended up asking for", async () => {
+  it("records the distance, the operator, the reasons and what it ended up asking for", async () => {
     await svc.open(ACCOUNT, FAR);
     expect(m.activity.record).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "auth.login.far",
-        details: { distanceKm: 680, thresholdKm: 100, method: "email" },
+        details: expect.objectContaining({
+          distanceKm: 680,
+          thresholdKm: 100,
+          asn: 3215,
+          reasons: ["distance"],
+          method: "email",
+        }),
       })
     );
   });
@@ -92,6 +107,15 @@ describe("MfaLoginService.open", () => {
     expect(m.mailer.sendLoginCode).toHaveBeenCalledWith(
       expect.objectContaining({ to: "julien@example.com", code: expect.stringMatching(/^\d{6}$/), distanceKm: 680 })
     );
+  });
+
+  it("names the operator to the mail when that is what played, and the absence when the memory expired", async () => {
+    await svc.open(ACCOUNT, { ...FAR, reasons: ["network"] });
+    expect(m.mailer.sendLoginCode).toHaveBeenLastCalledWith(
+      expect.objectContaining({ network: "Orange, FR", distanceKm: undefined, absence: false })
+    );
+    await svc.open(ACCOUNT, { ...FAR, distanceKm: null, reasons: ["expired"] });
+    expect(m.mailer.sendLoginCode).toHaveBeenLastCalledWith(expect.objectContaining({ absence: true, network: undefined }));
   });
 
   it("never puts the code in its own answer", async () => {
@@ -152,6 +176,57 @@ describe("MfaLoginService.open, the other way it offers", () => {
 
     m.mailer.isEnabled.mockResolvedValue(false);
     expect((await svc.open(ACCOUNT, FAR))?.alternative).toBeUndefined();
+  });
+});
+
+describe("MfaLoginService, one proof only", () => {
+  let m: ReturnType<typeof makeMocks>;
+  let svc: MfaLoginService;
+
+  beforeEach(() => {
+    m = makeMocks();
+    svc = new MfaLoginService(m.accounts, m.mfa, m.challenges, m.mailer, m.activity, m.settings);
+  });
+
+  const only = (loginChallengeOrder: "email,question" | "question,email") =>
+    m.settings.get.mockReturnValue({ ...APP_SETTINGS_DEFAULTS, loginChallengeOrder, loginChallengeExclusive: true });
+
+  it("asks the question alone, never the mail, when the question comes first", async () => {
+    only("question,email");
+    m.mfa.questionOf.mockResolvedValue("Your father's first name?");
+    const asked = await svc.open(ACCOUNT, FAR);
+    expect(asked).toMatchObject({ method: "question" });
+    expect(asked?.alternative).toBeUndefined();
+    expect(m.mailer.sendLoginCode).not.toHaveBeenCalled();
+  });
+
+  it("asks nothing rather than the mail when the question was never chosen", async () => {
+    only("question,email");
+    expect(await svc.open(ACCOUNT, FAR)).toBeNull();
+    expect(m.mailer.sendLoginCode).not.toHaveBeenCalled();
+    expect(m.activity.record).toHaveBeenCalledWith(
+      expect.objectContaining({ details: expect.objectContaining({ method: "none" }) })
+    );
+  });
+
+  it("sends the code alone and offers no question beside it", async () => {
+    only("email,question");
+    m.mfa.questionOf.mockResolvedValue("Your father's first name?");
+    const asked = await svc.open(ACCOUNT, FAR);
+    expect(asked).toMatchObject({ method: "email" });
+    expect(asked?.alternative).toBeUndefined();
+  });
+
+  it("refuses to switch a live challenge to the other proof", async () => {
+    only("email,question");
+    m.mfa.questionOf.mockResolvedValue("Your father's first name?");
+    const code = m.challenges.mint("a1", "email", "111111");
+    await expect(svc.switchTo(code.challenge, "question")).rejects.toMatchObject({ status: 409 });
+
+    only("question,email");
+    const question = m.challenges.mint("a1", "question");
+    await expect(svc.switchTo(question.challenge, "email")).rejects.toMatchObject({ status: 409 });
+    expect(m.mailer.sendLoginCode).not.toHaveBeenCalled();
   });
 });
 
@@ -251,7 +326,7 @@ describe("MfaLoginService.noteTwoFactor", () => {
       expect.objectContaining({
         action: "auth.login.far",
         actorId: "a1",
-        details: { distanceKm: 680, thresholdKm: 100, method: "two-factor" },
+        details: expect.objectContaining({ distanceKm: 680, thresholdKm: 100, reasons: ["distance"], method: "two-factor" }),
       })
     );
     expect(m.mailer.sendLoginCode).not.toHaveBeenCalled();
