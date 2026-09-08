@@ -5,25 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0-rc.5] - 2026-09-08
 
 ### Added
 
-- feat(auth): a sign-in from an operator the account has never used is asked for a proof, whatever the distance (07-09-2026)
-- feat(auth): in development only, the unusual sign-in screen shows the measured distance, both places and the reasons (07-09-2026)
-- feat(auth): the first proof of the order can be made the only one, with no fallback and no switch on the sign-in screen (07-09-2026)
-- feat(auth): the number of days an address and an operator stay known to an account, on the unusual sign-in page (07-09-2026)
-
-### Changed
-
-- feat(auth): the coordinates and the operator of an address come from a live provider and are cached in the database (07-09-2026)
-- feat(auth): a sign-in is measured against the record of its own address when the account already knows it, otherwise against the nearest known address, so a proof given once from an address holds until it expires (07-09-2026)
-- feat(auth): an account coming back after all its addresses or all its operators have expired is asked for a proof (07-09-2026)
-
-### Fixed
-
-- fix(auth): an IPv6 sign-in is located at all, where every address that was not four octets read as reserved (07-09-2026)
-- fix(hooks): the pre-commit hook no longer refuses the section headings the first entry after a release brings back (07-09-2026)
+- Known addresses and operators decide an unusual sign-in _(auth)_ [bdfa81e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bdfa81ee6997583137ad00bd9cde71f762f71c61) (07-09-2026)
 
 ## [2.0.0-rc.4] - 2026-09-06
 
@@ -31,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Every tag of the running line can be read on /about _(ui)_ [6e8cbc9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6e8cbc9e1a3f3bb07ac642d56fc5ab8342da1d18) (06-09-2026)
 - The release and the changelog of the running tag are two tabs on /about _(ui)_ [cba91bd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cba91bd8bc5cef622a3d1ca26a4eb7c007bf5812) (06-09-2026)
+
+### Changed
+
+- The tabs, the tag select and the VERSION fix are the 2.0.0-rc.4 release _(changelog)_ [acb6142](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/acb6142f912750a79ae76b0f2d5a0a72c9720fb5) (06-09-2026)
+- Rebuild from semver _(changelog)_ [7dad67f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7dad67f3147e195ef85182482fdbe13449a89aad) (06-09-2026)
 
 ### Fixed
 
@@ -653,7 +644,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban host-net jails for postfix and dovecot _(security)_ [9695664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/969566492b99ceb9cfee3ed4bac32bb477f35b32) (27-06-2026)
 - Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [974519a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/974519a4a91a0d2a44c7595a530e2f4c9fa70506) (08-01-2025)
 - Merge branch 'main' into feature/security-fail2ban-firewall [cf7c1a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf7c1a1d6f9d90db6b3a71e852aeeba06668f623) (07-01-2025)
-[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.4...HEAD
+[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.5...HEAD
+[2.0.0-rc.5]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.4...v2.0.0-rc.5
 [2.0.0-rc.4]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.3...v2.0.0-rc.4
 [2.0.0-rc.3]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.2...v2.0.0-rc.3
 [2.0.0-rc.2]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.1...v2.0.0-rc.2
