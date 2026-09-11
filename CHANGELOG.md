@@ -5,11 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0-rc.6] - 2026-09-11
 
 ### Changed
 
-- chore(release): the 1.1.8 hotfix of the 1.x line is merged back, its Dockerfile stays deleted and its entry lives in CHANGELOG.V1.md (11-09-2026)
+- Merge tag '1.1.8' into develop, the 1.x Dockerfile stays deleted and the 1.1.8 entry lives in CHANGELOG.V1.md [2d8d111](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2d8d11172ba14d9de6d95e6ea55d58cb2e2e2124) (11-09-2026)
+
+### Fixed
+
+- The 1.x image pins apt to a frozen Debian snapshot after bullseye end of LTS _(docker)_ [901c574](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/901c5747a7534303876300b41f9463bc7b31cd3f) (11-09-2026)
 
 ## [2.0.0-rc.5] - 2026-09-08
 
@@ -650,7 +654,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban host-net jails for postfix and dovecot _(security)_ [9695664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/969566492b99ceb9cfee3ed4bac32bb477f35b32) (27-06-2026)
 - Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [974519a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/974519a4a91a0d2a44c7595a530e2f4c9fa70506) (08-01-2025)
 - Merge branch 'main' into feature/security-fail2ban-firewall [cf7c1a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf7c1a1d6f9d90db6b3a71e852aeeba06668f623) (07-01-2025)
-[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.5...HEAD
+[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.6...HEAD
+[2.0.0-rc.6]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.5...v2.0.0-rc.6
 [2.0.0-rc.5]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.4...v2.0.0-rc.5
 [2.0.0-rc.4]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.3...v2.0.0-rc.4
 [2.0.0-rc.3]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.2...v2.0.0-rc.3
