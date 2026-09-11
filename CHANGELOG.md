@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.8] - 2026-09-11
+### Fixed
+- The image builds again after Debian 11 end of LTS: apt uses a frozen snapshot.debian.org mirror, bullseye-security included
+
 ## [1.1.2] - 2025-01-31
 ### Added
 - Adds the first changelog

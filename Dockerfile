@@ -1,5 +1,13 @@
 FROM debian:bullseye
 
+# Bullseye reached end of LTS and bullseye-security is gone from deb.debian.org, so apt is pinned to a frozen snapshot
+RUN printf '%s\n' \
+    'deb http://snapshot.debian.org/archive/debian/20260824T000000Z bullseye main' \
+    'deb http://snapshot.debian.org/archive/debian-security/20260824T000000Z bullseye-security main' \
+    'deb http://snapshot.debian.org/archive/debian/20260824T000000Z bullseye-updates main' \
+    > /etc/apt/sources.list
+RUN printf '%s\n' 'Acquire::Check-Valid-Until "false";' 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/99bullseye-snapshot
+
 # Update, remove useless and install require package
 RUN apt update
 RUN apt autoremove -y exim4
