@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.8] - 2026-09-11
+
+### Fixed
+
+- Pin apt to a frozen Debian snapshot after bullseye end of LTS _(docker)_ [901c574](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/901c5747a7534303876300b41f9463bc7b31cd3f) (11-09-2026)
+
 ## [1.1.7] - 2025-09-24
 
 ### Changed

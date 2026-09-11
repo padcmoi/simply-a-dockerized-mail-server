@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- chore(release): the 1.1.8 hotfix of the 1.x line is merged back, its Dockerfile stays deleted and its entry lives in CHANGELOG.V1.md (11-09-2026)
+
 ## [2.0.0-rc.5] - 2026-09-08
 
 ### Added
