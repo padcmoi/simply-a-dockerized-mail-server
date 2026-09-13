@@ -1,6 +1,5 @@
 export interface Locales {
   app: {
-    name: string;
     language: string;
   };
   // Mirrors API_ERROR_CODES in manager-api/src/core/common/api-error.ts: the
@@ -797,7 +796,6 @@ export interface Locales {
     providerRefused: string;
     signingIn: string;
     or: string;
-    title: string;
     subtitle: string;
     email: string;
     emailInvalid: string;

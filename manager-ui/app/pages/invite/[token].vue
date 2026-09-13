@@ -5,6 +5,7 @@ import { useAuthStore } from "~/stores/auth";
 definePageMeta({ layout: "auth" });
 
 const route = useRoute();
+const appName = useAppName();
 const { t } = useI18n();
 const toast = useToast();
 const auth = useAuthStore();
@@ -158,7 +159,7 @@ onMounted(async () => {
           <UIcon name="i-lucide-mail" class="text-primary text-xl" />
         </div>
         <div>
-          <h1 class="font-semibold text-lg">{{ t("app.name") }}</h1>
+          <h1 class="font-semibold text-lg">{{ appName }}</h1>
           <p class="text-xs text-muted">{{ t("invite.subtitle") }}</p>
         </div>
       </div>

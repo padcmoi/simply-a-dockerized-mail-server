@@ -42,7 +42,8 @@ cd /var/docker/simply-a-dockerized-mail-server
 
 What it does, in order:
 
-1. Prompts for `MAIL_HOSTNAME`, `MAIL_PUBLIC_IP`, `TLS_CERT_NAME` and the
+1. Prompts for `MANAGER_APP_NAME`, the name the manager shows (24 characters
+   at most), then `MAIL_HOSTNAME`, `MAIL_PUBLIC_IP`, `TLS_CERT_NAME` and the
    primary mail domain. Already-set values are not asked again.
 2. Fills any `change_me_*` placeholder in `.env` with a random secret
    (DB, JWT and admin passwords).

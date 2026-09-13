@@ -199,6 +199,11 @@ if ! stage_done config; then
 	echo
 	c "configuration"
 
+	APP_NAME=$(prompt_re "Name the manager shows (sidebar, sign-in screen, authenticator app)" "Simply Mail Server" \
+		'^[^"=|&\\]{1,24}$' \
+		"1 to 24 characters, without quotes, =, |, & or backslash")
+	env_set MANAGER_APP_NAME "\"$APP_NAME\""
+
 	# Prompt for the FQDN in a loop: a Let's Encrypt cert for it must already
 	# exist on the host. Re-prompt until the user enters a name whose cert is
 	# present (or Ctrl-C). Only persist to .env once the check passes.

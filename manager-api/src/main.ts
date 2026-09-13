@@ -5,6 +5,7 @@ import { WsAdapter } from "@nestjs/platform-ws";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { activityContextMiddleware } from "./core/activity/activity-context";
+import { appName } from "./core/common/app-name";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -28,7 +29,7 @@ async function bootstrap() {
   app.enableCors({ origin: true, credentials: true });
 
   const swagger = new DocumentBuilder()
-    .setTitle("Simply Mail Server - Manager API")
+    .setTitle(`${appName()} - Manager API`)
     .setDescription("REST API for managing domains, mailboxes, aliases, quotas and sieve rules.")
     .setVersion("1.0.0")
     .addApiKey(

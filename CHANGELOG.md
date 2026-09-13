@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- feat(config): the name the manager shows comes from MANAGER_APP_NAME in the .env, asked at installation and capped at 24 characters (13-09-2026)
+
 ## [2.0.0-rc.6] - 2026-09-11
 
 ### Changed

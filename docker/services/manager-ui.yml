@@ -6,6 +6,7 @@ services:
       context: ../../manager-ui
     environment:
       NUXT_PUBLIC_API_BASE: /api
+      NUXT_PUBLIC_APP_NAME: ${MANAGER_APP_NAME:-Simply Mail Server}
       NUXT_API_PROXY_TARGET: http://manager-api:3000
       NUXT_REALTIME_TARGET: ws://manager-api:3001
       NODE_ENV: production

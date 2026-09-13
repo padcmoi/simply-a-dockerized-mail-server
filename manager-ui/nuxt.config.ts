@@ -1,3 +1,7 @@
+import { clampAppName } from "./app/utils/appName";
+
+const appName = clampAppName(process.env.NUXT_PUBLIC_APP_NAME);
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-01-01",
   devtools: { enabled: process.env.NODE_ENV === "development" },
@@ -52,11 +56,7 @@ export default defineNuxtConfig({
     },
   },
   ssr: true,
-  // The name every tab falls back to, on a page with no breadcrumb to name it
-  // (login, an invitation, an error). A page inside the app replaces it with
-  // its own trail, see provideBreadcrumb. Not translated: it is the product's
-  // name, identical in every locale (i18n/locales/*/app.ts).
-  app: { head: { title: "Simply Mail Server" } },
+  app: { head: { title: appName } },
   css: ["~/assets/css/main.css"],
   // Bundle every `i-lucide-*` icon used in templates into the client output
   // so they render offline / behind a strict CSP that blocks the iconify CDN.
@@ -79,7 +79,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     apiProxyTarget: process.env.NUXT_API_PROXY_TARGET ?? "http://mail-manager-api:3000",
     realtimeTarget: process.env.NUXT_REALTIME_TARGET ?? "ws://mail-manager-api:3001",
-    public: { apiBase: process.env.NUXT_PUBLIC_API_BASE ?? "/api" },
+    public: { apiBase: process.env.NUXT_PUBLIC_API_BASE ?? "/api", appName },
   },
   nitro: {
     experimental: { websocket: true },

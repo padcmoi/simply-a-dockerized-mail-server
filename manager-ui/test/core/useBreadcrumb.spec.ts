@@ -17,6 +17,7 @@ beforeEach(() => {
   vi.stubGlobal("useHead", (input: { title: { value: string } }) => {
     head = input;
   });
+  vi.stubGlobal("useAppName", () => "Simply Mail Server");
 });
 
 describe("useBreadcrumb", () => {
@@ -50,22 +51,22 @@ describe("useBreadcrumb", () => {
 describe("the page title the breadcrumb names", () => {
   it("is the app name alone until a page has placed itself", () => {
     provideBreadcrumb();
-    expect(head?.title.value).toBe("app.name");
+    expect(head?.title.value).toBe("Simply Mail Server");
   });
 
   it("joins the trail with the app name", () => {
     provideBreadcrumb();
     const ctx = useBreadcrumb();
     ctx.set([{ label: "Configuration", to: "/admin/config" }, { label: "Connexion externe" }]);
-    expect(head?.title.value).toBe("app.name :: Configuration > Connexion externe");
+    expect(head?.title.value).toBe("Simply Mail Server :: Configuration > Connexion externe");
   });
 
   it("follows the trail as the page changes it", () => {
     provideBreadcrumb();
     const ctx = useBreadcrumb();
     ctx.set([{ label: "Domaines", to: "/admin/domains" }]);
-    expect(head?.title.value).toBe("app.name :: Domaines");
+    expect(head?.title.value).toBe("Simply Mail Server :: Domaines");
     ctx.set([]);
-    expect(head?.title.value).toBe("app.name");
+    expect(head?.title.value).toBe("Simply Mail Server");
   });
 });

@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from "crypto";
+import { appName } from "../../common/app-name";
 
 // Time-based one-time passwords as every authenticator app computes them
 // (RFC 6238 over RFC 4226): HMAC-SHA1 of the 30-second step counter, dynamically
@@ -10,7 +11,7 @@ export const TOTP_PERIOD_SECONDS = 30;
 // One step either side of the current one: a clock a few seconds off, or a code
 // typed just as it rolled over, is still accepted.
 export const TOTP_WINDOW = 1;
-export const TOTP_ISSUER = "Simply Mail Server";
+export const totpIssuer = () => appName();
 
 // RFC 4648 base32, the only encoding authenticator apps read a secret in.
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
@@ -89,10 +90,11 @@ export function matchTotp(secret: string, code: string, lastUsedStep: number | n
 // parameters spelled out even though they are the defaults, so an app that
 // reads them strictly and one that ignores them compute the same code.
 export function otpauthUri(email: string, secret: string) {
-  const label = encodeURIComponent(`${TOTP_ISSUER}:${email}`);
+  const issuer = totpIssuer();
+  const label = encodeURIComponent(`${issuer}:${email}`);
   const params = new URLSearchParams({
     secret,
-    issuer: TOTP_ISSUER,
+    issuer,
     algorithm: "SHA1",
     digits: String(TOTP_DIGITS),
     period: String(TOTP_PERIOD_SECONDS),

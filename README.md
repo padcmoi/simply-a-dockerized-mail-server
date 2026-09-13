@@ -57,7 +57,7 @@ external MTA  -->  postfix smtpd
 
 ```bash
 cp .env.sample .env
-$EDITOR .env              # set MAIL_HOSTNAME, MAIL_PUBLIC_IP, TLS_CERT_NAME
+$EDITOR .env              # set MAIL_HOSTNAME, MAIL_PUBLIC_IP, TLS_CERT_NAME, MANAGER_APP_NAME
 ./install.sh              # generates secrets, seeds admin account
 ./service.sh up           # build + start full stack
 ```

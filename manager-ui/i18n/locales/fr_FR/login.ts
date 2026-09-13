@@ -5,7 +5,6 @@ export default {
   providerRefused: "Connexion refusée par le serveur",
   signingIn: "Connexion en cours...",
   or: "ou",
-  title: "Simply Mail Server",
   subtitle: "Connectez-vous pour gérer les domaines, destinataires et alias.",
   email: "Email",
   emailInvalid: "Email invalide",

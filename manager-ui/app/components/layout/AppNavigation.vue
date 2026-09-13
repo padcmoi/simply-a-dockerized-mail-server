@@ -10,6 +10,7 @@ const domainStore = useDomainStore();
 const auth = useAuthStore();
 const { isOnline } = usePresence();
 const route = useRoute();
+const appName = useAppName();
 const { t } = useI18n();
 const isMobile = useMediaQuery("(max-width: 1023px)");
 
@@ -73,7 +74,15 @@ async function onSignOut() {
     }"
   >
     <template #header>
-      <UButton :label="t('app.name')" color="neutral" variant="ghost" square to="/my-space" class="w-full overflow-hidden">
+      <UButton
+        :label="appName"
+        color="neutral"
+        variant="ghost"
+        square
+        to="/my-space"
+        class="w-full overflow-hidden"
+        :ui="{ label: 'truncate' }"
+      >
         <template #leading>
           <img src="~/assets/favicon.svg" alt="" width="24" height="24" class="size-6 shrink-0" />
         </template>

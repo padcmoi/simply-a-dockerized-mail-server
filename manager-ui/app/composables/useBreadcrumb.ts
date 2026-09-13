@@ -10,7 +10,7 @@ const BreadcrumbKey: InjectionKey<{
 // the header bar draws it in place of a title, and the browser tab is built
 // from it too, so a page declares its position once and both follow.
 export function provideBreadcrumb() {
-  const { t } = useI18n();
+  const appName = useAppName();
   const items: Ref<BreadcrumbItem[]> = ref([]);
   provide(BreadcrumbKey, {
     items,
@@ -26,7 +26,7 @@ export function provideBreadcrumb() {
   useHead({
     title: computed(() => {
       const trail = items.value.map((i) => String(i.label ?? "")).filter(Boolean);
-      return trail.length ? `${t("app.name")} :: ${trail.join(" > ")}` : t("app.name");
+      return trail.length ? `${appName} :: ${trail.join(" > ")}` : appName;
     }),
   });
 
