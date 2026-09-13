@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- fix(docker): the manager-ui image build gives Node a 4 GB heap, the default 2 GB dies on the Nitro server step on a small host (13-09-2026)
+
 ## [2.0.0-rc.7] - 2026-09-13
 
 ### Added
