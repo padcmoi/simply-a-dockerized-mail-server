@@ -14,23 +14,23 @@ const { t, locale } = useI18n();
 const tag = computed(() => locale.value.replace("_", "-"));
 const count = (value: number) => Math.round(value).toLocaleString(tag.value);
 
-// The tiles of the rspamd page, as curves in one box, each in the tile's own
-// colour and under the tile's own name: greylist, add header, reject, and
-// what the filter learned. The counter itself over time, as the tile reads
-// it: a curve stands where its figure stands, and climbs by one for every
-// message that got that verdict. "no action" is left out: it is the mail
-// that went through, and its count is the scan total on the header line
-// minus the four curves.
+// The verdict tiles of the rspamd page, as curves in one box, each in the
+// tile's own colour and under the tile's own name: greylist, add header,
+// reject. The counter itself over time, as the tile reads it: a curve stands
+// where its figure stands, and climbs by one for every message that got that
+// verdict. "no action" is left out: it is the mail that went through, and its
+// count is the scan total on the header line minus the three curves. What the
+// filter learned is not a verdict and is not drawn either: a lifetime total
+// that only ever climbs, it flattened the three curves against the floor.
 const CURVES = [
   { index: 2, key: "greylist", label: "greylist", color: "secondary" },
   { index: 3, key: "addHeader", label: "add header", color: "warning" },
   { index: 4, key: "reject", label: "reject", color: "error" },
-  { index: 5, key: "learned", label: null, color: "inverted" },
 ] as const;
 
 const series = computed(() => CURVES.map((curve) => points.map((point) => point.rspamd?.[curve.index] ?? null)));
 const colors = computed(() => CURVES.map((curve) => curve.color));
-const names = computed(() => CURVES.map((curve) => curve.label ?? t("domainDashboard.rspamd.learned")));
+const names = computed(() => CURVES.map((curve) => curve.label));
 
 const max = computed(() => metricCeiling(series.value.flat(), 4));
 const drawable = computed(() => metricKnown(series.value[0] ?? []) > 1);
