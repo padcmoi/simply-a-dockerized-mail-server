@@ -38,7 +38,7 @@ fi
 # and a re-run skips every step whose name appears at or before the
 # recorded marker.
 STAGE_KEY="_INSTALL_STAGE"
-STAGES=(start config secrets up schema admin)
+STAGES=(start config secrets host up schema admin)
 
 env_get() { grep -E "^${1}=" "$TARGET" 2>/dev/null | head -1 | cut -d= -f2-; }
 env_set() {
@@ -273,7 +273,21 @@ PHPMYADMIN_PORT=$(env_get BINDING_PORT_PHPMYADMIN)
 RSPAMDUI_PORT=$(env_get BINDING_PORT_RSPAMD_UI)
 
 # ---------------------------------------------------------------------------
-# 3. Full stack up
+# 3. Host settings the containers rely on
+# ---------------------------------------------------------------------------
+if ! stage_done host; then
+	c "setting vm.overcommit_memory=1 for redis, persisted in /etc/sysctl.d..."
+	printf 'vm.overcommit_memory = 1\n' >/etc/sysctl.d/60-mail-redis.conf
+	if sysctl -q -w vm.overcommit_memory=1 2>/dev/null || /usr/sbin/sysctl -q -w vm.overcommit_memory=1 2>/dev/null; then
+		ok "vm.overcommit_memory=1"
+	else
+		warn "could not set vm.overcommit_memory; redis may fail a background save under memory pressure"
+	fi
+	stage_set host
+fi
+
+# ---------------------------------------------------------------------------
+# 4. Full stack up
 # ---------------------------------------------------------------------------
 if ! stage_done up; then
 	c "building images and bringing the full stack up..."
@@ -282,7 +296,7 @@ if ! stage_done up; then
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Wait for TypeORM to create the schema
+# 5. Wait for TypeORM to create the schema
 # ---------------------------------------------------------------------------
 if ! stage_done schema; then
 	c "waiting for TypeORM to create the schema (max 180s)..."
@@ -298,7 +312,7 @@ if ! stage_done schema; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Seed root account
+# 6. Seed root account
 # ---------------------------------------------------------------------------
 if ! stage_done admin; then
 	# The root account's email and password are asked here and kept ONLY in shell
@@ -376,7 +390,7 @@ SQL
 fi
 
 # ---------------------------------------------------------------------------
-# 6. Summary
+# 7. Summary
 # ---------------------------------------------------------------------------
 PUBLIC_DISPLAY="${PUBLIC_IP:-<MAIL_PUBLIC_IP>}"
 URLS="  manager UI   : http://${PUBLIC_DISPLAY}:${MANAGEUI_PORT}

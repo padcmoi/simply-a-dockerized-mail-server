@@ -47,19 +47,22 @@ What it does, in order:
    primary mail domain. Already-set values are not asked again.
 2. Fills any `change_me_*` placeholder in `.env` with a random secret
    (DB, JWT and admin passwords).
-3. `docker compose up -d --build` brings up every service. mariadb runs the
+3. Sets `vm.overcommit_memory = 1` on the host and persists it in
+   `/etc/sysctl.d/60-mail-redis.conf`: redis needs it for its background
+   saves, and warns at every start without it.
+4. `docker compose up -d --build` brings up every service. mariadb runs the
    `04-roundcube.sh` init script (creates `roundcube` and `opendmarc`
    databases). manager-api boots and TypeORM creates the 7 v1-compatible
    tables (`VirtualDomains`, `VirtualUsers`, `VirtualAliases`,
    `VirtualQuotaDomains`, `VirtualQuotaUsers`, `SieveRejectSenders`,
    `Accounts`) plus `RefreshTokens`, then runs the `QuotaTriggers`
    migration to install the 5 quota triggers.
-4. Waits for the `Accounts` table to exist, bcrypt-hashes the admin password,
+5. Waits for the `Accounts` table to exist, bcrypt-hashes the admin password,
    upserts the admin row.
-5. Generates the DKIM key inside the opendkim container for the primary
+6. Generates the DKIM key inside the opendkim container for the primary
    domain (selector `dkim_<YYYY_MM>`), updates `key.table` and
    `signing.table`, restarts opendkim.
-6. Prints the URL of each UI, the admin credentials and the DKIM TXT record
+7. Prints the URL of each UI, the admin credentials and the DKIM TXT record
    ready to paste into your DNS provider.
 
 Idempotent: re-running keeps existing values, only fills what is missing.
