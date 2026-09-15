@@ -2,7 +2,7 @@ services:
   phpmyadmin:
     container_name: mail-phpmyadmin
     restart: unless-stopped
-    image: phpmyadmin:5.2.1-apache
+    image: phpmyadmin:5.2.2-apache
     environment:
       PMA_HOST: mail-mariadb
       PMA_PORT: 3306

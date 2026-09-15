@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - fix(docker): the manager-ui image build gives Node a 4 GB heap, the default 2 GB dies on the Nitro server step on a small host (13-09-2026)
 - fix(supervision): the Rspamd chart draws greylist, add header and reject only, the lifetime learned counter no longer flattens the three verdict curves (14-09-2026)
 - fix(install): install.sh sets vm.overcommit_memory=1 on the host and persists it in sysctl.d, the setting redis needs for its background saves (15-09-2026)
+- fix(docker): phpmyadmin moves to the 5.2.2 image, the 5.2.1 one ships gd and zip without their libraries and warns at every request (15-09-2026)
 
 ## [2.0.0-rc.7] - 2026-09-13
 
