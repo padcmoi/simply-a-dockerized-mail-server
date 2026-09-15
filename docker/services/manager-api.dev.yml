@@ -38,6 +38,10 @@ services:
     networks:
       mail:
         ipv4_address: 172.200.0.19
+    dns:
+      - 172.200.0.9
     depends_on:
+      unbound:
+        condition: service_started
       mariadb:
         condition: service_healthy

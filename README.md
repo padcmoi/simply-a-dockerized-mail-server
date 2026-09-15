@@ -12,6 +12,7 @@ updated on every delivery via dict-sql.
 | ----------------- | ---------------- | ---- |
 | `mail-mariadb`    | mariadb:11.4     | Single source of truth (mailserver + opendmarc + roundcube DBs) |
 | `mail-redis`      | redis:7.4-alpine | Rspamd backend (bayes, cache) |
+| `mail-unbound`    | alpine:3.20      | Recursive DNS resolver for rspamd, postfix, opendmarc and manager-api: blocklists and DKIM checks answer as they should, whatever the host resolver is |
 | `mail-postfix`    | alpine:3.20      | SMTP 25/465/587, MySQL maps, milter chain, LMTP delivery |
 | `mail-dovecot`    | alpine:3.20      | IMAPS 993, LMTP 24, SASL 12345, ManageSieve 4190, dict-sql quota |
 | `mail-rspamd`     | alpine:3.20      | Anti-spam milter (port 11332) + web UI (11334) |

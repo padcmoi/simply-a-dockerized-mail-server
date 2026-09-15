@@ -1,0 +1,9 @@
+services:
+  unbound:
+    container_name: mail-unbound
+    restart: unless-stopped
+    build:
+      context: ../../images/unbound
+    networks:
+      mail:
+        ipv4_address: 172.200.0.9

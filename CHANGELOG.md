@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- feat(docker): an unbound container resolves DNS for rspamd, postfix, opendmarc and manager-api, so blocklists and DKIM checks stop depending on the host resolver (15-09-2026)
+
 ### Fixed
 
 - fix(docker): the manager-ui image build gives Node a 4 GB heap, the default 2 GB dies on the Nitro server step on a small host (13-09-2026)

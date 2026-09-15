@@ -18,6 +18,11 @@ services:
       file: ./docker/services/redis.yml
       service: redis
 
+  unbound:
+    extends:
+      file: ./docker/services/unbound.yml
+      service: unbound
+
   clamav:
     extends:
       file: ./docker/services/clamav.yml
