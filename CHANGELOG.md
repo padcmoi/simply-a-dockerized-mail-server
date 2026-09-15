@@ -5,18 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0-rc.8] - 2026-09-15
 
 ### Added
 
-- feat(docker): an unbound container resolves DNS for rspamd, postfix, opendmarc and manager-api, so blocklists and DKIM checks stop depending on the host resolver (15-09-2026)
+- An unbound container resolves DNS for rspamd, postfix, opendmarc and manager-api, so blocklists and DKIM checks stop depending on the host resolver _(docker)_ [9b76d97](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9b76d974e9e28eb688a38fbf58ce42e472487b26) (15-09-2026)
 
 ### Fixed
 
-- fix(docker): the manager-ui image build gives Node a 4 GB heap, the default 2 GB dies on the Nitro server step on a small host (13-09-2026)
-- fix(supervision): the Rspamd chart draws greylist, add header and reject only, the lifetime learned counter no longer flattens the three verdict curves (14-09-2026)
-- fix(install): install.sh sets vm.overcommit_memory=1 on the host and persists it in sysctl.d, the setting redis needs for its background saves (15-09-2026)
-- fix(docker): phpmyadmin moves to the 5.2.2 image, the 5.2.1 one ships gd and zip without their libraries and warns at every request (15-09-2026)
+- The manager-ui image build gives Node a 4 GB heap, the default 2 GB dies on the Nitro server step on a small host _(docker)_ [54b1eb2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/54b1eb27725a320a2861b4d8997d6b915fddccc2) (13-09-2026)
+- The Rspamd chart draws greylist, add header and reject only, the lifetime learned counter no longer flattens the three verdict curves _(supervision)_ [b913cd9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b913cd9eb9e80aee3910bce287d6b89bec69ab35) (14-09-2026)
+- install.sh sets vm.overcommit_memory=1 on the host and persists it in sysctl.d, the setting redis needs for its background saves _(install)_ [08c11b1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/08c11b151417389bbf941f96ad30eb4643cc48d5) (15-09-2026)
+- phpmyadmin moves to the 5.2.2 image, the 5.2.1 one ships gd and zip without their libraries and warns at every request _(docker)_ [8588311](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/858831121a92f8609758de76754e296f848e68bb) (15-09-2026)
 
 ## [2.0.0-rc.7] - 2026-09-13
 
@@ -673,7 +673,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban host-net jails for postfix and dovecot _(security)_ [9695664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/969566492b99ceb9cfee3ed4bac32bb477f35b32) (27-06-2026)
 - Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [974519a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/974519a4a91a0d2a44c7595a530e2f4c9fa70506) (08-01-2025)
 - Merge branch 'main' into feature/security-fail2ban-firewall [cf7c1a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf7c1a1d6f9d90db6b3a71e852aeeba06668f623) (07-01-2025)
-[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.7...HEAD
+[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.8...HEAD
+[2.0.0-rc.8]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.7...v2.0.0-rc.8
 [2.0.0-rc.7]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.6...v2.0.0-rc.7
 [2.0.0-rc.6]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.5...v2.0.0-rc.6
 [2.0.0-rc.5]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.4...v2.0.0-rc.5
