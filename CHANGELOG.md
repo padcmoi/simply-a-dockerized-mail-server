@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - fix(postfix): main.cf no longer sets smtpd_use_tls, a deprecated parameter that smtpd_tls_security_level already overrides (16-09-2026)
 - fix(api): the API token middleware binds to the named wildcard {*path}, the bare * made Nest warn about an unsupported /api/* route at every boot (16-09-2026)
 - fix(clamav): the image moves to Alpine 3.24 and ClamAV 1.4.6, the 1.2.2 of Alpine 3.20 is reported outdated and heads for the end of signature updates (16-09-2026)
+- fix(ui): the collapsed sidebar footer narrows its padding so the account avatar is no longer cropped (16-09-2026)
 
 ## [2.0.0-rc.8] - 2026-09-15
 

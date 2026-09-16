@@ -71,6 +71,7 @@ async function onSignOut() {
       container: 'h-full',
       inner: 'bg-elevated/25 divide-transparent',
       body: 'py-0',
+      footer: 'group-data-[state=collapsed]/sidebar:px-2',
     }"
   >
     <template #header>
