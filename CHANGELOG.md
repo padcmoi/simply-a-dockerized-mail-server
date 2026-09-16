@@ -5,35 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0-rc.9] - 2026-09-16
 
 ### Added
 
-- feat(autorouter): moving a mail into a personal folder sends a postmaster notice when the AUTOROUTER rule is created or changes folder, once for a batch of mails from the same sender (16-09-2026)
-- feat(dovecot): both postmaster notices carry an X-Mailer header naming Simply Mail Server and the running version, read from manager-api/VERSION at send time (16-09-2026)
-- feat(recipients): virtual_users gains a created_at column defaulting to now, shown as the first column of the recipient list, sorted newest first by default, and on the edit page (16-09-2026)
-- feat(recipients): a mailbox's validity window, user_start_date to user_end_date with either bound unlimited, shows as a list column green while today falls inside it and red otherwise, sortable either way, and is set in its own card at creation and on the edit page through a reusable DateRangeCard, a range calendar plus exact date inputs (16-09-2026)
-- feat(recipients): the recipient list drops the usage progress bar and the last modification column to make room (16-09-2026)
-- feat(domains): virtual_domains gains a created_at column defaulting to now, shown first in the domain list, sorted newest first by default, and under the domain name on its dashboard (16-09-2026)
-- feat(domains): a domain's validity window shows as a list column green while today falls inside it and red otherwise, sortable either way, and is set in a DateRangeCard at creation and on the administration page through PATCH /domains/:domainId/validity (16-09-2026)
-- feat(domains): the domain list drops the ID column and the quota progress bar (16-09-2026)
-- feat(aliases): virtual_aliases gains a created_at column defaulting to now, shown first in the alias list, sorted newest first by default, and under the title of the edit page (16-09-2026)
-- feat(aliases): an alias's validity window replaces the last modification column, green while today falls inside it and red otherwise, sortable either way, and is set in a DateRangeCard at creation and on the edit page (16-09-2026)
-- feat(ui): the domain dashboard, the recipient edit page and the alias edit page show the last modification date next to the creation date, and the domain's Active and DKIM badges sit on the right (16-09-2026)
-- feat(my-space): the personal space tables of recipients, aliases and domains open on a creation date column sorted newest first and show the validity window in green or red, and the owned recipient and alias pages show the creation and last modification dates and set the validity window through a DateRangeCard, also offered when a delegate creates a recipient or an alias, and the tables drop their redundant arrow links (16-09-2026)
+- Moving a mail into a personal folder sends a postmaster notice when the AUTOROUTER rule is created or changes folder, once for a batch of mails from the same sender _(autorouter)_ [81cf778](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/81cf778c517eba96d337ddc58f58eb4e4c61afb4) (16-09-2026)
+- Both postmaster notices carry an X-Mailer header naming Simply Mail Server and the running version, read from manager-api/VERSION at send time _(dovecot)_ [81cf778](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/81cf778c517eba96d337ddc58f58eb4e4c61afb4) (16-09-2026)
+- The virtual_users table gains a created_at column defaulting to now, shown as the first column of the recipient list, sorted newest first by default, and on the edit page _(recipients)_ [8ea6017](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8ea6017d5841346928da35f5709a12b93ac6b370) (16-09-2026)
+- A mailbox's validity window, user_start_date to user_end_date with either bound unlimited, shows as a list column green while today falls inside it and red otherwise, sortable either way, and is set in its own card at creation and on the edit page through a reusable DateRangeCard, a range calendar plus exact date inputs _(recipients)_ [791b7ad](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/791b7add15622c77375deca849babe7a2612b9fd) (16-09-2026)
+- The recipient list drops the usage progress bar and the last modification column to make room _(recipients)_ [791b7ad](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/791b7add15622c77375deca849babe7a2612b9fd) (16-09-2026)
+- The virtual_domains table gains a created_at column defaulting to now, shown first in the domain list, sorted newest first by default, and under the domain name on its dashboard _(domains)_ [142922e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/142922e336457c75ef416b2eb05d96292dbb22b1) (16-09-2026)
+- A domain's validity window shows as a list column green while today falls inside it and red otherwise, sortable either way, and is set in a DateRangeCard at creation and on the administration page through PATCH /domains/:domainId/validity _(domains)_ [142922e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/142922e336457c75ef416b2eb05d96292dbb22b1) (16-09-2026)
+- The domain list drops the ID column and the quota progress bar _(domains)_ [142922e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/142922e336457c75ef416b2eb05d96292dbb22b1) (16-09-2026)
+- The virtual_aliases table gains a created_at column defaulting to now, shown first in the alias list, sorted newest first by default, and under the title of the edit page _(aliases)_ [1acd62d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1acd62d679a1b6267ff3ac2672d65bd63b37076d) (16-09-2026)
+- An alias's validity window replaces the last modification column, green while today falls inside it and red otherwise, sortable either way, and is set in a DateRangeCard at creation and on the edit page _(aliases)_ [1acd62d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1acd62d679a1b6267ff3ac2672d65bd63b37076d) (16-09-2026)
+- The domain dashboard, the recipient edit page and the alias edit page show the last modification date next to the creation date, and the domain's Active and DKIM badges sit on the right _(ui)_ [dbfc4b9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/dbfc4b97acca10ea47465d4bd0aa69c3ec2d3a19) (16-09-2026)
+- The personal space tables of recipients, aliases and domains open on a creation date column sorted newest first and show the validity window in green or red, and the owned recipient and alias pages show the creation and last modification dates and set the validity window through a DateRangeCard, also offered when a delegate creates a recipient or an alias, and the tables drop their redundant arrow links _(my-space)_ [7dd106a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7dd106ab307e2ebdeb05d0809b978838d1cd4843) (16-09-2026)
 
 ### Fixed
 
-- fix(api): the validity window check treats a missing start date as unlimited instead of comparing the text undefined, and the recipient, alias and domain specs cover the new sorts, dates and PATCH /domains/:domainId/validity route so the suite and its coverage pass again (16-09-2026)
-- fix(blocklist): the Junk notice goes out when the third mail from a sender is marked as spam, and again after an unblock resets the counter, instead of being held back by a 180-day Redis lock (16-09-2026)
-- fix(dovecot): postmaster notices are delivered through dovecot-lda so the user's filters apply, and fall back to doveadm save into INBOX when that delivery fails, so no notice is lost silently (16-09-2026)
-- fix(dovecot): LMTP delivery no longer adds a Received header for the internal postfix to dovecot hop, which exposed the docker IP and the container id, and dovecot names itself after MAIL_HOSTNAME (16-09-2026)
-- fix(postfix): authenticated submission on 465 and 587 goes through its own cleanup that drops the ESMTPSA Received header, so a recipient no longer sees the sender's private IP, home IP and provider (16-09-2026)
-- fix(postfix): the entrypoint gives the queue directories the owners, groups and modes postfix-files declares, instead of a recursive chown that took pid away from root and public and maildrop away from postdrop at every start (16-09-2026)
-- fix(postfix): main.cf no longer sets smtpd_use_tls, a deprecated parameter that smtpd_tls_security_level already overrides (16-09-2026)
-- fix(api): the API token middleware binds to the named wildcard {*path}, the bare * made Nest warn about an unsupported /api/* route at every boot (16-09-2026)
-- fix(clamav): the image moves to Alpine 3.24 and ClamAV 1.4.6, the 1.2.2 of Alpine 3.20 is reported outdated and heads for the end of signature updates (16-09-2026)
-- fix(ui): the collapsed sidebar footer narrows its padding so the account avatar is no longer cropped (16-09-2026)
+- The validity window check treats a missing start date as unlimited instead of comparing the text undefined, and the recipient, alias and domain specs cover the new sorts, dates and PATCH /domains/:domainId/validity route so the suite and its coverage pass again _(api)_ [aa34ef7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/aa34ef7a76fd8b068191e40bd5ce1f4dd1d3bed5) (16-09-2026)
+- The Junk notice goes out when the third mail from a sender is marked as spam, and again after an unblock resets the counter, instead of being held back by a 180-day Redis lock _(blocklist)_ [81cf778](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/81cf778c517eba96d337ddc58f58eb4e4c61afb4) (16-09-2026)
+- Postmaster notices are delivered through dovecot-lda so the user's filters apply, and fall back to doveadm save into INBOX when that delivery fails, so no notice is lost silently _(dovecot)_ [81cf778](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/81cf778c517eba96d337ddc58f58eb4e4c61afb4) (16-09-2026)
+- LMTP delivery no longer adds a Received header for the internal postfix to dovecot hop, which exposed the docker IP and the container id, and dovecot names itself after MAIL_HOSTNAME _(dovecot)_ [c134539](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c13453900692a8fce16539de88eed6e4c3ed001f) (16-09-2026)
+- Authenticated submission on 465 and 587 goes through its own cleanup that drops the ESMTPSA Received header, so a recipient no longer sees the sender's private IP, home IP and provider _(postfix)_ [bd7bfd0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bd7bfd067b2bf9b5c4187c8d42aaea20fb832544) (16-09-2026)
+- The entrypoint gives the queue directories the owners, groups and modes postfix-files declares, instead of a recursive chown that took pid away from root and public and maildrop away from postdrop at every start _(postfix)_ [5b6f86b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5b6f86bc2ca9f610c14fd9596477eb7fd1f39702) (16-09-2026)
+- The postfix main.cf no longer sets smtpd_use_tls, a deprecated parameter that smtpd_tls_security_level already overrides _(postfix)_ [e3f467d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e3f467dd1e70bfdaa4a90d80e1c7dd46a8bf8640) (16-09-2026)
+- The API token middleware binds to the named wildcard {*path}, the bare * made Nest warn about an unsupported /api/* route at every boot _(api)_ [b4b134f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b4b134fc43ba2859fa755c512b7e39f40b44f037) (16-09-2026)
+- The image moves to Alpine 3.24 and ClamAV 1.4.6, the 1.2.2 of Alpine 3.20 is reported outdated and heads for the end of signature updates _(clamav)_ [9582d79](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9582d79871b1bbcbc9ea7b197b432e28cb278702) (16-09-2026)
+- The collapsed sidebar footer narrows its padding so the account avatar is no longer cropped _(ui)_ [b700194](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b7001941fd45a30b13d4741519c4de92b73015d6) (16-09-2026)
 
 ## [2.0.0-rc.8] - 2026-09-15
 
@@ -703,7 +703,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban host-net jails for postfix and dovecot _(security)_ [9695664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/969566492b99ceb9cfee3ed4bac32bb477f35b32) (27-06-2026)
 - Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [974519a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/974519a4a91a0d2a44c7595a530e2f4c9fa70506) (08-01-2025)
 - Merge branch 'main' into feature/security-fail2ban-firewall [cf7c1a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf7c1a1d6f9d90db6b3a71e852aeeba06668f623) (07-01-2025)
-  [unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.8...HEAD
+  [unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.9...HEAD
+  [2.0.0-rc.9]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.8...v2.0.0-rc.9
   [2.0.0-rc.8]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.7...v2.0.0-rc.8
   [2.0.0-rc.7]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.6...v2.0.0-rc.7
   [2.0.0-rc.6]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.5...v2.0.0-rc.6
