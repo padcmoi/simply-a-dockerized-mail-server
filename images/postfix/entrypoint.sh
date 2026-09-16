@@ -37,7 +37,16 @@ EOF
 fi
 newaliases >/dev/null 2>&1 || true
 
-chown -R postfix:postfix /var/spool/postfix 2>/dev/null || true
+SPOOL=/var/spool/postfix
+mkdir -p "$SPOOL"/{active,bounce,corrupt,defer,deferred,flush,hold,incoming,private,saved,trace,maildrop,public,pid}
+chown root "$SPOOL" "$SPOOL/pid"
+chmod 0755 "$SPOOL" "$SPOOL/pid"
+chown -R postfix "$SPOOL"/{active,bounce,corrupt,defer,deferred,flush,hold,incoming,saved,trace}
+chown postfix "$SPOOL/private"
+chmod 0700 "$SPOOL"/{active,bounce,corrupt,defer,deferred,flush,hold,incoming,private,saved,trace}
+chown postfix:postdrop "$SPOOL/maildrop" "$SPOOL/public"
+chmod 0730 "$SPOOL/maildrop"
+chmod 0710 "$SPOOL/public"
 
 mkdir -p /var/log/mail
 touch /var/log/mail/postfix.log
