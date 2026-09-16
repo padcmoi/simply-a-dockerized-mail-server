@@ -50,7 +50,10 @@ case "$FROM_ADDR" in
 	;;
 esac
 
-export USER_LC FROM_ADDR DEST
+AUTOROUTE_STATE="$(mktemp -d)"
+trap 'rm -f "$MESSAGE_FILE"; rm -rf "$AUTOROUTE_STATE"' EXIT
+
+export USER_LC FROM_ADDR DEST AUTOROUTE_STATE
 
 SCRIPT_DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")"
 HOOKS_DIR="${SCRIPT_DIR}/auto-route-hooks"

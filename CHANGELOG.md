@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- feat(autorouter): moving a mail into a personal folder sends a postmaster notice for the AUTOROUTER rule it creates or updates, at every move (16-09-2026)
+- feat(autorouter): moving a mail into a personal folder sends a postmaster notice when the AUTOROUTER rule is created or changes folder, once for a batch of mails from the same sender (16-09-2026)
 - feat(dovecot): both postmaster notices carry an X-Mailer header naming Simply Mail Server and the running version, read from manager-api/VERSION at send time (16-09-2026)
 
 ### Fixed

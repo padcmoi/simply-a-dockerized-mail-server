@@ -6,6 +6,8 @@ USER="${1:?recipient required}"
 FROM="${2:?sender required}"
 DEST="${3:?destination required}"
 
+[ -e "${AUTOROUTE_STATE:-/nonexistent}/unchanged" ] && exit 0
+
 USER_DOMAIN="${USER#*@}"
 POSTMASTER="postmaster@${USER_DOMAIN}"
 

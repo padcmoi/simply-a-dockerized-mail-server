@@ -84,6 +84,9 @@ if ! grep -Eq '^[[:space:]]*require[[:space:]]+\[[^]]*"fileinto"' "$ACTIVE_SCRIP
 fi
 
 MARKER="# rule:[AUTOROUTER ${DEST} ${FROM}]"
+if [ -n "${AUTOROUTE_STATE:-}" ] && tr -d '\r' <"$ACTIVE_SCRIPT" | grep -Fxq "$MARKER"; then
+	: >"${AUTOROUTE_STATE}/unchanged"
+fi
 PREFIX="# rule:[AUTOROUTER "
 SUFFIX=" ${FROM}]"
 TMP_NORM="$(mktemp)"
