@@ -1,9 +1,4 @@
 #!/bin/sh
-# One-shot postmaster notification when the per-recipient spam_count just
-# reached BLOCKLIST_THRESHOLD. Source of truth = SETNX on a notified flag,
-# so we send at most one notification per (recipient, sender) pair.
-#
-# learn_ham removes the flag so a future re-block re-notifies.
 set -eu
 export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
 
@@ -12,42 +7,29 @@ USER="$2"
 FROM="$3"
 
 [ -n "$FROM" ] || exit 0
-FLAG="notified:${USER}:${FROM}"
-
-case "$ACTION" in
-ham)
-	# User changed their mind: clear the flag so a future re-block re-arms
-	# the notification.
-	redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" DEL "$FLAG" >/dev/null || true
-	exit 0
-	;;
-spam) ;;
-*) exit 0 ;;
-esac
+[ "$ACTION" = "spam" ] || exit 0
 
 COUNT_KEY="spam_count:${USER}:${FROM}"
 COUNT="$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" GET "$COUNT_KEY" 2>/dev/null || echo 0)"
-[ "${COUNT:-0}" -ge "$BLOCKLIST_THRESHOLD" ] || exit 0
-
-CLAIMED="$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" SETNX "$FLAG" 1 2>/dev/null || echo 0)"
-[ "$CLAIMED" = "1" ] || exit 0
-redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" EXPIRE "$FLAG" "$BLOCKLIST_TTL" >/dev/null || true
+[ "${COUNT:-0}" -eq "$BLOCKLIST_THRESHOLD" ] || exit 0
 
 USER_DOMAIN="${USER#*@}"
+POSTMASTER="postmaster@${USER_DOMAIN}"
 date_hdr="$(date -R 2>/dev/null || date)"
 mid="<blocklist-notice.$$.$(date +%s 2>/dev/null || echo 0)@${USER_DOMAIN}>"
+APP_VERSION="$(head -n 1 /host/manager-api/VERSION 2>/dev/null | tr -d '[:space:]' || true)"
+MAILER="Simply Mail Server ${APP_VERSION:-unknown}"
 
-# Deliver via dovecot-lda (not doveadm save) so the full sieve pipeline
-# runs on the notification: spam-to-junk in sieve_before, then the user's
-# managesieve script. That way a user-crafted AUTOROUTER rule for
-# postmaster@<domain> (or any custom filter) is honoured, instead of the
-# notification being force-filed into INBOX behind the user's back.
-/usr/libexec/dovecot/dovecot-lda -d "$USER" -f "postmaster@${USER_DOMAIN}" <<EOF
-From: postmaster@${USER_DOMAIN}
+NOTICE="$(mktemp)"
+trap 'rm -f "$NOTICE"' EXIT
+
+cat >"$NOTICE" <<EOF
+From: ${POSTMASTER}
 To: ${USER}
 Date: ${date_hdr}
 Subject: Sender ${FROM} is now auto-routed to Junk
 Message-ID: ${mid}
+X-Mailer: ${MAILER}
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 
@@ -69,4 +51,13 @@ immediately, and the next message from ${FROM} will land in your Inbox.
 postmaster
 EOF
 
+if /usr/libexec/dovecot/dovecot-lda -d "$USER" -f "$POSTMASTER" <"$NOTICE" 2>/dev/null; then
+	exit 0
+fi
+
+if doveadm save -u "$USER" -m INBOX <"$NOTICE" 2>/dev/null; then
+	exit 0
+fi
+
+echo "40-notify: blocklist notice NOT delivered to $USER (sender $FROM)" >&2
 exit 0

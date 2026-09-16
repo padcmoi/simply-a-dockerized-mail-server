@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- feat(autorouter): moving a mail into a personal folder sends a postmaster notice for the AUTOROUTER rule it creates or updates, at every move (16-09-2026)
+- feat(dovecot): both postmaster notices carry an X-Mailer header naming Simply Mail Server and the running version, read from manager-api/VERSION at send time (16-09-2026)
+
 ### Fixed
 
+- fix(blocklist): the Junk notice goes out when the third mail from a sender is marked as spam, and again after an unblock resets the counter, instead of being held back by a 180-day Redis lock (16-09-2026)
+- fix(dovecot): postmaster notices are delivered through dovecot-lda so the user's filters apply, and fall back to doveadm save into INBOX when that delivery fails, so no notice is lost silently (16-09-2026)
 - fix(postfix): the entrypoint gives the queue directories the owners, groups and modes postfix-files declares, instead of a recursive chown that took pid away from root and public and maildrop away from postdrop at every start (16-09-2026)
 - fix(postfix): main.cf no longer sets smtpd_use_tls, a deprecated parameter that smtpd_tls_security_level already overrides (16-09-2026)
 
@@ -22,14 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - The manager-ui image build gives Node a 4 GB heap, the default 2 GB dies on the Nitro server step on a small host _(docker)_ [54b1eb2](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/54b1eb27725a320a2861b4d8997d6b915fddccc2) (13-09-2026)
 - The Rspamd chart draws greylist, add header and reject only, the lifetime learned counter no longer flattens the three verdict curves _(supervision)_ [b913cd9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b913cd9eb9e80aee3910bce287d6b89bec69ab35) (14-09-2026)
-- install.sh sets vm.overcommit_memory=1 on the host and persists it in sysctl.d, the setting redis needs for its background saves _(install)_ [08c11b1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/08c11b151417389bbf941f96ad30eb4643cc48d5) (15-09-2026)
+- install.sh sets vm.overcommit*memory=1 on the host and persists it in sysctl.d, the setting redis needs for its background saves *(install)\_ [08c11b1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/08c11b151417389bbf941f96ad30eb4643cc48d5) (15-09-2026)
 - phpmyadmin moves to the 5.2.2 image, the 5.2.1 one ships gd and zip without their libraries and warns at every request _(docker)_ [8588311](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/858831121a92f8609758de76754e296f848e68bb) (15-09-2026)
 
 ## [2.0.0-rc.7] - 2026-09-13
 
 ### Added
 
-- The name the manager shows comes from MANAGER_APP_NAME in the .env, asked at installation and capped at 24 characters _(config)_ [39f24f1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/39f24f1aac41329803b907244d7abe82149b4277) (13-09-2026)
+- The name the manager shows comes from MANAGER*APP_NAME in the .env, asked at installation and capped at 24 characters *(config)\_ [39f24f1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/39f24f1aac41329803b907244d7abe82149b4277) (13-09-2026)
 
 ## [2.0.0-rc.6] - 2026-09-11
 
@@ -152,7 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Walk the live plot instead of jumping a step a second _(supervision)_ [246e4a6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/246e4a607cd220c0afa876ea1c74a57ad09ecbf8) (04-08-2026)
 - The machine's own figures, live and recorded _(supervision)_ [386a039](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/386a039dc94af9ee1a0d40e3d26db90d084aaf56) (04-08-2026)
 - Manage and delete owned mailboxes and aliases _(my-space)_ [3270e23](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3270e23c1d88665ec4c8451caeb070be3ddf48ff) (04-08-2026)
-- Personal space at /me and the admin surface under /admin/** _(admin)_ [8826bb8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8826bb8bbd8fcd3d02c8e986dd30d2c05bbdc072) (27-07-2026)
+- Personal space at /me and the admin surface under /admin/\*\* _(admin)_ [8826bb8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8826bb8bbd8fcd3d02c8e986dd30d2c05bbdc072) (27-07-2026)
 - Save the interface language to the account profile _(i18n)_ [e32f796](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e32f7960cd1aecdb619ee00b16562be3ee71795e) (26-07-2026)
 - Reset a mailbox password from the edit page _(recipients)_ [26da99f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/26da99f5a54a26107fb557ce0434d58d258650a8) (26-07-2026)
 - Assign recipients and aliases to accounts _(ownership)_ [ccaca9b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ccaca9b3dd0be9106116351450085a5014f89c53) (26-07-2026)
@@ -169,13 +176,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Stream every dashboard and domain figure over the websocket _(realtime)_ [be3dab4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/be3dab402375badbb1f2a1e64893cc88bb9a8a3d) (20-07-2026)
 - Push server data to the UI over a dedicated websocket _(realtime)_ [3729de8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3729de845bb25d1fdbc7f9a67992883782efcda0) (20-07-2026)
 - Add a per-domain group permissions card to the email invitation page _(ui)_ [8376640](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8376640e8e59743a2a29a387eb5d0cad4f2204a2) (15-07-2026)
-- Make account_invitations.invited_by a FK with ON DELETE SET NULL _(api)_ [d06be5e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d06be5eef56f138dced6547ed1b85339223cd6cb) (15-07-2026)
+- Make account*invitations.invited_by a FK with ON DELETE SET NULL *(api)\_ [d06be5e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d06be5eef56f138dced6547ed1b85339223cd6cb) (15-07-2026)
 - Redesign the invitation acceptance page _(ui)_ [dfd3e9f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/dfd3e9fd7db8518a2d2801f11bc1ce34eb0c8186) (15-07-2026)
 - Replace the invite modal with dedicated create pages _(ui)_ [23cdf28](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/23cdf28bf2b1cfe4ed48ee0c8d05dea7a2b31add) (15-07-2026)
 - Add i18n for the reworked invitation flow and domain-owner section _(ui)_ [1ae5253](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1ae5253dd8396372894d45658e87f6e002f7a6a4) (15-07-2026)
 - Rework account invitations (mandatory domain, postmaster sender, multi-group, real base URL, owner designation) _(api)_ [1763bbd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1763bbdc8720c24b5420a9000be675f3de5b4473) (15-07-2026)
 - Add the accounts:set-domain-owner action to the permission catalog _(api)_ [cd23264](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cd23264e801511284985df61e327211a076ecb2e) (15-07-2026)
-- Add group_ids and owner_domain_id columns to account invitations _(api)_ [ba9fc9b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ba9fc9be493a953a31625df851870bacea86ee85) (15-07-2026)
+- Add group*ids and owner_domain_id columns to account invitations *(api)\_ [ba9fc9b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ba9fc9be493a953a31625df851870bacea86ee85) (15-07-2026)
 - Pause the header auto-refresh while editing a form field _(ui)_ [6895c59](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6895c591ce93c52026e46c85dc4e87251b49a561) (14-07-2026)
 - Purge session history button with confirmation on the expired page _(ui)_ [22ec2c3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/22ec2c3e9750bcc726ec102b3fca38f293f77225) (14-07-2026)
 - Purge an account's session history behind a new ACL action _(api)_ [72102ed](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/72102ed50cef1193f548add6c65af9ab44ff5533) (14-07-2026)
@@ -203,7 +210,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Protected groups cannot be deleted by anyone, root included _(api)_ [9059699](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/905969928156f8961bfe8d12066829a1a95ccee8) (11-07-2026)
 - Show only permissions the actor holds in the group grid, revert on a rejected save _(ui)_ [1324ff8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1324ff8b687535ab65e99eef71aba3c79f1bb830) (11-07-2026)
 - Anti-escalation on group grant, membership, deletion and edit paths _(api)_ [93ca50b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/93ca50ba2a51ad82676872ae6b2dcc17cbfb6f7d) (11-07-2026)
-- Named per-resource ACL actions and the domain_owner_elevated carve-out _(api,ui)_ [f94b333](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f94b33302198810e18d1de4149b40423b84e44cf) (10-07-2026)
+- Named per-resource ACL actions and the domain*owner_elevated carve-out *(api,ui)\_ [f94b333](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f94b33302198810e18d1de4149b40423b84e44cf) (10-07-2026)
 - Make domain and recipient identity immutable, erase mail on delete _(api)_ [4a654bd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4a654bd8abcabc7a32d338b2b10f2a2625cd3fdc) (10-07-2026)
 - Show quota and occupancy on the quotas page _(ui)_ [076346b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/076346b2b16b434d862aba5510f5e6b5279c5df0) (09-07-2026)
 - Move the create forms onto their own pages, add an alias edit page _(ui)_ [cdeac49](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cdeac495b09a9a491e01f78be379d1123c193680) (09-07-2026)
@@ -244,7 +251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Add core composables for nav, groups, permissions, autosave and session _(ui)_ [e85b989](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e85b989fe7df0cdeb5db821959b322335b152f84) (03-07-2026)
 - Reveal modal clipboard guard and auto-delete token on dismiss without confirm _(ui)_ [2660ae0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2660ae0fe8d51810ec0caf1f595d9805380270a2) (02-07-2026)
 - API token management page with CRUD, regenerate and optimistic state updates _(ui)_ [ed6b828](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ed6b8289acff6f31f98c7afe3321461e8d1b1b81) (02-07-2026)
-- Dual JWT + API token auth with X-Api-Key header sms_clientId.secret and full CRUD _(api)_ [9e586f7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9e586f7ffb118588a5d3a25cc781300d065e2aef) (02-07-2026)
+- Dual JWT + API token auth with X-Api-Key header sms*clientId.secret and full CRUD *(api)\_ [9e586f7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9e586f7ffb118588a5d3a25cc781300d065e2aef) (02-07-2026)
 - Domains spamd sub-module with per-domain history and stats routes, fix DKIM generate button _(api)_ [f0e214c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f0e214ce455ffa0446d7cbbc417c6ca5212d6404) (01-07-2026)
 - DKIM confirm dialogs and collapse-aware generate button _(ui)_ [708ffb0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/708ffb08802e9fdc65378e5d9994432901ccd76b) (01-07-2026)
 - Account domain ACL and invitation management _(api)_ [6c20435](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6c20435372022d25e8e1306b64917763d4e9b1cd) (01-07-2026)
@@ -264,26 +271,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Manager ACL with root-only invite flow and per-domain access control _(accounts)_ [ebc7b43](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ebc7b437cfa3e0be4bd0eb0ba987c6c0d3c46af8) (30-06-2026)
 - Mail volume capacity gauge + i18n FR/EN with typed contract _(manager-ui,manager-api)_ [a6a556c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a6a556c53eb7a829cd92e64041318b30bf9f5661) (30-06-2026)
 - V2 dashboard layout + account profile (email, name, avatar) _(ui,api)_ [093f07e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/093f07e47fd888ddd7367431e156661627f5739d) (30-06-2026)
-- Persist dkim_keys + resumable install.sh _(install,dkim)_ [911c2a0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/911c2a09e3470b810cb23aa7411accda278aa7c4) (30-06-2026)
+- Persist dkim*keys + resumable install.sh *(install,dkim)\_ [911c2a0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/911c2a09e3470b810cb23aa7411accda278aa7c4) (30-06-2026)
 - GET /api/v1/health returns a real cpu/mem/redis/db/mail snapshot _(health)_ [85707bd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/85707bdf0a0845fc7c9919d97d0ed4dd29994c66) (30-06-2026)
 - Consume /api/v1, swagger moved to /api/doc _(ui)_ [b52007d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b52007def21a49cfb998af80a6f1b1b3eb8fbd9c) (29-06-2026)
 - URI versioning /api/v1 + jwt auth in core/auth/jwt _(manager-api)_ [98412c5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/98412c5ed64fc7524085d33d070d7fe4a3512b90) (29-06-2026)
-- Typeorm migrations split by business domain + db:* scripts _(db)_ [ffc1b00](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ffc1b0026462d3f9504f7a170a0f473123a5ce9f) (29-06-2026)
-- Rename date_creation -> created_at + cover blacklist with a test _(sieve)_ [64bd249](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/64bd249f30ee843f4c95823421a1ce3c9b4484cd) (29-06-2026)
-- Snake_case tables, user_start_date/user_end_date activity window, dkim_keys table _(mail)_ [430db30](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/430db3094df429f5fe9bd308b5724eb11506ec6f) (29-06-2026)
+- Typeorm migrations split by business domain + db:\* scripts _(db)_ [ffc1b00](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ffc1b0026462d3f9504f7a170a0f473123a5ce9f) (29-06-2026)
+- Rename date*creation -> created_at + cover blacklist with a test *(sieve)\_ [64bd249](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/64bd249f30ee843f4c95823421a1ce3c9b4484cd) (29-06-2026)
+- Snake*case tables, user_start_date/user_end_date activity window, dkim_keys table *(mail)\_ [430db30](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/430db3094df429f5fe9bd308b5724eb11506ec6f) (29-06-2026)
 - Managesieve-visible per-sender auto-routing with system-folder-aware undo _(autorouter)_ [57e99ae](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/57e99aea113ebe3c10fbf98cb9b91005e63ce2b0) (28-06-2026)
-- Unified ATTACHMENT_MAX_SIZE_MB knob (default 25, Gmail parity) _(attachments)_ [55b2aae](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/55b2aaeaee0f4b5def47ce2e5adf86afb4e68065) (28-06-2026)
+- Unified ATTACHMENT*MAX_SIZE_MB knob (default 25, Gmail parity) *(attachments)\_ [55b2aae](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/55b2aaeaee0f4b5def47ce2e5adf86afb4e68065) (28-06-2026)
 - Enable markasjunk plugin for one-click spam toolbar button _(roundcube)_ [eeac8d0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/eeac8d00316c699dab3adb8e01a92534fdf6874d) (28-06-2026)
 - Sa-learn-pipe orchestrator + per-concern hooks + postmaster one-shot _(dovecot)_ [648ed07](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/648ed072d63f38cb01d6fb0af0a8abd83b48d78e) (28-06-2026)
-- Imap_sieve + learn-spam/ham sieves with Trash exemption _(dovecot)_ [107e1ab](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/107e1abc9f195a8eb6cb3b2b511da9df6a38198d) (28-06-2026)
-- USER_BLOCKLIST + GLOBAL_BLOCKLIST + RECIPIENT_RECORDER lua rules _(rspamd)_ [c6495f3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c6495f32e76c02ccd0ceaac2128ae9d593e917d0) (28-06-2026)
+- Imap*sieve + learn-spam/ham sieves with Trash exemption *(dovecot)\_ [107e1ab](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/107e1abc9f195a8eb6cb3b2b511da9df6a38198d) (28-06-2026)
+- USER*BLOCKLIST + GLOBAL_BLOCKLIST + RECIPIENT_RECORDER lua rules *(rspamd)\_ [c6495f3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c6495f32e76c02ccd0ceaac2128ae9d593e917d0) (28-06-2026)
 - Explicit action thresholds, sieve-aligned spam header, greylist off _(rspamd)_ [e7df641](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e7df6411b0cbc9e85b7d185090a930b28e3c0837) (28-06-2026)
 - Always-on ClamAV antivirus with reject action _(rspamd)_ [90fb65f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/90fb65f4a1b8a99768e02965813bbff42548a09d) (28-06-2026)
 - Per-user bayes classifier wired to Redis selector _(rspamd)_ [7cb9b4e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7cb9b4e9d6232bbc107825551f6a7e5b41852496) (28-06-2026)
 - Install certbot deploy hook that restarts dovecot+postfix on cert renewal _(install)_ [d27d31b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d27d31bfd0f4d1edebd99d66157524d2b2f63294) (27-06-2026)
 - Manage keys through an opendkim Python sidecar consumed by manager-api and install.sh _(dkim)_ [d7f63e0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d7f63e01feeaa924779a27024bbcfa8b9c0e278b) (27-06-2026)
 - Accept short language aliases (fr, FR, en, ...) for Roundcube locale prompt _(install)_ [e714b9f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e714b9fd773d7e00f33866316f5a248f501aa83e) (27-06-2026)
-- Configurable default language via ROUNDCUBE_LANGUAGE _(roundcube)_ [152764a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/152764a76a68ae6507b0d7358e6715ddfaff4140) (27-06-2026)
+- Configurable default language via ROUNDCUBE*LANGUAGE *(roundcube)\_ [152764a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/152764a76a68ae6507b0d7358e6715ddfaff4140) (27-06-2026)
 - One-shot interactive bootstrap with regex-validated prompts _(install)_ [2e3e86a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2e3e86ac8ef094c00328117f2adcb12c4db001c3) (27-06-2026)
 - Install.sh secret generation and service.sh compose wrapper _(ops)_ [30bf111](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/30bf1114a27b623b796bb039418b39b6db065063) (27-06-2026)
 - Nuxt UI v4 admin pages with Nitro proxy to manager-api _(manager-ui)_ [6fb81fe](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6fb81fe9e293a8bbb29642463fb4face6a711235) (27-06-2026)
@@ -301,9 +308,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Nuxt 3 SPA scaffold with Tailwind, Auth0 SSO button and local email+password login _(ui)_ [3676f18](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3676f18f2953ca213332124b5e7d5a1aed6d4250) (21-05-2026)
 - Webadmin-accounts management endpoints with root-only protection on the root row _(api)_ [cb7135c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cb7135c997f3646bdc1a59e199ee4bcd4871251c) (21-05-2026)
 - CRUD modules for domains (auto DKIM keygen + DNS records), users (SHA512-CRYPT), aliases, accounts, quotas, sieve _(api)_ [0dfe703](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0dfe7037c744a3a024991ec799e629a352f50713) (21-05-2026)
-- Dual JWT auth (Auth0 RS256 + local HS256 webadmin_accounts) with role guards root>admin>owner>user _(api)_ [5415ef4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5415ef400023204b11984b33cbb5370fcafed5ea) (21-05-2026)
+- Dual JWT auth (Auth0 RS256 + local HS256 webadmin*accounts) with role guards root>admin>owner>user *(api)\_ [5415ef4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5415ef400023204b11984b33cbb5370fcafed5ea) (21-05-2026)
 - Infra control plane via Docker socket (postfix, opendkim, fail2ban, rspamd, dovecot, logs) _(api)_ [dde7727](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/dde7727d9c55b19a214051f7f2cc44711ca94936) (21-05-2026)
-- NestJS 11 scaffold with TypeORM entities for the 7 prod tables (+ webadmin_accounts) _(api)_ [978f4ef](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/978f4efc28ab59ca964acd49ee8cc0a39dc5d28b) (21-05-2026)
+- NestJS 11 scaffold with TypeORM entities for the 7 prod tables (+ webadmin*accounts) *(api)\_ [978f4ef](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/978f4efc28ab59ca964acd49ee8cc0a39dc5d28b) (21-05-2026)
 - Alpine thin layers for postfix, dovecot, opendkim, opendmarc with UID=102 / vmail=5000 for shared LMTP socket _(docker)_ [a9125f7](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a9125f77c93d0da395dd048f209bcf3912141a92) (21-05-2026)
 - Install.sh orchestrates secrets, template hydration, MariaDB init order and bootstrap SQL _(install)_ [8bc463d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8bc463d1c40603e63e2090f6c46e4503802fad49) (21-05-2026)
 - Multi-container docker-compose with pinned images and shared LMTP socket volume _(v2)_ [8bd3c6f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8bd3c6f621678b7a2f7b5d762c32b9beea85cecc) (21-05-2026)
@@ -371,7 +378,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Rename the personal space route from /me to /my-space _(admin)_ [4a22fb3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4a22fb3c985f2cb04d9c3a9b22576beec3956541) (27-07-2026)
 - Document account deletion and the invitation link source _(manager)_ [f352c6f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f352c6f934dae097577eb8bb1a2d3bfa8ade1129) (26-07-2026)
 - Document the Configuration area and the notification-mail model _(manager)_ [04d68cd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/04d68cd6fb758bf6db421112fbf279a64e8e176d) (26-07-2026)
-- Reusable app_settings key/value store _(settings)_ [7c1ee40](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7c1ee400e9f1d8f8ffdf049dcee52ae01ea403fc) (26-07-2026)
+- Reusable app*settings key/value store *(settings)\_ [7c1ee40](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7c1ee400e9f1d8f8ffdf049dcee52ae01ea403fc) (26-07-2026)
 - Split Brevo and SMTP into provider sub-modules _(mailer)_ [bb75be9](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bb75be9248a8cb627594b21652813eb7c5d82bc1) (26-07-2026)
 - Move email bodies into src/core/mailer/templates _(mailer)_ [3f7bbfb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3f7bbfbc7665cd644b33bfe467b05be91b79e17e) (25-07-2026)
 - Edit in a full-width page, not a modal _(recipients)_ [ecc1b9e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ecc1b9e6a83f0f2996cde8648858804f7b802f6e) (25-07-2026)
@@ -408,7 +415,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Complete OpenAPI/Swagger coverage on every route _(api)_ [cd76f5c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cd76f5c2190933871b8f72df2baf18fae52bce51) (05-07-2026)
 - Error page [58a631e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/58a631ebf69810e0adb3ff6201710a73d674fef7) (03-07-2026)
 - Don't persist filesystem _(eslint)_ [5750f23](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5750f23d29defcc851303968655f50c635dc8636) (03-07-2026)
-- Clarify use* rule disable reason in manager-ui config _(eslint)_ [6e13f3a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6e13f3aa235a7405205f2079242a7533c0918682) (03-07-2026)
+- Clarify use\* rule disable reason in manager-ui config _(eslint)_ [6e13f3a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6e13f3aa235a7405205f2079242a7533c0918682) (03-07-2026)
 - Update changelog [5e11ba0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5e11ba0c4fa8965539662972a9c4551c2d3eee06) (01-07-2026)
 - Format all shell scripts with shfmt _(scripts)_ [d1b0594](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d1b0594c55a0d7626bc70f3bf9f853ed3be817dc) (01-07-2026)
 - Mailserver tests disabled as too heavy _(husky)_ [87f0f8a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/87f0f8ab1a56ee279bc5edf31e8974c1d6c26cec) (01-07-2026)
@@ -442,11 +449,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Consolidate duplicated Added/Changed/Fixed sections _(changelog)_ [5d405af](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5d405af8bd3fd688033b733be1a3fc7f93e558b9) (29-06-2026)
 - Postmaster reservation + fail2ban/postfix/log-perms fixes _(changelog)_ [fbf861c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fbf861cff918eb4052e8ebf713b30dc575909293) (28-06-2026)
 - Per-feature READMEs under docs/ _(mail)_ [ca9f4ca](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ca9f4ca2c73cf73e086fb59c096a239965a0d9b5) (28-06-2026)
-- Bind-mount redis data under ${VOLUMES_PATH}/redis _(redis)_ [4b0c5a3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4b0c5a382e0231f6884a566ec9431064a81cdb0e) (28-06-2026)
+- Bind-mount redis data under ${VOLUMES*PATH}/redis *(redis)\_ [4b0c5a3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4b0c5a382e0231f6884a566ec9431064a81cdb0e) (28-06-2026)
 - End-to-end mail-server test suite _(mail)_ [f322ece](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f322ecedbc4bff4ccf54695c689ad57a07927008) (28-06-2026)
 - Rspamd/dovecot per-user blocklist + notification + Junk-only policy _(changelog)_ [2e95a3d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2e95a3dfa033171993a1291fb72a33320e3459cf) (28-06-2026)
 - Add prettier (double quotes, semi, es5 trailing, printWidth 130) to manager-api and manager-ui [ea65664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ea65664bb30105a378b6d93124b4cfb12f3908f1) (27-06-2026)
-- Dovecot healthcheck + postfix and roundcube wait for service_healthy _(compose)_ [1f6ec3a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1f6ec3a59e2a78a8e0f07558deefadab735cc3cd) (27-06-2026)
+- Dovecot healthcheck + postfix and roundcube wait for service*healthy *(compose)\_ [1f6ec3a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1f6ec3a59e2a78a8e0f07558deefadab735cc3cd) (27-06-2026)
 - Gitignore INSTALL_INFO.txt [fd1a675](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fd1a67512a6e477f78acef415fbe8564fdf02834) (27-06-2026)
 - Rewrite INSTALL.md and update CHANGELOG for the installer overhaul [396d94f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/396d94fb0897d495b161f517c47156f9eb625e8a) (27-06-2026)
 - Split init scripts per database (roundcube, opendmarc) _(mariadb)_ [8dfd868](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8dfd868c5d123dc3039dad6aee34ccd5e2ceedb0) (27-06-2026)
@@ -458,7 +465,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Add INSTALL.md and DOMAIN_DNS.md, scrub .env.sample of real values [df7dfe8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/df7dfe8cc78869bf67f9561a1dba814af683c0c5) (22-05-2026)
 - Unify login on Accounts + persist refresh JWTs in RefreshTokens + extract OpenAPI per controller _(manager-api)_ [f77a46d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f77a46d01440dab6dc402dc66657b293a296c30c) (21-05-2026)
 - Ignore .trash/ scratch dir and .profiles state file _(gitignore)_ [6fdeaea](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6fdeaea5469008cbe6b3bc3be40461419e52a62d) (21-05-2026)
-- Gitignore mailserver.sql and *.dump.sql to prevent committing prod hashes [a82c9d1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a82c9d1966036e843c84a7249028d3dd658b390b) (21-05-2026)
+- Gitignore mailserver.sql and \*.dump.sql to prevent committing prod hashes [a82c9d1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a82c9d1966036e843c84a7249028d3dd658b390b) (21-05-2026)
 - MIGRATION.md zero-data-loss procedure, README and CHANGELOG 2.0.0 entry preserving 1.1.2 history [cd315bf](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cd315bf137f9a2cd599894c9cc70dfe204337b96) (21-05-2026)
 - Drop 1.x.x monolith files (Dockerfile, docker-build, menu.sh, libs, update-letsencrypt-certs.sh, webadmin scaffold) [e209c28](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e209c28001eda8279f816b2c46c396e7084bfc03) (21-05-2026)
 - Merge branch 'hotfix/1.1.7' [e5f37fc](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e5f37fca32996bcd0b06bfd5be9470a99bf4a3fd) (24-09-2025)
@@ -569,7 +576,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Put the stored colours back when the bench is left unsaved _(theme)_ [fc6a478](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fc6a478ff3a6e883968c84e01e02fcc42a75db41) (05-08-2026)
 - Keep a week of machine history by default, not a month _(supervision)_ [35eedce](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/35eedce0c6cfd74eb9ca5926a912160815ba03fa) (05-08-2026)
 - Drop the two axis labels pinned to the chart's edges _(supervision)_ [341a99e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/341a99e7d82af3104314e24d0404e9905c4819bc) (05-08-2026)
-- The English locale is en_GB, not the invented en_EN _(i18n)_ [1dff11c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1dff11c2fd383b8e429c7a714cffc6056da9914c) (04-08-2026)
+- The English locale is en*GB, not the invented en_EN *(i18n)\_ [1dff11c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1dff11c2fd383b8e429c7a714cffc6056da9914c) (04-08-2026)
 - Seed the e2e admin account with scrypt, not the removed bcrypt _(ci)_ [f3927c8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f3927c851676ae04368e733f3119223bf9d4c2ea) (04-08-2026)
 - Pause the auto-refresh only for real interactions, not any focused control _(ui)_ [54e32d8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/54e32d829abd0b91cf4e014a0553472f141bd9ee) (04-08-2026)
 - Target the ticket link at /admin/tickets _(notifications)_ [acbec69](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/acbec692207cafae0078fd0113e67fdd5160fac6) (04-08-2026)
@@ -599,7 +606,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Domain creation form fields misaligning under items-end _(ui)_ [b9aeb74](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b9aeb7476c6a3a137f522d66e13af00abe39e68f) (08-07-2026)
 - Close the mobile sidebar overlay on every navigation _(ui)_ [71b448a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/71b448a199375f44242cee2871a151fec0149b5e) (08-07-2026)
 - Truncate long group descriptions instead of overflowing the table _(ui)_ [21f6a6d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/21f6a6d6d13dce3acfc89426221b4a6a024459df) (08-07-2026)
-- Stop sieve_reject_senders.created_at from auto-updating _(api,ui)_ [ed00ff5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ed00ff5c0909e2bf64beaf6959ea65da09d95970) (07-07-2026)
+- Stop sieve*reject_senders.created_at from auto-updating *(api,ui)\_ [ed00ff5](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ed00ff5c0909e2bf64beaf6959ea65da09d95970) (07-07-2026)
 - Avoid a Vue patch crash when swapping rspamd's chart card between skeleton and loaded state _(ui)_ [f3110fb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f3110fb9012dd26a4f6c236e11b1d1562acf6bc4) (07-07-2026)
 - Keep sidebar navigation highlighted at any route depth _(ui)_ [841cf12](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/841cf1202dbab33632e42a6f4a4c5d5d368d20ec) (06-07-2026)
 - Never run pre-push checks when pushing main _(husky)_ [ae6d352](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ae6d352c081d3f726ab2f29efbc701576c676267) (06-07-2026)
@@ -609,7 +616,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Wrap onClick handlers in void-returning arrow functions to satisfy vue-tsc _(ui)_ [69a8321](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/69a83210fc09c32f18d50a32a83be61054729a27) (01-07-2026)
 - Pin rspamd hostname to preserve Redis history keys across restarts _(infra)_ [1b8217c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/1b8217c95881980aa7683dc1010009bd41e2d4e8) (01-07-2026)
 - Lowercase domain before sidecar call, enforce single key on rotate _(dkim)_ [483fd1f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/483fd1f00b7244c6a579223eba9d5db2681e5acc) (01-07-2026)
-- History_redis config, message-id field mapping, domain filter, dedicated UI page _(rspamd)_ [9222557](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9222557f0843821050203907c12e6a1c4fa83a1c) (01-07-2026)
+- History*redis config, message-id field mapping, domain filter, dedicated UI page *(rspamd)\_ [9222557](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9222557f0843821050203907c12e6a1c4fa83a1c) (01-07-2026)
 - Pre-push hook reads pushed commits range from git stdin _(dev)_ [6e37554](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6e37554dba07fde134e86ab273dcfd134df530c0) (01-07-2026)
 - Reorder ref before reactive to satisfy define-macros-order lint rule _(ui)_ [713a396](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/713a396c809823910ad9d96ef4253e817fa47e4b) (01-07-2026)
 - Strip dead vue-router volar sfc-route-blocks plugin from tsconfig _(ui)_ [7d29c7c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7d29c7c4d633ce6ce8deeac52f5a018774af22bc) (30-06-2026)
@@ -617,7 +624,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Uppercase AUTOROUTER to satisfy hygiene test _(changelog)_ [786818b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/786818b2d4012cbeaa7b43bfd396a682b43c1f30) (30-06-2026)
 - Resolve all lint and typecheck violations for CI pipeline _(manager-ui)_ [831d3d4](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/831d3d4f69ae5ffe913a14b433761e716c842d88) (30-06-2026)
 - Align CI seed + test suite with current schema and stack behavior _(ci,tests)_ [6307b73](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/6307b731336d561f89a2e3630cbac894796a43fc) (30-06-2026)
-- Refresh expired JWT on 401 and stop proxying /api/_nuxt_icon _(manager-ui)_ [3c70d06](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3c70d06e777dbb599c7b5231e65ec5ee387c1fb6) (30-06-2026)
+- Refresh expired JWT on 401 and stop proxying /api/_nuxt_icon _(manager-ui)\_ [3c70d06](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3c70d06e777dbb599c7b5231e65ec5ee387c1fb6) (30-06-2026)
 - Make roundcube optional, suite green on webmail-less stack _(tests)_ [f5d629c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/f5d629c2e0c05ecef46f64db9682fd7c7cda4f25) (29-06-2026)
 - Wait for postfix+dovecot logs to exist before booting _(fail2ban)_ [c6aadfd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c6aadfd322d5489333dfeb617b85fba29e5f6537) (29-06-2026)
 - Drop first-mailbox provisioning and stop quota-row stacking _(mail)_ [db4e55c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/db4e55c26987246005537c169989232b8b8baa10) (28-06-2026)
@@ -625,7 +632,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban sshd-ddos, postfix lmdb, log perms, drop fail2ban skip _(mail)_ [81d5cdb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/81d5cdba73e4e3ae2a2936567b265bc99fc7608e) (28-06-2026)
 - Bake dhparam at build time so cold start never trips the healthcheck _(dovecot)_ [0f2ae03](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0f2ae03571cbe0091ccf11202585dbdd4298ef99) (28-06-2026)
 - Enable readline editing on every prompt _(install)_ [71f522b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/71f522b334ac84dfdaf054af97249b8f5ad2aa6c) (28-06-2026)
-- Wrap DKIM TXT value in double quotes in INSTALL_INFO.txt _(install)_ [4bbec6a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4bbec6a776ccbea2e43ec1c69ea6bf981a4e1115) (28-06-2026)
+- Wrap DKIM TXT value in double quotes in INSTALL*INFO.txt *(install)\_ [4bbec6a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4bbec6a776ccbea2e43ec1c69ea6bf981a4e1115) (28-06-2026)
 - Handle Let's Encrypt rotation inside postfix and dovecot containers (inotify watcher, no host install) _(tls)_ [d497779](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d4977790def3480aa0924131d0f324fe317aef4e) (27-06-2026)
 - Parse DKIM sidecar response with python3 instead of grep, emit compact JSON server-side _(install)_ [77ac92d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/77ac92d492f4d9490cd92880e9e915ea961543a2) (27-06-2026)
 - Route reject/redirect/vacation bounces through a milter-free internal postfix port _(sieve)_ [e0ad745](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e0ad745a465d9ab2e0ecf1171b12f2aeefb6bc21) (27-06-2026)
@@ -680,12 +687,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban host-net jails for postfix and dovecot _(security)_ [9695664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/969566492b99ceb9cfee3ed4bac32bb477f35b32) (27-06-2026)
 - Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [974519a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/974519a4a91a0d2a44c7595a530e2f4c9fa70506) (08-01-2025)
 - Merge branch 'main' into feature/security-fail2ban-firewall [cf7c1a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf7c1a1d6f9d90db6b3a71e852aeeba06668f623) (07-01-2025)
-[unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.8...HEAD
-[2.0.0-rc.8]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.7...v2.0.0-rc.8
-[2.0.0-rc.7]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.6...v2.0.0-rc.7
-[2.0.0-rc.6]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.5...v2.0.0-rc.6
-[2.0.0-rc.5]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.4...v2.0.0-rc.5
-[2.0.0-rc.4]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.3...v2.0.0-rc.4
-[2.0.0-rc.3]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.2...v2.0.0-rc.3
-[2.0.0-rc.2]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.1...v2.0.0-rc.2
-[2.0.0-rc.1]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/1.1.7...v2.0.0-rc.1
+  [unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.8...HEAD
+  [2.0.0-rc.8]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.7...v2.0.0-rc.8
+  [2.0.0-rc.7]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.6...v2.0.0-rc.7
+  [2.0.0-rc.6]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.5...v2.0.0-rc.6
+  [2.0.0-rc.5]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.4...v2.0.0-rc.5
+  [2.0.0-rc.4]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.3...v2.0.0-rc.4
+  [2.0.0-rc.3]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.2...v2.0.0-rc.3
+  [2.0.0-rc.2]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.1...v2.0.0-rc.2
+  [2.0.0-rc.1]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/1.1.7...v2.0.0-rc.1

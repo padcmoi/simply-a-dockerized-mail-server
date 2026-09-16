@@ -9,6 +9,7 @@ services:
       - ${VOLUMES_PATH}/mail:/var/mail
       - ${VOLUMES_PATH}/log:/var/log/mail
       - ${TLS_LETSENCRYPT_PATH}:/etc/letsencrypt:ro
+      - ../../manager-api:/host/manager-api:ro
     networks:
       mail:
         ipv4_address: 172.200.0.16
