@@ -72,6 +72,9 @@ watchEffect(() => {
         <p v-else-if="recipient" class="text-sm text-muted mt-1 flex flex-wrap gap-x-2">
           <span>{{ t("common.creationDate") }}</span>
           <span class="text-default">{{ formatDateTime(recipient.createdAt) }}</span>
+          <span class="text-dimmed">|</span>
+          <span>{{ t("common.lastModification") }}</span>
+          <span class="text-default">{{ formatDateTime(recipient.lastActivity) }}</span>
         </p>
       </template>
 

@@ -26,6 +26,7 @@ export interface AliasDetail {
   domain: string;
   ownerEmail: string | null;
   createdAt: string;
+  lastActivity: string | null;
   userStartDate: string | null;
   userEndDate: string | null;
 }

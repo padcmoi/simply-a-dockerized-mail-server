@@ -29,6 +29,7 @@ export interface RecipientDetail {
   active: number;
   ownerEmail: string | null;
   createdAt: string;
+  lastActivity: string | null;
   userStartDate: string | null;
   userEndDate: string | null;
 }

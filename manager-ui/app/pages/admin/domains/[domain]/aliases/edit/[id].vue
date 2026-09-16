@@ -190,6 +190,9 @@ async function save() {
         <p v-else-if="alias" class="text-sm text-muted mt-1 flex flex-wrap gap-x-2">
           <span>{{ t("common.creationDate") }}</span>
           <span class="text-default">{{ formatDateTime(alias.createdAt) }}</span>
+          <span class="text-dimmed">|</span>
+          <span>{{ t("common.lastModification") }}</span>
+          <span class="text-default">{{ formatDateTime(alias.lastActivity) }}</span>
         </p>
       </template>
 

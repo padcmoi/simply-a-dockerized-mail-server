@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - feat(domains): the domain list drops the ID column and the quota progress bar (16-09-2026)
 - feat(aliases): virtual_aliases gains a created_at column defaulting to now, shown first in the alias list, sorted newest first by default, and under the title of the edit page (16-09-2026)
 - feat(aliases): an alias's validity window replaces the last modification column, green while today falls inside it and red otherwise, sortable either way, and is set in a DateRangeCard at creation and on the edit page (16-09-2026)
+- feat(ui): the domain dashboard, the recipient edit page and the alias edit page show the last modification date next to the creation date, and the domain's Active and DKIM badges sit on the right (16-09-2026)
 
 ### Fixed
 

@@ -9,6 +9,7 @@ export interface Domain {
   ownerId?: number | null;
   ownerEmail?: string | null;
   createdAt?: string;
+  lastActivity?: string | null;
   userStartDate?: string | null;
   userEndDate?: string | null;
 }

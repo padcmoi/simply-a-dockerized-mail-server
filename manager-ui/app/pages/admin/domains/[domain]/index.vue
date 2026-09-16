@@ -85,16 +85,21 @@ watchEffect(() => {
           <p v-if="domain.createdAt" class="text-xs text-muted flex flex-wrap gap-x-1.5">
             <span>{{ $t("common.creationDate") }}</span>
             <span class="text-default">{{ formatDateTime(domain.createdAt) }}</span>
+            <span class="text-dimmed">|</span>
+            <span>{{ $t("common.lastModification") }}</span>
+            <span class="text-default">{{ formatDateTime(domain.lastActivity) }}</span>
           </p>
         </div>
 
-        <UBadge :color="domain.active ? 'success' : 'warning'" variant="subtle">
-          {{ domain.active ? $t("common.active") : $t("common.inactive") }}
-        </UBadge>
+        <div class="ml-auto flex items-center gap-3">
+          <UBadge :color="domain.active ? 'success' : 'warning'" variant="subtle">
+            {{ domain.active ? $t("common.active") : $t("common.inactive") }}
+          </UBadge>
 
-        <UTooltip v-if="canViewAdmin && dkimCheck" :text="dkimStatusText">
-          <UBadge :color="dkimStatusOk ? 'success' : 'error'" variant="subtle" :icon="dkimStatusIcon"> DKIM </UBadge>
-        </UTooltip>
+          <UTooltip v-if="canViewAdmin && dkimCheck" :text="dkimStatusText">
+            <UBadge :color="dkimStatusOk ? 'success' : 'error'" variant="subtle" :icon="dkimStatusIcon"> DKIM </UBadge>
+          </UTooltip>
+        </div>
       </template>
       <div v-else class="min-w-0 space-y-1.5">
         <USkeleton class="h-5 w-40" />
