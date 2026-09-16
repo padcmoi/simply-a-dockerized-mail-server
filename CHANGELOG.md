@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- fix(ui): a click on a table header now flips the sort between ascending and descending every time, instead of doing nothing on a server-paged list once it reached descending (16-09-2026)
+
 ## [2.0.0-rc.9] - 2026-09-16
 
 ### Added

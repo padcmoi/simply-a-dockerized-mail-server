@@ -116,7 +116,7 @@ const sort = computed(() => (sortKey.value ? { key: sortKey.value, direction: so
 // Search, sort and paging live in a composable of their own: they are the half
 // of this component that has nothing to do with rendering, and both renderings
 // answer the same state.
-const { serverPaged, searchableColumns, paged, totalRows, pageCount } = useDataTableRows<T>({
+const { searchableColumns, paged, totalRows, pageCount } = useDataTableRows<T>({
   data: () => props.data,
   columns: () => props.columns,
   searchTerm: () => searchTerm.value,
@@ -148,14 +148,9 @@ function applySort(next: { key: string; direction: "asc" | "desc" } | null) {
   if (next) sortDirection.value = next.direction;
 }
 
-// Three states and not two: a third click drops the sort and gives the caller's
-// own order back, which is the only way to return to it. Except where the rows
-// come a page at a time: there the order IS the query, and no order at all would
-// be whatever the database felt like handing over.
 function toggleSort(key: string) {
   if (sort.value?.key !== key) applySort({ key, direction: "asc" });
-  else if (sort.value.direction === "asc") applySort({ key, direction: "desc" });
-  else if (!serverPaged.value) applySort(null);
+  else applySort({ key, direction: sort.value.direction === "asc" ? "desc" : "asc" });
 }
 
 function setSortKey(key: string) {
