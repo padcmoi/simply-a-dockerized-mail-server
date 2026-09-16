@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - fix(blocklist): the Junk notice goes out when the third mail from a sender is marked as spam, and again after an unblock resets the counter, instead of being held back by a 180-day Redis lock (16-09-2026)
 - fix(dovecot): postmaster notices are delivered through dovecot-lda so the user's filters apply, and fall back to doveadm save into INBOX when that delivery fails, so no notice is lost silently (16-09-2026)
+- fix(dovecot): LMTP delivery no longer adds a Received header for the internal postfix to dovecot hop, which exposed the docker IP and the container id, and dovecot names itself after MAIL_HOSTNAME (16-09-2026)
 - fix(postfix): the entrypoint gives the queue directories the owners, groups and modes postfix-files declares, instead of a recursive chown that took pid away from root and public and maildrop away from postdrop at every start (16-09-2026)
 - fix(postfix): main.cf no longer sets smtpd_use_tls, a deprecated parameter that smtpd_tls_security_level already overrides (16-09-2026)
 
