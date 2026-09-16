@@ -17,8 +17,8 @@ const columns = computed<DataTableColumn<RecipientRow>[]>(() => [
   { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota), searchable: false },
   { key: "usedBytes", label: t("recipients.table.used"), value: (row) => Number(row.usedBytes), searchable: false },
   { key: "active", label: t("recipients.table.active"), value: (row) => row.active === 1, searchable: false },
+  { key: "validity", label: t("recipients.table.validity"), value: (row) => isValidNow(row), searchable: false },
   { key: "ownerEmail", label: t("recipients.table.owner"), value: (row) => row.ownerEmail ?? "" },
-  { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity, searchable: false },
 ]);
 
 // The create form now lives on its own page, which demands recipients:create-recipient.
@@ -44,7 +44,7 @@ const canEditRecipients = computed(() => {
 
 const { t } = useI18n();
 const { call } = useApi();
-const { formatDateTime } = useDateTime();
+const { formatDate, formatDateTime } = useDateTime();
 const { isRoot, hasDomain } = usePermissions();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
@@ -75,8 +75,20 @@ function editTo(item: RecipientRow) {
   return `/admin/domains/${domainFqdn.value}/recipients/${item.id}/edit`;
 }
 
-function occupancy(r: RecipientRow) {
-  return occupancyPercent(Number(r.quota), Number(r.usedBytes));
+function windowStart(row: RecipientRow) {
+  const day = row.userStartDate?.slice(0, 10);
+  return !day || day <= "1970-01-01" ? null : day;
+}
+
+function isValidNow(row: RecipientRow) {
+  const today = todayDay();
+  const start = windowStart(row);
+  const end = row.userEndDate?.slice(0, 10) ?? null;
+  return (!start || start <= today) && (!end || end >= today);
+}
+
+function windowBound(day: string | null) {
+  return day ? formatDate(day) : t("recipients.table.unlimited");
 }
 
 async function remove(row: RecipientRow) {
@@ -123,7 +135,7 @@ async function onDeleteConfirmed() {
       </UCard>
     </div>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="6" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="7" />
 
     <DataTable
       v-else
@@ -163,10 +175,7 @@ async function onDeleteConfirmed() {
       </template>
 
       <template #usedBytes="{ row }">
-        <div class="min-w-[110px]">
-          <p>{{ formatBytes(Number(row.usedBytes)) }}</p>
-          <UProgress :model-value="occupancy(row)" :color="occupancyColor(occupancy(row))" size="xs" class="mt-1" />
-        </div>
+        <span>{{ formatBytes(Number(row.usedBytes)) }}</span>
       </template>
 
       <template #active="{ row }">
@@ -175,16 +184,23 @@ async function onDeleteConfirmed() {
         </UBadge>
       </template>
 
+      <template #validity="{ row }">
+        <span class="inline-flex items-center gap-1.5 whitespace-nowrap" :class="isValidNow(row) ? 'text-success' : 'text-error'">
+          <template v-if="!windowStart(row) && !row.userEndDate">{{ t("recipients.table.unlimited") }}</template>
+          <template v-else>
+            <span>{{ windowBound(windowStart(row)) }}</span>
+            <UIcon name="i-lucide-arrow-right" class="size-3.5 shrink-0" />
+            <span>{{ windowBound(row.userEndDate) }}</span>
+          </template>
+        </span>
+      </template>
+
       <template #ownerEmail="{ row }">
         <OwnerAccountCell :owner-id="row.ownerId" :owner-email="row.ownerEmail" />
       </template>
 
       <template #createdAt="{ row }">
         <span class="text-muted">{{ formatDateTime(row.createdAt) }}</span>
-      </template>
-
-      <template #lastActivity="{ row }">
-        <span class="text-muted">{{ formatDateTime(row.lastActivity) }}</span>
       </template>
 
       <template #actions="{ row }">

@@ -37,6 +37,8 @@ export default {
     used: "Consommé",
     active: "Actif",
     owner: "Compte",
+    validity: "Validité",
+    unlimited: "Illimité",
   },
   toast: {
     pickDomain: "Choisissez d'abord un domaine",
@@ -55,6 +57,8 @@ export default {
     saveFailed: "Échec de la mise à jour",
     passwordChanged: "Mot de passe changé",
     passwordFailed: "Impossible de changer le mot de passe",
+    validitySaved: "Période de validité mise à jour",
+    validityFailed: "Impossible de mettre à jour la période de validité",
     loadFailed: "Impossible de charger ce destinataire",
   },
 } satisfies Locales["recipients"];

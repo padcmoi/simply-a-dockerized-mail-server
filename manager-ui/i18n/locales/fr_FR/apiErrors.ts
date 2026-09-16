@@ -15,6 +15,7 @@ export default {
     quotaBelowUsage: "Le quota ne peut pas descendre sous les {usedMb} Mo déjà occupés par {email}",
     quotaExceedsDomain:
       "Il ne reste que {availableMb} Mo sur {domain} : son quota est de {domainQuotaMb} Mo, dont {allocatedMb} Mo déjà attribués à ses autres destinataires",
+    windowReversed: "La date de fin ne peut pas précéder la date de début",
   },
   mail: {
     notConfigured: "Le serveur de mail sortant n'est pas configuré, aucun envoi n'est possible",

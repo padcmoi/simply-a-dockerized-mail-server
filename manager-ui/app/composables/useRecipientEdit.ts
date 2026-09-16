@@ -1,4 +1,5 @@
 import { MB } from "~/utils/bytes";
+import { isDateRangeReversed, type DateRangeValue } from "~/utils/date-range";
 
 // Editing one mailbox from the administration: its status and quota inside the
 // domain's headroom, the admin password reset, and the ownership rights the
@@ -6,6 +7,16 @@ import { MB } from "~/utils/bytes";
 
 const MIN_QUOTA_MB = 1;
 const PASSWORD_MIN = 8;
+const UNBOUNDED_START_DATE = "1970-01-01";
+
+function windowStart(day: string | null | undefined) {
+  const value = day?.slice(0, 10);
+  return !value || value <= UNBOUNDED_START_DATE ? null : value;
+}
+
+function windowEnd(day: string | null | undefined) {
+  return day ? day.slice(0, 10) : null;
+}
 
 export function useRecipientEdit() {
   const route = useRoute();
@@ -21,8 +32,14 @@ export function useRecipientEdit() {
   const loading = ref(true);
   const saving = ref(false);
   const changingPassword = ref(false);
+  const savingValidity = ref(false);
 
-  const form = reactive({ active: true, quotaMb: MIN_QUOTA_MB, password: "" });
+  const form = reactive({
+    active: true,
+    quotaMb: MIN_QUOTA_MB,
+    password: "",
+    validity: { start: null, end: null } as DateRangeValue,
+  });
 
   const recipientId = computed(() => Number(route.params.id));
   const listPath = computed(() => `/admin/domains/${domainFqdn.value}/recipients`);
@@ -73,6 +90,15 @@ export function useRecipientEdit() {
 
   const formInvalid = computed(() => quotaUnderLimit.value || quotaOverLimit.value || !dirty.value);
 
+  const validityDirty = computed(
+    () =>
+      recipient.value !== null &&
+      (form.validity.start !== windowStart(recipient.value.userStartDate) ||
+        form.validity.end !== windowEnd(recipient.value.userEndDate))
+  );
+
+  const canSaveValidity = computed(() => validityDirty.value && !isDateRangeReversed(form.validity));
+
   watch(domainId, load, { immediate: true });
 
   // `max` on a number input only bounds the spinner arrows: typing or pasting
@@ -90,6 +116,7 @@ export function useRecipientEdit() {
       const found = await call<RecipientDetail>(`/domains/${domainId.value}/recipients/${recipientId.value}`);
       recipient.value = found;
       form.active = found.active === 1;
+      form.validity = { start: windowStart(found.userStartDate), end: windowEnd(found.userEndDate) };
       // An existing quota can sit below the floor (usage grew past it, or the
       // mailbox predates this rule); open on the floor so the field starts valid.
       form.quotaMb = Math.max(Math.round(Number(found.quota) / MB), floorMb.value);
@@ -106,7 +133,10 @@ export function useRecipientEdit() {
     try {
       await call(`/domains/${domainId.value}/recipients/${recipientId.value}`, {
         method: "PATCH",
-        body: { quota: form.quotaMb * MB, active: form.active },
+        body: {
+          quota: form.quotaMb * MB,
+          active: form.active,
+        },
       });
       await loadHeadroom();
       toast.add({ title: t("recipients.editPage.saved"), color: "success" });
@@ -137,12 +167,28 @@ export function useRecipientEdit() {
     }
   }
 
+  async function saveValidity() {
+    if (!domainId.value || !recipient.value || !canSaveValidity.value) return;
+    savingValidity.value = true;
+    try {
+      const body = { userStartDate: form.validity.start, userEndDate: form.validity.end };
+      await call(`/domains/${domainId.value}/recipients/${recipientId.value}`, { method: "PATCH", body });
+      recipient.value = { ...recipient.value, userStartDate: body.userStartDate, userEndDate: body.userEndDate };
+      toast.add({ title: t("recipients.editPage.validitySaved"), color: "success" });
+    } catch (err) {
+      toast.add({ title: t("recipients.editPage.validityFailed"), description: apiErrorMessage(err), color: "error" });
+    } finally {
+      savingValidity.value = false;
+    }
+  }
+
   return {
     PASSWORD_MIN,
     recipient,
     loading,
     saving,
     changingPassword,
+    savingValidity,
     form,
     listPath,
     isPostmaster,
@@ -155,9 +201,11 @@ export function useRecipientEdit() {
     quotaOverLimit,
     passwordTooShort,
     canChangePassword,
+    canSaveValidity,
     formInvalid,
     load,
     save,
     changePassword,
+    saveValidity,
   };
 }

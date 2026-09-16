@@ -39,4 +39,12 @@ export default {
   hidePassword: "Hide password",
   saving: "Saving...",
   autosaveHint: "Saved automatically",
+  dateRange: {
+    title: "Validity period",
+    description: "Active between these two dates. An unlimited bound has no limit on that side.",
+    start: "Start",
+    end: "End",
+    unlimited: "Unlimited",
+    endBeforeStart: "The end date cannot come before the start date",
+  },
 } satisfies Locales["common"];

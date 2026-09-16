@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - feat(autorouter): moving a mail into a personal folder sends a postmaster notice when the AUTOROUTER rule is created or changes folder, once for a batch of mails from the same sender (16-09-2026)
 - feat(dovecot): both postmaster notices carry an X-Mailer header naming Simply Mail Server and the running version, read from manager-api/VERSION at send time (16-09-2026)
 - feat(recipients): virtual_users gains a created_at column defaulting to now, shown as the first column of the recipient list, sorted newest first by default, and on the edit page (16-09-2026)
+- feat(recipients): a mailbox's validity window, user_start_date to user_end_date with either bound unlimited, shows as a list column green while today falls inside it and red otherwise, sortable either way, and is set in its own card at creation and on the edit page through a reusable DateRangeCard, a range calendar plus exact date inputs (16-09-2026)
+- feat(recipients): the recipient list drops the usage progress bar and the last modification column to make room (16-09-2026)
 
 ### Fixed
 

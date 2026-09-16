@@ -37,6 +37,8 @@ export default {
     used: "Used",
     active: "Active",
     owner: "Account",
+    validity: "Validity",
+    unlimited: "Unlimited",
   },
   toast: {
     pickDomain: "Pick a domain first",
@@ -55,6 +57,8 @@ export default {
     saveFailed: "Update failed",
     passwordChanged: "Password changed",
     passwordFailed: "Could not change the password",
+    validitySaved: "Validity period updated",
+    validityFailed: "Could not update the validity period",
     loadFailed: "Could not load this recipient",
   },
 } satisfies Locales["recipients"];

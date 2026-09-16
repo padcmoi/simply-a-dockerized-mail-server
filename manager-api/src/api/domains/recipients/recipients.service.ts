@@ -13,6 +13,8 @@ import { DelegationsService } from "../delegations/delegations.service";
 import { CreateRecipientDto, UpdateRecipientDto } from "./recipients.validation";
 import { ActivityLogService } from "../../../core/activity/activity-log.service";
 
+const UNBOUNDED_START_DATE = "1970-01-01";
+
 // postmaster@<domain> is provisioned automatically by DomainsService.reservePostmaster
 // (inactive, quota 0) and must stay that way for its lifetime: it's the
 // envelope-from dovecot-lda uses for system notifications, never a real
@@ -38,6 +40,7 @@ export const RECIPIENTS_SORTABLE_COLUMNS = [
   "usedBytes",
   "ownerEmail",
   "createdAt",
+  "validity",
   "lastActivity",
   "id",
 ] as const;
@@ -154,7 +157,13 @@ export class RecipientsService {
     }
 
     const total = await qb.getCount();
-    if (sortBy === "usedBytes") qb.orderBy("usedBytes", dir);
+    if (sortBy === "validity") {
+      qb.addSelect(
+        "CASE WHEN r.user_start_date <= CURDATE() AND (r.user_end_date IS NULL OR r.user_end_date >= CURDATE()) THEN 1 ELSE 0 END",
+        "validNow"
+      ).orderBy("validNow", dir);
+      qb.addOrderBy("r.id", dir);
+    } else if (sortBy === "usedBytes") qb.orderBy("usedBytes", dir);
     else if (sortBy === "ownerEmail") qb.orderBy("ownerEmail", dir);
     else qb.orderBy(`r.${sortBy}`, dir);
     if (sortBy === "createdAt") qb.addOrderBy("r.id", dir);
@@ -292,6 +301,13 @@ export class RecipientsService {
       throw new ApiError(HttpStatus.CONFLICT, "recipients.alreadyExists", `Recipient ${email} already exists`, { email });
     }
     if (!opts.skipDomainQuota) await this.assertQuotaFitsDomain(domain, input.quota);
+    const userStartDate =
+      input.userStartDate === undefined ? new Date().toISOString().slice(0, 10) : (input.userStartDate ?? UNBOUNDED_START_DATE);
+    if (input.userEndDate && userStartDate > UNBOUNDED_START_DATE && input.userEndDate < userStartDate) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, "recipients.windowReversed", `Recipient ${email} cannot end before it starts`, {
+        email,
+      });
+    }
     const saved = await this.recipients.save(
       this.recipients.create({
         email,
@@ -303,7 +319,7 @@ export class RecipientsService {
         uid: "vmail",
         gid: "vmail",
         ownerId: opts.ownerId ?? null,
-        userStartDate: new Date().toISOString().slice(0, 10),
+        userStartDate,
         userEndDate: input.userEndDate ?? null,
       })
     );
@@ -330,7 +346,14 @@ export class RecipientsService {
       current.quota = String(input.quota);
     }
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
+    if (input.userStartDate !== undefined) current.userStartDate = input.userStartDate ?? UNBOUNDED_START_DATE;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
+    const start = String(current.userStartDate).slice(0, 10);
+    if (current.userEndDate && start > UNBOUNDED_START_DATE && String(current.userEndDate).slice(0, 10) < start) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, "recipients.windowReversed", `Recipient #${id} cannot end before it starts`, {
+        id,
+      });
+    }
     const saved = await this.recipients.save(current);
     await this.activity.record({
       action: "recipients.updated",

@@ -36,5 +36,12 @@ export function useDateTime() {
     return rtf.format(Math.round(diffSec / 86400), "day");
   }
 
-  return { formatDateTime, timeAgo };
+  function formatDate(day: string | null | undefined) {
+    if (!day) return "-";
+    const date = new Date(`${day.slice(0, 10)}T00:00:00Z`);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString(intlLocale.value, { dateStyle: "medium", timeZone: "UTC" });
+  }
+
+  return { formatDate, formatDateTime, timeAgo };
 }

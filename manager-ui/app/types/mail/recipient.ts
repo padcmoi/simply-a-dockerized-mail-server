@@ -12,6 +12,8 @@ export interface RecipientRow {
   // when the mailbox belongs to nobody.
   ownerId: string | null;
   ownerEmail: string | null;
+  userStartDate: string | null;
+  userEndDate: string | null;
   // `virtual_users.last_activity` carries `ON UPDATE current_timestamp()`: it
   // stamps the row's last edit, not mail traffic. Postfix-legacy name, kept.
   lastActivity: string | null;
@@ -27,6 +29,8 @@ export interface RecipientDetail {
   active: number;
   ownerEmail: string | null;
   createdAt: string;
+  userStartDate: string | null;
+  userEndDate: string | null;
 }
 
 // What an account owns, from the admin account detail and the profile.

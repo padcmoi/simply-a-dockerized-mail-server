@@ -15,6 +15,7 @@ export default {
     quotaBelowUsage: "The quota cannot go below the {usedMb} MB {email} already stores",
     quotaExceedsDomain:
       "Only {availableMb} MB left on {domain}: its quota is {domainQuotaMb} MB, of which {allocatedMb} MB are already allocated to its other recipients",
+    windowReversed: "The end date cannot come before the start date",
   },
   mail: {
     notConfigured: "Outbound mail is not configured, so nothing can be sent",

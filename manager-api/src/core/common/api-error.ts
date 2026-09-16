@@ -20,6 +20,7 @@ export const API_ERROR_CODES = [
   "recipients.postmasterUndeletable",
   "recipients.quotaBelowUsage",
   "recipients.quotaExceedsDomain",
+  "recipients.windowReversed",
   "aliases.notFound",
   "aliases.alreadyAssigned",
   "aliases.postmasterUnassignable",

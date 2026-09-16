@@ -39,4 +39,12 @@ export default {
   hidePassword: "Masquer le mot de passe",
   saving: "Enregistrement...",
   autosaveHint: "Enregistré automatiquement",
+  dateRange: {
+    title: "Période de validité",
+    description: "Actif entre ces deux dates. Une borne illimitée n'a pas de limite de ce côté.",
+    start: "Début",
+    end: "Fin",
+    unlimited: "Illimité",
+    endBeforeStart: "La date de fin ne peut pas précéder la date de début",
+  },
 } satisfies Locales["common"];

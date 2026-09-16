@@ -17,6 +17,7 @@ export interface Locales {
       postmasterUndeletable: string;
       quotaBelowUsage: string;
       quotaExceedsDomain: string;
+      windowReversed: string;
     };
     mail: {
       notConfigured: string;
@@ -758,6 +759,7 @@ export interface Locales {
     // what they actually hold. Not to be confused with `lastActivity` above,
     // which labels dovecot's own delivery counter on the quotas page.
     lastModification: string;
+    creationDate: string;
     cancel: string;
     close: string;
     back: string;
@@ -774,6 +776,14 @@ export interface Locales {
     hidePassword: string;
     saving: string;
     autosaveHint: string;
+    dateRange: {
+      title: string;
+      description: string;
+      start: string;
+      end: string;
+      unlimited: string;
+      endBeforeStart: string;
+    };
   };
   // Full-page error states rendered by app/error.vue (Nuxt error boundary).
   error: {
@@ -1017,6 +1027,8 @@ export interface Locales {
       used: string;
       active: string;
       owner: string;
+      validity: string;
+      unlimited: string;
     };
     toast: {
       pickDomain: string;
@@ -1035,6 +1047,8 @@ export interface Locales {
       saveFailed: string;
       passwordChanged: string;
       passwordFailed: string;
+      validitySaved: string;
+      validityFailed: string;
       loadFailed: string;
     };
   };

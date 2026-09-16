@@ -1,4 +1,6 @@
+import { getLocalTimeZone, today } from "@internationalized/date";
 import { MB } from "~/utils/bytes";
+import { isDateRangeReversed, type DateRangeValue } from "~/utils/date-range";
 
 // Creating a mailbox: the form's state, its local checks, the field-level
 // refusals the API sends back, and the quota views the donut and the slider
@@ -30,7 +32,12 @@ export function useRecipientForm() {
   // inherits a default, and the only defensible number would be the domain's
   // remaining headroom, which is a ceiling, not a suggestion. The hint states
   // the admissible range.
-  const form = reactive({ localPart: "", password: "", quotaMb: null as number | null });
+  const form = reactive({
+    localPart: "",
+    password: "",
+    quotaMb: null as number | null,
+    validity: { start: today(getLocalTimeZone()).toString(), end: null } as DateRangeValue,
+  });
 
   // Clearing a number input hands `v-model.number` back the raw "", not null,
   // so every check below reads through this rather than `form.quotaMb`.
@@ -62,6 +69,7 @@ export function useRecipientForm() {
       quotaMb.value === null ||
       quotaUnderLimit.value ||
       quotaOverLimit.value ||
+      isDateRangeReversed(form.validity) ||
       Boolean(serverErrors.value.localPart) ||
       Boolean(serverErrors.value.password)
   );
@@ -149,6 +157,8 @@ export function useRecipientForm() {
           localPart: form.localPart,
           password: form.password,
           quota: quota * MB,
+          userStartDate: form.validity.start,
+          userEndDate: form.validity.end,
         },
       });
       toast.add({ title: t("recipients.toast.created"), color: "success" });

@@ -17,6 +17,7 @@ const {
   loading,
   saving,
   changingPassword,
+  savingValidity,
   form,
   listPath,
   isPostmaster,
@@ -29,10 +30,12 @@ const {
   quotaOverLimit,
   passwordTooShort,
   canChangePassword,
+  canSaveValidity,
   formInvalid,
   load,
   save,
   changePassword,
+  saveValidity,
 } = useRecipientEdit();
 
 watchEffect(() => {
@@ -126,6 +129,15 @@ watchEffect(() => {
         </div>
       </template>
     </UCard>
+
+    <DateRangeCard
+      v-if="recipient && !isPostmaster"
+      v-model="form.validity"
+      saveable
+      :saving="savingValidity"
+      :can-save="canSaveValidity"
+      @save="saveValidity"
+    />
 
     <UCard v-if="recipient && !isPostmaster">
       <template #header>
