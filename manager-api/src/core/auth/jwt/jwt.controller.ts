@@ -205,7 +205,16 @@ export class JwtAuthController {
       rows.forEach((row) => usedByEmail.set(row.email, row.bytes));
     }
     return {
-      domains: domains.map((d) => ({ id: d.id, domain: d.domain, active: d.active === 1, quota: d.quota })),
+      domains: domains.map((d) => ({
+        id: d.id,
+        domain: d.domain,
+        active: d.active === 1,
+        quota: d.quota,
+        userStartDate: d.userStartDate,
+        userEndDate: d.userEndDate,
+        createdAt: d.createdAt,
+        lastActivity: d.lastActivity,
+      })),
       recipients: recipients.map((r) => ({
         id: r.id,
         email: r.email,
@@ -213,8 +222,21 @@ export class JwtAuthController {
         active: r.active === 1,
         quota: r.quota,
         usedBytes: usedByEmail.get(r.email) ?? "0",
+        userStartDate: r.userStartDate,
+        userEndDate: r.userEndDate,
+        createdAt: r.createdAt,
+        lastActivity: r.lastActivity,
       })),
-      aliases: aliases.map((a) => ({ id: a.id, source: a.source, destination: a.destination, domain: a.domain })),
+      aliases: aliases.map((a) => ({
+        id: a.id,
+        source: a.source,
+        destination: a.destination,
+        domain: a.domain,
+        userStartDate: a.userStartDate,
+        userEndDate: a.userEndDate,
+        createdAt: a.createdAt,
+        lastActivity: a.lastActivity,
+      })),
     };
   }
 

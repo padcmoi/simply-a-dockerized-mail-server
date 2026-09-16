@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DateRangeValue } from "~/utils/date-range";
+
 definePageMeta({});
 
 const { t } = useI18n();
@@ -12,7 +14,12 @@ const { rows, hasLoadedOnce, refresh } = useMyDelegations();
 
 const saving = ref(false);
 const loadedFor = ref<number | null>(null);
-const form = reactive({ localPart: "", password: "", quotaMb: 100 });
+const form = reactive({
+  localPart: "",
+  password: "",
+  quotaMb: 100,
+  validity: { start: todayDay(), end: null } as DateRangeValue,
+});
 
 const domainId = computed(() => Number(route.params.domainId));
 const delegation = computed(() => rows.value.find((d) => d.domainId === domainId.value) ?? null);
@@ -31,7 +38,13 @@ const capReached = computed(
 );
 const localPartValid = computed(() => /^[a-z0-9._+-]+$/i.test(form.localPart.trim()));
 const canSubmit = computed(
-  () => !!delegation.value && !capReached.value && localPartValid.value && form.password.length >= 8 && Number(form.quotaMb) >= 1
+  () =>
+    !isDateRangeReversed(form.validity) &&
+    !!delegation.value &&
+    !capReached.value &&
+    localPartValid.value &&
+    form.password.length >= 8 &&
+    Number(form.quotaMb) >= 1
 );
 
 watch(
@@ -67,6 +80,8 @@ async function submit() {
         localPart: form.localPart.trim().toLowerCase(),
         password: form.password,
         quota: Math.round(Number(form.quotaMb)) * MB,
+        userStartDate: form.validity.start,
+        userEndDate: form.validity.end,
       },
     });
     toast.add({ title: t("myspace.delegations.createdRecipient"), color: "success" });
@@ -136,5 +151,7 @@ async function submit() {
         </div>
       </div>
     </UCard>
+
+    <DateRangeCard v-if="hasLoadedOnce && !missing" v-model="form.validity" />
   </div>
 </template>

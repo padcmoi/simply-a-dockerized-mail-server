@@ -12,13 +12,13 @@ export default {
   quotaLabel: "Quota: {value}",
   loadFailed: "Could not load your personal space.",
   backToSpace: "Back to my space",
-  manage: "Manage",
   table: {
     address: "Address",
     domain: "Domain",
     status: "Status",
     quota: "Quota",
     destination: "Forwards to",
+    validity: "Validity",
   },
   recipient: {
     loadFailed: "Could not load this mailbox.",

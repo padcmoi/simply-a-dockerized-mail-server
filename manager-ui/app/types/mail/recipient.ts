@@ -41,6 +41,10 @@ export interface OwnedRecipientSummary {
   domain: string;
   active: boolean;
   quota: string;
+  userStartDate?: string | null;
+  userEndDate?: string | null;
+  createdAt?: string;
+  lastActivity?: string | null;
 }
 
 // The personal space's reading of the same mailbox, usage included.

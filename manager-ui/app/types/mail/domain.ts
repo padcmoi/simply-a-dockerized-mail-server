@@ -33,6 +33,10 @@ export interface OwnedDomain {
   domain: string;
   active: boolean;
   quota: string;
+  userStartDate?: string | null;
+  userEndDate?: string | null;
+  createdAt?: string;
+  lastActivity?: string | null;
 }
 
 // Just enough of a domain to pick it from a list.

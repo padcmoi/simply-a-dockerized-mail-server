@@ -50,6 +50,10 @@ export class MySpaceService {
       quota: withUsage.quota,
       usedBytes: withUsage.usedBytes,
       active: withUsage.active === 1,
+      userStartDate: withUsage.userStartDate,
+      userEndDate: withUsage.userEndDate,
+      createdAt: withUsage.createdAt,
+      lastActivity: withUsage.lastActivity,
     };
   }
 
@@ -73,12 +77,22 @@ export class MySpaceService {
 
   async getAlias(userId: string, id: number) {
     const alias = await this.ownedAlias(userId, id);
-    return { id: alias.id, source: alias.source, destination: alias.destination, domain: alias.domain };
+    return {
+      id: alias.id,
+      source: alias.source,
+      destination: alias.destination,
+      domain: alias.domain,
+      userStartDate: alias.userStartDate,
+      userEndDate: alias.userEndDate,
+      createdAt: alias.createdAt,
+      lastActivity: alias.lastActivity,
+    };
   }
 
   async updateAlias(userId: string, id: number, input: UpdateMyAliasDto) {
     const alias = await this.ownedAlias(userId, id);
-    await this.aliasesSvc.update(alias.id, { destination: input.destination }, alias.domain);
+    const { destination, userStartDate, userEndDate } = input;
+    await this.aliasesSvc.update(alias.id, { destination, userStartDate, userEndDate }, alias.domain);
     return this.getAlias(userId, id);
   }
 

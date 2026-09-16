@@ -109,13 +109,13 @@ export interface Locales {
     quotaLabel: string;
     loadFailed: string;
     backToSpace: string;
-    manage: string;
     table: {
       address: string;
       domain: string;
       status: string;
       quota: string;
       destination: string;
+      validity: string;
     };
     recipient: {
       loadFailed: string;
@@ -789,6 +789,8 @@ export interface Locales {
       end: string;
       unlimited: string;
       endBeforeStart: string;
+      saved: string;
+      saveFailed: string;
     };
   };
   // Full-page error states rendered by app/error.vue (Nuxt error boundary).

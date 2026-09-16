@@ -2,6 +2,7 @@
 definePageMeta({});
 
 const { t } = useI18n();
+const { formatDateTime } = useDateTime();
 const { call } = useApi();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { tick } = useDataRefresh();
@@ -31,9 +32,15 @@ const domains = computed(() => data.value?.domains ?? []);
 const recipients = computed(() => data.value?.recipients ?? []);
 const aliases = computed(() => data.value?.aliases ?? []);
 const domainColumns = computed<DataTableColumn<OwnedDomain>[]>(() => [
+  { key: "createdAt", label: t("common.creationDate"), value: (row) => row.createdAt ?? "" },
   { key: "domain", label: t("myspace.table.domain"), value: (row) => row.domain, primary: true },
   { key: "quota", label: t("myspace.table.quota"), value: (row) => Number(row.quota) },
   { key: "active", label: t("myspace.table.status"), value: (row) => row.active },
+  {
+    key: "validity",
+    label: t("myspace.table.validity"),
+    value: (row) => isWindowOpenToday(row.userStartDate, row.userEndDate),
+  },
 ]);
 
 // Icon-only triggers: each section already carries its own title in the page.
@@ -103,9 +110,14 @@ watch(
         :columns="domainColumns"
         :loading="loading"
         :row-key="(row: OwnedDomain) => row.id"
-        sort-key="domain"
+        sort-key="createdAt"
+        sort-direction="desc"
         :empty-label="t('myspace.noDomains')"
       >
+        <template #createdAt="{ row }">
+          <span class="text-muted whitespace-nowrap">{{ formatDateTime(row.createdAt) }}</span>
+        </template>
+
         <template #domain="{ row }">
           <FullTooltip :text="row.domain">
             <span class="font-medium">{{ truncateChars(row.domain, 40) }}</span>
@@ -120,6 +132,10 @@ watch(
           <UBadge :color="row.active ? 'success' : 'neutral'" variant="subtle">
             {{ row.active ? t("common.active") : t("common.inactive") }}
           </UBadge>
+        </template>
+
+        <template #validity="{ row }">
+          <ValidityWindowCell :start="row.userStartDate" :end="row.userEndDate" />
         </template>
       </DataTable>
     </section>

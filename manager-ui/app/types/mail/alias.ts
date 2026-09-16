@@ -37,4 +37,8 @@ export interface OwnedAlias {
   source: string;
   destination: string;
   domain: string;
+  userStartDate?: string | null;
+  userEndDate?: string | null;
+  createdAt?: string;
+  lastActivity?: string | null;
 }

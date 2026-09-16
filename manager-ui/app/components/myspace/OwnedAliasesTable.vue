@@ -6,11 +6,18 @@ const { aliases } = defineProps<{
 }>();
 
 const { t } = useI18n();
+const { formatDateTime } = useDateTime();
 
 const columns = computed<DataTableColumn<OwnedAlias>[]>(() => [
+  { key: "createdAt", label: t("common.creationDate"), value: (row) => row.createdAt ?? "" },
   { key: "source", label: t("myspace.table.address"), value: (row) => row.source, primary: true },
   { key: "destination", label: t("myspace.table.destination"), value: (row) => row.destination },
   { key: "domain", label: t("myspace.table.domain"), value: (row) => row.domain },
+  {
+    key: "validity",
+    label: t("myspace.table.validity"),
+    value: (row) => isWindowOpenToday(row.userStartDate, row.userEndDate),
+  },
 ]);
 </script>
 
@@ -21,7 +28,7 @@ const columns = computed<DataTableColumn<OwnedAlias>[]>(() => [
       <UBadge v-if="hasLoadedOnce" color="neutral" variant="subtle">{{ aliases.length }}</UBadge>
     </div>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
 
     <DataTable
       v-else
@@ -29,9 +36,14 @@ const columns = computed<DataTableColumn<OwnedAlias>[]>(() => [
       :columns="columns"
       :loading="loading"
       :row-key="(row: OwnedAlias) => row.id"
-      sort-key="source"
+      sort-key="createdAt"
+      sort-direction="desc"
       :empty-label="t('common.noResults')"
     >
+      <template #createdAt="{ row }">
+        <span class="text-muted whitespace-nowrap">{{ formatDateTime(row.createdAt) }}</span>
+      </template>
+
       <template #source="{ row }">
         <FullTooltip :text="row.source">
           <NuxtLink :to="`/my-space/aliases/${row.id}`" class="font-medium text-primary hover:underline">
@@ -55,16 +67,8 @@ const columns = computed<DataTableColumn<OwnedAlias>[]>(() => [
         </FullTooltip>
       </template>
 
-      <template #actions="{ row }">
-        <UButton
-          :to="`/my-space/aliases/${row.id}`"
-          :aria-label="t('myspace.manage')"
-          icon="i-lucide-arrow-right"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          square
-        />
+      <template #validity="{ row }">
+        <ValidityWindowCell :start="row.userStartDate" :end="row.userEndDate" />
       </template>
     </DataTable>
   </section>

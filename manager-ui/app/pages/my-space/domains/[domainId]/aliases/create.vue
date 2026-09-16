@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DateRangeValue } from "~/utils/date-range";
+
 definePageMeta({});
 
 const { t } = useI18n();
@@ -11,7 +13,11 @@ const toast = useToast();
 const { rows, hasLoadedOnce, refresh } = useMyDelegations();
 
 const saving = ref(false);
-const form = reactive({ localPart: "", destination: "" });
+const form = reactive({
+  localPart: "",
+  destination: "",
+  validity: { start: todayDay(), end: null } as DateRangeValue,
+});
 
 const domainId = computed(() => Number(route.params.domainId));
 const delegation = computed(() => rows.value.find((d) => d.domainId === domainId.value) ?? null);
@@ -21,7 +27,14 @@ const capReached = computed(
 );
 const localPartValid = computed(() => /^[a-z0-9._+-]+$/i.test(form.localPart.trim()));
 const destinationValid = computed(() => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.destination.trim()));
-const canSubmit = computed(() => !!delegation.value && !capReached.value && localPartValid.value && destinationValid.value);
+const canSubmit = computed(
+  () =>
+    !isDateRangeReversed(form.validity) &&
+    !!delegation.value &&
+    !capReached.value &&
+    localPartValid.value &&
+    destinationValid.value
+);
 
 watchEffect(() => {
   setBreadcrumb([{ label: t("nav.myspace"), to: "/my-space" }, { label: t("myspace.delegations.newAlias") }]);
@@ -34,7 +47,12 @@ async function submit() {
   try {
     await call(`/my-space/domains/${d.domainId}/aliases`, {
       method: "POST",
-      body: { localPart: form.localPart.trim().toLowerCase(), destination: form.destination.trim().toLowerCase() },
+      body: {
+        localPart: form.localPart.trim().toLowerCase(),
+        destination: form.destination.trim().toLowerCase(),
+        userStartDate: form.validity.start,
+        userEndDate: form.validity.end,
+      },
     });
     toast.add({ title: t("myspace.delegations.createdAlias"), color: "success" });
     bump();
@@ -88,5 +106,7 @@ async function submit() {
         </div>
       </div>
     </UCard>
+
+    <DateRangeCard v-if="hasLoadedOnce && !missing" v-model="form.validity" />
   </div>
 </template>

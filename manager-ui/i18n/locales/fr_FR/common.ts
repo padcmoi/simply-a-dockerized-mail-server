@@ -46,5 +46,7 @@ export default {
     end: "Fin",
     unlimited: "Illimité",
     endBeforeStart: "La date de fin ne peut pas précéder la date de début",
+    saved: "Période de validité mise à jour",
+    saveFailed: "Impossible de mettre à jour la période de validité",
   },
 } satisfies Locales["common"];

@@ -1,4 +1,5 @@
 import { MB } from "~/utils/bytes";
+import type { DateRangeValue } from "~/utils/date-range";
 
 // One owned mailbox and everything the personal space can do to it: its status,
 // its password, its quota within what the domain delegated, and its deletion.
@@ -20,6 +21,8 @@ export function useMySpaceRecipient(recipientId: () => number) {
   const changingPassword = ref(false);
   const savingQuota = ref(false);
   const deleting = ref(false);
+  const savingValidity = ref(false);
+  const validity = ref<DateRangeValue>({ start: null, end: null });
   const form = reactive({ active: true, password: "", quotaMb: 0 });
 
   const passwordTooShort = computed(() => form.password.length > 0 && form.password.length < PASSWORD_MIN);
@@ -35,6 +38,13 @@ export function useMySpaceRecipient(recipientId: () => number) {
   const quotaDirty = computed(() => recipient.value !== null && Math.round(Number(form.quotaMb)) !== currentQuotaMb.value);
   const quotaUnderMin = computed(() => Number(form.quotaMb) < minQuotaMb.value);
   const canSaveQuota = computed(() => quotaDirty.value && !quotaUnderMin.value);
+  const canSaveValidity = computed(
+    () =>
+      recipient.value !== null &&
+      !isDateRangeReversed(validity.value) &&
+      (validity.value.start !== windowStartDay(recipient.value.userStartDate) ||
+        validity.value.end !== windowEndDay(recipient.value.userEndDate))
+  );
 
   watch(recipientId, load, { immediate: true });
 
@@ -75,6 +85,7 @@ export function useMySpaceRecipient(recipientId: () => number) {
       recipient.value = found;
       form.active = found.active;
       form.quotaMb = Math.round(Number(found.quota) / MB);
+      validity.value = { start: windowStartDay(found.userStartDate), end: windowEndDay(found.userEndDate) };
     } catch (err) {
       loadError.value = apiErrorStatus(err) === 404 ? "notFound" : "failed";
     } finally {
@@ -146,6 +157,22 @@ export function useMySpaceRecipient(recipientId: () => number) {
     }
   }
 
+  async function saveValidity() {
+    if (!canSaveValidity.value) return;
+    savingValidity.value = true;
+    try {
+      recipient.value = await call<OwnedRecipient>(`/my-space/recipients/${recipientId()}`, {
+        method: "PATCH",
+        body: { userStartDate: validity.value.start, userEndDate: validity.value.end },
+      });
+      toast.add({ title: t("common.dateRange.saved"), color: "success" });
+    } catch (err) {
+      toast.add({ title: t("common.dateRange.saveFailed"), description: apiErrorMessage(err), color: "error" });
+    } finally {
+      savingValidity.value = false;
+    }
+  }
+
   return {
     PASSWORD_MIN,
     recipient,
@@ -162,7 +189,11 @@ export function useMySpaceRecipient(recipientId: () => number) {
     changingPassword,
     savingQuota,
     deleting,
+    savingValidity,
+    validity,
+    canSaveValidity,
     changePassword,
+    saveValidity,
     remove,
   };
 }

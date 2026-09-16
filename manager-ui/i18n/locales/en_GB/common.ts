@@ -46,5 +46,7 @@ export default {
     end: "End",
     unlimited: "Unlimited",
     endBeforeStart: "The end date cannot come before the start date",
+    saved: "Validity period updated",
+    saveFailed: "Could not update the validity period",
   },
 } satisfies Locales["common"];

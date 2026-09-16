@@ -6,6 +6,7 @@ const { recipients } = defineProps<{
 }>();
 
 const { t } = useI18n();
+const { formatDateTime } = useDateTime();
 
 // Searching, sorting and paging belong to DataTable, which also decides whether
 // these rows are a table or a block each, and puts only one of the two in the
@@ -13,10 +14,16 @@ const { t } = useI18n();
 // cards hidden above it: every reader carried the list twice, and the phone,
 // which only ever sees the blocks, paid for the table it will never be shown.
 const columns = computed<DataTableColumn<OwnedRecipient>[]>(() => [
+  { key: "createdAt", label: t("common.creationDate"), value: (row) => row.createdAt ?? "" },
   { key: "email", label: t("myspace.table.address"), value: (row) => row.email, primary: true },
   { key: "domain", label: t("myspace.table.domain"), value: (row) => row.domain },
   { key: "quota", label: t("myspace.table.quota"), value: (row) => Number(row.usedBytes) },
   { key: "active", label: t("myspace.table.status"), value: (row) => row.active },
+  {
+    key: "validity",
+    label: t("myspace.table.validity"),
+    value: (row) => isWindowOpenToday(row.userStartDate, row.userEndDate),
+  },
 ]);
 
 function occupancy(r: OwnedRecipient) {
@@ -31,7 +38,7 @@ function occupancy(r: OwnedRecipient) {
       <UBadge v-if="hasLoadedOnce" color="neutral" variant="subtle">{{ recipients.length }}</UBadge>
     </div>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="3" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="6" />
 
     <DataTable
       v-else
@@ -39,9 +46,14 @@ function occupancy(r: OwnedRecipient) {
       :columns="columns"
       :loading="loading"
       :row-key="(row: OwnedRecipient) => row.id"
-      sort-key="email"
+      sort-key="createdAt"
+      sort-direction="desc"
       :empty-label="t('common.noResults')"
     >
+      <template #createdAt="{ row }">
+        <span class="text-muted whitespace-nowrap">{{ formatDateTime(row.createdAt) }}</span>
+      </template>
+
       <template #email="{ row }">
         <FullTooltip :text="row.email">
           <NuxtLink :to="`/my-space/recipients/${row.id}`" class="font-medium text-primary hover:underline">
@@ -69,16 +81,8 @@ function occupancy(r: OwnedRecipient) {
         </UBadge>
       </template>
 
-      <template #actions="{ row }">
-        <UButton
-          :to="`/my-space/recipients/${row.id}`"
-          :aria-label="t('myspace.manage')"
-          icon="i-lucide-arrow-right"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          square
-        />
+      <template #validity="{ row }">
+        <ValidityWindowCell :start="row.userStartDate" :end="row.userEndDate" />
       </template>
     </DataTable>
   </section>

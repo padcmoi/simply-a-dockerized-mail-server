@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DateRangeValue } from "~/utils/date-range";
+
 definePageMeta({});
 
 // Loose on purpose: the API's `z.email()` is the authority, this only
@@ -11,6 +13,7 @@ const { call } = useApi();
 const { apiErrorMessage, apiErrorStatus } = useApiError();
 const toast = useToast();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { formatDateTime } = useDateTime();
 
 const alias = ref<OwnedAlias | null>(null);
 const loading = ref(true);
@@ -18,12 +21,21 @@ const loadError = ref<"notFound" | "failed" | null>(null);
 const saving = ref(false);
 const deleting = ref(false);
 const confirmDelete = ref(false);
+const savingValidity = ref(false);
+const validity = ref<DateRangeValue>({ start: null, end: null });
 const form = reactive({ destination: "" });
 
 const aliasId = computed(() => Number(route.params.id));
 const destinationInvalid = computed(() => form.destination.length > 0 && !EMAIL_PATTERN.test(form.destination));
 const dirty = computed(() => alias.value !== null && form.destination !== alias.value.destination);
 const canSave = computed(() => EMAIL_PATTERN.test(form.destination) && dirty.value);
+const canSaveValidity = computed(
+  () =>
+    alias.value !== null &&
+    !isDateRangeReversed(validity.value) &&
+    (validity.value.start !== windowStartDay(alias.value.userStartDate) ||
+      validity.value.end !== windowEndDay(alias.value.userEndDate))
+);
 
 watch(aliasId, load, { immediate: true });
 
@@ -38,6 +50,7 @@ async function load() {
     const found = await call<OwnedAlias>(`/my-space/aliases/${aliasId.value}`);
     alias.value = found;
     form.destination = found.destination;
+    validity.value = { start: windowStartDay(found.userStartDate), end: windowEndDay(found.userEndDate) };
   } catch (err) {
     loadError.value = apiErrorStatus(err) === 404 ? "notFound" : "failed";
   } finally {
@@ -60,6 +73,22 @@ async function save() {
     toast.add({ title: t("myspace.alias.saveFailed"), description: apiErrorMessage(err), color: "error" });
   } finally {
     saving.value = false;
+  }
+}
+
+async function saveValidity() {
+  if (!canSaveValidity.value) return;
+  savingValidity.value = true;
+  try {
+    alias.value = await call<OwnedAlias>(`/my-space/aliases/${aliasId.value}`, {
+      method: "PATCH",
+      body: { userStartDate: validity.value.start, userEndDate: validity.value.end },
+    });
+    toast.add({ title: t("common.dateRange.saved"), color: "success" });
+  } catch (err) {
+    toast.add({ title: t("common.dateRange.saveFailed"), description: apiErrorMessage(err), color: "error" });
+  } finally {
+    savingValidity.value = false;
   }
 }
 
@@ -101,6 +130,13 @@ async function remove() {
           <UIcon name="i-lucide-at-sign" class="size-4 text-muted shrink-0" />
           <TruncatedText :text="alias.source" :limit="40" />
         </h2>
+        <p class="text-xs text-muted mt-1 flex flex-wrap gap-x-1.5">
+          <span>{{ t("common.creationDate") }}</span>
+          <span class="text-default">{{ formatDateTime(alias.createdAt) }}</span>
+          <span class="text-dimmed">|</span>
+          <span>{{ t("common.lastModification") }}</span>
+          <span class="text-default">{{ formatDateTime(alias.lastActivity) }}</span>
+        </p>
       </template>
 
       <div class="space-y-4">
@@ -137,6 +173,15 @@ async function remove() {
         </div>
       </template>
     </UCard>
+
+    <DateRangeCard
+      v-if="alias && !loading && !loadError"
+      v-model="validity"
+      saveable
+      :saving="savingValidity"
+      :can-save="canSaveValidity"
+      @save="saveValidity"
+    />
 
     <UCard v-if="alias">
       <template #header>

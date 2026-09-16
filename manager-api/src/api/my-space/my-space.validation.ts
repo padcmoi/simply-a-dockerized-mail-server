@@ -16,11 +16,19 @@ export const updateMyRecipientSchema = z
       .int()
       .min(MIN_RECIPIENT_QUOTA_BYTES, `Recipient quota must be at least ${MIN_RECIPIENT_QUOTA_BYTES} bytes (1 MB)`)
       .optional(),
+    userStartDate: z.iso.date().nullable().optional(),
+    userEndDate: z.iso.date().nullable().optional(),
   })
   .strict()
-  .refine((v) => v.password !== undefined || v.active !== undefined || v.quota !== undefined, {
-    message: "Provide a password, an active flag or a quota to update",
-  });
+  .refine(
+    (v) =>
+      v.password !== undefined ||
+      v.active !== undefined ||
+      v.quota !== undefined ||
+      v.userStartDate !== undefined ||
+      v.userEndDate !== undefined,
+    { message: "Provide a password, an active flag, a quota or a validity date to update" }
+  );
 
 // Owner-side edit of an alias the caller owns: only the destination. The source
 // is the address the domain owner handed over and is never rebuilt from the body.
@@ -29,9 +37,15 @@ export const updateMyAliasSchema = z
     destination: z
       .email()
       .max(255)
-      .transform((v) => v.toLowerCase()),
+      .transform((v) => v.toLowerCase())
+      .optional(),
+    userStartDate: z.iso.date().nullable().optional(),
+    userEndDate: z.iso.date().nullable().optional(),
   })
-  .strict();
+  .strict()
+  .refine((v) => v.destination !== undefined || v.userStartDate !== undefined || v.userEndDate !== undefined, {
+    message: "Provide a destination or a validity date to update",
+  });
 
 export type UpdateMyRecipientDto = z.infer<typeof updateMyRecipientSchema>;
 export type UpdateMyAliasDto = z.infer<typeof updateMyAliasSchema>;

@@ -212,7 +212,7 @@ export class AliasesService {
     await this.activity.record({
       action: "aliases.updated",
       entity: { type: "alias", id, label: current.source },
-      details: { fields: Object.keys(input) },
+      details: { fields: Object.keys(input).filter((key) => input[key as keyof UpdateAliasDto] !== undefined) },
     });
     return saved;
   }

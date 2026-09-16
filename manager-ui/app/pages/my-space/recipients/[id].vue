@@ -4,6 +4,7 @@ definePageMeta({});
 const route = useRoute();
 const { t } = useI18n();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { formatDateTime } = useDateTime();
 
 const confirmDelete = ref(false);
 const recipientId = computed(() => Number(route.params.id));
@@ -24,7 +25,11 @@ const {
   changingPassword,
   savingQuota,
   deleting,
+  savingValidity,
+  validity,
+  canSaveValidity,
   changePassword,
+  saveValidity,
   remove,
 } = useMySpaceRecipient(() => recipientId.value);
 
@@ -62,6 +67,13 @@ watchEffect(() => {
               <div class="min-w-0">
                 <TruncatedText :text="recipient.email" :limit="40" text-class="font-semibold" />
                 <p class="text-xs text-muted truncate">{{ recipient.domain }}</p>
+                <p class="text-xs text-muted flex flex-wrap gap-x-1.5">
+                  <span>{{ t("common.creationDate") }}</span>
+                  <span class="text-default">{{ formatDateTime(recipient.createdAt) }}</span>
+                  <span class="text-dimmed">|</span>
+                  <span>{{ t("common.lastModification") }}</span>
+                  <span class="text-default">{{ formatDateTime(recipient.lastActivity) }}</span>
+                </p>
               </div>
             </div>
           </template>
@@ -158,6 +170,8 @@ watchEffect(() => {
           </UCard>
         </div>
       </div>
+
+      <DateRangeCard v-model="validity" saveable :saving="savingValidity" :can-save="canSaveValidity" @save="saveValidity" />
 
       <UCard>
         <template #header>
