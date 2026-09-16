@@ -119,28 +119,52 @@ describe("DomainsService", () => {
   });
 
   describe("list (paginated)", () => {
+    const page = (rows: object[], total: number) => {
+      const qb = qbMock<VirtualDomain>();
+      qb.getManyAndCount.mockResolvedValueOnce([rows, total]);
+      m.repo.createQueryBuilder.mockReturnValueOnce(qb);
+      return qb;
+    };
+
     it("searches, sorts on a whitelisted column ascending, and returns items + total", async () => {
-      m.repo.findAndCount.mockResolvedValueOnce([[{ id: 1, domain: "a.com", ownerId: null }], 1]);
+      const qb = page([{ id: 1, domain: "a.com", ownerId: null }], 1);
       const res = await svc.list(
         { limit: 10, offset: 20, search: "a", sortBy: "domain", sortDir: "asc" },
         { callerId: "x", canSeeAll: true }
       );
-      const arg = m.repo.findAndCount.mock.calls[0][0];
-      expect(arg.take).toBe(10);
-      expect(arg.skip).toBe(20);
-      expect(arg.order).toEqual({ domain: "ASC" });
-      expect(arg.where.domain).toBeDefined(); // Like(%a%) applied
+      expect(qb.take).toHaveBeenCalledWith(10);
+      expect(qb.skip).toHaveBeenCalledWith(20);
+      expect(qb.orderBy).toHaveBeenCalledWith("d.domain", "ASC");
+      expect(qb.addOrderBy).toHaveBeenCalledWith("d.id", "ASC");
+      expect(qb.andWhere).toHaveBeenCalledWith("d.domain LIKE :search", { search: "%a%" });
+      expect(qb.andWhere).not.toHaveBeenCalledWith("d.ownerId = :ownerId", expect.anything());
       if (Array.isArray(res)) throw new Error("expected a paginated result");
       expect(res).toMatchObject({ total: 1 });
       expect(res.items).toHaveLength(1);
     });
 
     it("falls back to the default sort column (id, desc) on an unknown/absent sortBy and no search", async () => {
-      m.repo.findAndCount.mockResolvedValueOnce([[], 0]);
+      const qb = page([], 0);
       await svc.list({ limit: 25, offset: 0, sortDir: "desc" }, { callerId: "me", canSeeAll: false });
-      const arg = m.repo.findAndCount.mock.calls[0][0];
-      expect(arg.order).toEqual({ id: "DESC" });
-      expect(arg.where).toEqual({ ownerId: "me" }); // no search -> plain owner filter
+      expect(qb.orderBy).toHaveBeenCalledWith("d.id", "DESC");
+      expect(qb.addOrderBy).not.toHaveBeenCalled();
+      expect(qb.andWhere).toHaveBeenCalledTimes(1);
+      expect(qb.andWhere).toHaveBeenCalledWith("d.ownerId = :ownerId", { ownerId: "me" });
+    });
+
+    it("sorts on the creation date with the id as a stable tie-breaker", async () => {
+      const qb = page([], 0);
+      await svc.list({ limit: 10, offset: 0, sortBy: "createdAt", sortDir: "desc" }, { callerId: "x", canSeeAll: true });
+      expect(qb.orderBy).toHaveBeenCalledWith("d.createdAt", "DESC");
+      expect(qb.addOrderBy).toHaveBeenCalledWith("d.id", "DESC");
+    });
+
+    it("sorts on whether today falls inside the validity window", async () => {
+      const qb = page([], 0);
+      await svc.list({ limit: 10, offset: 0, sortBy: "validity", sortDir: "asc" }, { callerId: "x", canSeeAll: true });
+      expect(qb.addSelect).toHaveBeenCalledWith(expect.stringContaining("CURDATE()"), "validNow");
+      expect(qb.orderBy).toHaveBeenCalledWith("validNow", "ASC");
+      expect(qb.addOrderBy).toHaveBeenCalledWith("d.id", "ASC");
     });
   });
 
@@ -189,6 +213,25 @@ describe("DomainsService", () => {
     it("rejects a duplicate FQDN with 409 and never saves", async () => {
       m.repo.findOne.mockResolvedValueOnce({ id: 1, domain: "dup.com" });
       await expect(svc.create({ domain: "dup.com", quota: 10485760 }, "owner-1")).rejects.toBeInstanceOf(ConflictException);
+      expect(m.txSave).not.toHaveBeenCalled();
+    });
+
+    it("stores an explicit start date, 1970-01-01 for an unlimited start, and refuses a reversed window", async () => {
+      vi.spyOn(svc, "disk").mockResolvedValue({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 99_999_999 });
+      m.repo.findOne.mockResolvedValue(null);
+      m.txFindOne.mockResolvedValue(null);
+      m.dkim.create.mockResolvedValue({ selector: "s", domain: "new.com" });
+
+      await svc.create({ domain: "new.com", quota: 10485760, userStartDate: "2030-02-01" }, "owner-1");
+      expect(m.txSave).toHaveBeenCalledWith(VirtualDomain, expect.objectContaining({ userStartDate: "2030-02-01" }));
+
+      await svc.create({ domain: "new.com", quota: 10485760, userStartDate: null }, "owner-1");
+      expect(m.txSave).toHaveBeenCalledWith(VirtualDomain, expect.objectContaining({ userStartDate: "1970-01-01" }));
+
+      m.txSave.mockClear();
+      await expect(
+        svc.create({ domain: "new.com", quota: 10485760, userStartDate: "2030-02-01", userEndDate: "2030-01-01" }, "owner-1")
+      ).rejects.toMatchObject({ response: { code: "domains.windowReversed" } });
       expect(m.txSave).not.toHaveBeenCalled();
     });
 
@@ -272,6 +315,20 @@ describe("DomainsService", () => {
       await svc.update(5, { active: true, userEndDate: "2027-01-01" });
       expect(diskSpy).not.toHaveBeenCalled();
       expect(m.repo.save).toHaveBeenCalledWith(expect.objectContaining({ active: 1, userEndDate: "2027-01-01" }));
+    });
+
+    it("updates the start date, storing an unlimited start as 1970-01-01", async () => {
+      m.repo.findOne.mockResolvedValueOnce({ id: 5, domain: "d.com", quota: "1000", userStartDate: "2026-01-01", ownerId: null });
+      await svc.update(5, { userStartDate: null, userEndDate: null });
+      expect(m.repo.save).toHaveBeenCalledWith(expect.objectContaining({ userStartDate: "1970-01-01", userEndDate: null }));
+    });
+
+    it("400s (windowReversed) when the new end date comes before the stored start", async () => {
+      m.repo.findOne.mockResolvedValueOnce({ id: 5, domain: "d.com", quota: "1000", userStartDate: "2030-06-01", ownerId: null });
+      await expect(svc.update(5, { userEndDate: "2030-01-01" })).rejects.toMatchObject({
+        response: { code: "domains.windowReversed" },
+      });
+      expect(m.repo.save).not.toHaveBeenCalled();
     });
 
     it("deactivates the domain (active=false -> 0)", async () => {

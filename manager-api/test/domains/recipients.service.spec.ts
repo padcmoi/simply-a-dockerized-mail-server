@@ -31,7 +31,7 @@ const q = (over: Partial<PaginationQuery> = {}): PaginationQuery => ({ offset: 0
 // test overrides when it asserts a specific value.
 function makeQb() {
   const qb: Record<string, ReturnType<typeof vi.fn>> = {};
-  for (const m of ["leftJoin", "addSelect", "select", "where", "andWhere", "orderBy", "skip", "take"]) {
+  for (const m of ["leftJoin", "addSelect", "select", "where", "andWhere", "orderBy", "addOrderBy", "skip", "take"]) {
     qb[m] = vi.fn(() => qb);
   }
   qb.getCount = vi.fn(async () => 0);
@@ -153,6 +153,19 @@ describe("RecipientsService", () => {
 
       expect(qb.orderBy).toHaveBeenCalledWith("ownerEmail", "ASC");
       expect(qb.orderBy).not.toHaveBeenCalledWith("r.ownerEmail", "ASC");
+    });
+
+    it("sorts on the creation date with the id as a stable tie-breaker", async () => {
+      await svc.list(FQDN, q({ limit: 10, sortBy: "createdAt", sortDir: "desc" }));
+      expect(qb.orderBy).toHaveBeenCalledWith("r.createdAt", "DESC");
+      expect(qb.addOrderBy).toHaveBeenCalledWith("r.id", "DESC");
+    });
+
+    it("sorts on whether today falls inside the validity window", async () => {
+      await svc.list(FQDN, q({ limit: 10, sortBy: "validity", sortDir: "asc" }));
+      expect(qb.addSelect).toHaveBeenCalledWith(expect.stringContaining("CURDATE()"), "validNow");
+      expect(qb.orderBy).toHaveBeenCalledWith("validNow", "ASC");
+      expect(qb.addOrderBy).toHaveBeenCalledWith("r.id", "ASC");
     });
 
     it("without a search term, falls back to the id column on an unknown sortBy and orders on r.<col>", async () => {
@@ -278,6 +291,24 @@ describe("RecipientsService", () => {
       expect(saved.userStartDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
+    it("stores an explicit start date, and 1970-01-01 for an unlimited (null) start", async () => {
+      recipients.findOne.mockResolvedValue(null);
+      domains.findOne.mockResolvedValue({ quota: "1000000000" });
+      await svc.create(dto({ userStartDate: "2030-02-01" }), FQDN);
+      expect(recipients.save.mock.calls[0][0]).toMatchObject({ userStartDate: "2030-02-01" });
+      await svc.create(dto({ userStartDate: null }), FQDN);
+      expect(recipients.save.mock.calls[1][0]).toMatchObject({ userStartDate: "1970-01-01" });
+    });
+
+    it("400s (windowReversed) when the end date comes before the start date", async () => {
+      recipients.findOne.mockResolvedValue(null);
+      domains.findOne.mockResolvedValue({ quota: "1000000000" });
+      const e = await rejection(svc.create(dto({ userStartDate: "2030-02-01", userEndDate: "2030-01-01" }), FQDN));
+      expect((e as ApiError).getStatus()).toBe(400);
+      expect((e as ApiError).getResponse()).toMatchObject({ code: "recipients.windowReversed" });
+      expect(recipients.save).not.toHaveBeenCalled();
+    });
+
     it("honours active:false (-> 0) and a provided end-date", async () => {
       recipients.findOne.mockResolvedValue(null);
       domains.findOne.mockResolvedValue({ quota: "1000000000" });
@@ -352,6 +383,20 @@ describe("RecipientsService", () => {
         active: 0,
         userEndDate: "2027-06-01",
       });
+    });
+
+    it("updates the start date, storing an unlimited start as 1970-01-01", async () => {
+      recipients.findOne.mockResolvedValue(current({ userStartDate: "2026-01-01" }));
+      await svc.update(5, { userStartDate: null }, FQDN);
+      expect(recipients.save.mock.calls[0][0]).toMatchObject({ userStartDate: "1970-01-01" });
+    });
+
+    it("400s (windowReversed) when the new end date comes before the stored start", async () => {
+      recipients.findOne.mockResolvedValue(current({ userStartDate: "2030-06-01" }));
+      const e = await rejection(svc.update(5, { userEndDate: "2030-01-01" }, FQDN));
+      expect((e as ApiError).getStatus()).toBe(400);
+      expect((e as ApiError).getResponse()).toMatchObject({ code: "recipients.windowReversed" });
+      expect(recipients.save).not.toHaveBeenCalled();
     });
 
     it("with no quota in the body, never touches the usage/domain checks", async () => {

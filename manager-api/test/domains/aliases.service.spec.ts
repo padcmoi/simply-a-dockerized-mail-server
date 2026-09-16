@@ -17,7 +17,7 @@ import type { ActivityLogService } from "../../src/core/activity/activity-log.se
 // empty defaults a test overrides when it asserts on rows.
 function makeQb() {
   const qb: Record<string, ReturnType<typeof vi.fn>> = {};
-  for (const m of ["leftJoin", "addSelect", "where", "andWhere", "orderBy", "skip", "take"]) {
+  for (const m of ["leftJoin", "addSelect", "where", "andWhere", "orderBy", "addOrderBy", "skip", "take"]) {
     qb[m] = vi.fn(() => qb);
   }
   qb.getCount = vi.fn(async () => 0);
@@ -113,6 +113,24 @@ describe("AliasesService", () => {
       expect(qb.orderBy).not.toHaveBeenCalledWith("a.ownerEmail", "ASC");
     });
 
+    it("sorts on the creation date with the id as a stable tie-breaker", async () => {
+      await svc.list("example.test", q({ limit: 10, offset: 0, sortBy: "createdAt", sortDir: "desc" }));
+      expect(qb.orderBy).toHaveBeenCalledWith("a.createdAt", "DESC");
+      expect(qb.addOrderBy).toHaveBeenCalledWith("a.id", "DESC");
+    });
+
+    it("sorts on whether today falls inside the validity window", async () => {
+      await svc.list("example.test", q({ limit: 10, offset: 0, sortBy: "validity", sortDir: "asc" }));
+      expect(qb.addSelect).toHaveBeenCalledWith(expect.stringContaining("CURDATE()"), "validNow");
+      expect(qb.orderBy).toHaveBeenCalledWith("validNow", "ASC");
+      expect(qb.addOrderBy).toHaveBeenCalledWith("a.id", "ASC");
+    });
+
+    it("adds no tie-breaker when the sort already is the id", async () => {
+      await svc.list("example.test", q({ limit: 10, offset: 0, sortBy: "id", sortDir: "asc" }));
+      expect(qb.addOrderBy).not.toHaveBeenCalled();
+    });
+
     it("searches across source, destination and the owner address", async () => {
       await svc.list("example.test", q({ limit: 10, offset: 0, search: "foo" }));
       expect(qb.andWhere).toHaveBeenCalledWith("(a.source LIKE :search OR a.destination LIKE :search OR o.email LIKE :search)", {
@@ -180,6 +198,33 @@ describe("AliasesService", () => {
       expect(aliases.create).toHaveBeenCalledWith(expect.objectContaining({ userEndDate: "2030-01-01" }));
     });
 
+    it("stores an explicit start date, and 1970-01-01 for an unlimited (null) start", async () => {
+      aliases.findOne.mockResolvedValue(null);
+      await svc.create({ localPart: "a", destination: "team@example.test", userStartDate: "2030-02-01" }, "example.test");
+      expect(aliases.create).toHaveBeenLastCalledWith(expect.objectContaining({ userStartDate: "2030-02-01" }));
+      await svc.create({ localPart: "b", destination: "team@example.test", userStartDate: null }, "example.test");
+      expect(aliases.create).toHaveBeenLastCalledWith(expect.objectContaining({ userStartDate: "1970-01-01" }));
+    });
+
+    it("400s (windowReversed) when the end date comes before the start date", async () => {
+      aliases.findOne.mockResolvedValue(null);
+      const create = svc.create(
+        { localPart: "sales", destination: "team@example.test", userStartDate: "2030-02-01", userEndDate: "2030-01-01" },
+        "example.test"
+      );
+      await expect(create).rejects.toMatchObject({ response: { code: "aliases.windowReversed" } });
+      expect(aliases.save).not.toHaveBeenCalled();
+    });
+
+    it("accepts any end date when the start is unlimited", async () => {
+      aliases.findOne.mockResolvedValue(null);
+      await svc.create(
+        { localPart: "sales", destination: "team@example.test", userStartDate: null, userEndDate: "2000-01-01" },
+        "example.test"
+      );
+      expect(aliases.save).toHaveBeenCalled();
+    });
+
     it("throws an ApiError(CONFLICT) when the source already exists", async () => {
       aliases.findOne.mockResolvedValue({ id: 1, source: "sales@example.test" });
       await expect(svc.create({ localPart: "sales", destination: "team@example.test" }, "example.test")).rejects.toBeInstanceOf(
@@ -228,6 +273,28 @@ describe("AliasesService", () => {
       aliases.findOne.mockResolvedValueOnce({ id: 5, source: "keep@example.test", userEndDate: null, domain: "example.test" });
       await svc.update(5, { userEndDate: "2031-06-01" }, "example.test");
       expect(aliases.save).toHaveBeenCalledWith(expect.objectContaining({ userEndDate: "2031-06-01" }));
+    });
+
+    it("updates the start date, storing an unlimited start as 1970-01-01", async () => {
+      aliases.findOne.mockResolvedValueOnce({ id: 5, source: "k@example.test", userStartDate: "2026-01-01", domain: "example.test" });
+      await svc.update(5, { userStartDate: null, userEndDate: null }, "example.test");
+      expect(aliases.save).toHaveBeenCalledWith(expect.objectContaining({ userStartDate: "1970-01-01", userEndDate: null }));
+    });
+
+    it("400s (windowReversed) when the new end date comes before the stored start", async () => {
+      aliases.findOne.mockResolvedValueOnce({ id: 5, source: "k@example.test", userStartDate: "2030-06-01", domain: "example.test" });
+      await expect(svc.update(5, { userEndDate: "2030-01-01" }, "example.test")).rejects.toMatchObject({
+        response: { code: "aliases.windowReversed" },
+      });
+      expect(aliases.save).not.toHaveBeenCalled();
+    });
+
+    it("logs only the fields the body actually carried", async () => {
+      const activity = activityMock();
+      svc = new AliasesService(aliases, domains, accounts, activity);
+      aliases.findOne.mockResolvedValueOnce({ id: 5, source: "k@example.test", domain: "example.test" });
+      await svc.update(5, { destination: "n@b.com", userStartDate: undefined }, "example.test");
+      expect(activity.record).toHaveBeenCalledWith(expect.objectContaining({ details: { fields: ["destination"] } }));
     });
 
     it("throws an ApiError(NOT_FOUND) when the alias does not exist", async () => {

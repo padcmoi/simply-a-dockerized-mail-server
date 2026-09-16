@@ -216,7 +216,11 @@ export class DomainsService {
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
     if (input.userStartDate !== undefined) current.userStartDate = input.userStartDate ?? UNBOUNDED_START_DATE;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
-    assertWindowInOrder(String(current.userStartDate), current.userEndDate ? String(current.userEndDate) : null, current.domain);
+    assertWindowInOrder(
+      String(current.userStartDate ?? UNBOUNDED_START_DATE),
+      current.userEndDate ? String(current.userEndDate) : null,
+      current.domain
+    );
     return this.repo.save(current);
   }
 

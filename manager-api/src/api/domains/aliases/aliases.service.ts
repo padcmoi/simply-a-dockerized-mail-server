@@ -207,7 +207,11 @@ export class AliasesService {
     if (input.destination !== undefined) current.destination = input.destination;
     if (input.userStartDate !== undefined) current.userStartDate = input.userStartDate ?? UNBOUNDED_START_DATE;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
-    assertWindowInOrder(String(current.userStartDate), current.userEndDate ? String(current.userEndDate) : null, current.source);
+    assertWindowInOrder(
+      String(current.userStartDate ?? UNBOUNDED_START_DATE),
+      current.userEndDate ? String(current.userEndDate) : null,
+      current.source
+    );
     const saved = await this.aliases.save(current);
     await this.activity.record({
       action: "aliases.updated",

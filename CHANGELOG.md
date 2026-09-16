@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(api): the validity window check treats a missing start date as unlimited instead of comparing the text undefined, and the recipient, alias and domain specs cover the new sorts, dates and PATCH /domains/:domainId/validity route so the suite and its coverage pass again (16-09-2026)
 - fix(blocklist): the Junk notice goes out when the third mail from a sender is marked as spam, and again after an unblock resets the counter, instead of being held back by a 180-day Redis lock (16-09-2026)
 - fix(dovecot): postmaster notices are delivered through dovecot-lda so the user's filters apply, and fall back to doveadm save into INBOX when that delivery fails, so no notice is lost silently (16-09-2026)
 - fix(dovecot): LMTP delivery no longer adds a Received header for the internal postfix to dovecot hop, which exposed the docker IP and the container id, and dovecot names itself after MAIL_HOSTNAME (16-09-2026)

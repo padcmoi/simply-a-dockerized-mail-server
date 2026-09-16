@@ -50,6 +50,7 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
       ["GET /domains/:id", () => api().get(`/api/v1/domains/${ID}`)],
       ["POST /domains", () => api().post("/api/v1/domains")],
       ["PATCH /domains/:id/active", () => api().patch(`/api/v1/domains/${ID}/active`)],
+      ["PATCH /domains/:id/validity", () => api().patch(`/api/v1/domains/${ID}/validity`)],
       ["PATCH /domains/:id/owner", () => api().patch(`/api/v1/domains/${ID}/owner`)],
     ];
     for (const [name, build] of routes) {
@@ -260,6 +261,51 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
         .set(...asRoot())
         .send({ active: "yes" })
         .expect(400);
+    });
+  });
+
+  describe("PATCH /domains/:domainId/validity (setValidity)", () => {
+    const body = { userStartDate: "2026-09-01", userEndDate: null };
+
+    it("403 for a user with no grant and no ownership", async () => {
+      await api()
+        .patch(`/api/v1/domains/${ID}/validity`)
+        .set(...asUser())
+        .send(body)
+        .expect(403);
+      expect(svc.update).not.toHaveBeenCalled();
+    });
+
+    it("200 for root and forwards id + both dates", async () => {
+      svc.update.mockResolvedValueOnce({ id: ID });
+      await api()
+        .patch(`/api/v1/domains/${ID}/validity`)
+        .set(...asRoot())
+        .send(body)
+        .expect(200);
+      expect(svc.update).toHaveBeenCalledWith(ID, { userStartDate: "2026-09-01", userEndDate: null });
+    });
+
+    it("200 for a non-root owner via the ownership bypass", async () => {
+      h.setDomainOwner(ID, USER.id);
+      svc.update.mockResolvedValueOnce({ id: ID });
+      await api()
+        .patch(`/api/v1/domains/${ID}/validity`)
+        .set(...asUser())
+        .send({ userStartDate: null, userEndDate: "2027-01-01" })
+        .expect(200);
+      h.setDomainOwner(ID, null);
+    });
+
+    it("400 when a date is missing, malformed, or an unknown key is sent", async () => {
+      for (const bad of [{ userStartDate: "2026-09-01" }, { userStartDate: "01/09/2026", userEndDate: null }, { ...body, active: true }]) {
+        await api()
+          .patch(`/api/v1/domains/${ID}/validity`)
+          .set(...asRoot())
+          .send(bad)
+          .expect(400);
+      }
+      expect(svc.update).not.toHaveBeenCalled();
     });
   });
 

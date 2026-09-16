@@ -123,6 +123,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "PATCH /api/v1/domains/:domainId/aliases/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:aliases[access,edit-alias]",
   "PATCH /api/v1/domains/:domainId/owner  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:domain_owner_elevated[transfer-domain-ownership] domain:domain[access,transfer-domain-ownership]",
   "PATCH /api/v1/domains/:domainId/recipients/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:recipients[access,edit-recipient]",
+  "PATCH /api/v1/domains/:domainId/validity  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:admin[access,toggle-domain-active] domain[access,toggle-domain-active]",
   "PATCH /api/v1/groups/:id  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:groups[access,edit-group]",
   "PATCH /api/v1/groups/:id/owner  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] svc:groups[access,transfer-group-ownership]",
   "PATCH /api/v1/my-space/aliases/:id  ::  auth=ApiToken+JWT guards=[]",

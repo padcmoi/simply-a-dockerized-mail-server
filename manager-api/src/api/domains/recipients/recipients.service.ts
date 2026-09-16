@@ -348,7 +348,7 @@ export class RecipientsService {
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
     if (input.userStartDate !== undefined) current.userStartDate = input.userStartDate ?? UNBOUNDED_START_DATE;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
-    const start = String(current.userStartDate).slice(0, 10);
+    const start = String(current.userStartDate ?? UNBOUNDED_START_DATE).slice(0, 10);
     if (current.userEndDate && start > UNBOUNDED_START_DATE && String(current.userEndDate).slice(0, 10) < start) {
       throw new ApiError(HttpStatus.BAD_REQUEST, "recipients.windowReversed", `Recipient #${id} cannot end before it starts`, {
         id,
