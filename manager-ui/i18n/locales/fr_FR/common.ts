@@ -22,6 +22,7 @@ export default {
   messages: "Messages",
   lastActivity: "Dernière activité",
   lastModification: "Dernière modification",
+  creationDate: "Date de création",
   cancel: "Annuler",
   close: "Fermer",
   back: "Retour",

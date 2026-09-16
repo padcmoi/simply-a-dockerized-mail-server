@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - feat(autorouter): moving a mail into a personal folder sends a postmaster notice when the AUTOROUTER rule is created or changes folder, once for a batch of mails from the same sender (16-09-2026)
 - feat(dovecot): both postmaster notices carry an X-Mailer header naming Simply Mail Server and the running version, read from manager-api/VERSION at send time (16-09-2026)
+- feat(recipients): virtual_users gains a created_at column defaulting to now, shown as the first column of the recipient list, sorted newest first by default, and on the edit page (16-09-2026)
 
 ### Fixed
 

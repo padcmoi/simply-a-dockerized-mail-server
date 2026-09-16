@@ -9,6 +9,7 @@ definePageMeta({
 const { t } = useI18n();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { formatDateTime } = useDateTime();
 
 const {
   PASSWORD_MIN,
@@ -64,6 +65,11 @@ watchEffect(() => {
         <h2 class="font-semibold truncate">
           {{ recipient ? t("recipients.editPage.title", { email: recipient.email }) : t("recipients.editPage.button") }}
         </h2>
+        <USkeleton v-if="loading" class="h-4 w-48 mt-1" />
+        <p v-else-if="recipient" class="text-sm text-muted mt-1 flex flex-wrap gap-x-2">
+          <span>{{ t("common.creationDate") }}</span>
+          <span class="text-default">{{ formatDateTime(recipient.createdAt) }}</span>
+        </p>
       </template>
 
       <div v-if="loading" class="space-y-4">

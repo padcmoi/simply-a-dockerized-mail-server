@@ -29,6 +29,7 @@ const recipientListItemExample = {
   userStartDate: "2026-01-01",
   userEndDate: null,
   lastActivity: "2026-07-01T12:00:00.000Z",
+  createdAt: "2026-01-01T09:00:00.000Z",
 };
 
 export const ListRecipientsDocs = () =>
@@ -110,6 +111,7 @@ export const GetRecipientDocs = () =>
           userStartDate: "2026-01-01",
           userEndDate: null,
           lastActivity: "2026-07-01T12:00:00.000Z",
+          createdAt: "2026-01-01T09:00:00.000Z",
           usedBytes: "0",
         },
       },
@@ -165,6 +167,7 @@ export const CreateRecipientDocs = () =>
           gid: "vmail",
           userStartDate: "2026-07-04",
           userEndDate: null,
+          createdAt: "2026-07-04T12:00:00.000Z",
         },
       },
     }),
@@ -241,6 +244,7 @@ export const UpdateRecipientDocs = () =>
           userStartDate: "2026-01-01",
           userEndDate: null,
           lastActivity: "2026-07-04T12:00:00.000Z",
+          createdAt: "2026-01-01T09:00:00.000Z",
         },
       },
     }),

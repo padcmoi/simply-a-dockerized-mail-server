@@ -63,4 +63,7 @@ export class VirtualUser {
     onUpdate: "CURRENT_TIMESTAMP",
   })
   lastActivity!: Date | null;
+
+  @Column({ name: "created_at", type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+  createdAt!: Date;
 }

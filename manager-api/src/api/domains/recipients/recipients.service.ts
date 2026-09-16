@@ -31,7 +31,16 @@ function isPostmaster(email: string, domain: string) {
 // `list()`) -- sorting by it takes a dedicated branch there. `ownerEmail` is
 // joined the same way, from `accounts`: the table carries only `owner_id`, and
 // ordering on a uuid reads as random.
-export const RECIPIENTS_SORTABLE_COLUMNS = ["email", "quota", "active", "usedBytes", "ownerEmail", "lastActivity", "id"] as const;
+export const RECIPIENTS_SORTABLE_COLUMNS = [
+  "email",
+  "quota",
+  "active",
+  "usedBytes",
+  "ownerEmail",
+  "createdAt",
+  "lastActivity",
+  "id",
+] as const;
 
 // The columns a `searchBy` may name: the two addresses, which are what the
 // free-text search spans when it names none. A quota, a byte count and a
@@ -148,6 +157,7 @@ export class RecipientsService {
     if (sortBy === "usedBytes") qb.orderBy("usedBytes", dir);
     else if (sortBy === "ownerEmail") qb.orderBy("ownerEmail", dir);
     else qb.orderBy(`r.${sortBy}`, dir);
+    if (sortBy === "createdAt") qb.addOrderBy("r.id", dir);
 
     const { entities, raw } = await qb.skip(query.offset).take(query.limit).getRawAndEntities();
     const items = entities.map((entity, i) => ({

@@ -12,6 +12,7 @@ const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 // Declared once for both renderings, which DataTable chooses between on its own
 // width rather than this page carrying one of each.
 const columns = computed<DataTableColumn<RecipientRow>[]>(() => [
+  { key: "createdAt", label: t("common.creationDate"), value: (row) => row.createdAt, searchable: false },
   { key: "email", label: t("recipients.table.address"), value: (row) => row.email, primary: true },
   { key: "quota", label: t("recipients.table.quota"), value: (row) => Number(row.quota), searchable: false },
   { key: "usedBytes", label: t("recipients.table.used"), value: (row) => Number(row.usedBytes), searchable: false },
@@ -62,7 +63,7 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sor
   usePaginatedList<RecipientRow>(
     "recipients-list",
     () => (domainId.value ? `/domains/${domainId.value}/recipients` : null),
-    "id",
+    "createdAt",
     [domainId]
   );
 
@@ -176,6 +177,10 @@ async function onDeleteConfirmed() {
 
       <template #ownerEmail="{ row }">
         <OwnerAccountCell :owner-id="row.ownerId" :owner-email="row.ownerEmail" />
+      </template>
+
+      <template #createdAt="{ row }">
+        <span class="text-muted">{{ formatDateTime(row.createdAt) }}</span>
       </template>
 
       <template #lastActivity="{ row }">

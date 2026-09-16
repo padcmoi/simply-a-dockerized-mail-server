@@ -15,6 +15,7 @@ export interface RecipientRow {
   // `virtual_users.last_activity` carries `ON UPDATE current_timestamp()`: it
   // stamps the row's last edit, not mail traffic. Postfix-legacy name, kept.
   lastActivity: string | null;
+  createdAt: string;
 }
 
 // What the edit page loads: no activity stamp, but the owner it can hand over.
@@ -25,6 +26,7 @@ export interface RecipientDetail {
   usedBytes: string;
   active: number;
   ownerEmail: string | null;
+  createdAt: string;
 }
 
 // What an account owns, from the admin account detail and the profile.
