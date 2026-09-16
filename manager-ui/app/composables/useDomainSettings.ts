@@ -1,3 +1,5 @@
+import type { DateRangeValue } from "~/utils/date-range";
+
 // The domain administration panel: the domain row itself, its DKIM keys and
 // their check, the active toggle, and the ownership transfer. The page that
 // shows the accordion was carrying all of this.
@@ -6,6 +8,7 @@ export function useDomainSettings(domainFqdn: () => string) {
   const { t } = useI18n();
   const { call } = useApi();
   const toast = useToast();
+  const { apiErrorMessage } = useApiError();
   const auth = useAuthStore();
   const { isRoot } = usePermissions();
 
@@ -17,6 +20,8 @@ export function useDomainSettings(domainFqdn: () => string) {
   const ownerPick = ref<string | undefined>(undefined);
   const savingOwner = ref(false);
   const savingActive = ref(false);
+  const savingValidity = ref(false);
+  const validity = ref<DateRangeValue>({ start: null, end: null });
   const accountOptions = ref<{ label: string; value: string }[]>([]);
   // Starts true: still don't know `domain.id` at first paint (SSR + pre-mount),
   // so the select must show a skeleton immediately rather than an empty
@@ -33,6 +38,20 @@ export function useDomainSettings(domainFqdn: () => string) {
   );
   const domain = computed(() => domainData.value);
   const domainId = computed(() => domain.value?.id ?? null);
+
+  const loadedValidity = computed<DateRangeValue>(() => ({
+    start: windowStartDay(domain.value?.userStartDate),
+    end: windowEndDay(domain.value?.userEndDate),
+  }));
+
+  const canSaveValidity = computed(
+    () =>
+      domain.value !== null &&
+      !isDateRangeReversed(validity.value) &&
+      (validity.value.start !== loadedValidity.value.start || validity.value.end !== loadedValidity.value.end)
+  );
+
+  watch(loadedValidity, (value) => (validity.value = { ...value }), { immediate: true });
 
   // `immediate: false`: only makes sense once `domainId` is known -- see the
   // same pattern (and its rationale) in useDomainDashboard.ts.
@@ -144,6 +163,23 @@ export function useDomainSettings(domainFqdn: () => string) {
     }
   }
 
+  async function saveValidity() {
+    if (!domainId.value || !canSaveValidity.value) return;
+    savingValidity.value = true;
+    try {
+      await call(`/domains/${domainId.value}/validity`, {
+        method: "PATCH",
+        body: { userStartDate: validity.value.start, userEndDate: validity.value.end },
+      });
+      await refreshDomain();
+      toast.add({ title: t("domainDashboard.validity.saved"), color: "success" });
+    } catch (e) {
+      toast.add({ title: t("domainDashboard.validity.saveFailed"), description: apiErrorMessage(e), color: "error" });
+    } finally {
+      savingValidity.value = false;
+    }
+  }
+
   async function copyToClipboard(text: string) {
     await navigator.clipboard.writeText(text);
     toast.add({
@@ -175,6 +211,9 @@ export function useDomainSettings(domainFqdn: () => string) {
     ownerPick,
     savingOwner,
     savingActive,
+    savingValidity,
+    validity,
+    canSaveValidity,
     accountOptions,
     ownerOptionsLoading,
     dkimKeys,
@@ -184,6 +223,7 @@ export function useDomainSettings(domainFqdn: () => string) {
     rotateDkim,
     deleteDkim,
     toggleActive,
+    saveValidity,
     copyToClipboard,
     changeDomainOwner,
   };

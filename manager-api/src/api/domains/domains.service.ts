@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, HttpStatus, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { randomBytes } from "crypto";
 import { statfs } from "fs/promises";
-import { EntityManager, In, Like, Repository } from "typeorm";
+import { EntityManager, In, Repository } from "typeorm";
+import { ApiError } from "../../core/common/api-error";
 import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagination.validation";
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { sha512crypt } from "../../core/common/sha512-crypt";
@@ -19,7 +20,17 @@ type CallerCtx = { id: string; isRoot: boolean };
 // `ownerUsername` (enriched post-query, see `attachOwnerUsername`) isn't a
 // real column on `virtual_domains` -- not sortable without a join, out of
 // scope here.
-export const DOMAINS_SORTABLE_COLUMNS = ["id", "domain", "active", "quota"] as const;
+export const DOMAINS_SORTABLE_COLUMNS = ["id", "domain", "active", "quota", "createdAt", "validity"] as const;
+
+const UNBOUNDED_START_DATE = "1970-01-01";
+
+function assertWindowInOrder(start: string, end: string | null, label: string) {
+  if (end && start.slice(0, 10) > UNBOUNDED_START_DATE && end.slice(0, 10) < start.slice(0, 10)) {
+    throw new ApiError(HttpStatus.BAD_REQUEST, "domains.windowReversed", `Domain ${label} cannot end before it starts`, {
+      domain: label,
+    });
+  }
+}
 
 @Injectable()
 export class DomainsService {
@@ -57,14 +68,21 @@ export class DomainsService {
       return this.attachUsage(await this.attachOwnerEmail(domains));
     }
 
-    const where = query.search ? { ...ownerFilter, domain: Like(`%${query.search}%`) } : ownerFilter;
     const sortBy = resolveSortColumn(query.sortBy, DOMAINS_SORTABLE_COLUMNS, "id");
-    const [rows, total] = await this.repo.findAndCount({
-      where,
-      order: { [sortBy]: query.sortDir === "asc" ? "ASC" : "DESC" },
-      skip: query.offset,
-      take: query.limit,
-    });
+    const dir = query.sortDir === "asc" ? "ASC" : "DESC";
+    const qb = this.repo.createQueryBuilder("d");
+    if (!scope.canSeeAll) qb.andWhere("d.ownerId = :ownerId", { ownerId: scope.callerId });
+    if (query.search) qb.andWhere("d.domain LIKE :search", { search: `%${query.search}%` });
+    if (sortBy === "validity") {
+      qb.addSelect(
+        "CASE WHEN d.user_start_date <= CURDATE() AND (d.user_end_date IS NULL OR d.user_end_date >= CURDATE()) THEN 1 ELSE 0 END",
+        "validNow"
+      ).orderBy("validNow", dir);
+    } else {
+      qb.orderBy(`d.${sortBy}`, dir);
+    }
+    if (sortBy !== "id") qb.addOrderBy("d.id", dir);
+    const [rows, total] = await qb.skip(query.offset).take(query.limit).getManyAndCount();
     return { items: await this.attachUsage(await this.attachOwnerEmail(rows)), total };
   }
 
@@ -132,13 +150,16 @@ export class DomainsService {
         `Quota ${input.quota} exceeds the ${assignableBytes} bytes still assignable on the mail volume`
       );
     }
+    const userStartDate =
+      input.userStartDate === undefined ? new Date().toISOString().slice(0, 10) : (input.userStartDate ?? UNBOUNDED_START_DATE);
+    assertWindowInOrder(userStartDate, input.userEndDate ?? null, input.domain);
     const saved = await this.repo.manager.transaction(async (manager) => {
       const domain = await manager.save(VirtualDomain, {
         domain: input.domain,
         quota: String(input.quota),
         active: input.active ? 1 : 0,
         ownerId,
-        userStartDate: new Date().toISOString().slice(0, 10),
+        userStartDate,
         userEndDate: input.userEndDate ?? null,
       });
       await this.reservePostmaster(manager, domain.domain);
@@ -193,7 +214,9 @@ export class DomainsService {
     // is the domain's identity. See domains.validation.ts.
     if (input.quota !== undefined) current.quota = String(input.quota);
     if (input.active !== undefined) current.active = input.active ? 1 : 0;
+    if (input.userStartDate !== undefined) current.userStartDate = input.userStartDate ?? UNBOUNDED_START_DATE;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
+    assertWindowInOrder(String(current.userStartDate), current.userEndDate ? String(current.userEndDate) : null, current.domain);
     return this.repo.save(current);
   }
 

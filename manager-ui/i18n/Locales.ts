@@ -964,10 +964,10 @@ export interface Locales {
       submit: string;
     };
     table: {
-      id: string;
       domain: string;
       active: string;
       quotaMb: string;
+      validity: string;
     };
     toast: {
       added: string;
@@ -1028,7 +1028,6 @@ export interface Locales {
       active: string;
       owner: string;
       validity: string;
-      unlimited: string;
     };
     toast: {
       pickDomain: string;
@@ -1614,6 +1613,10 @@ export interface Locales {
       activated: string;
       deactivated: string;
       toggleFailed: string;
+    };
+    validity: {
+      saved: string;
+      saveFailed: string;
     };
   };
   postfixPage: {

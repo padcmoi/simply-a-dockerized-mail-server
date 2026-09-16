@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - feat(recipients): virtual_users gains a created_at column defaulting to now, shown as the first column of the recipient list, sorted newest first by default, and on the edit page (16-09-2026)
 - feat(recipients): a mailbox's validity window, user_start_date to user_end_date with either bound unlimited, shows as a list column green while today falls inside it and red otherwise, sortable either way, and is set in its own card at creation and on the edit page through a reusable DateRangeCard, a range calendar plus exact date inputs (16-09-2026)
 - feat(recipients): the recipient list drops the usage progress bar and the last modification column to make room (16-09-2026)
+- feat(domains): virtual_domains gains a created_at column defaulting to now, shown first in the domain list, sorted newest first by default, and under the domain name on its dashboard (16-09-2026)
+- feat(domains): a domain's validity window shows as a list column green while today falls inside it and red otherwise, sortable either way, and is set in a DateRangeCard at creation and on the administration page through PATCH /domains/:domainId/validity (16-09-2026)
+- feat(domains): the domain list drops the ID column and the quota progress bar (16-09-2026)
 
 ### Fixed
 

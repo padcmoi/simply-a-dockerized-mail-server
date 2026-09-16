@@ -16,15 +16,18 @@ import {
   GetDomainDocs,
   ListDomainsDocs,
   SetDomainActiveDocs,
+  SetDomainValidityDocs,
   TransferDomainOwnerDocs,
 } from "./domains.openapi";
 import { DomainsService } from "./domains.service";
 import {
   CreateDomainDto,
   SetDomainActiveDto,
+  SetDomainValidityDto,
   TransferDomainOwnerDto,
   createDomainSchema,
   setDomainActiveSchema,
+  setDomainValiditySchema,
   transferDomainOwnerSchema,
 } from "./domains.validation";
 
@@ -105,6 +108,19 @@ export class DomainsController {
     @Body(new ZodValidationPipe(setDomainActiveSchema)) body: SetDomainActiveDto
   ) {
     return this.svc.update(domainId, { active: body.active });
+  }
+
+  @Patch(":domainId/validity")
+  @RequireDomainPermissions([
+    { resource: "admin", actions: ["access", "toggle-domain-active"] },
+    { resource: "domain", actions: ["access", "toggle-domain-active"] },
+  ])
+  @SetDomainValidityDocs()
+  setValidity(
+    @Param("domainId", ParseIntPipe) domainId: number,
+    @Body(new ZodValidationPipe(setDomainValiditySchema)) body: SetDomainValidityDto
+  ) {
+    return this.svc.update(domainId, { userStartDate: body.userStartDate, userEndDate: body.userEndDate });
   }
 
   // The decorator is the whole gate now. It costs the domain's owner nothing:

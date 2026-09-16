@@ -86,10 +86,10 @@ export default {
     submit: "Add",
   },
   table: {
-    id: "ID",
     domain: "Domain",
     active: "Active",
     quotaMb: "Quota (MB)",
+    validity: "Validity",
   },
   toast: {
     added: "Domain added",

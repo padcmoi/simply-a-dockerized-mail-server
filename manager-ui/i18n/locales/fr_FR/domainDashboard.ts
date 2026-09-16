@@ -88,4 +88,8 @@ export default {
     deactivated: "Domaine désactivé",
     toggleFailed: "Échec du changement de statut",
   },
+  validity: {
+    saved: "Période de validité mise à jour",
+    saveFailed: "Impossible de mettre à jour la période de validité",
+  },
 } satisfies Locales["domainDashboard"];

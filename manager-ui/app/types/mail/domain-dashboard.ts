@@ -8,6 +8,9 @@ export interface Domain {
   active: number;
   ownerId?: number | null;
   ownerEmail?: string | null;
+  createdAt?: string;
+  userStartDate?: string | null;
+  userEndDate?: string | null;
 }
 
 export interface Recipient {

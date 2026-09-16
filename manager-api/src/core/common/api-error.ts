@@ -21,6 +21,7 @@ export const API_ERROR_CODES = [
   "recipients.quotaBelowUsage",
   "recipients.quotaExceedsDomain",
   "recipients.windowReversed",
+  "domains.windowReversed",
   "aliases.notFound",
   "aliases.alreadyAssigned",
   "aliases.postmasterUnassignable",

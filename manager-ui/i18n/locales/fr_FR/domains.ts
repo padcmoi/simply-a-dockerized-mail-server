@@ -49,7 +49,8 @@ export default {
     noExpiryShort: "Sans expiration",
     editInviteTitle: "Modifier l'invitation / le lien",
     noteLabel: "Note",
-    noteHint: "Affichée à la place de « Lien libre » dans la liste, pour vous rappeler à qui ce lien est destiné. 30 caractères max.",
+    noteHint:
+      "Affichée à la place de « Lien libre » dans la liste, pour vous rappeler à qui ce lien est destiné. 30 caractères max.",
     notePlaceholder: "Ex : pour Johnny",
     quotaAvailable: "{used} / {max} Mo octroyables",
     quotaAvailableUnlimited: "Quota du domaine illimité : pas de plafond à respecter.",
@@ -86,10 +87,10 @@ export default {
     submit: "Ajouter",
   },
   table: {
-    id: "ID",
     domain: "Domaine",
     active: "Actif",
     quotaMb: "Quota (Mo)",
+    validity: "Validité",
   },
   toast: {
     added: "Domaine ajouté",
@@ -101,8 +102,7 @@ export default {
   adminModal: {
     button: "Administrer",
     title: "Administration du domaine",
-    fqdnLocked:
-      "Un nom de domaine ne peut pas être modifié : toutes les adresses et tous les maildirs sur disque en découlent.",
+    fqdnLocked: "Un nom de domaine ne peut pas être modifié : toutes les adresses et tous les maildirs sur disque en découlent.",
     dangerZone: "Zone dangereuse",
     delete: "Supprimer ce domaine",
     confirmDelete: "Supprimer ce domaine ?",

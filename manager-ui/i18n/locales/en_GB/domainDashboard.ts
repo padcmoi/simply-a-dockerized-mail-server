@@ -88,4 +88,8 @@ export default {
     deactivated: "Domain deactivated",
     toggleFailed: "Failed to change status",
   },
+  validity: {
+    saved: "Validity period updated",
+    saveFailed: "Could not update the validity period",
+  },
 } satisfies Locales["domainDashboard"];

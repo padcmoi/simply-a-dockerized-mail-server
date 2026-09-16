@@ -22,6 +22,9 @@ export interface DomainRow {
   quota: string;
   usedBytes: string;
   active: number;
+  createdAt: string;
+  userStartDate: string | null;
+  userEndDate: string | null;
 }
 
 // What an account owns, from the personal space and the account detail.

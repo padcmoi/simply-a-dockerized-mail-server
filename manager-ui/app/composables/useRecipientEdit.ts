@@ -7,16 +7,6 @@ import { isDateRangeReversed, type DateRangeValue } from "~/utils/date-range";
 
 const MIN_QUOTA_MB = 1;
 const PASSWORD_MIN = 8;
-const UNBOUNDED_START_DATE = "1970-01-01";
-
-function windowStart(day: string | null | undefined) {
-  const value = day?.slice(0, 10);
-  return !value || value <= UNBOUNDED_START_DATE ? null : value;
-}
-
-function windowEnd(day: string | null | undefined) {
-  return day ? day.slice(0, 10) : null;
-}
 
 export function useRecipientEdit() {
   const route = useRoute();
@@ -93,8 +83,8 @@ export function useRecipientEdit() {
   const validityDirty = computed(
     () =>
       recipient.value !== null &&
-      (form.validity.start !== windowStart(recipient.value.userStartDate) ||
-        form.validity.end !== windowEnd(recipient.value.userEndDate))
+      (form.validity.start !== windowStartDay(recipient.value.userStartDate) ||
+        form.validity.end !== windowEndDay(recipient.value.userEndDate))
   );
 
   const canSaveValidity = computed(() => validityDirty.value && !isDateRangeReversed(form.validity));
@@ -116,7 +106,7 @@ export function useRecipientEdit() {
       const found = await call<RecipientDetail>(`/domains/${domainId.value}/recipients/${recipientId.value}`);
       recipient.value = found;
       form.active = found.active === 1;
-      form.validity = { start: windowStart(found.userStartDate), end: windowEnd(found.userEndDate) };
+      form.validity = { start: windowStartDay(found.userStartDate), end: windowEndDay(found.userEndDate) };
       // An existing quota can sit below the floor (usage grew past it, or the
       // mailbox predates this rule); open on the floor so the field starts valid.
       form.quotaMb = Math.max(Math.round(Number(found.quota) / MB), floorMb.value);

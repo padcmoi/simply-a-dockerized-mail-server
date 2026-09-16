@@ -42,10 +42,16 @@ const adminMaxQuotaMb = computed(() => {
 // Declared once: DataTable decides on its own width whether this is a table or
 // a block per row, so the page no longer carries one of each.
 const columns = computed<DataTableColumn<DomainRow>[]>(() => [
-  { key: "id", label: t("domains.table.id"), value: (row) => row.id, hideOnCard: true, searchable: false },
+  { key: "createdAt", label: t("common.creationDate"), value: (row) => row.createdAt, searchable: false },
   { key: "domain", label: t("domains.table.domain"), value: (row) => row.domain, primary: true },
   { key: "active", label: t("domains.table.active"), value: (row) => row.active === 1, searchable: false },
   { key: "quota", label: t("domains.table.quotaMb"), value: (row) => Number(row.quota), searchable: false },
+  {
+    key: "validity",
+    label: t("domains.table.validity"),
+    value: (row) => isWindowOpenToday(row.userStartDate, row.userEndDate),
+    searchable: false,
+  },
 ]);
 
 const { t } = useI18n();
@@ -54,6 +60,7 @@ const auth = useAuthStore();
 const perms = usePermissionsStore();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { disk, assignableMb, loadDisk } = useDomainDisk();
+const { formatDateTime } = useDateTime();
 
 setBreadcrumb([{ label: t("nav.domains") }]);
 
@@ -68,7 +75,7 @@ const {
   sortBy,
   sortDir,
   load: loadDomains,
-} = usePaginatedList<DomainRow>("domains-list", () => "/domains", "id");
+} = usePaginatedList<DomainRow>("domains-list", () => "/domains", "createdAt");
 
 watch(useDataRefresh().tick, refreshDisk);
 
@@ -87,10 +94,6 @@ async function load() {
 function openDomain(d: DomainRow) {
   domainStore.select(d);
   navigateTo(`/admin/domains/${d.domain}`);
-}
-
-function occupancy(d: DomainRow) {
-  return occupancyPercent(Number(d.quota), Number(d.usedBytes));
 }
 
 function occupancyLabel(d: DomainRow) {
@@ -124,7 +127,7 @@ onMounted(refreshDisk);
       </UCard>
     </div>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
 
     <DataTable
       v-else
@@ -140,6 +143,10 @@ onMounted(refreshDisk);
       :row-key="(row: DomainRow) => row.id"
       :empty-label="t('common.noResults')"
     >
+      <template #createdAt="{ row }">
+        <span class="text-muted">{{ formatDateTime(row.createdAt) }}</span>
+      </template>
+
       <template #domain="{ row }">
         <FullTooltip :text="row.domain">
           <button class="text-left font-medium text-primary hover:underline" @click="openDomain(row)">
@@ -155,10 +162,11 @@ onMounted(refreshDisk);
       </template>
 
       <template #quota="{ row }">
-        <div class="min-w-[110px]">
-          <p>{{ occupancyLabel(row) }}</p>
-          <UProgress :model-value="occupancy(row)" :color="occupancyColor(occupancy(row))" size="xs" class="mt-1" />
-        </div>
+        <span class="whitespace-nowrap">{{ occupancyLabel(row) }}</span>
+      </template>
+
+      <template #validity="{ row }">
+        <ValidityWindowCell :start="row.userStartDate" :end="row.userEndDate" />
       </template>
 
       <template #actions="{ row }">

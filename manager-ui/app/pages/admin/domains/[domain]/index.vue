@@ -53,6 +53,7 @@ const domainPath = computed(() => (domain.value ? `/admin/domains/${domain.value
 
 const { t } = useI18n();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { formatDateTime } = useDateTime();
 
 // Reflects the actual DNS TXT match (dkimCheck), not just whether a key row
 // exists in the DB -- a stale/never-updated DNS record must show as "not ok"
@@ -81,6 +82,10 @@ watchEffect(() => {
         <div class="min-w-0">
           <TruncatedText :text="domain.domain" :limit="40" text-class="text-lg font-semibold" />
           <p class="text-xs text-muted">{{ $t("domains.alertTitle") }}</p>
+          <p v-if="domain.createdAt" class="text-xs text-muted flex flex-wrap gap-x-1.5">
+            <span>{{ $t("common.creationDate") }}</span>
+            <span class="text-default">{{ formatDateTime(domain.createdAt) }}</span>
+          </p>
         </div>
 
         <UBadge :color="domain.active ? 'success' : 'warning'" variant="subtle">

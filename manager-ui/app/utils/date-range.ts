@@ -26,3 +26,21 @@ export function dateValueToDay(value: DateValue | null | undefined) {
 export function todayDay() {
   return today(getLocalTimeZone()).toString();
 }
+
+export const UNBOUNDED_START_DAY = "1970-01-01";
+
+export function windowStartDay(day: string | null | undefined) {
+  const value = day?.slice(0, 10);
+  return !value || value <= UNBOUNDED_START_DAY ? null : value;
+}
+
+export function windowEndDay(day: string | null | undefined) {
+  return day ? day.slice(0, 10) : null;
+}
+
+export function isWindowOpenToday(start: string | null | undefined, end: string | null | undefined) {
+  const today = todayDay();
+  const from = windowStartDay(start);
+  const until = windowEndDay(end);
+  return (!from || from <= today) && (!until || until >= today);
+}

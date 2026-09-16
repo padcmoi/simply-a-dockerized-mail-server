@@ -42,4 +42,7 @@ export class VirtualDomain {
     onUpdate: "CURRENT_TIMESTAMP",
   })
   lastActivity!: Date;
+
+  @Column({ name: "created_at", type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+  createdAt!: Date;
 }

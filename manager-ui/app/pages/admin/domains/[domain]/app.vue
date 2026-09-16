@@ -20,6 +20,9 @@ const {
   ownerPick,
   savingOwner,
   savingActive,
+  savingValidity,
+  validity,
+  canSaveValidity,
   accountOptions,
   ownerOptionsLoading,
   dkimKeys,
@@ -29,6 +32,7 @@ const {
   rotateDkim,
   deleteDkim,
   toggleActive,
+  saveValidity,
   copyToClipboard,
   changeDomainOwner,
 } = useDomainSettings(() => domainFqdn.value);
@@ -37,6 +41,7 @@ const {
 // pattern as GroupDetailTabs/GroupPermissionsPanel's own UTabs items.
 const accordionItems = computed(() => [
   { label: t("domainDashboard.status.title"), icon: "i-lucide-power", slot: "status" as const },
+  { label: t("domains.table.validity"), icon: "i-lucide-calendar-range", slot: "validity" as const },
   { label: t("domainDashboard.dkim.title"), icon: "i-lucide-key", slot: "dkim" as const },
   { label: t("domainDashboard.owner.title"), icon: "i-lucide-crown", slot: "owner" as const },
 ]);
@@ -68,6 +73,10 @@ watchEffect(() => {
             @update:model-value="toggleActive"
           />
         </ContentPanel>
+      </template>
+
+      <template #validity>
+        <DateRangeCard v-model="validity" saveable :saving="savingValidity" :can-save="canSaveValidity" @save="saveValidity" />
       </template>
 
       <template #dkim>

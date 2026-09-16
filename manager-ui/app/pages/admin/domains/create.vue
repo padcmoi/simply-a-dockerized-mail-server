@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth";
 import { usePermissionsStore } from "~/stores/permissions";
+import type { DateRangeValue } from "~/utils/date-range";
 
 definePageMeta({
   requiredGlobal: [
@@ -23,7 +24,12 @@ const serverErrors = ref<{ domain?: string }>({});
 // The quota opens empty rather than on an arbitrary figure. The only
 // defensible number would be everything the volume has left, which is a
 // ceiling, not a suggestion. The hint states the admissible range.
-const form = reactive({ domain: "", active: true, quotaMb: null as number | null });
+const form = reactive({
+  domain: "",
+  active: true,
+  quotaMb: null as number | null,
+  validity: { start: todayDay(), end: null } as DateRangeValue,
+});
 
 // Clearing a number input hands `v-model.number` back the raw "", not null,
 // so every check below reads through this rather than `form.quotaMb`.
@@ -50,6 +56,7 @@ const formInvalid = computed(
     quotaMb.value === null ||
     quotaUnderLimit.value ||
     quotaOverLimit.value ||
+    isDateRangeReversed(form.validity) ||
     Boolean(serverErrors.value.domain)
 );
 
@@ -121,7 +128,13 @@ async function create() {
   try {
     const created = await call<{ id: number; domain: string; quota: string; active: number }>("/domains", {
       method: "POST",
-      body: { domain: form.domain, active: form.active, quota: quota * MB },
+      body: {
+        domain: form.domain,
+        active: form.active,
+        quota: quota * MB,
+        userStartDate: form.validity.start,
+        userEndDate: form.validity.end,
+      },
     });
     toast.add({ title: t("domains.toast.added"), color: "success" });
     // Straight into the new domain: it is what the user came to build, and the
@@ -162,56 +175,60 @@ onMounted(() => {
     </UButton>
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-      <UCard>
-        <template #header>
-          <h2 class="font-semibold">{{ t("domains.form.title") }}</h2>
-        </template>
+      <div class="space-y-6 min-w-0">
+        <UCard>
+          <template #header>
+            <h2 class="font-semibold">{{ t("domains.form.title") }}</h2>
+          </template>
 
-        <UForm :state="form" class="space-y-4" autocomplete="off" @submit="create">
-          <UFormField :label="t('domains.form.fqdn')" name="domain" :error="domainError">
-            <UInput v-model="form.domain" placeholder="example.com" icon="i-lucide-globe" autocomplete="off" class="w-full" />
-          </UFormField>
+          <UForm :state="form" class="space-y-4" autocomplete="off" @submit="create">
+            <UFormField :label="t('domains.form.fqdn')" name="domain" :error="domainError">
+              <UInput v-model="form.domain" placeholder="example.com" icon="i-lucide-globe" autocomplete="off" class="w-full" />
+            </UFormField>
 
-          <UFormField
-            :label="t('domains.form.quotaMb')"
-            name="quotaMb"
-            :error="
-              quotaUnderLimit
-                ? t('domains.form.quotaMin', { value: MIN_QUOTA_MB })
-                : quotaOverLimit
-                  ? t('domains.form.quotaMax', { value: assignableMb })
-                  : undefined
-            "
-            :hint="hasCapacity ? t('domains.form.quotaRange', { min: MIN_QUOTA_MB, max: assignableMb }) : undefined"
-          >
-            <USkeleton v-if="diskLoading" class="h-8 w-full" />
-            <div v-else class="space-y-4">
-              <UInput
-                v-model.number="form.quotaMb"
-                type="number"
-                :min="MIN_QUOTA_MB"
-                :max="assignableMb ?? undefined"
-                class="w-full"
-              />
-              <!-- No slider without a ceiling to slide against. -->
-              <USlider v-if="hasCapacity" v-model="quotaSlider" :min="MIN_QUOTA_MB" :max="sliderMax" :step="1" class="px-1" />
+            <UFormField
+              :label="t('domains.form.quotaMb')"
+              name="quotaMb"
+              :error="
+                quotaUnderLimit
+                  ? t('domains.form.quotaMin', { value: MIN_QUOTA_MB })
+                  : quotaOverLimit
+                    ? t('domains.form.quotaMax', { value: assignableMb })
+                    : undefined
+              "
+              :hint="hasCapacity ? t('domains.form.quotaRange', { min: MIN_QUOTA_MB, max: assignableMb }) : undefined"
+            >
+              <USkeleton v-if="diskLoading" class="h-8 w-full" />
+              <div v-else class="space-y-4">
+                <UInput
+                  v-model.number="form.quotaMb"
+                  type="number"
+                  :min="MIN_QUOTA_MB"
+                  :max="assignableMb ?? undefined"
+                  class="w-full"
+                />
+                <!-- No slider without a ceiling to slide against. -->
+                <USlider v-if="hasCapacity" v-model="quotaSlider" :min="MIN_QUOTA_MB" :max="sliderMax" :step="1" class="px-1" />
+              </div>
+            </UFormField>
+
+            <UFormField :label="t('domains.form.active')" name="active">
+              <USwitch v-model="form.active" />
+            </UFormField>
+          </UForm>
+
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton color="neutral" variant="ghost" to="/admin/domains">{{ t("common.cancel") }}</UButton>
+              <UButton icon="i-lucide-plus" :disabled="formInvalid" :loading="saving" @click="create">
+                {{ t("domains.form.submit") }}
+              </UButton>
             </div>
-          </UFormField>
+          </template>
+        </UCard>
 
-          <UFormField :label="t('domains.form.active')" name="active">
-            <USwitch v-model="form.active" />
-          </UFormField>
-        </UForm>
-
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton color="neutral" variant="ghost" to="/admin/domains">{{ t("common.cancel") }}</UButton>
-            <UButton icon="i-lucide-plus" :disabled="formInvalid" :loading="saving" @click="create">
-              {{ t("domains.form.submit") }}
-            </UButton>
-          </div>
-        </template>
-      </UCard>
+        <DateRangeCard v-model="form.validity" />
+      </div>
 
       <!-- What the quota field's ceiling means, drawn. Absent for an account
            without `domains:view-disk-usage`, which has no capacity figures to show. -->

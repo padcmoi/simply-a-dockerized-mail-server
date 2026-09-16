@@ -23,6 +23,7 @@ export const createDomainSchema = z.object({
   domain: fqdn,
   quota: z.number().int().min(MIN_DOMAIN_QUOTA_BYTES, `Domain quota must be at least ${MIN_DOMAIN_QUOTA_BYTES} bytes (10 MB)`),
   active: z.boolean().optional(),
+  userStartDate: z.iso.date().nullable().optional(),
   userEndDate: z.iso.date().nullable().optional(),
 });
 
@@ -59,8 +60,16 @@ export const resizeDomainQuotaSchema = z
   })
   .strict();
 
+export const setDomainValiditySchema = z
+  .object({
+    userStartDate: z.iso.date().nullable(),
+    userEndDate: z.iso.date().nullable(),
+  })
+  .strict();
+
 export type CreateDomainDto = z.infer<typeof createDomainSchema>;
 export type UpdateDomainDto = z.infer<typeof updateDomainSchema>;
 export type TransferDomainOwnerDto = z.infer<typeof transferDomainOwnerSchema>;
 export type SetDomainActiveDto = z.infer<typeof setDomainActiveSchema>;
 export type ResizeDomainQuotaDto = z.infer<typeof resizeDomainQuotaSchema>;
+export type SetDomainValidityDto = z.infer<typeof setDomainValiditySchema>;

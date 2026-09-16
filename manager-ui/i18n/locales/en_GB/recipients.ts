@@ -38,7 +38,6 @@ export default {
     active: "Active",
     owner: "Account",
     validity: "Validity",
-    unlimited: "Unlimited",
   },
   toast: {
     pickDomain: "Pick a domain first",

@@ -266,3 +266,54 @@ export const SetDomainActiveDocs = () =>
       schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
     })
   );
+
+export const SetDomainValidityDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Set the validity window of a domain (Administration page)",
+      description:
+        "user_start_date to user_end_date, either bound null for unlimited (a null start is stored as 1970-01-01). " +
+        "Same domain-tier gate as the active toggle, see DomainsController.setValidity.",
+    }),
+    ApiParam({
+      name: "domainId",
+      type: Number,
+      example: 1,
+      description: "virtual_domains.id",
+    }),
+    ApiBody({
+      schema: { example: { userStartDate: "2026-09-01", userEndDate: null } },
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Domain updated",
+      schema: {
+        example: {
+          id: 1,
+          ownerId: 7,
+          domain: "example.com",
+          quota: "104857600",
+          active: 1,
+          userStartDate: "2026-09-01",
+          userEndDate: null,
+          lastActivity: "2026-07-04T12:00:00.000Z",
+          createdAt: "2026-01-01T09:00:00.000Z",
+        },
+      },
+    }),
+    ApiResponse({
+      status: 400,
+      description:
+        "Body validation failed, the end date comes before the start date (code domains.windowReversed), or domainId is not a valid integer",
+      schema: { example: { message: "Validation failed", issues: [] } },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing permission admin:access or admin:toggle-domain-active for this domain",
+    }),
+    ApiResponse({
+      status: 404,
+      description: "Domain not found",
+      schema: { example: { statusCode: 404, message: "Domain #1 not found" } },
+    })
+  );
