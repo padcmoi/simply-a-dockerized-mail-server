@@ -29,7 +29,6 @@ virtual_alias_maps      = mysql:/etc/postfix/sql/mysql-virtual-aliases.cf
 # --- TLS (Let's Encrypt) -----------------------------------------------------
 smtpd_tls_cert_file = /etc/letsencrypt/live/${TLS_CERT_NAME}/fullchain.pem
 smtpd_tls_key_file  = /etc/letsencrypt/live/${TLS_CERT_NAME}/privkey.pem
-smtpd_use_tls       = yes
 smtpd_tls_security_level = may
 smtpd_tls_auth_only      = yes
 smtpd_tls_loglevel       = 1

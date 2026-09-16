@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Fixed
 
 - fix(postfix): the entrypoint gives the queue directories the owners, groups and modes postfix-files declares, instead of a recursive chown that took pid away from root and public and maildrop away from postdrop at every start (16-09-2026)
+- fix(postfix): main.cf no longer sets smtpd_use_tls, a deprecated parameter that smtpd_tls_security_level already overrides (16-09-2026)
 
 ## [2.0.0-rc.8] - 2026-09-15
 
