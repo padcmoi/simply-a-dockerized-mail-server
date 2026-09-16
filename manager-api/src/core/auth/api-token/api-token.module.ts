@@ -18,6 +18,6 @@ import { GeoipModule } from "../../geoip/geoip.module";
 })
 export class ApiTokenModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(ApiTokenAccessMiddleware).forRoutes("*");
+    consumer.apply(ApiTokenAccessMiddleware).forRoutes("{*path}");
   }
 }
