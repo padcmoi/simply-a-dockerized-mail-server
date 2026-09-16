@@ -19,6 +19,7 @@ export default {
     to: "Vers",
     domain: "Domaine",
     owner: "Compte",
+    validity: "Validité",
   },
   toast: {
     pickDomain: "Choisissez d'abord un domaine",
@@ -31,5 +32,7 @@ export default {
     saved: "Alias mis à jour",
     saveFailed: "Échec de la mise à jour",
     loadFailed: "Impossible de charger cet alias",
+    validitySaved: "Période de validité mise à jour",
+    validityFailed: "Impossible de mettre à jour la période de validité",
   },
 } satisfies Locales["aliases"];

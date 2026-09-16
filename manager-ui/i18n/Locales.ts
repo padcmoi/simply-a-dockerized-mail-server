@@ -19,6 +19,12 @@ export interface Locales {
       quotaExceedsDomain: string;
       windowReversed: string;
     };
+    domains: {
+      windowReversed: string;
+    };
+    aliases: {
+      windowReversed: string;
+    };
     mail: {
       notConfigured: string;
       otpInvalid: string;
@@ -1070,6 +1076,7 @@ export interface Locales {
       to: string;
       domain: string;
       owner: string;
+      validity: string;
     };
     toast: {
       pickDomain: string;
@@ -1082,6 +1089,8 @@ export interface Locales {
       saved: string;
       saveFailed: string;
       loadFailed: string;
+      validitySaved: string;
+      validityFailed: string;
     };
   };
   quotas: {

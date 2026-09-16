@@ -28,6 +28,7 @@ export const createAliasSchema = z
       .email()
       .max(255)
       .transform((v) => v.toLowerCase()),
+    userStartDate: z.iso.date().nullable().optional(),
     userEndDate: z.iso.date().nullable().optional(),
   })
   .strict();
@@ -43,6 +44,7 @@ export const updateAliasSchema = z
       .max(255)
       .transform((v) => v.toLowerCase())
       .optional(),
+    userStartDate: z.iso.date().nullable().optional(),
     userEndDate: z.iso.date().nullable().optional(),
   })
   .strict();

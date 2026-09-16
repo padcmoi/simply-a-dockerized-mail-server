@@ -12,10 +12,16 @@ const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
 // Declared once for both renderings, which DataTable chooses between on its own
 // width rather than this page carrying one of each.
 const columns = computed<DataTableColumn<AliasRow>[]>(() => [
+  { key: "createdAt", label: t("common.creationDate"), value: (row) => row.createdAt, searchable: false },
   { key: "source", label: t("aliases.table.from"), value: (row) => row.source, primary: true },
   { key: "destination", label: t("aliases.table.to"), value: (row) => row.destination },
   { key: "ownerEmail", label: t("aliases.table.owner"), value: (row) => row.ownerEmail ?? "" },
-  { key: "lastActivity", label: t("common.lastModification"), value: (row) => row.lastActivity, searchable: false },
+  {
+    key: "validity",
+    label: t("aliases.table.validity"),
+    value: (row) => isWindowOpenToday(row.userStartDate, row.userEndDate),
+    searchable: false,
+  },
 ]);
 
 // The create and edit pages demand aliases:create-alias / aliases:edit-alias. Hiding
@@ -48,7 +54,7 @@ watchEffect(() => {
 const { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sortBy, sortDir, load } = usePaginatedList<AliasRow>(
   "aliases-list",
   () => (domainId.value ? `/domains/${domainId.value}/aliases` : null),
-  "id",
+  "createdAt",
   [domainId]
 );
 
@@ -94,7 +100,7 @@ function editAlias(alias: AliasRow) {
       </UCard>
     </div>
 
-    <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
+    <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
 
     <DataTable
       v-else
@@ -111,6 +117,10 @@ function editAlias(alias: AliasRow) {
       :row-key="(row: AliasRow) => row.id"
       :empty-label="t('common.noResults')"
     >
+      <template #createdAt="{ row }">
+        <span class="text-muted">{{ formatDateTime(row.createdAt) }}</span>
+      </template>
+
       <template #source="{ row }">
         <FullTooltip :text="row.source">
           <NuxtLink
@@ -134,8 +144,8 @@ function editAlias(alias: AliasRow) {
         <OwnerAccountCell :owner-id="row.ownerId" :owner-email="row.ownerEmail" />
       </template>
 
-      <template #lastActivity="{ row }">
-        <span class="text-muted">{{ formatDateTime(row.lastActivity) }}</span>
+      <template #validity="{ row }">
+        <ValidityWindowCell :start="row.userStartDate" :end="row.userEndDate" />
       </template>
 
       <template #actions="{ row }">

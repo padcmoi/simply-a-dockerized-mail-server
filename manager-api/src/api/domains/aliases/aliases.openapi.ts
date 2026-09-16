@@ -24,6 +24,7 @@ const aliasListItemExample = {
   userStartDate: "2026-01-01",
   userEndDate: null,
   lastActivity: "2026-07-01T12:00:00.000Z",
+  createdAt: "2026-01-01T09:00:00.000Z",
 };
 
 export const ListAliasesDocs = () =>
@@ -78,6 +79,7 @@ export const GetAliasDocs = () =>
           userStartDate: "2026-01-01",
           userEndDate: null,
           lastActivity: "2026-07-01T12:00:00.000Z",
+          createdAt: "2026-01-01T09:00:00.000Z",
         },
       },
     }),
@@ -181,6 +183,7 @@ export const UpdateAliasDocs = () =>
           userStartDate: "2026-01-01",
           userEndDate: null,
           lastActivity: "2026-07-04T12:00:00.000Z",
+          createdAt: "2026-01-01T09:00:00.000Z",
         },
       },
     }),

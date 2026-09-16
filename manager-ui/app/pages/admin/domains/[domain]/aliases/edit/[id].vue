@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DateRangeValue } from "~/utils/date-range";
+
 definePageMeta({
   requiredDomain: [
     { resource: "aliases", action: "access" },
@@ -16,6 +18,8 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const alias = ref<AliasDetail | null>(null);
 const loading = ref(true);
 const saving = ref(false);
+const savingValidity = ref(false);
+const validity = ref<DateRangeValue>({ start: null, end: null });
 
 // Field-level refusals from the API, dropped as soon as the field they judged
 // is edited: they describe what was submitted, not what is now typed.
@@ -49,6 +53,14 @@ const formInvalid = computed(
     Boolean(serverErrors.value.destination)
 );
 
+const canSaveValidity = computed(
+  () =>
+    alias.value !== null &&
+    !isDateRangeReversed(validity.value) &&
+    (validity.value.start !== windowStartDay(alias.value.userStartDate) ||
+      validity.value.end !== windowEndDay(alias.value.userEndDate))
+);
+
 const listPath = computed(() => `/admin/domains/${domainFqdn.value}/aliases`);
 
 const isPostmaster = computed(() => !!alias.value?.source.toLowerCase().startsWith("postmaster@"));
@@ -68,6 +80,7 @@ const toast = useToast();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { isRoot, hasDomain } = usePermissions();
+const { formatDateTime } = useDateTime();
 
 const aliasId = computed(() => Number(route.params.id));
 
@@ -103,10 +116,26 @@ async function load() {
     // the last "@" is what the API's own composition implies.
     form.localPart = found.source.slice(0, found.source.lastIndexOf("@"));
     form.destination = found.destination;
+    validity.value = { start: windowStartDay(found.userStartDate), end: windowEndDay(found.userEndDate) };
   } catch (err) {
     toast.add({ title: t("aliases.editPage.loadFailed"), description: apiErrorMessage(err), color: "error" });
   } finally {
     loading.value = false;
+  }
+}
+
+async function saveValidity() {
+  if (!domainId.value || !alias.value || !canSaveValidity.value) return;
+  savingValidity.value = true;
+  try {
+    const body = { userStartDate: validity.value.start, userEndDate: validity.value.end };
+    await call(`/domains/${domainId.value}/aliases/${aliasId.value}`, { method: "PATCH", body });
+    alias.value = { ...alias.value, userStartDate: body.userStartDate, userEndDate: body.userEndDate };
+    toast.add({ title: t("aliases.editPage.validitySaved"), color: "success" });
+  } catch (err) {
+    toast.add({ title: t("aliases.editPage.validityFailed"), description: apiErrorMessage(err), color: "error" });
+  } finally {
+    savingValidity.value = false;
   }
 }
 
@@ -157,6 +186,11 @@ async function save() {
         <h2 class="font-semibold truncate">
           {{ alias ? t("aliases.editPage.title", { source: alias.source }) : t("aliases.editPage.button") }}
         </h2>
+        <USkeleton v-if="loading" class="h-4 w-48 mt-1" />
+        <p v-else-if="alias" class="text-sm text-muted mt-1 flex flex-wrap gap-x-2">
+          <span>{{ t("common.creationDate") }}</span>
+          <span class="text-default">{{ formatDateTime(alias.createdAt) }}</span>
+        </p>
       </template>
 
       <div v-if="loading" class="space-y-4">
@@ -210,5 +244,14 @@ async function save() {
         </div>
       </template>
     </UCard>
+
+    <DateRangeCard
+      v-if="alias"
+      v-model="validity"
+      saveable
+      :saving="savingValidity"
+      :can-save="canSaveValidity"
+      @save="saveValidity"
+    />
   </div>
 </template>

@@ -13,6 +13,9 @@ export interface AliasRow {
   // `virtual_aliases.last_activity` carries `ON UPDATE current_timestamp()`:
   // it stamps the row's last edit, not mail traffic. Postfix-legacy name.
   lastActivity: string | null;
+  createdAt: string;
+  userStartDate: string | null;
+  userEndDate: string | null;
 }
 
 // What the edit route answers: no activity stamp, but the owner it can hand over.
@@ -22,6 +25,9 @@ export interface AliasDetail {
   destination: string;
   domain: string;
   ownerEmail: string | null;
+  createdAt: string;
+  userStartDate: string | null;
+  userEndDate: string | null;
 }
 
 // What an account owns, from the personal space and the account detail.

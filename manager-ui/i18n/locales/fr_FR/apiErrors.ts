@@ -17,6 +17,12 @@ export default {
       "Il ne reste que {availableMb} Mo sur {domain} : son quota est de {domainQuotaMb} Mo, dont {allocatedMb} Mo déjà attribués à ses autres destinataires",
     windowReversed: "La date de fin ne peut pas précéder la date de début",
   },
+  domains: {
+    windowReversed: "La date de fin du domaine ne peut pas précéder sa date de début",
+  },
+  aliases: {
+    windowReversed: "La date de fin de l'alias ne peut pas précéder sa date de début",
+  },
   mail: {
     notConfigured: "Le serveur de mail sortant n'est pas configuré, aucun envoi n'est possible",
     otpInvalid: "Code de vérification invalide ou expiré",
@@ -28,7 +34,8 @@ export default {
     noDelegation: "Vous n'avez aucune délégation sur ce domaine",
     recipientCapReached: "Vous avez atteint votre plafond de boîtes ({max})",
     aliasCapReached: "Vous avez atteint votre plafond d'alias ({max})",
-    reserveExceeded: "Cette boîte dépasserait votre quota octroyé ({usedMb} sur {reservedMb} Mo utilisés, {requestedMb} Mo demandés)",
+    reserveExceeded:
+      "Cette boîte dépasserait votre quota octroyé ({usedMb} sur {reservedMb} Mo utilisés, {requestedMb} Mo demandés)",
   },
   auth: {
     wrongPassword: "Le mot de passe actuel est incorrect",

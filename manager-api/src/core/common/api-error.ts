@@ -26,6 +26,7 @@ export const API_ERROR_CODES = [
   "aliases.alreadyAssigned",
   "aliases.postmasterUnassignable",
   "aliases.alreadyExists",
+  "aliases.windowReversed",
   "mail.notConfigured",
   "mail.otpInvalid",
   "mail.sendFailed",

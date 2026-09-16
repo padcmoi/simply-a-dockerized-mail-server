@@ -24,7 +24,25 @@ function isPostmaster(source: string, domain: string) {
 // `ownerEmail` isn't a real virtual_aliases column either: the table carries
 // only `owner_id`, and sorting on that would order by uuid, which reads as
 // random. It sorts on the joined account's address instead, see `list()`.
-export const ALIASES_SORTABLE_COLUMNS = ["source", "destination", "ownerEmail", "lastActivity", "id"] as const;
+export const ALIASES_SORTABLE_COLUMNS = [
+  "source",
+  "destination",
+  "ownerEmail",
+  "createdAt",
+  "validity",
+  "lastActivity",
+  "id",
+] as const;
+
+const UNBOUNDED_START_DATE = "1970-01-01";
+
+function assertWindowInOrder(start: string, end: string | null, label: string) {
+  if (end && start.slice(0, 10) > UNBOUNDED_START_DATE && end.slice(0, 10) < start.slice(0, 10)) {
+    throw new ApiError(HttpStatus.BAD_REQUEST, "aliases.windowReversed", `Alias ${label} cannot end before it starts`, {
+      source: label,
+    });
+  }
+}
 
 // The columns a `searchBy` may name, which are exactly the three the free-text
 // search spans when it names none.
@@ -120,8 +138,14 @@ export class AliasesService {
     }
 
     const total = await qb.getCount();
-    if (sortBy === "ownerEmail") qb.orderBy("ownerEmail", dir);
+    if (sortBy === "validity") {
+      qb.addSelect(
+        "CASE WHEN a.user_start_date <= CURDATE() AND (a.user_end_date IS NULL OR a.user_end_date >= CURDATE()) THEN 1 ELSE 0 END",
+        "validNow"
+      ).orderBy("validNow", dir);
+    } else if (sortBy === "ownerEmail") qb.orderBy("ownerEmail", dir);
     else qb.orderBy(`a.${sortBy}`, dir);
+    if (sortBy !== "id") qb.addOrderBy("a.id", dir);
 
     const { entities, raw } = await qb.skip(query.offset).take(query.limit).getRawAndEntities();
     const items = entities.map((entity, i) => ({
@@ -153,13 +177,16 @@ export class AliasesService {
   async create(input: CreateAliasDto, domain: string, opts: { ownerId?: string } = {}) {
     const source = `${input.localPart}@${domain}`;
     await this.assertSourceFree(source);
+    const userStartDate =
+      input.userStartDate === undefined ? new Date().toISOString().slice(0, 10) : (input.userStartDate ?? UNBOUNDED_START_DATE);
+    assertWindowInOrder(userStartDate, input.userEndDate ?? null, source);
     const saved = await this.aliases.save(
       this.aliases.create({
         source,
         destination: input.destination,
         domain,
         ownerId: opts.ownerId ?? null,
-        userStartDate: new Date().toISOString().slice(0, 10),
+        userStartDate,
         userEndDate: input.userEndDate ?? null,
       })
     );
@@ -178,7 +205,9 @@ export class AliasesService {
       current.source = source;
     }
     if (input.destination !== undefined) current.destination = input.destination;
+    if (input.userStartDate !== undefined) current.userStartDate = input.userStartDate ?? UNBOUNDED_START_DATE;
     if (input.userEndDate !== undefined) current.userEndDate = input.userEndDate;
+    assertWindowInOrder(String(current.userStartDate), current.userEndDate ? String(current.userEndDate) : null, current.source);
     const saved = await this.aliases.save(current);
     await this.activity.record({
       action: "aliases.updated",

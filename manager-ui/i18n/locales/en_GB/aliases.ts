@@ -19,6 +19,7 @@ export default {
     to: "To",
     domain: "Domain",
     owner: "Account",
+    validity: "Validity",
   },
   toast: {
     pickDomain: "Pick a domain first",
@@ -31,5 +32,7 @@ export default {
     saved: "Alias updated",
     saveFailed: "Update failed",
     loadFailed: "Could not load this alias",
+    validitySaved: "Validity period updated",
+    validityFailed: "Could not update the validity period",
   },
 } satisfies Locales["aliases"];

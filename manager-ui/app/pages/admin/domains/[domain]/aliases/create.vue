@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DateRangeValue } from "~/utils/date-range";
+
 definePageMeta({
   requiredDomain: [
     { resource: "aliases", action: "access" },
@@ -19,7 +21,11 @@ const saving = ref(false);
 // is edited: they describe what was submitted, not what is now typed.
 const serverErrors = ref<{ localPart?: string; destination?: string }>({});
 
-const form = reactive({ localPart: "", destination: "" });
+const form = reactive({
+  localPart: "",
+  destination: "",
+  validity: { start: todayDay(), end: null } as DateRangeValue,
+});
 
 // An untouched field is not yet invalid: it shows no error, it only keeps the
 // submit button disabled. Complaining before the user has typed is noise.
@@ -37,6 +43,7 @@ const formInvalid = computed(
   () =>
     !LOCAL_PART_PATTERN.test(form.localPart) ||
     !EMAIL_PATTERN.test(form.destination) ||
+    isDateRangeReversed(form.validity) ||
     Boolean(serverErrors.value.localPart) ||
     Boolean(serverErrors.value.destination)
 );
@@ -89,7 +96,12 @@ async function create() {
     // route's domain, so an alias can never land on another domain.
     await call(`/domains/${domainId.value}/aliases`, {
       method: "POST",
-      body: { localPart: form.localPart, destination: form.destination },
+      body: {
+        localPart: form.localPart,
+        destination: form.destination,
+        userStartDate: form.validity.start,
+        userEndDate: form.validity.end,
+      },
     });
     toast.add({ title: t("aliases.toast.created"), color: "success" });
     await navigateTo(listPath.value);
@@ -147,5 +159,7 @@ async function create() {
         </div>
       </template>
     </UCard>
+
+    <DateRangeCard v-model="form.validity" />
   </div>
 </template>

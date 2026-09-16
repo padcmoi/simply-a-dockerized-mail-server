@@ -17,6 +17,12 @@ export default {
       "Only {availableMb} MB left on {domain}: its quota is {domainQuotaMb} MB, of which {allocatedMb} MB are already allocated to its other recipients",
     windowReversed: "The end date cannot come before the start date",
   },
+  domains: {
+    windowReversed: "The domain's end date cannot come before its start date",
+  },
+  aliases: {
+    windowReversed: "The alias's end date cannot come before its start date",
+  },
   mail: {
     notConfigured: "Outbound mail is not configured, so nothing can be sent",
     otpInvalid: "Invalid or expired verification code",
