@@ -70,7 +70,7 @@ fi
 # it out before reaching our rule and the rule never shows up in Filtres).
 if grep -q '^/\* empty script \*/' "$ACTIVE_SCRIPT"; then
 	TMP_STRIP="$(mktemp)"
-	grep -v '^/\* empty script \*/' "$ACTIVE_SCRIPT" >"$TMP_STRIP"
+	grep -v '^/\* empty script \*/' "$ACTIVE_SCRIPT" >"$TMP_STRIP" || true
 	mv "$TMP_STRIP" "$ACTIVE_SCRIPT"
 fi
 
