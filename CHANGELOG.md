@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(dovecot): the mark-as-read script runs after spam learning on the existing Junk trigger, dovecot skipped the second Junk rule as a duplicate so a mail moved into Junk stayed unread (17-09-2026)
 - fix(ui): a click on a table header now flips the sort between ascending and descending every time, instead of doing nothing on a server-paged list once it reached descending (16-09-2026)
 
 ## [2.0.0-rc.9] - 2026-09-16
