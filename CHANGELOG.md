@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- feat(dovecot): a mail moved, copied or appended into Junk is marked as read, by its own junk-mark-seen sieve script on a fifth imapsieve trigger (17-09-2026)
+
 ### Fixed
 
 - fix(ui): a click on a table header now flips the sort between ascending and descending every time, instead of doing nothing on a server-paged list once it reached descending (16-09-2026)
