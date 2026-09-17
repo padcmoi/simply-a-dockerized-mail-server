@@ -80,7 +80,9 @@ The script pipes the message to a per-trigger orchestrator
 (`sa-learn-pipe.sh` for triggers 1/2, `auto-route-pipe.sh` for 3,
 `auto-route-undo-pipe.sh` for 4). Each orchestrator parses the message
 once and delegates to per-concern hooks under `hooks/`,
-`auto-route-hooks/`, `auto-route-undo-hooks/` respectively. See
+`auto-route-hooks/`, `auto-route-undo-hooks/` respectively.
+`auto-route-pipe.sh` first runs `sieve-test` on the user's active script
+with the moved mail and stops when an existing rule already files it. See
 [spam/](../spam/README.md) and [autorouter/](../autorouter/README.md)
 for the per-hook contracts.
 

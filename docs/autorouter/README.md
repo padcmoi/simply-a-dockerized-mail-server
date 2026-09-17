@@ -13,6 +13,7 @@ hand alongside their hand-crafted filters.
 | user action                                                                                               | effect on the AUTOROUTER rule for that sender                                                                  |
 | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | drag mail from `INBOX` to a USER folder (e.g. `DA`)                                                       | **create** rule `AUTOROUTER DA <sender>`                                                                       |
+| drag mail from `INBOX` to a USER folder when an existing rule already files that mail (e.g. `@domain`)    | no-op: no rule, no postmaster notice (see [Existing rules win](#existing-rules-win))                           |
 | drag mail from `INBOX` to a different USER folder (e.g. `DF`)                                             | **update** the rule in place to `AUTOROUTER DF <sender>` -- no duplicate, no leftover from the previous folder |
 | drag mail from `INBOX` to a SYSTEM folder (`Drafts`, `Sent`, `Junk`, `Trash`, `Archive`)                  | no-op                                                                                                          |
 | drag mail from a USER folder back to `INBOX`                                                              | **delete** the rule -- the rule is gone for that sender                                                        |
@@ -33,8 +34,11 @@ IMAP COPY/MOVE event
 +----------------------------------------------------------------+
 | imap_sieve trigger                                             |
 |   trigger 3 (`name=*, from=INBOX, causes=COPY`)                |
-|     -> auto-route.sieve  -> auto-route-pipe.sh -> hook 10      |
+|     -> auto-route.sieve  -> auto-route-pipe.sh                 |
 |        (skip if destination is a system folder)                |
+|        -> sieve-test runs the user's active script on the      |
+|           moved mail; stop here if a rule already files it     |
+|        -> hook 10, then hook 20 (postmaster notice)            |
 |        => `# rule:[AUTOROUTER <dest> <from>]` upserted in the  |
 |           user's roundcube.sieve.                              |
 |                                                                |
@@ -60,6 +64,49 @@ IMAP COPY/MOVE event
 sievec recompiles to .svbin so the next delivery uses the updated rule
 without waiting for dovecot to notice the file change.
 ```
+
+## Existing rules win
+
+Before any hook runs, [`auto-route-pipe.sh`](../../images/dovecot/conf/sieve/bin/auto-route-pipe.sh)
+asks Sieve itself whether the move is already covered. It copies the
+user's active script (the one `~/.dovecot.sieve` points to) and runs
+`sieve-test` on it with the **moved mail** as input. When the result
+contains a `store message in folder` action, an existing rule already
+files that mail at delivery time, so the orchestrator exits: no
+AUTOROUTER rule is written and no postmaster notice is sent.
+
+The check reads nothing but the Sieve script, so it sees every kind of
+rule the user has: AUTOROUTER entries, Roundcube filters on an address,
+on a domain, with `contains` or with a `*` pattern. It follows exactly
+what Dovecot would do at delivery, in rule order.
+
+The sender's own AUTOROUTER rule is left out of the check only while it
+is still the generated form, `address :is "From" "<sender>"`. That keeps
+the folder change working (`DA` then `DF` for the same sender). As soon
+as the user edits that rule in Roundcube, for instance to cover a whole
+domain, it counts like any other filter.
+
+Example: a filter `From contains @messagerie.leboncoin.fr -> leboncoin`
+exists. Dragging a mail from `abc123@messagerie.leboncoin.fr` into any
+user folder creates nothing.
+
+### The operator matters
+
+A domain filter only covers the domain when its condition can match a
+real address. What Roundcube writes for `From ... @pd.fr`, checked
+against `toto@pd.fr` and `Toto <toto@pd.fr>`:
+
+| Roundcube operator           | Sieve written                       | files the mail | AUTOROUTER   |
+| ---------------------------- | ----------------------------------- | -------------- | ------------ |
+| contains                     | `header :contains "from" "@pd.fr"`  | yes            | skipped      |
+| contains (on an edited rule) | `address :contains "From" "@pd.fr"` | yes            | skipped      |
+| matches `*@pd.fr`            | `address :matches "From" "*@pd.fr"` | yes            | skipped      |
+| is equal to                  | `address :is "from" "@pd.fr"`       | no             | creates rule |
+| matches `@pd.fr` (no `*`)    | `header :matches "from" "@pd.fr"`   | no             | creates rule |
+
+`is equal to @pd.fr` compares the whole address, which is never just
+`@pd.fr`. Such a filter files nothing at delivery either, so the
+AUTOROUTER does its normal job. Use `contains` for a domain.
 
 ## Why hand-crafted rules are never touched
 
@@ -130,6 +177,15 @@ do" obvious at a glance. The user can:
   for `sieve:` lines mentioning `pipe`/`auto-route`.
 - The hooks call `sievec` to recompile after every change; if recompile
   fails, the dovecot log will show the syntax error.
+- To see what the existence check sees, run the same probe by hand:
+
+  ```
+  docker exec mail-dovecot sh -c 'printf "From: sender@example.com\nSubject: probe\n\nbody\n" > /tmp/probe.eml && chmod 644 /tmp/probe.eml && su -s /bin/sh vmail -c "sieve-test /var/mail/vhosts/<domain>/<user>/sieve/roundcube.sieve /tmp/probe.eml"'
+  ```
+
+  `store message in folder: <folder>` under `Performed actions` means
+  the AUTOROUTER will skip that sender.
+
 - Manual unit test:
 
   ```
@@ -145,4 +201,6 @@ do" obvious at a glance. The user can:
 
 See [tests/05-autorouter.sh](../../tests/05-autorouter.sh). All four
 behaviours (create, update, undo from user folder, keep on system
-folder for Junk/Trash/Drafts/Archive) have a dedicated check.
+folder for Junk/Trash/Drafts/Archive) have a dedicated check. The
+existence check has no automated check yet; it was verified by hand on
+a live mailbox with `contains`, `matches` and `is equal to` filters.

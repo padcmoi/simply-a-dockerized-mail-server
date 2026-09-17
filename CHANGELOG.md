@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(autorouter): moving a mail into a folder creates no rule and sends no notice when the user's existing sieve rules already file that mail, checked by running sieve-test on the moved mail against the active script (17-09-2026)
 - feat(dovecot): a mail moved, copied or appended into Junk is marked as read, by its own junk-mark-seen sieve script on a fifth imapsieve trigger (17-09-2026)
 
 ### Fixed

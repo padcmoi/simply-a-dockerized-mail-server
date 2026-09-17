@@ -50,6 +50,27 @@ case "$FROM_ADDR" in
 	;;
 esac
 
+HOME_DIR="/var/mail/vhosts/${USER_LC#*@}/${USER_LC%@*}"
+ACTIVE_SCRIPT="$(readlink -f "${HOME_DIR}/.dovecot.sieve" 2>/dev/null || true)"
+if [ -n "$ACTIVE_SCRIPT" ] && [ -f "$ACTIVE_SCRIPT" ]; then
+	PROBE_SCRIPT="$(mktemp)"
+	tr -d '\r' <"$ACTIVE_SCRIPT" | awk \
+		-v P="# rule:[AUTOROUTER " \
+		-v S=" ${FROM_ADDR}]" \
+		-v C="if allof (address :is \"From\" \"${FROM_ADDR}\")" '
+	  in_block { if ($0 == "}") { in_block = 0 }; next }
+	  pending { pending = 0; if ($0 == C) { in_block = 1; next } else { print held } }
+	  substr($0, 1, length(P)) == P && substr($0, length($0) - length(S) + 1) == S { held = $0; pending = 1; next }
+	  { print }
+	  END { if (pending) { print held } }
+	' >"$PROBE_SCRIPT"
+	PROBE_RESULT="$(sieve-test "$PROBE_SCRIPT" "$MESSAGE_FILE" 2>/dev/null || true)"
+	rm -f "$PROBE_SCRIPT" "${PROBE_SCRIPT}.svbin"
+	if printf '%s\n' "$PROBE_RESULT" | sed -n '/^Performed actions:/,/^Implicit keep:/p' | grep -q 'store message in folder:'; then
+		exit 0
+	fi
+fi
+
 AUTOROUTE_STATE="$(mktemp -d)"
 trap 'rm -f "$MESSAGE_FILE"; rm -rf "$AUTOROUTE_STATE"' EXIT
 
