@@ -15,15 +15,20 @@ hand alongside their hand-crafted filters.
 | drag mail from `INBOX` to a USER folder (e.g. `DA`)                                                       | **create** rule `AUTOROUTER DA <sender>`                                                                       |
 | drag mail from `INBOX` to a USER folder when an existing rule already files that mail (e.g. `@domain`)    | no-op: no rule, no postmaster notice (see [Existing rules win](#existing-rules-win))                           |
 | drag mail from `INBOX` to a different USER folder (e.g. `DF`)                                             | **update** the rule in place to `AUTOROUTER DF <sender>` -- no duplicate, no leftover from the previous folder |
-| drag mail from `INBOX` to a SYSTEM folder (`Drafts`, `Sent`, `Junk`, `Trash`, `Archive`)                  | no-op                                                                                                          |
+| drag mail from `INBOX` to a SYSTEM folder (`Drafts`, `Sent`, `Junk`, `Trash`, `Archive`, `Keep`)          | no-op                                                                                                          |
 | drag mail from a USER folder back to `INBOX`                                                              | **delete** the rule -- the rule is gone for that sender                                                        |
 | drag mail from a SYSTEM folder back to `INBOX` (e.g. Junk -> INBOX spam unblock, Trash -> INBOX undelete) | rule **kept** -- the move was for spam un-marking or undeletion, not for opting out of routing                 |
 | drag user folder to user folder (e.g. `DA -> DF`)                                                         | no-op -- trigger 3 only fires when source = INBOX                                                              |
 | edit / delete the rule via Roundcube Filtres                                                              | works exactly like any user-written rule                                                                       |
 
-System folders are recognised by literal name **AND** by Dovecot
-SPECIAL-USE flag where available: `INBOX`, `Drafts`, `Sent`, `Junk`,
-`Trash`, `Archive`, `Archives`.
+System folders are recognised by their IMAP name only, case-insensitively:
+`INBOX`, `Drafts`, `Sent`, `Junk`, `Trash`, `Archive`, `Archives`, `Keep`.
+The SPECIAL-USE flag is not consulted, so a folder a client created under
+another name (`Spam`, `Sent Messages`, ...) counts as a user folder.
+
+`Keep` is created and subscribed for every mailbox by dovecot. It stores
+mail worth keeping without being an archive, so it carries no SPECIAL-USE
+flag and clients do not treat it as `\Archive`.
 
 ## Architecture
 

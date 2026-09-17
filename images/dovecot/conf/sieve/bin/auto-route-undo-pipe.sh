@@ -57,7 +57,7 @@ fi
 USER_FOLDER_FOUND=0
 for src in $SOURCES; do
 	case "$src" in
-	Drafts | Sent | Junk | Trash | Archive | Archives) ;;
+	Drafts | Sent | Junk | Trash | Archive | Archives | Keep) ;;
 	*) USER_FOLDER_FOUND=1 ;;
 	esac
 done

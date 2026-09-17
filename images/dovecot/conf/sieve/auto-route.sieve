@@ -11,7 +11,7 @@ if environment :matches "imap.mailbox" "*" {
 # need to gate the destination here: skip any system folder so that moving a
 # mail to Drafts / Sent / Junk / Trash / Archives never creates an auto-route
 # rule. Rule creation/update happens only for user-created folders.
-if string :is "${dest}" ["INBOX", "Drafts", "Sent", "Junk", "Trash", "Archive", "Archives"] {
+if string :is "${dest}" ["INBOX", "Drafts", "Sent", "Junk", "Trash", "Archive", "Archives", "Keep"] {
   stop;
 }
 

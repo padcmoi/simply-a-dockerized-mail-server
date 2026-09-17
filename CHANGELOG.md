@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(dovecot): every mailbox gets a Keep folder, created and subscribed automatically, to store mail worth keeping without an archive flag, and the AUTOROUTER ignores it like the other system folders (17-09-2026)
 - feat(autorouter): moving a mail into a folder creates no rule and sends no notice when the user's existing sieve rules already file that mail, checked by running sieve-test on the moved mail against the active script (17-09-2026)
 - feat(dovecot): a mail moved, copied or appended into Junk is marked as read, by its own junk-mark-seen sieve script on a fifth imapsieve trigger (17-09-2026)
 
