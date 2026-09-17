@@ -5,19 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0-rc.10] - 2026-09-17
 
 ### Added
 
-- feat(dovecot): every mailbox gets a Keep folder, created and subscribed automatically, to store mail worth keeping without an archive flag, and the AUTOROUTER ignores it like the other system folders (17-09-2026)
-- feat(autorouter): moving a mail into a folder creates no rule and sends no notice when the user's existing sieve rules already file that mail, checked by running sieve-test on the moved mail against the active script (17-09-2026)
-- feat(dovecot): a mail moved, copied or appended into Junk is marked as read, by its own junk-mark-seen sieve script on a fifth imapsieve trigger (17-09-2026)
+- Every mailbox gets a Keep folder, created and subscribed automatically, to store mail worth keeping without an archive flag, and the AUTOROUTER ignores it like the other system folders _(dovecot)_ [2e87e02](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/2e87e0298d5c604bb6df627affd145b423ada2ab) (17-09-2026)
+- Moving a mail into a folder creates no rule and sends no notice when the user's existing sieve rules already file that mail, checked by running sieve-test on the moved mail against the active script _(autorouter)_ [b0fb54d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b0fb54d07da602633067fc6f421a25585efb566c) (17-09-2026)
+- A mail moved, copied or appended into Junk is marked as read, by its own junk-mark-seen sieve script _(dovecot)_ [fdefc4b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fdefc4b390eb200ec260b53945a40620c88dac61) (17-09-2026)
 
 ### Fixed
 
-- fix(autorouter): the rule hook no longer aborts on a script that only holds Roundcube's /* empty script */ placeholder, which left the rule unwritten while the notice still went out for every mail moved (17-09-2026)
-- fix(dovecot): the mark-as-read script runs after spam learning on the existing Junk trigger, dovecot skipped the second Junk rule as a duplicate so a mail moved into Junk stayed unread (17-09-2026)
-- fix(ui): a click on a table header now flips the sort between ascending and descending every time, instead of doing nothing on a server-paged list once it reached descending (16-09-2026)
+- The rule hook no longer aborts on a script that only holds Roundcube's empty script placeholder, which left the rule unwritten while the notice still went out for every mail moved _(autorouter)_ [590f18f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/590f18fa262e4ad84dace0229747bd4c7da701fb) (17-09-2026)
+- The mark-as-read script runs after spam learning on the existing Junk trigger, dovecot skipped a second Junk rule as a duplicate so a mail moved into Junk stayed unread _(dovecot)_ [4833b13](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/4833b13b21ac53aff636c5d655315e575a05ff9e) (17-09-2026)
+- A click on a table header now flips the sort between ascending and descending every time, instead of doing nothing on a server-paged list once it reached descending _(ui)_ [57f899c](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/57f899c66f70a223c6aa6ea95b624266eb9058af) (16-09-2026)
 
 ## [2.0.0-rc.9] - 2026-09-16
 
@@ -717,7 +717,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban host-net jails for postfix and dovecot _(security)_ [9695664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/969566492b99ceb9cfee3ed4bac32bb477f35b32) (27-06-2026)
 - Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [974519a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/974519a4a91a0d2a44c7595a530e2f4c9fa70506) (08-01-2025)
 - Merge branch 'main' into feature/security-fail2ban-firewall [cf7c1a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf7c1a1d6f9d90db6b3a71e852aeeba06668f623) (07-01-2025)
-  [unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.9...HEAD
+  [unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.10...HEAD
+  [2.0.0-rc.10]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.9...v2.0.0-rc.10
   [2.0.0-rc.9]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.8...v2.0.0-rc.9
   [2.0.0-rc.8]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.7...v2.0.0-rc.8
   [2.0.0-rc.7]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.6...v2.0.0-rc.7
