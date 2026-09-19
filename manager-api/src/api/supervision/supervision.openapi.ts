@@ -9,6 +9,7 @@ const snapshot = {
   cpu: 3.5,
   load: { one: 0.23, five: 0.3, fifteen: 0.27 },
   memory: { total: 24616660992, used: 4939212800 },
+  disk: { total: 211157901312, used: 92353499136 },
   network: { interface: "eth0", in: 9875, out: 7500 },
   rspamd: { scanned: 12034, noAction: 9870, greylist: 163, addHeader: 1500, reject: 501, learned: 240 },
   postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },
@@ -47,7 +48,8 @@ export const GetHistoryDocs = () =>
         "One recorded row stands for ten seconds and a month is kept. The window is grouped in SQL: an hour into " +
         "minutes, a day into quarter hours, a week into two-hour steps. Every bucket of the window is returned, " +
         "including the ones nothing was recorded in (all figures null), so a point always sits where its moment is. " +
-        "`memory` is a percentage of what is installed, like the live frames; `network` is bytes per second, in then out. " +
+        "`memory` is a percentage of what is installed, like the live frames; `disk` is bytes, used then total; " +
+        "`network` is bytes per second, in then out. " +
         "`rspamd` is rspamd's counters at the end of the bucket: scanned, no action, greylist, add header, reject, " +
         "learned. `postfix` is the mean depth of each queue over the bucket: active, deferred, hold, incoming. " +
         "Either is null for a bucket during which the service was out of reach.",
@@ -65,6 +67,7 @@ export const GetHistoryDocs = () =>
               at: 1770000000000,
               cpu: 3.4,
               memory: 20.1,
+              disk: [92353499136, 211157901312],
               load: [0.23, 0.3, 0.27],
               network: [9875, 7500],
               rspamd: [12034, 9870, 163, 1500, 501, 240],

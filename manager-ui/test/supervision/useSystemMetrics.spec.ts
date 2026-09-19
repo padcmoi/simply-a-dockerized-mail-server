@@ -23,6 +23,7 @@ function snapshot(at: number, over: Partial<SystemSnapshot> = {}): SystemSnapsho
     cpu: 10,
     load: { one: 1, five: 2, fifteen: 3 },
     memory: { total: 1000, used: 250 },
+    disk: { total: 2000, used: 500 },
     network: { interface: "eth0", in: 100, out: 200 },
     rspamd: { scanned: 100, noAction: 80, greylist: 4, addHeader: 8, reject: 5, learned: 7 },
     postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },

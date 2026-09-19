@@ -13,12 +13,13 @@ const STALE_MS = 8_000;
 const CLOCK_MS = 1_000;
 
 export function pointOf(frame: SystemSnapshot) {
-  const { at, cpu, load, memory, network, rspamd, postfix } = frame;
+  const { at, cpu, load, memory, disk, network, rspamd, postfix } = frame;
 
   const point: HistoryPoint = {
     at,
     cpu,
     memory: memory.total > 0 ? (memory.used / memory.total) * 100 : 0,
+    disk: disk ? [disk.used, disk.total] : null,
     load: [load.one, load.five, load.fifteen],
     network: network && network.in !== null && network.out !== null ? [network.in, network.out] : null,
     rspamd: rspamd ? [rspamd.scanned, rspamd.noAction, rspamd.greylist, rspamd.addHeader, rspamd.reject, rspamd.learned] : null,

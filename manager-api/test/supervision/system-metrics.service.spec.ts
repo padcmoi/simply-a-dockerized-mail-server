@@ -4,7 +4,11 @@ import { SystemMetricsService } from "../../src/core/supervision/system-metrics.
 // Hoisted with the mock that closes over them: `vi.mock` is lifted above the
 // imports, so plain module-scope consts would still be in their dead zone when
 // the mocked module is first required.
-const { files, readable } = vi.hoisted(() => ({ files: new Map<string, string>(), readable: new Set<string>() }));
+const { files, readable, disk } = vi.hoisted(() => ({
+  files: new Map<string, string>(),
+  readable: new Set<string>(),
+  disk: { stats: null as { blocks: number; bfree: number; bsize: number } | null },
+}));
 
 vi.mock("fs/promises", () => ({
   readFile: vi.fn(async (path: string) => {
@@ -14,6 +18,10 @@ vi.mock("fs/promises", () => ({
   }),
   access: vi.fn(async (path: string) => {
     if (!readable.has(path)) throw new Error(`ENOENT ${path}`);
+  }),
+  statfs: vi.fn(async () => {
+    if (!disk.stats) throw new Error("ENOSYS statfs");
+    return disk.stats;
   }),
 }));
 
@@ -44,6 +52,18 @@ describe("SystemMetricsService", () => {
     readable.clear();
     files.set("/proc/stat", procStat(100, 900));
     files.set("/proc/meminfo", meminfo(1000, 600));
+    disk.stats = { blocks: 100, bfree: 40, bsize: 4096 };
+  });
+
+  it("reads the disk capacity and the space used from the root filesystem", async () => {
+    const service = new SystemMetricsService();
+    expect((await service.sample()).disk).toEqual({ total: 100 * 4096, used: 60 * 4096 });
+  });
+
+  it("reports no disk when the root filesystem cannot be read", async () => {
+    disk.stats = null;
+    const service = new SystemMetricsService();
+    expect((await service.sample()).disk).toBeNull();
   });
 
   it("reports no cpu percentage on the first sample, since a rate needs two readings", async () => {

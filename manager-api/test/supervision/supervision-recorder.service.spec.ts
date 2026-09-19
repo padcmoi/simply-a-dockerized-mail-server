@@ -15,6 +15,7 @@ function snapshotAt(at: number, over: Partial<SystemSnapshot> = {}): SystemSnaps
     cpu: 10,
     load: { one: 1, five: 2, fifteen: 3 },
     memory: { total: 1000, used: 400 },
+    disk: { total: 2000, used: 500 },
     network: { interface: "eth0", in: 100, out: 200 },
     ...over,
   };
@@ -119,7 +120,16 @@ describe("SupervisionRecorderService", () => {
 
     expect(history.insert).toHaveBeenCalledTimes(1);
     expect(history.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ cpu: 40, memoryUsed: 400, memoryTotal: 1000, load1: 1, load5: 2, load15: 3 })
+      expect.objectContaining({
+        cpu: 40,
+        memoryUsed: 400,
+        memoryTotal: 1000,
+        diskUsed: 500,
+        diskTotal: 2000,
+        load1: 1,
+        load5: 2,
+        load15: 3,
+      })
     );
   });
 
@@ -140,6 +150,15 @@ describe("SupervisionRecorderService", () => {
     await service.tick();
 
     expect(history.insert).toHaveBeenCalledWith(expect.objectContaining({ netIn: null, netOut: null }));
+  });
+
+  it("records no disk for a host whose root filesystem is out of reach", async () => {
+    sample.mockImplementation(async () => snapshotAt(now, { disk: null }));
+    await service.tick();
+    advance(11_000);
+    await service.tick();
+
+    expect(history.insert).toHaveBeenCalledWith(expect.objectContaining({ diskUsed: null, diskTotal: null }));
   });
 
   // rspamd's counters only climb, so the row says where they stood at its end,

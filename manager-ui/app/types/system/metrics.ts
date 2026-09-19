@@ -19,6 +19,7 @@ export interface SystemSnapshot {
   cpu: number | null;
   load: { one: number; five: number; fifteen: number };
   memory: { total: number; used: number };
+  disk: { total: number; used: number } | null;
   network: { interface: string; in: number | null; out: number | null } | null;
   /** rspamd's counters at that moment; null while rspamd is out of reach. */
   rspamd: RspamdCounters | null;
@@ -35,6 +36,8 @@ export interface HistoryPoint {
   at: number;
   cpu: number | null;
   memory: number | null;
+  /** Bytes, used then total. */
+  disk: [number, number] | null;
   load: [number, number, number] | null;
   /** Bytes per second, in then out. */
   network: [number, number] | null;

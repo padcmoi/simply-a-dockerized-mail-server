@@ -2114,6 +2114,10 @@ export interface Locales {
     memoryDetail: string;
     memoryBusy: string;
     memorySaturated: string;
+    disk: string;
+    diskUsed: string;
+    diskTotal: string;
+    diskUnavailable: string;
     network: string;
     networkIn: string;
     networkOut: string;

@@ -16,6 +16,8 @@ export interface MetricPoint {
   /** Percent of what is installed, like the live frames, so one scale serves both. */
   memory: number | null;
   load: [number, number, number] | null;
+  /** Bytes, used then total. */
+  disk: [number, number] | null;
   /** Bytes per second, in then out. */
   network: [number, number] | null;
   /** rspamd's counters at the end of the bucket: scanned, no action, greylist, add header, reject, learned. */
@@ -34,6 +36,8 @@ interface Bucket {
   load15: number;
   memory_used: number;
   memory_total: number;
+  disk_used: number | null;
+  disk_total: number | null;
   net_in: number | null;
   net_out: number | null;
   rspamd_scanned: Figure;
@@ -61,6 +65,8 @@ const QUERY = `
          AVG(load_15) AS load15,
          AVG(memory_used) AS memory_used,
          MAX(memory_total) AS memory_total,
+         AVG(disk_used) AS disk_used,
+         MAX(disk_total) AS disk_total,
          AVG(net_in) AS net_in,
          AVG(net_out) AS net_out,
          MAX(rspamd_scanned) AS rspamd_scanned,
@@ -109,7 +115,7 @@ export class SupervisionHistoryService {
     const points = Array.from({ length: count }, (_, index): MetricPoint => {
       const at = first + index * window.step;
       const row = recorded.get(at);
-      if (!row) return { at, cpu: null, load: null, memory: null, network: null, rspamd: null, postfix: null };
+      if (!row) return { at, cpu: null, load: null, memory: null, disk: null, network: null, rspamd: null, postfix: null };
 
       const total = Number(row.memory_total);
       return {
@@ -117,6 +123,7 @@ export class SupervisionHistoryService {
         cpu: row.cpu === null ? null : Number(row.cpu),
         load: [Number(row.load1), Number(row.load5), Number(row.load15)],
         memory: total > 0 ? (Number(row.memory_used) / total) * 100 : 0,
+        disk: row.disk_used === null || row.disk_total === null ? null : [Number(row.disk_used), Number(row.disk_total)],
         network: row.net_in === null || row.net_out === null ? null : [Number(row.net_in), Number(row.net_out)],
         rspamd: together<[number, number, number, number, number, number]>(
           row.rspamd_scanned,

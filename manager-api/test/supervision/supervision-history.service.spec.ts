@@ -16,6 +16,8 @@ function bucket(at: number | string, over: Record<string, unknown> = {}) {
     load15: 3,
     memory_used: 250,
     memory_total: 1000,
+    disk_used: 500,
+    disk_total: 2000,
     net_in: 10,
     net_out: 20,
     rspamd_scanned: 14,
@@ -75,12 +77,22 @@ describe("SupervisionHistoryService", () => {
     query.mockResolvedValue([bucket(at + step)]);
 
     const { points } = await service.read("hour");
-    expect(points[0]).toEqual({ at, cpu: null, load: null, memory: null, network: null, rspamd: null, postfix: null });
+    expect(points[0]).toEqual({
+      at,
+      cpu: null,
+      load: null,
+      memory: null,
+      disk: null,
+      network: null,
+      rspamd: null,
+      postfix: null,
+    });
     expect(points[1]).toEqual({
       at: at + step,
       cpu: 12.5,
       load: [1, 2, 3],
       memory: 25,
+      disk: [500, 2000],
       network: [10, 20],
       rspamd: RSPAMD,
       postfix: POSTFIX,
@@ -112,6 +124,7 @@ describe("SupervisionHistoryService", () => {
       cpu: 12.5,
       load: [1, 2, 3],
       memory: 25,
+      disk: [500, 2000],
       network: [10, 20],
       rspamd: RSPAMD,
       postfix: POSTFIX,

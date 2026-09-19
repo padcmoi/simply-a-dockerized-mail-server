@@ -125,6 +125,12 @@ export class SupervisionRecorderService {
         load15: last.load.fifteen,
         memoryUsed: this.mean(batch.map((sample) => sample.memory.used)) ?? last.memory.used,
         memoryTotal: last.memory.total,
+        diskUsed: this.mean(batch.map((sample) => sample.disk?.used ?? null).filter((value) => value !== null)),
+        diskTotal:
+          batch
+            .map((sample) => sample.disk?.total ?? null)
+            .filter((value) => value !== null)
+            .at(-1) ?? null,
         netIn: this.mean(rates.map((network) => network.in).filter((value) => value !== null)),
         netOut: this.mean(rates.map((network) => network.out).filter((value) => value !== null)),
         rspamdScanned: rspamd?.scanned ?? null,

@@ -36,6 +36,12 @@ export class MetricsHistory {
   @Column({ name: "memory_total", type: "double" })
   memoryTotal!: number;
 
+  @Column({ name: "disk_used", type: "double", nullable: true })
+  diskUsed!: number | null;
+
+  @Column({ name: "disk_total", type: "double", nullable: true })
+  diskTotal!: number | null;
+
   @Column({ name: "net_in", type: "double", nullable: true })
   netIn!: number | null;
 

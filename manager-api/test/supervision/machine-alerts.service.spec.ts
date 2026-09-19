@@ -18,6 +18,7 @@ function snapshot(over: { load?: number; memoryUsed?: number; cores?: number } =
     cpu: 10,
     load: { one: over.load ?? 1, five: 1, fifteen: 1 },
     memory: { total: 1000, used: over.memoryUsed ?? 400 },
+    disk: { total: 2000, used: 500 },
     network: { interface: "eth0", in: 100, out: 200 },
   };
 }

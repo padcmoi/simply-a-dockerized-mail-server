@@ -99,17 +99,7 @@ function togglePause() {
         <SystemLoadCard v-bind="{ snapshot, points, at, notice, thresholds }" v-model:range="range" />
         <SystemMemoryCard v-bind="{ snapshot, points, at, notice, thresholds }" v-model:range="range" />
         <SystemNetworkCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
-      </div>
-
-      <!-- The two mail services, read by the same loop on the same clock: the
-           same feed, the same window and the same pause as the machine, so what
-           rspamd took in is read against what the host was doing at that moment. -->
-      <h3 class="flex items-center gap-2 pt-3 text-sm font-medium">
-        <UIcon name="i-lucide-mail-check" class="size-4 text-primary" />
-        {{ t("supervision.services") }}
-      </h3>
-
-      <div class="grid items-stretch gap-4 transition-opacity lg:grid-cols-2" :class="status !== 'live' && 'opacity-60'">
+        <SystemDiskCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
         <RspamdActivityCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
         <PostfixQueueCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
       </div>

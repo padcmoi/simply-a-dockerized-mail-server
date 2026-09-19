@@ -1,4 +1,4 @@
-import { readFile, access } from "fs/promises";
+import { readFile, access, statfs } from "fs/promises";
 import { cpus, freemem, loadavg, totalmem } from "os";
 import { Injectable } from "@nestjs/common";
 
@@ -22,6 +22,8 @@ export interface SystemSnapshot {
   load: { one: number; five: number; fifteen: number };
   /** Bytes. */
   memory: { total: number; used: number };
+  /** Bytes. */
+  disk: { total: number; used: number } | null;
   /** Null where the host's own counters are out of reach; rates in bytes per second. */
   network: { interface: string; in: number | null; out: number | null } | null;
 }
@@ -44,9 +46,10 @@ export class SystemMetricsService {
   private baseline: { at: number; cpu: CpuTicks; network: Counters | null } | null = null;
 
   async sample(): Promise<SystemSnapshot> {
-    const [ticks, network] = await Promise.all([
+    const [ticks, network, disk] = await Promise.all([
       this.readProcTicks().then((read) => read ?? this.readOsTicks()),
       this.readNetwork(),
+      this.readDisk(),
     ]);
 
     const previous = this.baseline;
@@ -62,6 +65,7 @@ export class SystemMetricsService {
       cpu: this.percent(previous?.cpu ?? null, ticks),
       load: { one, five, fifteen },
       memory: (await this.readProcMemory()) ?? { total: totalmem(), used: Math.max(0, totalmem() - freemem()) },
+      disk,
       network: network && {
         interface: network.name,
         in: previous?.network ? this.rate(network.rx, previous.network.rx, seconds) : null,
@@ -110,6 +114,13 @@ export class SystemMetricsService {
 
     if (!Number.isFinite(total) || !Number.isFinite(available) || total <= 0) return null;
     return { total, used: Math.max(0, total - available) };
+  }
+
+  private async readDisk() {
+    const stats = await statfs("/").catch(() => null);
+    if (!stats || stats.blocks <= 0) return null;
+
+    return { total: stats.blocks * stats.bsize, used: Math.max(0, (stats.blocks - stats.bfree) * stats.bsize) };
   }
 
   private async readable(path: string) {
