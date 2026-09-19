@@ -5,18 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0-rc.11] - 2026-09-19
 
 ### Added
 
-- feat(supervision): a Disk card draws the host's disk capacity and the space used, in bytes, on the live minute and the recorded windows, the history gaining disk_used and disk_total columns (19-09-2026)
-- feat(ui): the top bar stays pinned to the page, slides away when scrolling down and comes back when scrolling up (19-09-2026)
-- feat(ui): a thin bar in the primary color runs along the top of the window and fills as the page is scrolled (19-09-2026)
-- feat(update): update.sh pulls and rebuilds the roundcube stack without stopping it, full for every service, or ui, api or both for the manager alone, the mail services left running (19-09-2026)
+- A Disk card draws the host's disk capacity and the space used, in bytes, on the live minute and the recorded windows, the history gaining disk_used and disk_total columns _(supervision)_ [aa13a31](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/aa13a31842fb62a8762cb00466988e2927e270a6) (19-09-2026)
+- The top bar stays pinned to the page, slides away when scrolling down and comes back when scrolling up _(ui)_ [c7c1902](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c7c1902c3650aa9035a06760923d09d881e74e8f) (19-09-2026)
+- A thin bar in the primary color runs along the top of the window and fills as the page is scrolled _(ui)_ [3b98a72](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/3b98a721fa222b38456bcdbea9d50527408a68b4) (19-09-2026)
+- update.sh pulls and rebuilds the roundcube stack without stopping it, full for every service, or ui, api or both for the manager alone, the mail services left running _(update)_ [8ef8237](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/8ef8237330c2b6741459654baa5c41ab6a6c48b1) (19-09-2026)
 
 ### Changed
 
-- feat(supervision): the machine and service cards share one grid, so no card is left alone beside an empty slot (19-09-2026)
+- The machine and service cards share one grid, so no card is left alone beside an empty slot _(supervision)_ [aa13a31](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/aa13a31842fb62a8762cb00466988e2927e270a6) (19-09-2026)
 
 ## [2.0.0-rc.10] - 2026-09-17
 
@@ -730,7 +730,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Fail2ban host-net jails for postfix and dovecot _(security)_ [9695664](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/969566492b99ceb9cfee3ed4bac32bb477f35b32) (27-06-2026)
 - Merge pull request #6 from padcmoi/feature/security-fail2ban-firewall [974519a](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/974519a4a91a0d2a44c7595a530e2f4c9fa70506) (08-01-2025)
 - Merge branch 'main' into feature/security-fail2ban-firewall [cf7c1a1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/cf7c1a1d6f9d90db6b3a71e852aeeba06668f623) (07-01-2025)
-  [unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.10...HEAD
+  [unreleased]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.11...HEAD
+  [2.0.0-rc.11]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.10...v2.0.0-rc.11
   [2.0.0-rc.10]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.9...v2.0.0-rc.10
   [2.0.0-rc.9]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.8...v2.0.0-rc.9
   [2.0.0-rc.8]: https://github.com/padcmoi/simply-a-dockerized-mail-server/compare/v2.0.0-rc.7...v2.0.0-rc.8
