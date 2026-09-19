@@ -1963,6 +1963,7 @@ export interface Locales {
             access: string;
             "view-machine-metrics": string;
             "view-metrics-history": string;
+            "view-activity-log": string;
             "view-mail-logs": string;
           };
           deliverability: {
