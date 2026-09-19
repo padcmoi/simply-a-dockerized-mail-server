@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - feat(supervision): a Disk card draws the host's disk capacity and the space used, in bytes, on the live minute and the recorded windows, the history gaining disk_used and disk_total columns (19-09-2026)
 - feat(ui): the top bar stays pinned to the page, slides away when scrolling down and comes back when scrolling up (19-09-2026)
 - feat(ui): a thin bar in the primary color runs along the top of the window and fills as the page is scrolled (19-09-2026)
+- feat(update): update.sh pulls and rebuilds the roundcube stack without stopping it, full for every service, or ui, api or both for the manager alone, the mail services left running (19-09-2026)
 
 ### Changed
 
