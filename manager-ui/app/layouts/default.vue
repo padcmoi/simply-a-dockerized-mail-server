@@ -6,6 +6,8 @@ provideBreadcrumb();
 
 <template>
   <UMain class="flex flex-1 min-h-dvh">
+    <ScrollProgress />
+
     <AppNavigation />
 
     <!-- Nothing else on the page matters until this one is answered. -->
