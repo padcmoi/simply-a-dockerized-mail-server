@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - feat(supervision): a Disk card draws the host's disk capacity and the space used, in bytes, on the live minute and the recorded windows, the history gaining disk_used and disk_total columns (19-09-2026)
+- feat(ui): the top bar stays pinned to the page, slides away when scrolling down and comes back when scrolling up (19-09-2026)
 
 ### Changed
 

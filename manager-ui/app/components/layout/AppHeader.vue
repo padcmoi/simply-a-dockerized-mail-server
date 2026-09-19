@@ -5,10 +5,21 @@
 const { toggle } = useSidebar();
 const { t } = useI18n();
 const { items } = useBreadcrumb();
+const { y } = useWindowScroll();
+
+const hidden = shallowRef(false);
+
+watch(y, (now, before) => {
+  if (now <= 0) hidden.value = false;
+  else if (Math.abs(now - before) > 4) hidden.value = now > before;
+});
 </script>
 
 <template>
-  <div class="h-(--ui-header-height) shrink-0 flex items-center gap-2 px-4 border-b border-default">
+  <div
+    class="sticky top-0 z-40 h-(--ui-header-height) shrink-0 flex items-center gap-2 px-4 border-b border-default bg-default transition-transform duration-200"
+    :class="hidden && '-translate-y-full'"
+  >
     <UButton icon="i-lucide-panel-left" color="neutral" variant="ghost" :aria-label="t('layout.toggleSidebar')" @click="toggle" />
     <USeparator orientation="vertical" class="h-5" />
     <UBreadcrumb v-if="items.length" :items="items" class="min-w-0 overflow-hidden">
