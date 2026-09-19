@@ -27,6 +27,7 @@ import { CustomPermissionGuardModule } from "./core/custom-permission-guard/cust
 import { RefreshToken } from "./core/entities/refresh-token.entity";
 import { WebsocketModule } from "./core/websocket/websocket.module";
 import { ActivityApiModule } from "./api/activity/activity.module";
+import { MailLogsApiModule } from "./api/mail-logs/mail-logs.module";
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { ActivityApiModule } from "./api/activity/activity.module";
     MySpaceModule,
     SupervisionApiModule,
     ActivityApiModule,
+    MailLogsApiModule,
     ThemeApiModule,
     WebsocketModule,
   ],

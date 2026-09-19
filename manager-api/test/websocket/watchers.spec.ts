@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { DataSource } from "typeorm";
 import type { DomainsService } from "../../src/api/domains/domains.service";
 import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
@@ -7,6 +7,7 @@ import type { NotificationsService } from "../../src/core/notifications/notifica
 import type { TicketsService } from "../../src/api/tickets/tickets.service";
 import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
 import type { SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
+import type { MailLogsService } from "../../src/api/mail-logs/mail-logs.service";
 import { buildWatchers } from "../../src/core/websocket/watchers";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
 import { DOMAIN_ACTIONS, GLOBAL_ACTIONS } from "../../src/core/custom-permission-guard/permission-catalog";
@@ -21,6 +22,9 @@ const watchers = buildWatchers({
   tickets: providerMock<TicketsService>({}),
   presence: providerMock<AccountPresenceService>({}),
   supervision: providerMock<SupervisionRecorderService>({}),
+  mailLogs: providerMock<MailLogsService>({
+    follow: vi.fn(async (service: "postfix" | "dovecot") => ({ service, from: 0, to: 0, lines: [] })),
+  }),
 });
 
 describe("websocket watchers", () => {
@@ -81,6 +85,14 @@ describe("websocket watchers", () => {
 
   it.each(watchers.map((w) => [w.topic, w] as const))("%s never asks for a poll faster than the floor", (_topic, watcher) => {
     if (watcher.intervalMs !== undefined) expect(watcher.intervalMs).toBeGreaterThanOrEqual(MIN_INTERVAL_MS);
+  });
+
+  it("gates mail-log exactly like the REST route it mirrors, one topic per log", async () => {
+    const watcher = watchers.find((w) => w.topic === "mail-log");
+    expect(watcher?.parameterized).toBe(true);
+    expect(watcher?.permissions).toEqual([{ resource: "supervision", actions: ["access", "view-mail-logs"] }]);
+    expect(await watcher?.fn("dovecot")).toEqual({ service: "dovecot", from: 0, to: 0, lines: [] });
+    expect(await watcher?.fn("../../etc/passwd")).toBeNull();
   });
 
   it("gates supervision-machine exactly like the live REST route it mirrors", () => {

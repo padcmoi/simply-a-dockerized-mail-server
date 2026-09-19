@@ -218,6 +218,7 @@ export default {
           access: "Accès",
           "view-machine-metrics": "Voir les mesures en direct",
           "view-metrics-history": "Voir l'historique des mesures",
+          "view-mail-logs": "Lire les logs de Postfix et Dovecot",
         },
         deliverability: {
           access: "Accès",

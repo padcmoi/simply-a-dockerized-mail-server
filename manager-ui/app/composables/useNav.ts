@@ -98,6 +98,7 @@ export function useNav(onSignOut: () => Promise<void>) {
         : []),
       ...entry("supervision", "nav.supervision", "i-lucide-activity", "/admin/supervision"),
       ...entry("supervision", "nav.activity", "i-lucide-scroll-text", "/admin/activity", "view-activity-log"),
+      ...entry("supervision", "nav.mailLogs", "i-lucide-file-text", "/admin/mail-logs", "view-mail-logs"),
       // The release this server runs, the same tag the login screen shows, last
       // in the section and behind no ACL: the page has none, the login screen
       // names it before anyone has signed in. Its text is drawn by the

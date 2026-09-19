@@ -1,5 +1,6 @@
 import { DataSource } from "typeorm";
 import { DomainsService } from "../../../api/domains/domains.service";
+import { MailLogsService } from "../../../api/mail-logs/mail-logs.service";
 import { TicketsService } from "../../../api/tickets/tickets.service";
 import { JwtAuthService } from "../../auth/jwt/jwt.service";
 import { NotificationsService } from "../../notifications/notifications.service";
@@ -13,6 +14,7 @@ import { domainPostfixWatcher } from "./domain-postfix.watcher";
 import { domainQuotaWatcher } from "./domain-quota.watcher";
 import { domainRecipientsWatcher } from "./domain-recipients.watcher";
 import { domainRspamdWatcher } from "./domain-rspamd.watcher";
+import { mailLogWatcher } from "./mail-log.watcher";
 import { notificationsWatcher } from "./notifications.watcher";
 import { presenceWatcher } from "./presence.watcher";
 import { ticketThreadWatcher } from "./ticket-thread.watcher";
@@ -33,6 +35,7 @@ export interface WatcherDeps {
   tickets: TicketsService;
   presence: AccountPresenceService;
   supervision: SupervisionRecorderService;
+  mailLogs: MailLogsService;
 }
 
 export function buildWatchers(deps: WatcherDeps): Watcher[] {
@@ -52,5 +55,6 @@ export function buildWatchers(deps: WatcherDeps): Watcher[] {
     ticketThreadWatcher(deps.tickets),
     presenceWatcher(deps.presence),
     supervisionWatcher(deps.supervision),
+    mailLogWatcher(deps.mailLogs),
   ];
 }

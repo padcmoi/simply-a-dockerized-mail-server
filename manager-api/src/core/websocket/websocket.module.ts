@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { DomainsModule } from "../../api/domains/domains.module";
+import { MailLogsApiModule } from "../../api/mail-logs/mail-logs.module";
 import { TicketsModule } from "../../api/tickets/tickets.module";
 import { JwtAuthModule } from "../auth/jwt/jwt.module";
 import { CustomPermissionGuardModule } from "../custom-permission-guard/custom-permission-guard.module";
@@ -23,6 +24,7 @@ import { WebsocketService } from "./websocket.service";
     TicketsModule,
     TopicPresenceModule,
     SupervisionModule,
+    MailLogsApiModule,
     TypeOrmModule.forFeature([RefreshToken, VirtualDomain]),
   ],
   providers: [WebsocketGateway, WebsocketService],

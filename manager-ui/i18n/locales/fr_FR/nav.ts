@@ -21,6 +21,7 @@ export default {
   config: "Configuration",
   supervision: "Supervision",
   activity: "Journal d'activité",
+  mailLogs: "Logs mail",
   sectionMail: "Courrier",
   sectionAccess: "Accès",
   sectionSystem: "Système",

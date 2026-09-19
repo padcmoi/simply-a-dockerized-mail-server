@@ -91,6 +91,7 @@ export interface Locales {
     config: string;
     supervision: string;
     activity: string;
+    mailLogs: string;
     sectionMail: string;
     sectionAccess: string;
     sectionSystem: string;
@@ -1962,6 +1963,7 @@ export interface Locales {
             access: string;
             "view-machine-metrics": string;
             "view-metrics-history": string;
+            "view-mail-logs": string;
           };
           deliverability: {
             access: string;
@@ -2129,6 +2131,20 @@ export interface Locales {
     postfix: string;
     postfixWaiting: string;
     postfixUnavailable: string;
+  };
+  mailLogs: {
+    title: string;
+    subtitle: string;
+    search: string;
+    older: string;
+    beginning: string;
+    live: string;
+    download: string;
+    downloadFailed: string;
+    summary: string;
+    updated: string;
+    empty: string;
+    loadFailed: string;
   };
   // The operators an account signs in from: the list a sign-in is measured
   // against, shown to the account itself and to whoever may edit it.

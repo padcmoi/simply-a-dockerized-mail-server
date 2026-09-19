@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- feat(mail-logs): Mail logs under System has one page for Postfix and one for Dovecot, switched by tabs that are routes, each opening on the last 500 lines of its log and loading the 500 before whenever the top is reached, back to the first line of the file, live over the websocket topic mail-log, with a filter, errors and warnings colored, selectable text and a button that downloads the whole log file, behind the new supervision action view-mail-logs, one action for both logs, through GET /mail-logs/:service and GET /mail-logs/:service/download on the log directory mounted read-only into manager-api (19-09-2026)
+
 ## [2.0.0-rc.11] - 2026-09-19
 
 ### Added

@@ -34,6 +34,7 @@ import table from "./fr_FR/table";
 import deliverability from "./fr_FR/deliverability";
 import activity from "./fr_FR/activity";
 import known from "./fr_FR/known";
+import mailLogs from "./fr_FR/mailLogs";
 
 // One file per top-level namespace under ./fr_FR/, this file only assembles
 // them. `satisfies Locales` still type-checks the whole tree here, and each
@@ -74,4 +75,5 @@ export default {
   deliverability,
   activity,
   known,
+  mailLogs,
 } satisfies Locales;

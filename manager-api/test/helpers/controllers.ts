@@ -40,6 +40,7 @@ import { PassportConfigController } from "../../src/api/config/passport-config.c
 import { TwoFactorController } from "../../src/core/auth/two-factor/two-factor.controller";
 import { MfaController } from "../../src/core/auth/mfa/mfa.controller";
 import { ActivityController } from "../../src/api/activity/activity.controller";
+import { MailLogsController } from "../../src/api/mail-logs/mail-logs.controller";
 
 export const ALL_CONTROLLERS = [
   AccountsController,
@@ -80,4 +81,5 @@ export const ALL_CONTROLLERS = [
   TwoFactorController,
   MfaController,
   ActivityController,
+  MailLogsController,
 ] as const;

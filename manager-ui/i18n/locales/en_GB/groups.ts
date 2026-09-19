@@ -215,6 +215,7 @@ export default {
           access: "Access",
           "view-machine-metrics": "View the live figures",
           "view-metrics-history": "View the recorded history",
+          "view-mail-logs": "Read the Postfix and Dovecot logs",
         },
         deliverability: {
           access: "Access",
