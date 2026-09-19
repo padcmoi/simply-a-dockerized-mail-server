@@ -72,6 +72,8 @@ export default {
     "api-tokens_revealed": "Clé API affichée",
     delegations_accepted: "Invitation acceptée",
     delegations_claimed: "Octroi réclamé",
+    fail2ban_banned: "Adresse bannie",
+    fail2ban_unbanned: "Ban levé",
   },
   event: {
     auth_login: "S'est connecté",
@@ -110,5 +112,7 @@ export default {
     "api-tokens_revealed": "A affiché la clé API {label}",
     delegations_accepted: "A accepté une invitation",
     delegations_claimed: "A réclamé un octroi par lien",
+    fail2ban_banned: "A banni définitivement l'adresse {label}",
+    fail2ban_unbanned: "A levé le ban de l'adresse {label} dans la prison {jail}",
   },
 } satisfies Locales["activity"];

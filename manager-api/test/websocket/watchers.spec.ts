@@ -8,6 +8,7 @@ import type { TicketsService } from "../../src/api/tickets/tickets.service";
 import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
 import type { SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
 import type { MailLogsService } from "../../src/api/mail-logs/mail-logs.service";
+import type { Fail2banService } from "../../src/core/fail2ban/fail2ban.service";
 import { buildWatchers } from "../../src/core/websocket/watchers";
 import { MIN_INTERVAL_MS } from "../../src/core/websocket/watcher.type";
 import { DOMAIN_ACTIONS, GLOBAL_ACTIONS } from "../../src/core/custom-permission-guard/permission-catalog";
@@ -25,6 +26,7 @@ const watchers = buildWatchers({
   mailLogs: providerMock<MailLogsService>({
     follow: vi.fn(async (service: "postfix" | "dovecot") => ({ service, from: 0, to: 0, lines: [] })),
   }),
+  fail2ban: providerMock<Fail2banService>({ status: vi.fn(async () => ({ available: true, jails: [], history: [] })) }),
 });
 
 describe("websocket watchers", () => {
@@ -93,6 +95,12 @@ describe("websocket watchers", () => {
     expect(watcher?.permissions).toEqual([{ resource: "supervision", actions: ["access", "view-mail-logs"] }]);
     expect(await watcher?.fn("dovecot")).toEqual({ service: "dovecot", from: 0, to: 0, lines: [] });
     expect(await watcher?.fn("../../etc/passwd")).toBeNull();
+  });
+
+  it("gates fail2ban exactly like the REST route it mirrors", async () => {
+    const watcher = watchers.find((w) => w.topic === "fail2ban");
+    expect(watcher?.permissions).toEqual([{ resource: "fail2ban", actions: ["access", "view-fail2ban-jails"] }]);
+    expect(await watcher?.fn()).toEqual({ available: true, jails: [], history: [] });
   });
 
   it("gates supervision-machine exactly like the live REST route it mirrors", () => {

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { DomainsModule } from "../../api/domains/domains.module";
 import { MailLogsApiModule } from "../../api/mail-logs/mail-logs.module";
+import { Fail2banCoreModule } from "../fail2ban/fail2ban.module";
 import { TicketsModule } from "../../api/tickets/tickets.module";
 import { JwtAuthModule } from "../auth/jwt/jwt.module";
 import { CustomPermissionGuardModule } from "../custom-permission-guard/custom-permission-guard.module";
@@ -25,6 +26,7 @@ import { WebsocketService } from "./websocket.service";
     TopicPresenceModule,
     SupervisionModule,
     MailLogsApiModule,
+    Fail2banCoreModule,
     TypeOrmModule.forFeature([RefreshToken, VirtualDomain]),
   ],
   providers: [WebsocketGateway, WebsocketService],

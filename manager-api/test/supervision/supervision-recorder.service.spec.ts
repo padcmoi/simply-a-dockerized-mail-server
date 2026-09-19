@@ -1,3 +1,4 @@
+import { Fail2banHistory } from "../../src/core/entities/fail2ban-history.entity";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { LessThan } from "typeorm";
 import { MetricsHistory } from "../../src/core/entities/metrics-history.entity";
@@ -25,12 +26,14 @@ function servicesSample(over: Partial<ServiceSample> = {}): ServiceSample {
   return {
     rspamd: { scanned: 100, noAction: 80, greylist: 4, addHeader: 8, reject: 5, learned: 7 },
     postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },
+    fail2ban: { dovecot: 2, manager: 1 },
     ...over,
   };
 }
 
 describe("SupervisionRecorderService", () => {
   const history = repoMock<MetricsHistory>();
+  const bans = repoMock<Fail2banHistory>();
   let now = 1_800_000_000_000;
   let sample: ReturnType<typeof vi.fn>;
   let services: ReturnType<typeof vi.fn>;
@@ -49,7 +52,7 @@ describe("SupervisionRecorderService", () => {
       get: vi.fn(() => ({ ...APP_SETTINGS_DEFAULTS, supervisionRetentionMs: retentionMs })),
     });
     const alerts = providerMock<MachineAlertsService>({ inspect });
-    return new SupervisionRecorderService(metrics, serviceMetrics, history, settings, alerts);
+    return new SupervisionRecorderService(metrics, serviceMetrics, history, bans, settings, alerts);
   }
 
   beforeEach(() => {
@@ -57,6 +60,8 @@ describe("SupervisionRecorderService", () => {
     retentionMs = 30 * 24 * 3_600_000;
     history.insert.mockResolvedValue(undefined);
     history.delete.mockResolvedValue(undefined);
+    bans.insert.mockResolvedValue(undefined);
+    bans.delete.mockResolvedValue(undefined);
     vi.useFakeTimers();
     vi.setSystemTime(now);
     service = build();
@@ -88,6 +93,7 @@ describe("SupervisionRecorderService", () => {
     await service.tick();
     expect(history.delete).toHaveBeenCalledWith({ at: LessThan(now - 30 * 24 * 3_600_000) });
     expect(history.delete).toHaveBeenCalledTimes(1);
+    expect(bans.delete).toHaveBeenCalledWith({ at: LessThan(now - 30 * 24 * 3_600_000) });
   });
 
   // Read on every pass rather than at boot: a retention changed in the settings
@@ -141,6 +147,37 @@ describe("SupervisionRecorderService", () => {
     await service.tick();
 
     expect(history.insert).toHaveBeenCalledWith(expect.objectContaining({ cpu: 30 }));
+  });
+
+  it("records the mean number of bans of each fail2ban jail over the row", async () => {
+    services.mockResolvedValueOnce(servicesSample({ fail2ban: { dovecot: 1, manager: 1 } }));
+    services.mockResolvedValueOnce(servicesSample({ fail2ban: { dovecot: 3, manager: 1, "postfix-sasl": 4 } }));
+    await service.tick();
+    advance(11_000);
+    await service.tick();
+
+    expect(bans.insert).toHaveBeenCalledWith([
+      { at: now, jail: "dovecot", banned: 2 },
+      { at: now, jail: "manager", banned: 1 },
+      { at: now, jail: "postfix-sasl", banned: 4 },
+    ]);
+  });
+
+  it("records no ban row while fail2ban is out of reach", async () => {
+    services.mockImplementation(async () => servicesSample({ fail2ban: null }));
+    await service.tick();
+    advance(11_000);
+    await service.tick();
+
+    expect(history.insert).toHaveBeenCalled();
+    expect(bans.insert).not.toHaveBeenCalled();
+  });
+
+  it("keeps going when the ban rows cannot be written", async () => {
+    bans.insert.mockRejectedValueOnce(new Error("db is away"));
+    await service.tick();
+    advance(11_000);
+    await expect(service.tick()).resolves.toBeDefined();
   });
 
   it("records no rate at all for a host whose interfaces are out of reach", async () => {

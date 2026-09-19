@@ -92,6 +92,7 @@ export interface Locales {
     supervision: string;
     activity: string;
     mailLogs: string;
+    fail2ban: string;
     sectionMail: string;
     sectionAccess: string;
     sectionSystem: string;
@@ -1868,6 +1869,7 @@ export interface Locales {
           superadmin: string;
           domainOwnerElevated: string;
           supervision: string;
+          fail2ban: string;
         };
         domain: {
           domain: string;
@@ -1965,6 +1967,12 @@ export interface Locales {
             "view-metrics-history": string;
             "view-activity-log": string;
             "view-mail-logs": string;
+          };
+          fail2ban: {
+            access: string;
+            "view-fail2ban-jails": string;
+            "ban-ip": string;
+            "unban-ip": string;
           };
           deliverability: {
             access: string;
@@ -2125,6 +2133,9 @@ export interface Locales {
     networkIn: string;
     networkOut: string;
     networkUnavailable: string;
+    fail2ban: string;
+    fail2banBanned: string;
+    fail2banUnavailable: string;
     services: string;
     rspamd: string;
     rspamdScanned: string;
@@ -2132,6 +2143,40 @@ export interface Locales {
     postfix: string;
     postfixWaiting: string;
     postfixUnavailable: string;
+  };
+  fail2ban: {
+    title: string;
+    subtitle: string;
+    loadFailed: string;
+    unavailable: string;
+    permanentRule: string;
+    rule: string;
+    currentlyBanned: string;
+    totalBanned: string;
+    currentlyFailed: string;
+    totalFailed: string;
+    noBan: string;
+    since: string;
+    until: string;
+    forever: string;
+    unban: string;
+    unbanned: string;
+    unbanFailed: string;
+    banTitle: string;
+    banHint: string;
+    address: string;
+    ban: string;
+    banned: string;
+    banFailed: string;
+    historyTitle: string;
+    historyHint: string;
+    historyEmpty: string;
+    days: string;
+    hours: string;
+    minutes: string;
+    seconds: string;
+    col: { bannedAt: string; ip: string; jail: string; expiresAt: string; failures: string; banCount: string; matches: string };
+    matchesTitle: string;
   };
   mailLogs: {
     title: string;

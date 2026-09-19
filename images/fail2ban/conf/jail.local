@@ -36,3 +36,11 @@ enabled  = true
 filter   = dovecot
 port     = 993,143
 logpath  = /var/log/mail/dovecot.log
+
+[manager]
+enabled  = true
+filter   = manager
+port     = smtp,465,587,993,143
+logpath  = /var/log/mail/postfix.log
+bantime  = -1
+maxretry = 1

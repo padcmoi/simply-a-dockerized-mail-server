@@ -1,3 +1,4 @@
+import type { Fail2banService } from "../../src/core/fail2ban/fail2ban.service";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ServiceMetricsService, countersOf } from "../../src/core/supervision/service-metrics.service";
 import type { RspamdService, RspamdStats } from "../../src/core/rspamd/rspamd.service";
@@ -46,7 +47,8 @@ describe("ServiceMetricsService", () => {
     queueStats = vi.fn(async () => queue());
     service = new ServiceMetricsService(
       providerMock<RspamdService>({ stats: rspamdStats }),
-      providerMock<PostfixService>({ queueStats })
+      providerMock<PostfixService>({ queueStats }),
+      providerMock<Fail2banService>({ latestBanned: vi.fn(() => ({ dovecot: 2, manager: 1 })) })
     );
   });
 
@@ -54,6 +56,7 @@ describe("ServiceMetricsService", () => {
     const sample = await service.sample();
     expect(sample.rspamd).toEqual(COUNTERS);
     expect(sample.postfix).toEqual({ active: 1, deferred: 3, hold: 0, incoming: 2 });
+    expect(sample.fail2ban).toEqual({ dovecot: 2, manager: 1 });
   });
 
   it("follows the counters as they climb", async () => {

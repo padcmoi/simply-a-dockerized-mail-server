@@ -5,6 +5,9 @@ services:
     build:
       context: ../../images/fail2ban
     env_file: ../../.env
+    environment:
+      FAIL2BAN_API_BIND: 172.200.0.1
+      FAIL2BAN_API_PORT: 8081
     network_mode: host
     cap_add:
       - NET_ADMIN

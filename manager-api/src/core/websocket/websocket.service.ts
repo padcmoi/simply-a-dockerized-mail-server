@@ -3,6 +3,7 @@ import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
 import { DomainsService } from "../../api/domains/domains.service";
 import { MailLogsService } from "../../api/mail-logs/mail-logs.service";
+import { Fail2banService } from "../fail2ban/fail2ban.service";
 import { TicketsService } from "../../api/tickets/tickets.service";
 import { JwtAuthService } from "../auth/jwt/jwt.service";
 import { NotificationsService } from "../notifications/notifications.service";
@@ -34,7 +35,8 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     private readonly tickets: TicketsService,
     private readonly presence: AccountPresenceService,
     private readonly supervision: SupervisionRecorderService,
-    private readonly mailLogs: MailLogsService
+    private readonly mailLogs: MailLogsService,
+    private readonly fail2ban: Fail2banService
   ) {}
 
   onModuleInit() {
@@ -56,6 +58,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
       presence: this.presence,
       supervision: this.supervision,
       mailLogs: this.mailLogs,
+      fail2ban: this.fail2ban,
     };
     for (const watcher of buildWatchers(deps)) {
       this.gateway.registerTopic(watcher.topic, {

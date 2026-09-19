@@ -39,12 +39,16 @@ const POSTFIX = [0.5, 3, 0, 0];
 
 describe("SupervisionHistoryService", () => {
   let query: ReturnType<typeof vi.fn>;
+  let rows: unknown[];
+  let banRows: unknown[];
   let service: SupervisionHistoryService;
 
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
-    query = vi.fn().mockResolvedValue([]);
+    rows = [];
+    banRows = [];
+    query = vi.fn(async (sql: string) => (sql.includes("fail2ban_history") ? banRows : rows));
     service = new SupervisionHistoryService(providerMock<DataSource>({ query }));
   });
   afterEach(() => vi.useRealTimers());
@@ -69,12 +73,32 @@ describe("SupervisionHistoryService", () => {
     expect(window.points).toHaveLength(Math.floor((NOW - Math.floor((NOW - span) / step) * step) / step) + 1);
   });
 
+  it("hands each bucket the mean bans of every fail2ban jail, even a bucket with no machine row", async () => {
+    const step = METRIC_RANGES.hour.step;
+    const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
+    rows = [bucket(at + step)];
+    banRows = [
+      { at: String(at), jail: "dovecot", banned: "1.5" },
+      { at: at + step, jail: "dovecot", banned: 2 },
+      { at: at + step, jail: "manager", banned: 1 },
+    ];
+
+    const { points } = await service.read("hour");
+    expect(points[0]?.fail2ban).toEqual({ dovecot: 1.5 });
+    expect(points[0]?.cpu).toBeNull();
+    expect(points[1]?.fail2ban).toEqual({ dovecot: 2, manager: 1 });
+    expect(points[2]?.fail2ban).toBeNull();
+    const [sql, params] = query.mock.calls[1] as [string, unknown[]];
+    expect(sql).toContain("GROUP BY 1, jail");
+    expect(params).toEqual([step, step, NOW - METRIC_RANGES.hour.span]);
+  });
+
   // A bucket nothing was recorded in is a hole, not a zero: the chart cuts its
   // curve there rather than drawing a machine that was never measured.
   it("returns every bucket of the window, the empty ones with null figures", async () => {
     const step = METRIC_RANGES.hour.step;
     const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
-    query.mockResolvedValue([bucket(at + step)]);
+    rows = [bucket(at + step)];
 
     const { points } = await service.read("hour");
     expect(points[0]).toEqual({
@@ -86,6 +110,7 @@ describe("SupervisionHistoryService", () => {
       network: null,
       rspamd: null,
       postfix: null,
+      fail2ban: null,
     });
     expect(points[1]).toEqual({
       at: at + step,
@@ -96,6 +121,7 @@ describe("SupervisionHistoryService", () => {
       network: [10, 20],
       rspamd: RSPAMD,
       postfix: POSTFIX,
+      fail2ban: null,
     });
   });
 
@@ -104,7 +130,7 @@ describe("SupervisionHistoryService", () => {
   it("reads the driver's strings back as numbers", async () => {
     const step = METRIC_RANGES.hour.step;
     const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
-    query.mockResolvedValue([
+    rows = [
       bucket(String(at), {
         cpu: "12.5",
         load1: "1",
@@ -116,7 +142,7 @@ describe("SupervisionHistoryService", () => {
         rspamd_no_action: "11",
         postfix_active: "0.5",
       }),
-    ]);
+    ];
 
     const { points } = await service.read("hour");
     expect(points[0]).toEqual({
@@ -128,6 +154,7 @@ describe("SupervisionHistoryService", () => {
       network: [10, 20],
       rspamd: RSPAMD,
       postfix: POSTFIX,
+      fail2ban: null,
     });
   });
 
@@ -136,7 +163,7 @@ describe("SupervisionHistoryService", () => {
   it("keeps a bucket during which one service was out of reach as a hole in that curve alone", async () => {
     const step = METRIC_RANGES.hour.step;
     const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
-    query.mockResolvedValue([
+    rows = [
       bucket(at, {
         rspamd_scanned: null,
         rspamd_no_action: null,
@@ -146,7 +173,7 @@ describe("SupervisionHistoryService", () => {
         rspamd_learned: null,
       }),
       bucket(at + step, { postfix_hold: null }),
-    ]);
+    ];
 
     const { points } = await service.read("hour");
     expect(points[0]).toMatchObject({ cpu: 12.5, rspamd: null, postfix: POSTFIX });
@@ -156,7 +183,7 @@ describe("SupervisionHistoryService", () => {
   it("keeps a bucket with no recorded rate as a hole in the network curve alone", async () => {
     const step = METRIC_RANGES.hour.step;
     const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
-    query.mockResolvedValue([bucket(at, { net_in: null, net_out: null })]);
+    rows = [bucket(at, { net_in: null, net_out: null })];
 
     const { points } = await service.read("hour");
     expect(points[0]).toMatchObject({ cpu: 12.5, network: null });
@@ -165,7 +192,7 @@ describe("SupervisionHistoryService", () => {
   it("reports no memory at all rather than dividing by a total of zero", async () => {
     const step = METRIC_RANGES.hour.step;
     const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
-    query.mockResolvedValue([bucket(at, { memory_total: 0, memory_used: 0 })]);
+    rows = [bucket(at, { memory_total: 0, memory_used: 0 })];
 
     const { points } = await service.read("hour");
     expect(points[0]?.memory).toBe(0);

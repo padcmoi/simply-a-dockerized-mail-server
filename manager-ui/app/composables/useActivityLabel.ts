@@ -20,6 +20,7 @@ const ICONS: [prefix: string, icon: string][] = [
   ["tickets", "i-lucide-life-buoy"],
   ["api-tokens", "i-lucide-key"],
   ["delegations", "i-lucide-user-plus"],
+  ["fail2ban", "i-lucide-shield-ban"],
 ];
 
 // A dot is a path separator for vue-i18n, so the action's dots are written as
@@ -68,6 +69,7 @@ export function useActivityLabel() {
         typeof details.status === "string" && te(`tickets.status.${details.status}`) ? t(`tickets.status.${details.status}`) : "",
       fields: Array.isArray(details.fields) ? details.fields.join(", ") : "",
       email: typeof details.email === "string" ? details.email : "",
+      jail: typeof details.jail === "string" ? details.jail : "",
       distanceKm: typeof details.distanceKm === "number" ? details.distanceKm : "",
       where: whereOf(details),
       // What answered the distance, in the reader's language: the raw key would

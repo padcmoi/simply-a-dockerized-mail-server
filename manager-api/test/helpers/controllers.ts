@@ -41,6 +41,7 @@ import { TwoFactorController } from "../../src/core/auth/two-factor/two-factor.c
 import { MfaController } from "../../src/core/auth/mfa/mfa.controller";
 import { ActivityController } from "../../src/api/activity/activity.controller";
 import { MailLogsController } from "../../src/api/mail-logs/mail-logs.controller";
+import { Fail2banController } from "../../src/api/fail2ban/fail2ban.controller";
 
 export const ALL_CONTROLLERS = [
   AccountsController,
@@ -82,4 +83,5 @@ export const ALL_CONTROLLERS = [
   MfaController,
   ActivityController,
   MailLogsController,
+  Fail2banController,
 ] as const;

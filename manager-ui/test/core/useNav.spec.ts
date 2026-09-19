@@ -104,6 +104,7 @@ describe("useNav global nav items", () => {
       "/admin/supervision",
       "/admin/activity",
       "/admin/mail-logs",
+      "/admin/fail2ban",
       "/about",
     ]);
   });

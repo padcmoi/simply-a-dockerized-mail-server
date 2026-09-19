@@ -17,6 +17,7 @@ services:
       # host stack, and listens on the bridge gateway. See
       # docker/services/deliverability-probe.yml.
       DELIVERABILITY_PROBE_URL: http://172.200.0.1:8080
+      FAIL2BAN_API_URL: http://172.200.0.1:8081
     volumes:
       # Read-write, see manager-api.yml.
       - ${VOLUMES_PATH}/mail:/var/mail

@@ -24,6 +24,8 @@ export interface MetricPoint {
   rspamd: [number, number, number, number, number, number] | null;
   /** Mean depth of each Postfix queue over the bucket: active, deferred, hold, incoming. */
   postfix: [number, number, number, number] | null;
+  /** Mean number of addresses each fail2ban jail banned over the bucket. */
+  fail2ban: Record<string, number> | null;
 }
 
 type Figure = number | string | null;
@@ -85,6 +87,20 @@ GROUP BY 1
 ORDER BY 1
 `;
 
+const BANS_QUERY = `
+  SELECT FLOOR(at / ?) * ? AS at, jail, AVG(banned) AS banned
+    FROM fail2ban_history
+   WHERE at >= ?
+GROUP BY 1, jail
+ORDER BY 1
+`;
+
+interface BanBucket {
+  at: number | string;
+  jail: string;
+  banned: number | string;
+}
+
 // A service's figures stand or fall together: one of them missing is the
 // service out of reach for the bucket, and a point with half a service is a
 // curve drawn through a moment nobody measured.
@@ -102,8 +118,16 @@ export class SupervisionHistoryService {
     const now = Date.now();
     const since = now - window.span;
 
-    const rows = (await this.dataSource.query(QUERY, [window.step, window.step, since])) as Bucket[];
+    const [rows, banRows] = (await Promise.all([
+      this.dataSource.query(QUERY, [window.step, window.step, since]),
+      this.dataSource.query(BANS_QUERY, [window.step, window.step, since]),
+    ])) as [Bucket[], BanBucket[]];
     const recorded = new Map(rows.map((row) => [Number(row.at), row]));
+    const bans = new Map<number, Record<string, number>>();
+    for (const row of banRows) {
+      const at = Number(row.at);
+      bans.set(at, { ...bans.get(at), [row.jail]: Number(row.banned) });
+    }
 
     // The grid is built from the window and not from what came back, so a point
     // is always where its moment is. Every bucket is sent, including the ones
@@ -115,7 +139,9 @@ export class SupervisionHistoryService {
     const points = Array.from({ length: count }, (_, index): MetricPoint => {
       const at = first + index * window.step;
       const row = recorded.get(at);
-      if (!row) return { at, cpu: null, load: null, memory: null, disk: null, network: null, rspamd: null, postfix: null };
+      const fail2ban = bans.get(at) ?? null;
+      if (!row)
+        return { at, cpu: null, load: null, memory: null, disk: null, network: null, rspamd: null, postfix: null, fail2ban };
 
       const total = Number(row.memory_total);
       return {
@@ -139,6 +165,7 @@ export class SupervisionHistoryService {
           row.postfix_hold,
           row.postfix_incoming
         ),
+        fail2ban,
       };
     });
 

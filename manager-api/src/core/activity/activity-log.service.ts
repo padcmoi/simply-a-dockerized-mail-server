@@ -47,6 +47,8 @@ export const ACTIVITY_ACTIONS = [
   "api-tokens.revealed",
   "delegations.accepted",
   "delegations.claimed",
+  "fail2ban.banned",
+  "fail2ban.unbanned",
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];

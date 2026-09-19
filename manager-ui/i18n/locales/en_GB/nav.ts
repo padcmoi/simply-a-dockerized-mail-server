@@ -22,6 +22,7 @@ export default {
   supervision: "Supervision",
   activity: "Activity log",
   mailLogs: "Mail logs",
+  fail2ban: "Fail2ban",
   sectionMail: "Mail",
   sectionAccess: "Access",
   sectionSystem: "System",

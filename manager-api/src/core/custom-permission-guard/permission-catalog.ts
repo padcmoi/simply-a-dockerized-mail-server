@@ -113,6 +113,7 @@ export const GLOBAL_ACTIONS = {
   // the installation - which domain it is aimed at is the separate, per-domain
   // question the route also asks.
   deliverability: ["access", "run-diagnostics"],
+  fail2ban: ["access", "view-fail2ban-jails", "ban-ip", "unban-ip"],
   superadmin: ["access", "resize-any-domain-quota", "delete-any-domain"],
 } as const;
 

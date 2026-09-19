@@ -71,6 +71,8 @@ export default {
     "api-tokens_revealed": "API key revealed",
     delegations_accepted: "Invitation accepted",
     delegations_claimed: "Grant claimed",
+    fail2ban_banned: "Address banned",
+    fail2ban_unbanned: "Ban lifted",
   },
   event: {
     auth_login: "Signed in",
@@ -109,5 +111,7 @@ export default {
     "api-tokens_revealed": "Revealed the API key {label}",
     delegations_accepted: "Accepted an invitation",
     delegations_claimed: "Claimed a grant by link",
+    fail2ban_banned: "Banned the address {label} for good",
+    fail2ban_unbanned: "Lifted the ban of the address {label} in the {jail} jail",
   },
 } satisfies Locales["activity"];

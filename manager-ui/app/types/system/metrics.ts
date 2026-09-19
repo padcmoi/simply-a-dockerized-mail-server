@@ -25,6 +25,8 @@ export interface SystemSnapshot {
   rspamd: RspamdCounters | null;
   /** Messages waiting in each Postfix queue directory; null while the spool is out of reach. */
   postfix: QueueDirStats | null;
+  /** Addresses each fail2ban jail bans; null while fail2ban is out of reach. */
+  fail2ban: Record<string, number> | null;
 }
 
 // One point's worth of what the curves draw, as percentages except the load.
@@ -45,6 +47,8 @@ export interface HistoryPoint {
   rspamd: [number, number, number, number, number, number] | null;
   /** Queue depths at the point: active, deferred, hold, incoming. */
   postfix: [number, number, number, number] | null;
+  /** Addresses each fail2ban jail bans at the point. */
+  fail2ban: Record<string, number> | null;
 }
 
 export type MetricsStatus = "connecting" | "live" | "offline";

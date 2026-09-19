@@ -13,6 +13,7 @@ const snapshot = {
   network: { interface: "eth0", in: 9875, out: 7500 },
   rspamd: { scanned: 12034, noAction: 9870, greylist: 163, addHeader: 1500, reject: 501, learned: 240 },
   postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },
+  fail2ban: { dovecot: 2, manager: 1, "postfix-relay": 0, "postfix-sasl": 1 },
 };
 
 export const GetLiveDocs = () =>
@@ -26,7 +27,8 @@ export const GetLiveDocs = () =>
         "on a host whose own interfaces are out of reach from this container. The same loop reads the two mail " +
         "services: `rspamd` is rspamd's own counters at that moment, the figures its page tiles, counted since it " +
         "started, null while rspamd is out of reach; `postfix` is the number of messages in each queue directory, " +
-        "null while the spool is out of reach.",
+        "null while the spool is out of reach. `fail2ban` is the number of addresses each fail2ban jail bans, " +
+        "refreshed every ten seconds, null while fail2ban is out of reach.",
     }),
     ApiResponse({
       status: 200,
@@ -52,7 +54,8 @@ export const GetHistoryDocs = () =>
         "`network` is bytes per second, in then out. " +
         "`rspamd` is rspamd's counters at the end of the bucket: scanned, no action, greylist, add header, reject, " +
         "learned. `postfix` is the mean depth of each queue over the bucket: active, deferred, hold, incoming. " +
-        "Either is null for a bucket during which the service was out of reach.",
+        "Either is null for a bucket during which the service was out of reach. `fail2ban` is the mean number of " +
+        "addresses each jail banned over the bucket, null when nothing was recorded.",
     }),
     ApiParam({ name: "range", enum: ["hour", "day", "week"], description: "How far back the window reaches" }),
     ApiResponse({
@@ -72,6 +75,7 @@ export const GetHistoryDocs = () =>
               network: [9875, 7500],
               rspamd: [12034, 9870, 163, 1500, 501, 240],
               postfix: [0.5, 3, 0, 0],
+              fail2ban: { dovecot: 2, manager: 1, "postfix-relay": 0, "postfix-sasl": 1 },
             },
           ],
         },

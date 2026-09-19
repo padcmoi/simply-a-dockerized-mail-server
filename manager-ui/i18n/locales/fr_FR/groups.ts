@@ -121,6 +121,7 @@ export default {
         domains: "Domaines",
         tickets: "Tickets de support",
         supervision: "Supervision",
+        fail2ban: "Fail2ban",
         superadmin: "Super administrateur",
         domainOwnerElevated: "Propriétaire de domaine élevé",
       },
@@ -220,6 +221,12 @@ export default {
           "view-metrics-history": "Voir l'historique des mesures",
           "view-activity-log": "Voir le journal d'activité",
           "view-mail-logs": "Lire les logs de Postfix et Dovecot",
+        },
+        fail2ban: {
+          access: "Accès",
+          "view-fail2ban-jails": "Voir les prisons, les adresses bannies et l'historique",
+          "ban-ip": "Bannir une adresse",
+          "unban-ip": "Débannir une adresse",
         },
         deliverability: {
           access: "Accès",

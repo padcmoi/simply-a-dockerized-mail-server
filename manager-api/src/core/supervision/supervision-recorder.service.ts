@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { LessThan, Repository } from "typeorm";
 import { MetricsHistory } from "../entities/metrics-history.entity";
+import { Fail2banHistory } from "../entities/fail2ban-history.entity";
 import { AppSettingsService } from "../settings/app-settings.service";
 import { MachineAlertsService } from "./machine-alerts.service";
 import { ServiceMetricsService, type ServiceSample } from "./service-metrics.service";
@@ -44,6 +45,7 @@ export class SupervisionRecorderService {
     private readonly metrics: SystemMetricsService,
     private readonly services: ServiceMetricsService,
     @InjectRepository(MetricsHistory) private readonly history: Repository<MetricsHistory>,
+    @InjectRepository(Fail2banHistory) private readonly bans: Repository<Fail2banHistory>,
     private readonly settings: AppSettingsService,
     private readonly alerts: MachineAlertsService
   ) {}
@@ -147,11 +149,26 @@ export class SupervisionRecorderService {
     } catch (e) {
       this.log.warn(`recording the machine failed: ${(e as Error).message}`);
     }
+
+    const jails = new Map<string, number[]>();
+    for (const sample of batch) {
+      for (const [jail, banned] of Object.entries(sample.fail2ban ?? {})) jails.set(jail, [...(jails.get(jail) ?? []), banned]);
+    }
+    if (!jails.size) return;
+
+    const at = Date.now();
+    try {
+      await this.bans.insert([...jails].map(([jail, counts]) => ({ at, jail, banned: this.mean(counts) ?? 0 })));
+    } catch (e) {
+      this.log.warn(`recording the fail2ban bans failed: ${(e as Error).message}`);
+    }
   }
 
   private async prune() {
     try {
-      await this.history.delete({ at: LessThan(Date.now() - this.settings.get().supervisionRetentionMs) });
+      const before = LessThan(Date.now() - this.settings.get().supervisionRetentionMs);
+      await this.history.delete({ at: before });
+      await this.bans.delete({ at: before });
     } catch (e) {
       this.log.warn(`pruning the recorded machine history failed: ${(e as Error).message}`);
     }

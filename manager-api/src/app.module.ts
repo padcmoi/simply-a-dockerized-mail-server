@@ -28,6 +28,7 @@ import { RefreshToken } from "./core/entities/refresh-token.entity";
 import { WebsocketModule } from "./core/websocket/websocket.module";
 import { ActivityApiModule } from "./api/activity/activity.module";
 import { MailLogsApiModule } from "./api/mail-logs/mail-logs.module";
+import { Fail2banApiModule } from "./api/fail2ban/fail2ban.module";
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { MailLogsApiModule } from "./api/mail-logs/mail-logs.module";
     SupervisionApiModule,
     ActivityApiModule,
     MailLogsApiModule,
+    Fail2banApiModule,
     ThemeApiModule,
     WebsocketModule,
   ],

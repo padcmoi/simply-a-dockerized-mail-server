@@ -35,6 +35,7 @@ import deliverability from "./fr_FR/deliverability";
 import activity from "./fr_FR/activity";
 import known from "./fr_FR/known";
 import mailLogs from "./fr_FR/mailLogs";
+import fail2ban from "./fr_FR/fail2ban";
 
 // One file per top-level namespace under ./fr_FR/, this file only assembles
 // them. `satisfies Locales` still type-checks the whole tree here, and each
@@ -76,4 +77,5 @@ export default {
   activity,
   known,
   mailLogs,
+  fail2ban,
 } satisfies Locales;

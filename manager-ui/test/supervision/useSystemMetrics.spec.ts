@@ -27,6 +27,7 @@ function snapshot(at: number, over: Partial<SystemSnapshot> = {}): SystemSnapsho
     network: { interface: "eth0", in: 100, out: 200 },
     rspamd: { scanned: 100, noAction: 80, greylist: 4, addHeader: 8, reject: 5, learned: 7 },
     postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },
+    fail2ban: { dovecot: 1 },
     ...over,
   };
 }

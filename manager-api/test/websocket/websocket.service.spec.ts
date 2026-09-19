@@ -1,3 +1,4 @@
+import type { Fail2banService } from "../../src/core/fail2ban/fail2ban.service";
 import type { MailLogsService } from "../../src/api/mail-logs/mail-logs.service";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { DataSource } from "typeorm";
@@ -50,7 +51,8 @@ describe("WebsocketService", () => {
       providerMock<TicketsService>({}),
       providerMock<AccountPresenceService>({}),
       providerMock<SupervisionRecorderService>({}),
-      providerMock<MailLogsService>({})
+      providerMock<MailLogsService>({}),
+      providerMock<Fail2banService>({})
     );
     service.onModuleInit();
   }
@@ -78,7 +80,8 @@ describe("WebsocketService", () => {
       providerMock<TicketsService>({}),
       providerMock<AccountPresenceService>({}),
       providerMock<SupervisionRecorderService>({}),
-      providerMock<MailLogsService>({})
+      providerMock<MailLogsService>({}),
+      providerMock<Fail2banService>({})
     );
     const handlers = { start: (_f: string, _b: string, _p: string) => undefined, stop: (_f: string) => undefined };
     gateway.setDynamicHandlers.mockImplementation((h: typeof handlers) => Object.assign(handlers, h));

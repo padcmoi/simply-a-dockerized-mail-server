@@ -13,7 +13,7 @@ const STALE_MS = 8_000;
 const CLOCK_MS = 1_000;
 
 export function pointOf(frame: SystemSnapshot) {
-  const { at, cpu, load, memory, disk, network, rspamd, postfix } = frame;
+  const { at, cpu, load, memory, disk, network, rspamd, postfix, fail2ban } = frame;
 
   const point: HistoryPoint = {
     at,
@@ -24,6 +24,7 @@ export function pointOf(frame: SystemSnapshot) {
     network: network && network.in !== null && network.out !== null ? [network.in, network.out] : null,
     rspamd: rspamd ? [rspamd.scanned, rspamd.noAction, rspamd.greylist, rspamd.addHeader, rspamd.reject, rspamd.learned] : null,
     postfix: postfix ? [postfix.active, postfix.deferred, postfix.hold, postfix.incoming] : null,
+    fail2ban: fail2ban ?? null,
   };
 
   return point;
