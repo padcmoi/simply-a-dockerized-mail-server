@@ -10,9 +10,13 @@ const { y } = useWindowScroll();
 const hidden = shallowRef(false);
 
 watch(y, (now, before) => {
-  if (now <= 0) hidden.value = false;
+  if (now <= 0 || atBottom(now)) hidden.value = false;
   else if (Math.abs(now - before) > 4) hidden.value = now > before;
 });
+
+function atBottom(now: number) {
+  return document.documentElement.scrollHeight - globalThis.innerHeight - now <= 2;
+}
 </script>
 
 <template>
