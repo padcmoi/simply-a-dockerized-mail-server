@@ -22,9 +22,9 @@ export interface MetricPoint {
   network: [number, number] | null;
   /** rspamd's counters at the end of the bucket: scanned, no action, greylist, add header, reject, learned. */
   rspamd: [number, number, number, number, number, number] | null;
-  /** Mean depth of each Postfix queue over the bucket: active, deferred, hold, incoming. */
+  /** Deepest each Postfix queue was over the bucket: active, deferred, hold, incoming. */
   postfix: [number, number, number, number] | null;
-  /** Mean number of addresses each fail2ban jail banned over the bucket. */
+  /** Most addresses each fail2ban jail held banned at once over the bucket. */
   fail2ban: Record<string, number> | null;
 }
 
@@ -56,31 +56,34 @@ interface Bucket {
 
 // A week holds around sixty thousand rows and a chart holds eighty-four columns
 // of pixels, so the grouping happens in SQL over the index and never by handing
-// a week of samples to javascript. rspamd's counters only climb, so a bucket
-// keeps the highest it saw, which is where they stood at its end; the queues
-// are averaged, a depth being a level and not a count.
+// a week of samples to javascript. Every bucket keeps the highest it saw rather
+// than its mean: one column of the day window covers fifteen minutes, which is
+// ninety rows, and a minute of load at 16 averaged against eighty-four minutes
+// of an idle host is a night the chart says nothing happened on, while the
+// notification sent at the time says otherwise. The peak is a moment the machine
+// really had, the mean is a moment it never had.
 const QUERY = `
   SELECT FLOOR(at / ?) * ? AS at,
-         AVG(cpu) AS cpu,
-         AVG(load_1) AS load1,
-         AVG(load_5) AS load5,
-         AVG(load_15) AS load15,
-         AVG(memory_used) AS memory_used,
+         MAX(cpu) AS cpu,
+         MAX(load_1) AS load1,
+         MAX(load_5) AS load5,
+         MAX(load_15) AS load15,
+         MAX(memory_used) AS memory_used,
          MAX(memory_total) AS memory_total,
-         AVG(disk_used) AS disk_used,
+         MAX(disk_used) AS disk_used,
          MAX(disk_total) AS disk_total,
-         AVG(net_in) AS net_in,
-         AVG(net_out) AS net_out,
+         MAX(net_in) AS net_in,
+         MAX(net_out) AS net_out,
          MAX(rspamd_scanned) AS rspamd_scanned,
          MAX(rspamd_no_action) AS rspamd_no_action,
          MAX(rspamd_greylist) AS rspamd_greylist,
          MAX(rspamd_add_header) AS rspamd_add_header,
          MAX(rspamd_reject) AS rspamd_reject,
          MAX(rspamd_learned) AS rspamd_learned,
-         AVG(postfix_active) AS postfix_active,
-         AVG(postfix_deferred) AS postfix_deferred,
-         AVG(postfix_hold) AS postfix_hold,
-         AVG(postfix_incoming) AS postfix_incoming
+         MAX(postfix_active) AS postfix_active,
+         MAX(postfix_deferred) AS postfix_deferred,
+         MAX(postfix_hold) AS postfix_hold,
+         MAX(postfix_incoming) AS postfix_incoming
     FROM metrics_history
    WHERE at >= ?
 GROUP BY 1
@@ -88,7 +91,7 @@ ORDER BY 1
 `;
 
 const BANS_QUERY = `
-  SELECT FLOOR(at / ?) * ? AS at, jail, AVG(banned) AS banned
+  SELECT FLOOR(at / ?) * ? AS at, jail, MAX(banned) AS banned
     FROM fail2ban_history
    WHERE at >= ?
 GROUP BY 1, jail

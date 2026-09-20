@@ -58,9 +58,11 @@ describe("SupervisionHistoryService", () => {
     const [sql, params] = query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain("metrics_history");
     expect(sql).toContain("GROUP BY 1");
-    // rspamd's counters keep their highest, the queues are averaged, in the one query.
+    // Every figure of the bucket is the highest it reached, in the one query.
+    expect(sql).toContain("MAX(cpu)");
+    expect(sql).toContain("MAX(load_1)");
     expect(sql).toContain("MAX(rspamd_no_action)");
-    expect(sql).toContain("AVG(postfix_deferred)");
+    expect(sql).toContain("MAX(postfix_deferred)");
     expect(params).toEqual([60_000, 60_000, NOW - 3_600_000]);
   });
 
@@ -73,7 +75,7 @@ describe("SupervisionHistoryService", () => {
     expect(window.points).toHaveLength(Math.floor((NOW - Math.floor((NOW - span) / step) * step) / step) + 1);
   });
 
-  it("hands each bucket the mean bans of every fail2ban jail, even a bucket with no machine row", async () => {
+  it("hands each bucket the highest bans of every fail2ban jail, even a bucket with no machine row", async () => {
     const step = METRIC_RANGES.hour.step;
     const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
     rows = [bucket(at + step)];
