@@ -44,6 +44,7 @@ export default {
   fail2ban: "Fail2ban bans",
   clamav: "Antivirus signatures",
   clamavHours: "{n} h",
+  clamavBuilt: "built {n} h ago",
   clamavOffline: "Engine out of reach",
   clamavUnavailable: "The antivirus signatures cannot be read",
   fail2banBanned: "{n} banned addresses",

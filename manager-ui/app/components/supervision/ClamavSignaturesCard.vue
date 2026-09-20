@@ -40,7 +40,7 @@ function hours(value: number) {
             <UIcon name="i-lucide-bug" class="size-4 text-primary" />
             {{ t("supervision.clamav") }}
           </span>
-          <span v-if="live !== null" class="text-xs text-dimmed">{{ hours(live) }}</span>
+          <span v-if="live !== null" class="text-xs text-dimmed">{{ t("supervision.clamavBuilt", { n: live.toFixed(1) }) }}</span>
           <UBadge v-if="snapshot && !reachable" color="warning" variant="subtle" size="sm" icon="i-lucide-unplug">
             {{ t("supervision.clamavOffline") }}
           </UBadge>

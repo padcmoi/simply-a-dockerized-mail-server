@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- fix(supervision): the antivirus card says the signatures were built so many hours ago, where the figure alone said nothing about what it measured (20-09-2026)
 - chore(tooling): every markdown file of the repository goes through prettier on every commit, like the code, the list coming from git so nothing untracked is touched (20-09-2026)
 - chore(changelog): every identifier carrying an underscore is written as code, whatever its case, which is what kept prettier from rewriting the sentence around it as emphasis (20-09-2026)
 

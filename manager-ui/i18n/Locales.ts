@@ -2149,6 +2149,7 @@ export interface Locales {
     fail2banUnavailable: string;
     clamav: string;
     clamavHours: string;
+    clamavBuilt: string;
     clamavOffline: string;
     clamavUnavailable: string;
     services: string;
