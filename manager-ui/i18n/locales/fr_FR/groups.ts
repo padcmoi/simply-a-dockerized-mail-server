@@ -232,6 +232,8 @@ export default {
         clamav: {
           access: "Accès",
           "view-clamav-status": "Voir le moteur, les bases de signatures et leur âge",
+          "update-signatures": "Lancer la mise à jour des signatures",
+          "reload-database": "Faire recharger les bases au moteur",
         },
         deliverability: {
           access: "Accès",

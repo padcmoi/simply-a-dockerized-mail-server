@@ -73,6 +73,8 @@ export default {
     delegations_claimed: "Grant claimed",
     fail2ban_banned: "Address banned",
     fail2ban_unbanned: "Ban lifted",
+    clamav_updated: "Antivirus signatures updated",
+    clamav_reloaded: "Antivirus databases reloaded",
   },
   event: {
     auth_login: "Signed in",
@@ -113,5 +115,7 @@ export default {
     delegations_claimed: "Claimed a grant by link",
     fail2ban_banned: "Banned the address {label} for good",
     fail2ban_unbanned: "Lifted the ban of the address {label} in the {jail} jail",
+    clamav_updated: "Asked for the antivirus signatures to be updated",
+    clamav_reloaded: "Had the antivirus signature databases reloaded",
   },
 } satisfies Locales["activity"];

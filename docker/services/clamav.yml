@@ -4,6 +4,11 @@ services:
     restart: unless-stopped
     build:
       context: ../../images/clamav
+    environment:
+      # The updater listens on the mail network only, where manager-api already
+      # reaches clamd itself. See images/clamav/clamav-api.py.
+      CLAMAV_API_BIND: 172.200.0.12
+      CLAMAV_API_PORT: 8082
     volumes:
       - ${VOLUMES_PATH}/clamav:/var/lib/clamav
     networks:

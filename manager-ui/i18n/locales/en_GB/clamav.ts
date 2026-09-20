@@ -19,10 +19,23 @@ export default {
   stats: {
     title: "Scanning",
     threads: "Threads",
-    threadsDetail: "{live} busy of {max}",
+    threadsDetail: "{live} of {max}",
+    threadsHint:
+      "Scanning threads alive in clamd, including the one answering this very read, of the maximum its configuration allows. It is not the number of messages being scanned: the load is the queue beside it.",
     queue: "Waiting",
     queueDetail: "{n} file | {n} files",
     pools: "Signatures in memory",
+  },
+  actions: {
+    update: "Update the signatures",
+    updateHint: "Asks freshclam to fetch what ClamAV publishes. A download can take several minutes.",
+    updated: "Signatures updated",
+    current: "The signatures were already current",
+    updateFailed: "Updating the signatures failed",
+    reload: "Reload the databases",
+    reloadHint: "Has the engine read the signature files again, which it otherwise keeps in memory as they were.",
+    reloaded: "Databases reloaded",
+    reloadFailed: "Reloading the databases failed",
   },
   databases: {
     title: "Signature databases",

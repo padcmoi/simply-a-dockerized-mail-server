@@ -20,6 +20,7 @@ services:
       FAIL2BAN_API_URL: http://172.200.0.1:8081
       CLAMAV_HOST: 172.200.0.12
       CLAMAV_PORT: 3310
+      CLAMAV_API_URL: http://172.200.0.12:8082
     volumes:
       # Read-write, see manager-api.yml.
       - ${VOLUMES_PATH}/mail:/var/mail

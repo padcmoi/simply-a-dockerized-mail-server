@@ -8,10 +8,17 @@ definePageMeta({
 
 const { t } = useI18n();
 const { set: setBreadcrumb } = useBreadcrumb();
+const { isRoot, hasGlobal } = usePermissions();
 
 setBreadcrumb([{ label: t("nav.clamav") }]);
 
-const { status, loading, failed } = useClamav();
+const { status, loading, failed, busy, update, reload } = useClamav();
+
+// Each action has a right of its own: asking the scanner to download is a
+// minutes-long call out of the installation, rereading the files it already has
+// is neither.
+const canUpdate = computed(() => isRoot.value || hasGlobal("clamav", "update-signatures"));
+const canReload = computed(() => isRoot.value || hasGlobal("clamav", "reload-database"));
 </script>
 
 <template>
@@ -41,6 +48,33 @@ const { status, loading, failed } = useClamav();
 
     <template v-else>
       <ClamavEngineCard :status="status" />
+
+      <div v-if="canUpdate || canReload" class="flex flex-wrap items-center gap-3">
+        <UTooltip v-if="canUpdate" :text="t('clamav.actions.updateHint')">
+          <UButton
+            icon="i-lucide-download"
+            color="primary"
+            variant="solid"
+            :label="t('clamav.actions.update')"
+            :loading="busy === 'update'"
+            :disabled="busy !== null"
+            @click="() => void update()"
+          />
+        </UTooltip>
+
+        <UTooltip v-if="canReload" :text="t('clamav.actions.reloadHint')">
+          <UButton
+            icon="i-lucide-refresh-cw"
+            color="neutral"
+            variant="subtle"
+            :label="t('clamav.actions.reload')"
+            :loading="busy === 'reload'"
+            :disabled="busy !== null"
+            @click="() => void reload()"
+          />
+        </UTooltip>
+      </div>
+
       <ClamavDatabasesCard :databases="status.databases" />
     </template>
   </div>

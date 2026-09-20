@@ -52,8 +52,15 @@ const built = computed(() =>
           <p class="font-mono text-lg">{{ engine.published ?? t("clamav.engine.unknown") }}</p>
         </div>
 
+        <!-- The figure needs its sentence: a reader counts one thread and takes
+             it for a message being scanned, when it is this very request. -->
         <div>
-          <p class="text-xs text-muted">{{ t("clamav.stats.threads") }}</p>
+          <UTooltip :text="t('clamav.stats.threadsHint')">
+            <p class="flex items-center gap-1 text-xs text-muted">
+              {{ t("clamav.stats.threads") }}
+              <UIcon name="i-lucide-info" class="size-3" />
+            </p>
+          </UTooltip>
           <p class="text-lg">
             <template v-if="stats && stats.threadsLive !== null && stats.threadsMax !== null">
               {{ t("clamav.stats.threadsDetail", { live: stats.threadsLive, max: stats.threadsMax }) }}

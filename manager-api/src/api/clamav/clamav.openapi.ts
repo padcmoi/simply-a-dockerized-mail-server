@@ -22,6 +22,14 @@ const statusExample = {
   stats: { threadsLive: 1, threadsIdle: 0, threadsMax: 12, queue: 0, poolsUsed: 1014689075 },
 };
 
+const updateExample = {
+  updated: false,
+  output: [
+    "Sun Sep 20 13:57:40 2026 -> daily.cld database is up-to-date (version: 28129, sigs: 355666, f-level: 90, builder: svc.clamav-publisher)",
+  ],
+  status: statusExample,
+};
+
 export const ClamavStatusDocs = () =>
   applyDecorators(
     ApiOperation({
@@ -37,5 +45,61 @@ export const ClamavStatusDocs = () =>
       status: 403,
       description: "Missing the `clamav:access` and/or `clamav:view-clamav-status` global permission",
       schema: { example: { statusCode: 403, message: "Missing permission clamav:access", error: "Forbidden" } },
+    })
+  );
+
+export const ClamavUpdateDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Ask the scanner to fetch the signatures published right now",
+      description:
+        "Runs freshclam inside the scanner's own container, which is the only place allowed to write its signature directory, and waits for it: a full download is minutes, not seconds. " +
+        "`output` is freshclam's own last forty lines, `updated` whether it downloaded anything at all. When it did, clamd is told to read the new set before this answers, " +
+        "and `status` is the same payload as GET /clamav/status, already taken after the update. Recorded in the activity journal.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "What freshclam did, and the scanner's state after it",
+      schema: { example: updateExample },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing the `clamav:access` and/or `clamav:update-signatures` global permission",
+      schema: { example: { statusCode: 403, message: "Missing permission clamav:update-signatures", error: "Forbidden" } },
+    }),
+    ApiResponse({
+      status: 409,
+      description: "An update is already running, started by this route or by freshclam's own daemon",
+      schema: { example: { statusCode: 409, message: "An update is already running", error: "Conflict" } },
+    }),
+    ApiResponse({
+      status: 503,
+      description: "The updater in the scanner's container is out of reach, or freshclam failed",
+      schema: { example: { statusCode: 503, message: "The antivirus updater is out of reach", error: "Service Unavailable" } },
+    })
+  );
+
+export const ClamavReloadDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Tell the scanner to read its signature directory again",
+      description:
+        "clamd keeps scanning with the set it has in memory until it is told to read the files again. freshclam's own daemon says so after every download it makes, " +
+        "which a scanner that was down at that moment never heard. `status` is the same payload as GET /clamav/status. Recorded in the activity journal.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "The scanner's state after the reload",
+      schema: { example: { status: statusExample } },
+    }),
+    ApiResponse({
+      status: 403,
+      description: "Missing the `clamav:access` and/or `clamav:reload-database` global permission",
+      schema: { example: { statusCode: 403, message: "Missing permission clamav:reload-database", error: "Forbidden" } },
+    }),
+    ApiResponse({
+      status: 503,
+      description: "clamd is out of reach",
+      schema: { example: { statusCode: 503, message: "The antivirus is out of reach", error: "Service Unavailable" } },
     })
   );

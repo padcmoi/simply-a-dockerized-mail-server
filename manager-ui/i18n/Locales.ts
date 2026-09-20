@@ -1973,6 +1973,8 @@ export interface Locales {
           clamav: {
             access: string;
             "view-clamav-status": string;
+            "update-signatures": string;
+            "reload-database": string;
           };
           fail2ban: {
             access: string;
@@ -2170,9 +2172,21 @@ export interface Locales {
       title: string;
       threads: string;
       threadsDetail: string;
+      threadsHint: string;
       queue: string;
       queueDetail: string;
       pools: string;
+    };
+    actions: {
+      update: string;
+      updateHint: string;
+      updated: string;
+      current: string;
+      updateFailed: string;
+      reload: string;
+      reloadHint: string;
+      reloaded: string;
+      reloadFailed: string;
     };
     databases: {
       title: string;

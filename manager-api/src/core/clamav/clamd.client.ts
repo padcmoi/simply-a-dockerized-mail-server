@@ -31,6 +31,14 @@ export class ClamdClient {
     return answer && answer.startsWith("ClamAV") ? answer : null;
   }
 
+  /** Tells clamd to read the signature directory again, which is what makes a
+   *  fresh download the one it scans with. It answers "RELOADING" at once and
+   *  keeps scanning with what it has until the new set is in. */
+  async reload() {
+    const answer = await this.ask("RELOAD");
+    return answer !== null && answer.toUpperCase().includes("RELOADING");
+  }
+
   async stats(): Promise<ClamavStats | null> {
     const answer = await this.ask("STATS");
     if (!answer) return null;

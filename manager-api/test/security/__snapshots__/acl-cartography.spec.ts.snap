@@ -155,6 +155,8 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "POST /api/v1/auth/jwt/me/two-factor/setup  ::  auth=JWT guards=[]",
   "POST /api/v1/auth/jwt/refresh  ::  auth=PUBLIC guards=[]",
   "POST /api/v1/auth/passport/exchange  ::  auth=PUBLIC guards=[]",
+  "POST /api/v1/clamav/reload  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:clamav[access,reload-database]",
+  "POST /api/v1/clamav/update  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:clamav[access,update-signatures]",
   "POST /api/v1/config/mail/disable  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "POST /api/v1/config/mail/select  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "POST /api/v1/config/mail/test  ::  auth=ApiToken+JWT guards=[RootGuard]",

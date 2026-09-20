@@ -74,6 +74,8 @@ export default {
     delegations_claimed: "Octroi réclamé",
     fail2ban_banned: "Adresse bannie",
     fail2ban_unbanned: "Ban levé",
+    clamav_updated: "Signatures antivirus mises à jour",
+    clamav_reloaded: "Bases antivirus rechargées",
   },
   event: {
     auth_login: "S'est connecté",
@@ -114,5 +116,7 @@ export default {
     delegations_claimed: "A réclamé un octroi par lien",
     fail2ban_banned: "A banni définitivement l'adresse {label}",
     fail2ban_unbanned: "A levé le ban de l'adresse {label} dans la prison {jail}",
+    clamav_updated: "A demandé la mise à jour des signatures antivirus",
+    clamav_reloaded: "A fait recharger les bases de signatures antivirus",
   },
 } satisfies Locales["activity"];

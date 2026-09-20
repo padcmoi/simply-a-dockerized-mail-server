@@ -7,6 +7,7 @@ RUN apk add --no-cache \
       clamav-daemon \
       clamav-libunrar \
       netcat-openbsd \
+      python3 \
       tini \
       tzdata \
     && rm -rf /var/cache/apk/* \
@@ -15,10 +16,11 @@ RUN apk add --no-cache \
 
 COPY clamd.conf /etc/clamav/clamd.conf
 COPY freshclam.conf /etc/clamav/freshclam.conf
+COPY clamav-api.py /usr/local/bin/clamav-api.py
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/clamav-api.py
 
 EXPOSE 3310
 
 ENTRYPOINT ["/sbin/tini", "--", "/entrypoint.sh"]
-CMD ["clamd", "--foreground", "--config-file=/etc/clamav/clamd.conf"]
+CMD ["sh", "-c", "python3 /usr/local/bin/clamav-api.py & exec clamd --foreground --config-file=/etc/clamav/clamd.conf"]

@@ -229,6 +229,8 @@ export default {
         clamav: {
           access: "Access",
           "view-clamav-status": "View the engine, the signature databases and their age",
+          "update-signatures": "Run a signature update",
+          "reload-database": "Have the engine reload the databases",
         },
         deliverability: {
           access: "Access",

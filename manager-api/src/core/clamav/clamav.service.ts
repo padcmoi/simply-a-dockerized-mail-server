@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { ClamavDatabasesService } from "./clamav-databases.service";
 import { ClamavPublishedService } from "./clamav-published.service";
+import { ClamavUpdaterService } from "./clamav-updater.service";
 import { ClamdClient } from "./clamd.client";
 import type { ClamavStatus } from "./clamav.types";
 
@@ -15,7 +16,8 @@ export class ClamavService {
   constructor(
     private readonly clamd: ClamdClient,
     private readonly files: ClamavDatabasesService,
-    private readonly publishedVersions: ClamavPublishedService
+    private readonly publishedVersions: ClamavPublishedService,
+    private readonly updater: ClamavUpdaterService
   ) {}
 
   async status(): Promise<ClamavStatus> {
@@ -48,6 +50,24 @@ export class ClamavService {
       databases,
       stats,
     };
+  }
+
+  // The update and the reload are two halves of the same thing: freshclam
+  // writes the files, clamd goes on scanning with the set it has in memory
+  // until it is told to read them again. The reload is asked for right after a
+  // download, so a manual update is a scanner that really is using the new
+  // signatures, and it is exposed on its own as well: freshclam's own daemon
+  // also downloads, and it notifies clamd through NotifyClamd, which a scanner
+  // that was down at that moment never heard.
+  async update() {
+    const result = await this.updater.update();
+    if (result.updated) await this.clamd.reload();
+    return { ...result, status: await this.status() };
+  }
+
+  async reload() {
+    if (!(await this.clamd.reload())) throw new ServiceUnavailableException("The antivirus is out of reach");
+    return { status: await this.status() };
   }
 }
 

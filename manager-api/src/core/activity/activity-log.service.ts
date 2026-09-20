@@ -49,6 +49,8 @@ export const ACTIVITY_ACTIONS = [
   "delegations.claimed",
   "fail2ban.banned",
   "fail2ban.unbanned",
+  "clamav.updated",
+  "clamav.reloaded",
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];

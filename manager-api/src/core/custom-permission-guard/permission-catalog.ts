@@ -116,7 +116,7 @@ export const GLOBAL_ACTIONS = {
   fail2ban: ["access", "view-fail2ban-jails", "ban-ip", "unban-ip"],
   // The virus scanner. `view-clamav-status` covers what it runs and how old the
   // signatures it was given are, which is a reading, not a command.
-  clamav: ["access", "view-clamav-status"],
+  clamav: ["access", "view-clamav-status", "update-signatures", "reload-database"],
   superadmin: ["access", "resize-any-domain-quota", "delete-any-domain"],
 } as const;
 

@@ -19,10 +19,23 @@ export default {
   stats: {
     title: "Analyse",
     threads: "Fils",
-    threadsDetail: "{live} en cours sur {max}",
+    threadsDetail: "{live} sur {max}",
+    threadsHint:
+      "Fils d'analyse en vie dans clamd, celui qui répond à cette lecture compris, sur le maximum que sa configuration autorise. Ce n'est pas le nombre de messages en cours d'analyse: la charge se lit sur la file d'attente.",
     queue: "En attente",
     queueDetail: "{n} fichier | {n} fichiers",
     pools: "Signatures en mémoire",
+  },
+  actions: {
+    update: "Mettre à jour les signatures",
+    updateHint: "Demande à freshclam de récupérer ce que ClamAV publie. Le téléchargement peut prendre plusieurs minutes.",
+    updated: "Signatures mises à jour",
+    current: "Les signatures étaient déjà à jour",
+    updateFailed: "La mise à jour des signatures a échoué",
+    reload: "Recharger les bases",
+    reloadHint: "Fait relire les fichiers de signatures au moteur, qui continue sinon avec le jeu qu'il a en mémoire.",
+    reloaded: "Bases rechargées",
+    reloadFailed: "Le rechargement des bases a échoué",
   },
   databases: {
     title: "Bases de signatures",
