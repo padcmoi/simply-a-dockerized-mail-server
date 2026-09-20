@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - feat(ui): the top bar comes back on its own once the page is scrolled to the very bottom, instead of staying hidden until a scroll up (19-09-2026)
 - feat(supervision): the machine header line, which carries the state of the feed, the alerts, the pause and the countdown, stays on screen while the cards scroll, under the top bar and at the very top of the window as soon as the bar slides away, taking a ground of its own once it leaves its place so it reads over the charts running beneath it (20-09-2026)
+- feat(rspamd): the seven counters stay on screen while the page scrolls and drop to a single line of figures once they are pinned, giving back the space a row of tiles was taking to be glanced at (20-09-2026)
 
 ### Fixed
 

@@ -8,6 +8,11 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+// The counters are what the rest of the page is read against, so they stay on
+// screen while it scrolls, in a StickyBar. Pinned, they drop to one line of
+// figures: a row of tiles three lines deep would take a third of the window for
+// numbers that are being glanced at, not studied.
+
 // Always shows every counter, including zero -- matching rspamd's own
 // webui tile row 1:1 so nothing is hidden (unlike the donut+legend, which
 // only surfaces non-zero slices, fine for a proportional chart).
@@ -43,10 +48,18 @@ const tiles = computed(() => {
   <div v-if="loading && !stats" class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
     <USkeleton v-for="i in 7" :key="i" class="h-16 w-full rounded-lg" />
   </div>
-  <div v-else-if="stats" class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-3">
-    <div v-for="tile in tiles" :key="tile.key" class="bg-elevated rounded-lg p-3 text-center">
-      <p class="text-2xl font-bold" :class="tile.color">{{ tile.value.toLocaleString() }}</p>
-      <p class="text-xs mt-1" :class="tile.color || 'text-muted'">{{ tile.label }}</p>
+  <StickyBar v-else-if="stats" v-slot="{ stuck }">
+    <div
+      :class="stuck ? 'flex flex-wrap items-baseline gap-x-5 gap-y-1' : 'grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7'"
+    >
+      <div
+        v-for="tile in tiles"
+        :key="tile.key"
+        :class="stuck ? 'flex items-baseline gap-1.5' : 'rounded-lg bg-elevated p-3 text-center'"
+      >
+        <p :class="[stuck ? 'text-base font-semibold' : 'text-2xl font-bold', tile.color]">{{ tile.value.toLocaleString() }}</p>
+        <p class="text-xs" :class="[stuck ? '' : 'mt-1', tile.color || 'text-muted']">{{ tile.label }}</p>
+      </div>
     </div>
-  </div>
+  </StickyBar>
 </template>
