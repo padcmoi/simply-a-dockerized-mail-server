@@ -11,6 +11,15 @@ const path = join(directory, "fail2ban.sqlite3");
 const service = new Fail2banDbService(new ConfigService({ FAIL2BAN_DATABASE: path }));
 const missing = new Fail2banDbService(new ConfigService({ FAIL2BAN_DATABASE: join(directory, "nothing.sqlite3") }));
 
+// Written against the clock rather than at a fixed moment: a jail answers with
+// the bans it still holds, and a fixture banned in 2023 for an hour is a row
+// fail2ban has long let go of.
+const SECONDS = Math.floor(Date.now() / 1000);
+const RUNNING = SECONDS - 60;
+const OLDER = SECONDS - 120;
+const PERMANENT = SECONDS - 180;
+const OVER = SECONDS - 7200;
+
 beforeAll(() => {
   const db = new DatabaseSync(path);
   db.exec("CREATE TABLE jails (name TEXT NOT NULL UNIQUE, enabled INTEGER NOT NULL DEFAULT 1)");
@@ -18,9 +27,10 @@ beforeAll(() => {
   db.exec("CREATE TABLE bans (jail TEXT, ip TEXT, timeofban INTEGER, bantime INTEGER, bancount INTEGER, data JSON)");
   db.exec("INSERT INTO jails VALUES ('dovecot', 1), ('manager', 1), ('retired', 0)");
   db.exec(`INSERT INTO bips VALUES
-    ('203.0.113.9', 'dovecot', 1700000000, 3600, 1, NULL),
-    ('203.0.113.10', 'dovecot', 1700000060, 3600, 1, NULL),
-    ('198.51.100.7', 'manager', 1700000100, -1, 1, NULL)`);
+    ('203.0.113.9', 'dovecot', ${OLDER}, 3600, 1, NULL),
+    ('203.0.113.10', 'dovecot', ${RUNNING}, 3600, 1, NULL),
+    ('203.0.113.55', 'dovecot', ${OVER}, 3600, 1, NULL),
+    ('198.51.100.7', 'manager', ${PERMANENT}, -1, 1, NULL)`);
   db.exec(`INSERT INTO bans VALUES
     ('dovecot', '203.0.113.9', 1700000000, 3600, 2, '{"matches": [["a", "b"], "c"], "failures": 5}'),
     ('dovecot', '203.0.113.10', 1700000060, 3600, 1, 'not json'),
@@ -34,12 +44,14 @@ describe("Fail2banDbService", () => {
     expect(service.jails()).toEqual(["dovecot", "manager"]);
   });
 
-  it("reads the addresses each jail bans right now, newest first, a permanent one with no end", () => {
+  // A ban whose hour is up is gone from the jail although fail2ban still holds
+  // its row: what is counted is what is blocked.
+  it("reads the addresses each jail bans right now, newest first, a permanent one with no end, the expired ones left out", () => {
     expect(service.bans().get("dovecot")).toEqual([
-      { ip: "203.0.113.10", bannedAt: 1700000060000, expiresAt: 1700003660000 },
-      { ip: "203.0.113.9", bannedAt: 1700000000000, expiresAt: 1700003600000 },
+      { ip: "203.0.113.10", bannedAt: RUNNING * 1000, expiresAt: (RUNNING + 3600) * 1000 },
+      { ip: "203.0.113.9", bannedAt: OLDER * 1000, expiresAt: (OLDER + 3600) * 1000 },
     ]);
-    expect(service.bans().get("manager")).toEqual([{ ip: "198.51.100.7", bannedAt: 1700000100000, expiresAt: null }]);
+    expect(service.bans().get("manager")).toEqual([{ ip: "198.51.100.7", bannedAt: PERMANENT * 1000, expiresAt: null }]);
   });
 
   it("counts the bans each jail still has a record of", () => {

@@ -38,9 +38,17 @@ export class Fail2banDbService {
       .map((row) => row.name);
   }
 
+  // Only the bans that are still running. fail2ban keeps a row in `bips` long
+  // after it has let an address go, until `dbpurgeage` sweeps it a week later,
+  // so a jail read whole answers with addresses nothing blocks any more. A
+  // bantime below zero never ends, which is what the manager's own jail sets.
   bans() {
     const banned = new Map<string, Fail2banBan[]>();
-    for (const row of this.read<BanRow>("SELECT jail, ip, timeofban, bantime FROM bips ORDER BY timeofban DESC")) {
+    const now = Math.floor(Date.now() / 1000);
+    for (const row of this.read<BanRow>(
+      "SELECT jail, ip, timeofban, bantime FROM bips WHERE bantime < 0 OR timeofban + bantime > ? ORDER BY timeofban DESC",
+      now
+    )) {
       banned.set(row.jail, [...(banned.get(row.jail) ?? []), { ip: row.ip, ...this.window(row) }]);
     }
     return banned;
