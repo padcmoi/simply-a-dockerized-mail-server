@@ -11,8 +11,15 @@ import type { Ref } from "vue";
 // was clicked, whenever the page was opened and in whichever tab.
 const REFRESH_MS = { hour: 60_000, day: 300_000, week: 1_800_000 };
 
+// Asked a moment after the turn rather than on it. A bucket is cut on the clock
+// and the recorder writes one row every ten seconds, so the bucket that opens on
+// the turn is still empty at that very second and the window would come back one
+// column short of now. Past this, it holds a row, and every refresh carries the
+// newest point the recorder has.
+const SETTLE_MS = 12_000;
+
 function nextTurnOf(every: number) {
-  return Math.floor(Date.now() / every) * every + every;
+  return Math.floor(Date.now() / every) * every + every + SETTLE_MS;
 }
 
 /** The windows a card can be drawn over, in the order the tags read them. */
