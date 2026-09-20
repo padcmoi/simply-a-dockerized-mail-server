@@ -8,21 +8,21 @@ updated on every delivery via dict-sql.
 
 ## Stack
 
-| Container         | Image base       | Role |
-| ----------------- | ---------------- | ---- |
-| `mail-mariadb`    | mariadb:11.4     | Single source of truth (mailserver + opendmarc + roundcube DBs) |
-| `mail-redis`      | redis:7.4-alpine | Rspamd backend (bayes, cache) |
-| `mail-unbound`    | alpine:3.20      | Recursive DNS resolver for rspamd, postfix, opendmarc and manager-api: blocklists and DKIM checks answer as they should, whatever the host resolver is |
-| `mail-postfix`    | alpine:3.20      | SMTP 25/465/587, MySQL maps, milter chain, LMTP delivery |
-| `mail-dovecot`    | alpine:3.20      | IMAPS 993, LMTP 24, SASL 12345, ManageSieve 4190, dict-sql quota |
-| `mail-rspamd`     | alpine:3.20      | Anti-spam milter (port 11332) + web UI (11334) |
-| `mail-opendkim`   | alpine:3.20      | DKIM signing milter (8891) |
-| `mail-opendmarc`  | alpine:3.20      | DMARC validation milter (8893) |
-| `mail-clamav`     | alpine:3.20      | Optional anti-virus (compose profile `antivirus`) |
-| `mail-fail2ban`   | alpine:3.20      | Bans on auth / RBL hits, host network |
-| `mail-roundcube`  | roundcube:1.6.10 | Webmail |
-| `mail-manager-api`| NestJS 11        | REST CRUD (domains/users/aliases/quotas/sieve) + JWT auth |
-| `mail-manager-ui` | Nuxt 3 + Nuxt UI v4 | Admin SPA, Nitro proxies `/api` to manager-api |
+| Container          | Image base          | Role                                                                                                                                                   |
+| ------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mail-mariadb`     | mariadb:11.4        | Single source of truth (mailserver + opendmarc + roundcube DBs)                                                                                        |
+| `mail-redis`       | redis:7.4-alpine    | Rspamd backend (bayes, cache)                                                                                                                          |
+| `mail-unbound`     | alpine:3.20         | Recursive DNS resolver for rspamd, postfix, opendmarc and manager-api: blocklists and DKIM checks answer as they should, whatever the host resolver is |
+| `mail-postfix`     | alpine:3.20         | SMTP 25/465/587, MySQL maps, milter chain, LMTP delivery                                                                                               |
+| `mail-dovecot`     | alpine:3.20         | IMAPS 993, LMTP 24, SASL 12345, ManageSieve 4190, dict-sql quota                                                                                       |
+| `mail-rspamd`      | alpine:3.20         | Anti-spam milter (port 11332) + web UI (11334)                                                                                                         |
+| `mail-opendkim`    | alpine:3.20         | DKIM signing milter (8891)                                                                                                                             |
+| `mail-opendmarc`   | alpine:3.20         | DMARC validation milter (8893)                                                                                                                         |
+| `mail-clamav`      | alpine:3.20         | Optional anti-virus (compose profile `antivirus`)                                                                                                      |
+| `mail-fail2ban`    | alpine:3.20         | Bans on auth / RBL hits, host network                                                                                                                  |
+| `mail-roundcube`   | roundcube:1.6.10    | Webmail                                                                                                                                                |
+| `mail-manager-api` | NestJS 11           | REST CRUD (domains/users/aliases/quotas/sieve) + JWT auth                                                                                              |
+| `mail-manager-ui`  | Nuxt 3 + Nuxt UI v4 | Admin SPA, Nitro proxies `/api` to manager-api                                                                                                         |
 
 ## Database compatibility contract
 
@@ -31,7 +31,7 @@ InnoDB, FK CASCADE intact, `last_activity ON UPDATE current_timestamp()`).
 Additive only:
 
 - `Accounts` gains `password / role / enabled / last_login / created_at /
-  updated_at` (all nullable or with safe defaults; legacy 2-column dump still
+updated_at` (all nullable or with safe defaults; legacy 2-column dump still
   imports).
 - A new `RefreshTokens` table holds JWT refresh sessions.
 

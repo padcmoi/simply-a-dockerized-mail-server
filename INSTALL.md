@@ -2,13 +2,13 @@
 
 ## 1. Prerequisites
 
-| Requirement             | Notes |
-| ----------------------- | ----- |
-| Docker Engine 24+       | with the `docker compose` plugin |
-| Public IPv4             | with PTR pointing to `<MAIL_HOSTNAME>` |
-| Open inbound ports      | 25, 465, 587, 993 |
-| TLS certificate         | **mandatory**, must exist at `/etc/letsencrypt/live/<MAIL_HOSTNAME>/{fullchain,privkey}.pem` before running `install.sh` |
-| Host nginx (optional)   | for reverse-proxying the manager UI / roundcube to loopback ports |
+| Requirement           | Notes                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Docker Engine 24+     | with the `docker compose` plugin                                                                                         |
+| Public IPv4           | with PTR pointing to `<MAIL_HOSTNAME>`                                                                                   |
+| Open inbound ports    | 25, 465, 587, 993                                                                                                        |
+| TLS certificate       | **mandatory**, must exist at `/etc/letsencrypt/live/<MAIL_HOSTNAME>/{fullchain,privkey}.pem` before running `install.sh` |
+| Host nginx (optional) | for reverse-proxying the manager UI / roundcube to loopback ports                                                        |
 
 Get the certificate first:
 

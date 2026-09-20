@@ -42,16 +42,16 @@ this app is down. Nothing here is in the delivery path.
 
 ## Where the code lives
 
-| Concern | Path |
-| --- | --- |
-| Pages (file-based routes) | [`manager-ui/app/pages/`](../../manager-ui/app/pages/) |
-| Shared components | [`manager-ui/app/components/`](../../manager-ui/app/components/) |
-| Composables (all business logic) | [`manager-ui/app/composables/`](../../manager-ui/app/composables/) |
-| Pinia stores (auth, permissions, selected domain) | [`manager-ui/app/stores/`](../../manager-ui/app/stores/) |
-| Route guards | [`manager-ui/app/middleware/`](../../manager-ui/app/middleware/) |
-| Client plugins (WebSocket, idle reporting, locale) | [`manager-ui/app/plugins/`](../../manager-ui/app/plugins/) |
-| Translations | [`manager-ui/i18n/locales/`](../../manager-ui/i18n/locales/) |
-| Nuxt config, API proxy, i18n setup | [`manager-ui/nuxt.config.ts`](../../manager-ui/nuxt.config.ts) |
+| Concern                                            | Path                                                               |
+| -------------------------------------------------- | ------------------------------------------------------------------ |
+| Pages (file-based routes)                          | [`manager-ui/app/pages/`](../../manager-ui/app/pages/)             |
+| Shared components                                  | [`manager-ui/app/components/`](../../manager-ui/app/components/)   |
+| Composables (all business logic)                   | [`manager-ui/app/composables/`](../../manager-ui/app/composables/) |
+| Pinia stores (auth, permissions, selected domain)  | [`manager-ui/app/stores/`](../../manager-ui/app/stores/)           |
+| Route guards                                       | [`manager-ui/app/middleware/`](../../manager-ui/app/middleware/)   |
+| Client plugins (WebSocket, idle reporting, locale) | [`manager-ui/app/plugins/`](../../manager-ui/app/plugins/)         |
+| Translations                                       | [`manager-ui/i18n/locales/`](../../manager-ui/i18n/locales/)       |
+| Nuxt config, API proxy, i18n setup                 | [`manager-ui/nuxt.config.ts`](../../manager-ui/nuxt.config.ts)     |
 
 ## Architecture in one page
 

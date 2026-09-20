@@ -38,7 +38,9 @@ the rest of the app sees:
 
 ```ts
 const summary = useRealtimeTopic<DashboardSummary>("dashboard");
-const thread  = useRealtimeTopic<TicketDetail>(() => ticketId.value ? `ticket:${ticketId.value}` : null);
+const thread = useRealtimeTopic<TicketDetail>(() =>
+  ticketId.value ? `ticket:${ticketId.value}` : null,
+);
 ```
 
 Subscriptions are reference-counted per topic: the plugin subscribes when the
@@ -52,22 +54,22 @@ id resolves asynchronously need.
 
 ## Topics
 
-| Topic | Scope | Who may subscribe |
-| --- | --- | --- |
-| `dashboard` | global | `domains:access` + `list-all-domains` |
-| `domains-disk` | global | `domains:access` + `view-disk-usage` |
-| `postfix-queue` | global | `postfix:access` + `view-postfix-queue` |
-| `rspamd-stats` | global | `rspamd:access` + `view-rspamd-stats` |
-| `sessions-overview` | global | `accounts:access` + `view-account-sessions` |
-| `supervision-machine` | global | `supervision:access` + `view-machine-metrics` |
-| `domain-recipients:<id>` | domain | `recipients:access` + `list-recipients` |
-| `domain-aliases:<id>` | domain | `aliases:access` + `list-aliases` |
-| `domain-quota:<id>` | domain | `quotas:access` + `view-quotas` |
-| `domain-rspamd:<id>` | domain | `rspamd:access` + `view-rspamd-stats` |
-| `domain-postfix:<id>` | global | `postfix:access` + `view-postfix-queue` |
-| `presence` | custom | any authenticated account |
-| `notifications:<accountId>` | self | that account only |
-| `ticket:<id>` | custom | row-level rule, see below |
+| Topic                       | Scope  | Who may subscribe                             |
+| --------------------------- | ------ | --------------------------------------------- |
+| `dashboard`                 | global | `domains:access` + `list-all-domains`         |
+| `domains-disk`              | global | `domains:access` + `view-disk-usage`          |
+| `postfix-queue`             | global | `postfix:access` + `view-postfix-queue`       |
+| `rspamd-stats`              | global | `rspamd:access` + `view-rspamd-stats`         |
+| `sessions-overview`         | global | `accounts:access` + `view-account-sessions`   |
+| `supervision-machine`       | global | `supervision:access` + `view-machine-metrics` |
+| `domain-recipients:<id>`    | domain | `recipients:access` + `list-recipients`       |
+| `domain-aliases:<id>`       | domain | `aliases:access` + `list-aliases`             |
+| `domain-quota:<id>`         | domain | `quotas:access` + `view-quotas`               |
+| `domain-rspamd:<id>`        | domain | `rspamd:access` + `view-rspamd-stats`         |
+| `domain-postfix:<id>`       | global | `postfix:access` + `view-postfix-queue`       |
+| `presence`                  | custom | any authenticated account                     |
+| `notifications:<accountId>` | self   | that account only                             |
+| `ticket:<id>`               | custom | row-level rule, see below                     |
 
 Three kinds of authorization:
 

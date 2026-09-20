@@ -82,7 +82,7 @@ settings, all stored in `localStorage` and therefore not tied to the account:
 - **Language** -- English, French, or System. The device keeps the choice in
   `localStorage`, and the concrete language actually in use is also saved to the
   account (`account_profiles.locale`) on login and on every change (`PATCH
-  /auth/jwt/me`), so the selection is recorded against the account, not only the
+/auth/jwt/me`), so the selection is recorded against the account, not only the
   browser.
 - **Appearance** -- Light, Dark, or System.
 - **Default items per page** -- 10, 25 or 50, the same value every list toolbar

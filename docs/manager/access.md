@@ -59,7 +59,7 @@ whether you may be here at all: unauthenticated on a protected route goes to
 records the current path.
 
 [`permissions.global.ts`](../../manager-ui/app/middleware/permissions.global.ts)
-decides whether *this* page is yours. It fetches
+decides whether _this_ page is yours. It fetches
 `GET /auth/jwt/me/permissions` if the store has never loaded, lets root through
 untouched, and then compares the page's `definePageMeta` requirements against
 the freshly fetched rows. A missing pair calls `showError({ statusCode: 403 })`.
@@ -94,37 +94,37 @@ each one guards, is in [`../api/acl.md`](../api/acl.md).
 
 ### What each page requires
 
-| Route | Requirement |
-| --- | --- |
-| `/dashboard`, `/preferences`, `/profile/*` | none beyond being signed in |
-| `/domains` | `domains:access` |
-| `/domains/create` | `domains:access` + `create-domain` |
-| `/domains/:d` | `domain:access` + `view-domain` (domain-scoped) |
-| `/domains/:d/recipients` | `recipients:access` + `list-recipients` |
-| `/domains/:d/recipients/create` | `recipients:access` + `create-recipient` |
-| `/domains/:d/aliases` | `aliases:access` + `list-aliases` |
-| `/domains/:d/aliases/create` | `aliases:access` + `create-alias` |
-| `/domains/:d/aliases/edit/:id` | `aliases:access` + `edit-alias` |
-| `/domains/:d/quotas` | `quotas:access` + `view-quotas` |
-| `/domains/:d/app` | `admin:access` + `view-admin-page` |
-| `/domains/:d/rspamd` | `rspamd:access` + `view-rspamd-stats` (domain) |
-| `/accounts` | `accounts:access` + `list-accounts` |
-| `/accounts/:id`, `/accounts/:id/edit`, `/accounts/:id/groups` | `accounts:access` + `view-account` |
-| `/accounts/create/*` | `accounts:access` + `invite-account` |
-| `/accounts/sessions/*` | `accounts:access` + `view-account-sessions` |
-| `/groups` | `groups:access` + `list-groups` |
-| `/groups/:id`, `/groups/:id/owner` | `groups:access` + `view-group` |
-| `/groups/:id/members` | `groups:access` + `list-group-members` |
-| `/groups/:id/acl/app` | `groups:access` + `view-group` + `edit-group-global-permissions` |
-| `/groups/:id/acl/domain/:d?` | `groups:access` + `view-group` + `edit-group-domain-permissions` |
-| `/tickets` | `tickets:access` + `list-tickets` |
-| `/tickets/create` | `tickets:access` + `create-ticket` |
-| `/tickets/:id` | `tickets:access` + `view-ticket` |
-| `/rspamd` | `rspamd:access` + `view-rspamd-stats` (global) |
-| `/postfix` | `postfix:access` + `view-postfix-queue` |
-| `/sieve` | `sieve:access` + `list-reject-senders` |
-| `/api-tokens` | `api-tokens:access` + `list-api-tokens` |
-| `/admin/supervision` | `supervision:access` + `view-machine-metrics` |
+| Route                                                         | Requirement                                                      |
+| ------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `/dashboard`, `/preferences`, `/profile/*`                    | none beyond being signed in                                      |
+| `/domains`                                                    | `domains:access`                                                 |
+| `/domains/create`                                             | `domains:access` + `create-domain`                               |
+| `/domains/:d`                                                 | `domain:access` + `view-domain` (domain-scoped)                  |
+| `/domains/:d/recipients`                                      | `recipients:access` + `list-recipients`                          |
+| `/domains/:d/recipients/create`                               | `recipients:access` + `create-recipient`                         |
+| `/domains/:d/aliases`                                         | `aliases:access` + `list-aliases`                                |
+| `/domains/:d/aliases/create`                                  | `aliases:access` + `create-alias`                                |
+| `/domains/:d/aliases/edit/:id`                                | `aliases:access` + `edit-alias`                                  |
+| `/domains/:d/quotas`                                          | `quotas:access` + `view-quotas`                                  |
+| `/domains/:d/app`                                             | `admin:access` + `view-admin-page`                               |
+| `/domains/:d/rspamd`                                          | `rspamd:access` + `view-rspamd-stats` (domain)                   |
+| `/accounts`                                                   | `accounts:access` + `list-accounts`                              |
+| `/accounts/:id`, `/accounts/:id/edit`, `/accounts/:id/groups` | `accounts:access` + `view-account`                               |
+| `/accounts/create/*`                                          | `accounts:access` + `invite-account`                             |
+| `/accounts/sessions/*`                                        | `accounts:access` + `view-account-sessions`                      |
+| `/groups`                                                     | `groups:access` + `list-groups`                                  |
+| `/groups/:id`, `/groups/:id/owner`                            | `groups:access` + `view-group`                                   |
+| `/groups/:id/members`                                         | `groups:access` + `list-group-members`                           |
+| `/groups/:id/acl/app`                                         | `groups:access` + `view-group` + `edit-group-global-permissions` |
+| `/groups/:id/acl/domain/:d?`                                  | `groups:access` + `view-group` + `edit-group-domain-permissions` |
+| `/tickets`                                                    | `tickets:access` + `list-tickets`                                |
+| `/tickets/create`                                             | `tickets:access` + `create-ticket`                               |
+| `/tickets/:id`                                                | `tickets:access` + `view-ticket`                                 |
+| `/rspamd`                                                     | `rspamd:access` + `view-rspamd-stats` (global)                   |
+| `/postfix`                                                    | `postfix:access` + `view-postfix-queue`                          |
+| `/sieve`                                                      | `sieve:access` + `list-reject-senders`                           |
+| `/api-tokens`                                                 | `api-tokens:access` + `list-api-tokens`                          |
+| `/admin/supervision`                                          | `supervision:access` + `view-machine-metrics`                    |
 
 ## Permission checks inside a page
 
@@ -133,7 +133,9 @@ Route meta gates the page. Everything finer is a computed built on
 
 ```ts
 const canCreate = computed(
-  () => isRoot.value || (hasGlobal("tickets", "access") && hasGlobal("tickets", "create-ticket"))
+  () =>
+    isRoot.value ||
+    (hasGlobal("tickets", "access") && hasGlobal("tickets", "create-ticket")),
 );
 ```
 

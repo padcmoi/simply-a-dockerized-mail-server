@@ -77,7 +77,10 @@ provides a ref; each page fills it through
 [`useBreadcrumb`](../../manager-ui/app/composables/useBreadcrumb.ts):
 
 ```ts
-setBreadcrumb([{ label: t("nav.tickets"), to: "/tickets" }, { label: ticket.subject }]);
+setBreadcrumb([
+  { label: t("nav.tickets"), to: "/tickets" },
+  { label: ticket.subject },
+]);
 ```
 
 `set` always prepends a Home crumb, so no page has to remember it. The error

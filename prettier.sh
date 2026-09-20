@@ -25,19 +25,19 @@ run_format() {
 run_format "$REPO_ROOT/manager-api"
 run_format "$REPO_ROOT/manager-ui"
 
-# The changelog is the one file at the root anyone writes by hand, and it is
-# markdown, where prettier rewrites emphasis and bullets: it goes through the
-# same pass as the code so a commit never carries two styles of it. It belongs
-# to neither package, so it borrows the prettier one of them installed.
-format_changelog() {
+# The markdown of the repository, formatted like its code. It belongs to no
+# package, so it borrows the prettier one of them installed, and the file list
+# comes from git: node_modules, dist and everything else untracked stays out
+# without a second ignore file to keep in step.
+format_markdown() {
 	local bin="$REPO_ROOT/manager-ui/node_modules/.bin/prettier"
 	[ -x "$bin" ] || bin="$REPO_ROOT/manager-api/node_modules/.bin/prettier"
 	[ -x "$bin" ] || {
-		echo "==> format of CHANGELOG.md skipped, prettier is not installed"
+		echo "==> format of the markdown skipped, prettier is not installed"
 		return 0
 	}
-	echo "==> format CHANGELOG.md"
-	"$bin" --write "$REPO_ROOT/CHANGELOG.md" >/dev/null
+	echo "==> format the markdown"
+	(cd "$REPO_ROOT" && git ls-files "*.md" | xargs -r "$bin" --write --log-level warn)
 }
 
-format_changelog
+format_markdown

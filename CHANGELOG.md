@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
-- chore(tooling): the changelog goes through prettier on every commit, like the code, and the one line whose wildcards it would have rewritten is now code (20-09-2026)
+- chore(tooling): every markdown file of the repository goes through prettier on every commit, like the code, the list coming from git so nothing untracked is touched (20-09-2026)
 - chore(changelog): every identifier carrying an underscore is written as code, whatever its case, which is what kept prettier from rewriting the sentence around it as emphasis (20-09-2026)
 
 ## [2.0.0-rc.12] - 2026-09-20

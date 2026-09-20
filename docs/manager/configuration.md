@@ -166,7 +166,7 @@ green picked for dark says nothing about light.
   into the page as a stylesheet, so the personalisation is in the first paint
   rather than snapping in after hydration. The answer is held for a minute, so a
   colour changed here is live at the next minute with no restart. `GET
-  /config/theme` is the one public route of the namespace, because the login
+/config/theme` is the one public route of the namespace, because the login
   screen wears the theme too and there is nobody to authenticate yet. Writing it
   is root, like the rest of `/config`.
 - **An account's own theme is read at login and laid over the server's**, token

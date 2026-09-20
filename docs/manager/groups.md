@@ -30,19 +30,19 @@ spelled out next to it. Deleting confirms first.
 siblings share a tab bar
 ([`GroupDetailTabs`](../../manager-ui/app/components/groups/GroupDetailTabs.vue)):
 
-| Tab | Route | Requires |
-| --- | --- | --- |
-| Info (the group name) | `/groups/:id` | `view-group` |
-| Owner | `/groups/:id/owner` | `view-group` |
-| Members | `/groups/:id/members` | `list-group-members` |
-| Application | `/groups/:id/acl/app` | `edit-group-global-permissions` |
-| Domain | `/groups/:id/acl/domain/:domain?` | `edit-group-domain-permissions` |
+| Tab                   | Route                             | Requires                        |
+| --------------------- | --------------------------------- | ------------------------------- |
+| Info (the group name) | `/groups/:id`                     | `view-group`                    |
+| Owner                 | `/groups/:id/owner`               | `view-group`                    |
+| Members               | `/groups/:id/members`             | `list-group-members`            |
+| Application           | `/groups/:id/acl/app`             | `edit-group-global-permissions` |
+| Domain                | `/groups/:id/acl/domain/:domain?` | `edit-group-domain-permissions` |
 
 **Info** edits the name, the description and the default-group flag.
 
 **Owner** shows the current owner and offers a transfer. Only the owner or root
 can transfer, which is enforced in the service rather than by a route decorator:
-`transfer-group-ownership` is an *alternative* to owning the group, never a
+`transfer-group-ownership` is an _alternative_ to owning the group, never a
 second condition stacked on top of it. The same applies to `add-group-member`
 and `remove-group-member`.
 

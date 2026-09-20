@@ -29,7 +29,7 @@ caller's own profile, and the two invitation routes where the token is the crede
 - **Everything is conjunctive.** Decorator entries are ANDed, and so are the actions
   inside one entry. A single missing pair refuses the route.
 - **A root account bypasses all of it.** Root belongs to no group and holds no
-  permission rows; both guards let it through *before* the library is ever consulted.
+  permission rows; both guards let it through _before_ the library is ever consulted.
   Root is a bypass, never a gate, which is why no route is "root only" any more.
 - **A domain's owner is root on that domain, and nowhere else.** The library grants a
   domain owner every action of every domain-tier resource on the domains they own
@@ -51,46 +51,46 @@ caller's own profile, and the two invitation routes where the token is the crede
 
 ### Global tier
 
-| Resource | Named actions (besides `access`) |
-|---|---|
-| `sieve` | `list-reject-senders`, `create-reject-sender`, `edit-reject-sender`, `delete-reject-sender` |
-| `rspamd` | `view-rspamd-stats`, `view-rspamd-history`, `view-rspamd-thresholds`, `edit-rspamd-thresholds`, `reset-rspamd-thresholds` |
-| `postfix` | `view-postfix-queue` |
-| `accounts` | `list-account-names`, `list-accounts`, `view-account`, `edit-account`, `revoke-account`, `invite-account` |
-| `api-tokens` | `list-api-tokens`, `create-api-token`, `edit-api-token`, `revoke-api-token`, `regenerate-api-token`, `delete-api-token` |
-| `groups` | `list-groups`, `view-group`, `list-group-members`, `create-group`, `edit-group`, `edit-group-global-permissions`, `edit-group-domain-permissions`, `delete-group`, `transfer-group-ownership`, `add-group-member`, `remove-group-member` |
-| `domains` | `list-all-domains`, `view-disk-usage`, `create-domain`, `view-domain`, `toggle-domain-active`, `transfer-domain-ownership` |
-| `supervision` | `view-machine-metrics`, `view-metrics-history` |
-| `superadmin` | `resize-any-domain-quota`, `delete-any-domain` |
-| `domain_owner_elevated` | `delete-dkim-key`, `transfer-domain-ownership` |
+| Resource                | Named actions (besides `access`)                                                                                                                                                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sieve`                 | `list-reject-senders`, `create-reject-sender`, `edit-reject-sender`, `delete-reject-sender`                                                                                                                                              |
+| `rspamd`                | `view-rspamd-stats`, `view-rspamd-history`, `view-rspamd-thresholds`, `edit-rspamd-thresholds`, `reset-rspamd-thresholds`                                                                                                                |
+| `postfix`               | `view-postfix-queue`                                                                                                                                                                                                                     |
+| `accounts`              | `list-account-names`, `list-accounts`, `view-account`, `edit-account`, `revoke-account`, `invite-account`                                                                                                                                |
+| `api-tokens`            | `list-api-tokens`, `create-api-token`, `edit-api-token`, `revoke-api-token`, `regenerate-api-token`, `delete-api-token`                                                                                                                  |
+| `groups`                | `list-groups`, `view-group`, `list-group-members`, `create-group`, `edit-group`, `edit-group-global-permissions`, `edit-group-domain-permissions`, `delete-group`, `transfer-group-ownership`, `add-group-member`, `remove-group-member` |
+| `domains`               | `list-all-domains`, `view-disk-usage`, `create-domain`, `view-domain`, `toggle-domain-active`, `transfer-domain-ownership`                                                                                                               |
+| `supervision`           | `view-machine-metrics`, `view-metrics-history`                                                                                                                                                                                           |
+| `superadmin`            | `resize-any-domain-quota`, `delete-any-domain`                                                                                                                                                                                           |
+| `domain_owner_elevated` | `delete-dkim-key`, `transfer-domain-ownership`                                                                                                                                                                                           |
 
 ### Domain tier
 
-| Resource | Named actions (besides `access`) |
-|---|---|
-| `domain` | `view-domain`, `toggle-domain-active`, `transfer-domain-ownership` |
+| Resource     | Named actions (besides `access`)                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `domain`     | `view-domain`, `toggle-domain-active`, `transfer-domain-ownership`                                                       |
 | `recipients` | `list-recipients`, `view-recipient`, `view-recipient-headroom`, `create-recipient`, `edit-recipient`, `delete-recipient` |
-| `aliases` | `list-aliases`, `view-alias`, `create-alias`, `edit-alias`, `delete-alias` |
-| `quotas` | `view-quotas` |
-| `rspamd` | `view-rspamd-stats`, `view-rspamd-history` |
-| `admin` | `view-admin-page`, `toggle-domain-active`, `manage-dkim` |
-| `dkim` | `view-dkim`, `check-dkim-dns`, `rotate-dkim-key`, `delete-dkim-key` |
+| `aliases`    | `list-aliases`, `view-alias`, `create-alias`, `edit-alias`, `delete-alias`                                               |
+| `quotas`     | `view-quotas`                                                                                                            |
+| `rspamd`     | `view-rspamd-stats`, `view-rspamd-history`                                                                               |
+| `admin`      | `view-admin-page`, `toggle-domain-active`, `manage-dkim`                                                                 |
+| `dkim`       | `view-dkim`, `check-dkim-dns`, `rotate-dkim-key`, `delete-dkim-key`                                                      |
 
 ## Resource dependencies (`dependsOn`)
 
 An extra lock, never a shortcut: the dependency must be granted as well, otherwise the
 dependent resource is refused without even being evaluated.
 
-| Resource | Also requires |
-|---|---|
-| `global:groups` | `global:accounts` [access, list-account-names] |
-| `global:superadmin` | every other global resource, with **all** of its actions |
-| `domain:recipients` | `domain:domain` [access] |
-| `domain:aliases` | `domain:domain` [access] |
-| `domain:quotas` | `domain:domain` [access] |
-| `domain:rspamd` | `domain:domain` [access] |
-| `domain:admin` | `domain:domain` [access] |
-| `domain:dkim` | `domain:domain` [access] **and** `domain:admin` [access, view-admin-page] |
+| Resource            | Also requires                                                             |
+| ------------------- | ------------------------------------------------------------------------- |
+| `global:groups`     | `global:accounts` [access, list-account-names]                            |
+| `global:superadmin` | every other global resource, with **all** of its actions                  |
+| `domain:recipients` | `domain:domain` [access]                                                  |
+| `domain:aliases`    | `domain:domain` [access]                                                  |
+| `domain:quotas`     | `domain:domain` [access]                                                  |
+| `domain:rspamd`     | `domain:domain` [access]                                                  |
+| `domain:admin`      | `domain:domain` [access]                                                  |
+| `domain:dkim`       | `domain:domain` [access] **and** `domain:admin` [access, view-admin-page] |
 
 Managing groups means naming their members, which means reading account **names**
 (`GET /accounts/names`), not the full list with emails and roles. Hence
@@ -109,79 +109,79 @@ Root is exempt (`rawSetGroupGlobalPermissions`).
 
 ## Routes
 
-| Method | Route | Required permissions |
-|---|---|---|
-| `GET` | `/accounts` | `global:accounts` [access, list-accounts] |
-| `GET` | `/accounts/:id` | `global:accounts` [access, view-account] |
-| `PATCH` | `/accounts/:id` | `global:accounts` [access, edit-account] |
-| `DELETE` | `/accounts/:id` | `global:accounts` [access, revoke-account] |
-| `POST` | `/accounts/invite` | `global:accounts` [access, invite-account] |
-| `GET` | `/accounts/invite/:token` | _public: the invitation token IS the credential_ |
-| `POST` | `/accounts/invite/:token/accept` | _public: the invitation token IS the credential_ |
-| `GET` | `/accounts/names` | `global:accounts` [access, list-account-names] |
-| `DELETE` | `/admin/domains/:domainId` | `global:domains` [access] **AND** `global:superadmin` [access, delete-any-domain] |
-| `PATCH` | `/admin/domains/:domainId/quota` | `global:domains` [access] **AND** `global:superadmin` [access, resize-any-domain-quota] |
-| `GET` | `/api-tokens` | `global:api-tokens` [access, list-api-tokens] |
-| `POST` | `/api-tokens` | `global:api-tokens` [access, create-api-token] |
-| `PATCH` | `/api-tokens/:id` | `global:api-tokens` [access, edit-api-token] |
-| `DELETE` | `/api-tokens/:id` | `global:api-tokens` [access, delete-api-token] |
-| `POST` | `/api-tokens/:id/regenerate` | `global:api-tokens` [access, regenerate-api-token] |
-| `POST` | `/api-tokens/:id/revoke` | `global:api-tokens` [access, revoke-api-token] |
-| `POST` | `/auth/jwt/login` | _no ACL: authentication itself_ |
-| `POST` | `/auth/jwt/logout` | _no ACL: authentication itself_ |
-| `GET` | `/auth/jwt/me` | _no ACL: the caller's own profile_ |
-| `PATCH` | `/auth/jwt/me` | _no ACL: the caller's own profile_ |
-| `GET` | `/auth/jwt/me/permissions` | _no ACL: the caller's own permissions_ |
-| `POST` | `/auth/jwt/refresh` | _no ACL: authentication itself_ |
-| `GET` | `/domains` | `global:domains` [access] |
-| `POST` | `/domains` | `global:domains` [access, create-domain] |
-| `GET` | `/domains/:domainId` | `domain:domain` [access, view-domain] |
-| `PATCH` | `/domains/:domainId/active` | `domain:admin` [access, toggle-domain-active] **AND** `domain:domain` [access, toggle-domain-active] |
-| `GET` | `/domains/:domainId/aliases` | `domain:aliases` [access, list-aliases] |
-| `POST` | `/domains/:domainId/aliases` | `domain:aliases` [access, create-alias] |
-| `GET` | `/domains/:domainId/aliases/:id` | `domain:aliases` [access, view-alias] |
-| `PATCH` | `/domains/:domainId/aliases/:id` | `domain:aliases` [access, edit-alias] |
-| `DELETE` | `/domains/:domainId/aliases/:id` | `domain:aliases` [access, delete-alias] |
-| `GET` | `/domains/:domainId/dkim` | `domain:dkim` [access, view-dkim] **AND** `domain:admin` [access, view-admin-page] |
-| `GET` | `/domains/:domainId/dkim-check` | `domain:dkim` [access, check-dkim-dns] **AND** `domain:admin` [access, view-admin-page] |
-| `DELETE` | `/domains/:domainId/dkim/:selector` | `global:domain_owner_elevated` [access, delete-dkim-key] **AND** `domain:dkim` [access, delete-dkim-key] **AND** `domain:admin` [access, manage-dkim] |
-| `POST` | `/domains/:domainId/dkim/rotate` | `domain:dkim` [access, rotate-dkim-key] **AND** `domain:admin` [access, manage-dkim] |
-| `PATCH` | `/domains/:domainId/owner` | `global:domain_owner_elevated` [access, transfer-domain-ownership] **AND** `domain:domain` [access, transfer-domain-ownership] |
-| `GET` | `/domains/:domainId/quotas` | `domain:quotas` [access, view-quotas] |
-| `GET` | `/domains/:domainId/recipients` | `domain:recipients` [access, list-recipients] |
-| `POST` | `/domains/:domainId/recipients` | `domain:recipients` [access, create-recipient] |
-| `GET` | `/domains/:domainId/recipients/:id` | `domain:recipients` [access, view-recipient] |
-| `PATCH` | `/domains/:domainId/recipients/:id` | `domain:recipients` [access, edit-recipient] |
-| `DELETE` | `/domains/:domainId/recipients/:id` | `domain:recipients` [access, delete-recipient] |
-| `GET` | `/domains/:domainId/recipients/headroom` | `domain:recipients` [access, view-recipient-headroom] |
-| `GET` | `/domains/:domainId/rspamd/history` | `domain:rspamd` [access, view-rspamd-history] |
-| `GET` | `/domains/:domainId/rspamd/stats` | `domain:rspamd` [access, view-rspamd-stats] |
-| `GET` | `/domains/disk` | `global:domains` [access, view-disk-usage] |
-| `GET` | `/groups` | `global:groups` [access, list-groups] |
-| `POST` | `/groups` | `global:groups` [access, create-group] |
-| `GET` | `/groups/:id` | `global:groups` [access, view-group] |
-| `PATCH` | `/groups/:id` | `global:groups` [access, edit-group] |
-| `DELETE` | `/groups/:id` | `global:groups` [access, delete-group] |
-| `PUT` | `/groups/:id/domain-permissions` | `global:groups` [access, edit-group-domain-permissions] |
-| `PUT` | `/groups/:id/global-permissions` | `global:groups` [access, edit-group-global-permissions] |
-| `GET` | `/groups/:id/members` | `global:groups` [access, list-group-members] |
-| `POST` | `/groups/:id/members` | `global:groups` [access, add-group-member] _(root **OR** the group's owner **OR** this action; enforced in `GroupsService`)_ |
-| `DELETE` | `/groups/:id/members/:accountId` | `global:groups` [access, remove-group-member] _(root **OR** the group's owner **OR** this action; enforced in `GroupsService`)_ |
-| `PATCH` | `/groups/:id/owner` | `global:groups` [access, transfer-group-ownership] _(root **OR** the group's owner **OR** this action; enforced in `GroupsService`)_ |
-| `GET` | `/groups/permissions/catalog` | `global:groups` [access, view-group] |
-| `GET` | `/health` | _no ACL: liveness probe_ |
-| `GET` | `/postfix/queue` | `global:postfix` [access, view-postfix-queue] |
-| `GET` | `/rspamd/actions` | `global:rspamd` [access, view-rspamd-thresholds] |
-| `PATCH` | `/rspamd/actions` | `global:rspamd` [access, edit-rspamd-thresholds] |
-| `DELETE` | `/rspamd/actions` | `global:rspamd` [access, reset-rspamd-thresholds] |
-| `GET` | `/rspamd/history` | `global:rspamd` [access, view-rspamd-history] |
-| `GET` | `/rspamd/stats` | `global:rspamd` [access, view-rspamd-stats] |
-| `GET` | `/sieve/reject-senders` | `global:sieve` [access, list-reject-senders] |
-| `GET` | `/supervision/live` | `global:supervision` [access, view-machine-metrics] |
-| `GET` | `/supervision/history/:range` | `global:supervision` [access, view-metrics-history] |
-| `POST` | `/sieve/reject-senders` | `global:sieve` [access, create-reject-sender] |
-| `PATCH` | `/sieve/reject-senders/:id` | `global:sieve` [access, edit-reject-sender] |
-| `DELETE` | `/sieve/reject-senders/:id` | `global:sieve` [access, delete-reject-sender] |
+| Method   | Route                                    | Required permissions                                                                                                                                  |
+| -------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/accounts`                              | `global:accounts` [access, list-accounts]                                                                                                             |
+| `GET`    | `/accounts/:id`                          | `global:accounts` [access, view-account]                                                                                                              |
+| `PATCH`  | `/accounts/:id`                          | `global:accounts` [access, edit-account]                                                                                                              |
+| `DELETE` | `/accounts/:id`                          | `global:accounts` [access, revoke-account]                                                                                                            |
+| `POST`   | `/accounts/invite`                       | `global:accounts` [access, invite-account]                                                                                                            |
+| `GET`    | `/accounts/invite/:token`                | _public: the invitation token IS the credential_                                                                                                      |
+| `POST`   | `/accounts/invite/:token/accept`         | _public: the invitation token IS the credential_                                                                                                      |
+| `GET`    | `/accounts/names`                        | `global:accounts` [access, list-account-names]                                                                                                        |
+| `DELETE` | `/admin/domains/:domainId`               | `global:domains` [access] **AND** `global:superadmin` [access, delete-any-domain]                                                                     |
+| `PATCH`  | `/admin/domains/:domainId/quota`         | `global:domains` [access] **AND** `global:superadmin` [access, resize-any-domain-quota]                                                               |
+| `GET`    | `/api-tokens`                            | `global:api-tokens` [access, list-api-tokens]                                                                                                         |
+| `POST`   | `/api-tokens`                            | `global:api-tokens` [access, create-api-token]                                                                                                        |
+| `PATCH`  | `/api-tokens/:id`                        | `global:api-tokens` [access, edit-api-token]                                                                                                          |
+| `DELETE` | `/api-tokens/:id`                        | `global:api-tokens` [access, delete-api-token]                                                                                                        |
+| `POST`   | `/api-tokens/:id/regenerate`             | `global:api-tokens` [access, regenerate-api-token]                                                                                                    |
+| `POST`   | `/api-tokens/:id/revoke`                 | `global:api-tokens` [access, revoke-api-token]                                                                                                        |
+| `POST`   | `/auth/jwt/login`                        | _no ACL: authentication itself_                                                                                                                       |
+| `POST`   | `/auth/jwt/logout`                       | _no ACL: authentication itself_                                                                                                                       |
+| `GET`    | `/auth/jwt/me`                           | _no ACL: the caller's own profile_                                                                                                                    |
+| `PATCH`  | `/auth/jwt/me`                           | _no ACL: the caller's own profile_                                                                                                                    |
+| `GET`    | `/auth/jwt/me/permissions`               | _no ACL: the caller's own permissions_                                                                                                                |
+| `POST`   | `/auth/jwt/refresh`                      | _no ACL: authentication itself_                                                                                                                       |
+| `GET`    | `/domains`                               | `global:domains` [access]                                                                                                                             |
+| `POST`   | `/domains`                               | `global:domains` [access, create-domain]                                                                                                              |
+| `GET`    | `/domains/:domainId`                     | `domain:domain` [access, view-domain]                                                                                                                 |
+| `PATCH`  | `/domains/:domainId/active`              | `domain:admin` [access, toggle-domain-active] **AND** `domain:domain` [access, toggle-domain-active]                                                  |
+| `GET`    | `/domains/:domainId/aliases`             | `domain:aliases` [access, list-aliases]                                                                                                               |
+| `POST`   | `/domains/:domainId/aliases`             | `domain:aliases` [access, create-alias]                                                                                                               |
+| `GET`    | `/domains/:domainId/aliases/:id`         | `domain:aliases` [access, view-alias]                                                                                                                 |
+| `PATCH`  | `/domains/:domainId/aliases/:id`         | `domain:aliases` [access, edit-alias]                                                                                                                 |
+| `DELETE` | `/domains/:domainId/aliases/:id`         | `domain:aliases` [access, delete-alias]                                                                                                               |
+| `GET`    | `/domains/:domainId/dkim`                | `domain:dkim` [access, view-dkim] **AND** `domain:admin` [access, view-admin-page]                                                                    |
+| `GET`    | `/domains/:domainId/dkim-check`          | `domain:dkim` [access, check-dkim-dns] **AND** `domain:admin` [access, view-admin-page]                                                               |
+| `DELETE` | `/domains/:domainId/dkim/:selector`      | `global:domain_owner_elevated` [access, delete-dkim-key] **AND** `domain:dkim` [access, delete-dkim-key] **AND** `domain:admin` [access, manage-dkim] |
+| `POST`   | `/domains/:domainId/dkim/rotate`         | `domain:dkim` [access, rotate-dkim-key] **AND** `domain:admin` [access, manage-dkim]                                                                  |
+| `PATCH`  | `/domains/:domainId/owner`               | `global:domain_owner_elevated` [access, transfer-domain-ownership] **AND** `domain:domain` [access, transfer-domain-ownership]                        |
+| `GET`    | `/domains/:domainId/quotas`              | `domain:quotas` [access, view-quotas]                                                                                                                 |
+| `GET`    | `/domains/:domainId/recipients`          | `domain:recipients` [access, list-recipients]                                                                                                         |
+| `POST`   | `/domains/:domainId/recipients`          | `domain:recipients` [access, create-recipient]                                                                                                        |
+| `GET`    | `/domains/:domainId/recipients/:id`      | `domain:recipients` [access, view-recipient]                                                                                                          |
+| `PATCH`  | `/domains/:domainId/recipients/:id`      | `domain:recipients` [access, edit-recipient]                                                                                                          |
+| `DELETE` | `/domains/:domainId/recipients/:id`      | `domain:recipients` [access, delete-recipient]                                                                                                        |
+| `GET`    | `/domains/:domainId/recipients/headroom` | `domain:recipients` [access, view-recipient-headroom]                                                                                                 |
+| `GET`    | `/domains/:domainId/rspamd/history`      | `domain:rspamd` [access, view-rspamd-history]                                                                                                         |
+| `GET`    | `/domains/:domainId/rspamd/stats`        | `domain:rspamd` [access, view-rspamd-stats]                                                                                                           |
+| `GET`    | `/domains/disk`                          | `global:domains` [access, view-disk-usage]                                                                                                            |
+| `GET`    | `/groups`                                | `global:groups` [access, list-groups]                                                                                                                 |
+| `POST`   | `/groups`                                | `global:groups` [access, create-group]                                                                                                                |
+| `GET`    | `/groups/:id`                            | `global:groups` [access, view-group]                                                                                                                  |
+| `PATCH`  | `/groups/:id`                            | `global:groups` [access, edit-group]                                                                                                                  |
+| `DELETE` | `/groups/:id`                            | `global:groups` [access, delete-group]                                                                                                                |
+| `PUT`    | `/groups/:id/domain-permissions`         | `global:groups` [access, edit-group-domain-permissions]                                                                                               |
+| `PUT`    | `/groups/:id/global-permissions`         | `global:groups` [access, edit-group-global-permissions]                                                                                               |
+| `GET`    | `/groups/:id/members`                    | `global:groups` [access, list-group-members]                                                                                                          |
+| `POST`   | `/groups/:id/members`                    | `global:groups` [access, add-group-member] _(root **OR** the group's owner **OR** this action; enforced in `GroupsService`)_                          |
+| `DELETE` | `/groups/:id/members/:accountId`         | `global:groups` [access, remove-group-member] _(root **OR** the group's owner **OR** this action; enforced in `GroupsService`)_                       |
+| `PATCH`  | `/groups/:id/owner`                      | `global:groups` [access, transfer-group-ownership] _(root **OR** the group's owner **OR** this action; enforced in `GroupsService`)_                  |
+| `GET`    | `/groups/permissions/catalog`            | `global:groups` [access, view-group]                                                                                                                  |
+| `GET`    | `/health`                                | _no ACL: liveness probe_                                                                                                                              |
+| `GET`    | `/postfix/queue`                         | `global:postfix` [access, view-postfix-queue]                                                                                                         |
+| `GET`    | `/rspamd/actions`                        | `global:rspamd` [access, view-rspamd-thresholds]                                                                                                      |
+| `PATCH`  | `/rspamd/actions`                        | `global:rspamd` [access, edit-rspamd-thresholds]                                                                                                      |
+| `DELETE` | `/rspamd/actions`                        | `global:rspamd` [access, reset-rspamd-thresholds]                                                                                                     |
+| `GET`    | `/rspamd/history`                        | `global:rspamd` [access, view-rspamd-history]                                                                                                         |
+| `GET`    | `/rspamd/stats`                          | `global:rspamd` [access, view-rspamd-stats]                                                                                                           |
+| `GET`    | `/sieve/reject-senders`                  | `global:sieve` [access, list-reject-senders]                                                                                                          |
+| `GET`    | `/supervision/live`                      | `global:supervision` [access, view-machine-metrics]                                                                                                   |
+| `GET`    | `/supervision/history/:range`            | `global:supervision` [access, view-metrics-history]                                                                                                   |
+| `POST`   | `/sieve/reject-senders`                  | `global:sieve` [access, create-reject-sender]                                                                                                         |
+| `PATCH`  | `/sieve/reject-senders/:id`              | `global:sieve` [access, edit-reject-sender]                                                                                                           |
+| `DELETE` | `/sieve/reject-senders/:id`              | `global:sieve` [access, delete-reject-sender]                                                                                                         |
 
 ### The nine routes with no ACL, and why
 
@@ -269,15 +269,15 @@ inside the page. That was already how `domains` behaved, as the one documented e
 
 ## Where the code lives
 
-| Concern | File |
-|---|---|
-| The catalog: resources, actions, `dependsOn`, bridge assertion | [`permission-catalog.ts`](../../manager-api/src/core/custom-permission-guard/permission-catalog.ts) |
-| Route decorators, typed per resource | [`require-permissions.decorator.ts`](../../manager-api/src/core/custom-permission-guard/require-permissions.decorator.ts) |
-| Library wiring, `lockoutProtected`, root escape hatches | [`custom-permission-guard.service.ts`](../../manager-api/src/core/custom-permission-guard/custom-permission-guard.service.ts) |
-| Root bypass, global tier | [`global-permission.guard.ts`](../../manager-api/src/core/custom-permission-guard/global-permission.guard.ts) |
-| Root bypass, ownership, bridge, domain tier | [`domain-permission.guard.ts`](../../manager-api/src/core/custom-permission-guard/domain-permission.guard.ts) |
-| Body validation, per-resource discriminated union | [`groups.validation.ts`](../../manager-api/src/api/groups/groups.validation.ts) |
-| The catalog, served to clients | `GET /api/v1/groups/permissions/catalog` |
+| Concern                                                        | File                                                                                                                          |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| The catalog: resources, actions, `dependsOn`, bridge assertion | [`permission-catalog.ts`](../../manager-api/src/core/custom-permission-guard/permission-catalog.ts)                           |
+| Route decorators, typed per resource                           | [`require-permissions.decorator.ts`](../../manager-api/src/core/custom-permission-guard/require-permissions.decorator.ts)     |
+| Library wiring, `lockoutProtected`, root escape hatches        | [`custom-permission-guard.service.ts`](../../manager-api/src/core/custom-permission-guard/custom-permission-guard.service.ts) |
+| Root bypass, global tier                                       | [`global-permission.guard.ts`](../../manager-api/src/core/custom-permission-guard/global-permission.guard.ts)                 |
+| Root bypass, ownership, bridge, domain tier                    | [`domain-permission.guard.ts`](../../manager-api/src/core/custom-permission-guard/domain-permission.guard.ts)                 |
+| Body validation, per-resource discriminated union              | [`groups.validation.ts`](../../manager-api/src/api/groups/groups.validation.ts)                                               |
+| The catalog, served to clients                                 | `GET /api/v1/groups/permissions/catalog`                                                                                      |
 
 A requirement is a union with one branch per resource, so
 `{ resource: "sieve", actions: ["delete-dkim-key"] }` is a compile error, and the Zod

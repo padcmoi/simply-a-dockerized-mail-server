@@ -41,6 +41,7 @@ const api = () => request(h.app.getHttpServer());
 ```
 
 Every route MUST assert, at minimum:
+
 - **401** with no token and with a garbage `Bearer` token.
 - **403** for `USER` (non-root) with no grant.
 - **2xx** for `ROOT` (root bypass), asserting the service was called correctly.
@@ -48,6 +49,7 @@ Every route MUST assert, at minimum:
 - **400** on invalid body/params where a Zod pipe or `ParseIntPipe` applies.
 
 Granting permissions to a non-root user:
+
 - Global route: `h.cpg.grantGlobal("sieve", "access", "list-reject-senders")`.
 - Domain route (`:domainId`): a non-root needs the whole chain — for a resource
   other than `domain`: `h.cpg.grantGlobal("domains", "access")`,
