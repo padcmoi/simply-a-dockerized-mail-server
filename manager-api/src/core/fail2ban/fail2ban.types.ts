@@ -24,6 +24,8 @@ export interface Fail2banHistoryEntry {
   matches: string[];
 }
 
+export type Fail2banBanned = Record<string, number>;
+
 export interface Fail2banStatus {
   available: boolean;
   jails: Fail2banJail[];

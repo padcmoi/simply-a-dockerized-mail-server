@@ -23,6 +23,7 @@ services:
       - ${VOLUMES_PATH}/mail:/var/mail
       - ${VOLUMES_PATH}/postfix-spool:/var/spool/postfix:ro
       - ${VOLUMES_PATH}/log:/var/log/mail:ro
+      - ${VOLUMES_PATH}/fail2ban:/var/lib/fail2ban:ro
       # The machine cards read /proc. Docker does not namespace /proc/stat,
       # /proc/loadavg or /proc/meminfo, so those are the host's own figures
       # already, but /proc/net IS namespaced: without the host's own /proc

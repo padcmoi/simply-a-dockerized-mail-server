@@ -5,10 +5,8 @@ export const Fail2banApi = () => applyDecorators(ApiTags("fail2ban"), ApiSecurit
 
 const jailExample = {
   name: "dovecot",
-  currentlyFailed: 2,
-  totalFailed: 41,
   currentlyBanned: 1,
-  totalBanned: 7,
+  recentBans: 7,
   bantime: 3600,
   findtime: 300,
   maxretry: 5,
@@ -45,9 +43,9 @@ export const Fail2banStatusDocs = () =>
     ApiOperation({
       summary: "Every fail2ban jail, its counters, its settings and the addresses it bans",
       description:
-        "Read from the fail2ban container through its internal sidecar. `bantime` and `findtime` are seconds, " +
+        "Read from fail2ban's own sqlite database, so it answers even while fail2ban itself is stopped. `bantime` and `findtime` are seconds, " +
         "`bannedAt` and `expiresAt` epoch milliseconds, `expiresAt` null for a permanent ban. `available` is false, " +
-        "with no jail, when fail2ban is out of reach. `history` is read from fail2ban's own sqlite database, newest " +
+        "with no jail, when the database holds none. `recentBans` counts the bans of that jail the database still holds, which its purge age limits. `history` is read from fail2ban's own sqlite database, newest " +
         "first and capped at 200: every ban it still keeps, expired ones included, with the log lines that caused it. " +
         "The websocket topic `fail2ban` carries the same payload.",
     }),

@@ -17,9 +17,7 @@ const rule = computed(() =>
 
 const figures = computed(() => [
   { label: t("fail2ban.currentlyBanned"), value: jail.currentlyBanned },
-  { label: t("fail2ban.totalBanned"), value: jail.totalBanned },
-  { label: t("fail2ban.currentlyFailed"), value: jail.currentlyFailed },
-  { label: t("fail2ban.totalFailed"), value: jail.totalFailed },
+  { label: t("fail2ban.recentBans"), value: jail.recentBans },
 ]);
 </script>
 

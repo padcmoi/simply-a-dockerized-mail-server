@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(fail2ban): the manager reads the jails, the banned addresses and the ban history straight from fail2ban's own sqlite database instead of driving fail2ban-client, which spawned twenty one processes on every poll and made the host's load climb, fail2ban-client being left to the ban and the unban alone (20-09-2026)
 - fix(ui): the supervision action view-activity-log shows its label in the group permissions instead of the raw key (19-09-2026)
 
 ## [2.0.0-rc.11] - 2026-09-19

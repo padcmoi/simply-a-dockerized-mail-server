@@ -2152,9 +2152,7 @@ export interface Locales {
     permanentRule: string;
     rule: string;
     currentlyBanned: string;
-    totalBanned: string;
-    currentlyFailed: string;
-    totalFailed: string;
+    recentBans: string;
     noBan: string;
     since: string;
     until: string;

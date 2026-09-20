@@ -12,10 +12,8 @@ describe("Fail2banController (e2e: auth + ACL + behavior)", () => {
   const activity = { record: vi.fn() };
   const jail = {
     name: "dovecot",
-    currentlyFailed: 0,
-    totalFailed: 3,
     currentlyBanned: 1,
-    totalBanned: 2,
+    recentBans: 2,
     bantime: 3600,
     findtime: 300,
     maxretry: 5,

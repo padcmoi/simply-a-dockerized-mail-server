@@ -26,7 +26,7 @@ const watchers = buildWatchers({
   mailLogs: providerMock<MailLogsService>({
     follow: vi.fn(async (service: "postfix" | "dovecot") => ({ service, from: 0, to: 0, lines: [] })),
   }),
-  fail2ban: providerMock<Fail2banService>({ status: vi.fn(async () => ({ available: true, jails: [], history: [] })) }),
+  fail2ban: providerMock<Fail2banService>({ status: vi.fn(() => ({ available: true, jails: [], history: [] })) }),
 });
 
 describe("websocket watchers", () => {
@@ -97,10 +97,10 @@ describe("websocket watchers", () => {
     expect(await watcher?.fn("../../etc/passwd")).toBeNull();
   });
 
-  it("gates fail2ban exactly like the REST route it mirrors", async () => {
+  it("gates fail2ban exactly like the REST route it mirrors", () => {
     const watcher = watchers.find((w) => w.topic === "fail2ban");
     expect(watcher?.permissions).toEqual([{ resource: "fail2ban", actions: ["access", "view-fail2ban-jails"] }]);
-    expect(await watcher?.fn()).toEqual({ available: true, jails: [], history: [] });
+    expect(watcher?.fn()).toEqual({ available: true, jails: [], history: [] });
   });
 
   it("gates supervision-machine exactly like the live REST route it mirrors", () => {
