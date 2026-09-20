@@ -172,6 +172,30 @@ export class SupervisionHistoryService {
       };
     });
 
+    // The bucket the window is asked for on has just opened and holds nothing
+    // yet, which the chart would draw as a hole the width of a column at the
+    // right edge: a machine that stopped answering rather than a minute that has
+    // not finished. It is dropped, and the curve ends on the last moment that
+    // was measured. Only that one, and only when something was recorded
+    // elsewhere in the window: a hole further back is a hole nothing was
+    // measured in, and a window with nothing at all keeps its whole grid so the
+    // axis still says how long it covers.
+    const open = points[points.length - 1];
+    if (points.length > 1 && open && nothing(open) && (recorded.size > 0 || bans.size > 0)) points.pop();
+
     return { range, step: window.step, points };
   }
+}
+
+function nothing(point: MetricPoint) {
+  return (
+    point.cpu === null &&
+    point.load === null &&
+    point.memory === null &&
+    point.disk === null &&
+    point.network === null &&
+    point.rspamd === null &&
+    point.postfix === null &&
+    point.fail2ban === null
+  );
 }

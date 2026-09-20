@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(supervision): the recorded windows end on the last bucket that was measured instead of on the one they are asked for, which has just opened and holds nothing, and drew a gap at the right edge of every chart at each refresh (20-09-2026)
 - fix(fail2ban): a jail counts and lists the addresses it still bans, where every address it had ever banned in the past week was shown as banned, fail2ban keeping its rows until the database is swept (20-09-2026)
 - fix(supervision): the 1 h, 24 h and 7 days windows draw the highest figure every bucket holds instead of its mean, so a peak the machine really had reaches the chart, where one column of the 24 h window averaged ninety recorded rows and turned a load of 16 into 11 and a cpu of 65 % into 8 % against the quiet minutes around them (20-09-2026)
 - fix(fail2ban): the manager reads the jails, the banned addresses and the ban history straight from fail2ban's own sqlite database instead of driving fail2ban-client, which spawned twenty one processes on every poll and made the host's load climb, fail2ban-client being left to the ban and the unban alone (20-09-2026)
