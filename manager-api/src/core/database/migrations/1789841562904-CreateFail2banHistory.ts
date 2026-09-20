@@ -1,7 +1,7 @@
 import type { MigrationInterface, QueryRunner } from "typeorm";
 
-export class CreateFail2banHistory1789840000000 implements MigrationInterface {
-  name = "CreateFail2banHistory1789840000000";
+export class CreateFail2banHistory1789841562904 implements MigrationInterface {
+  name = "CreateFail2banHistory1789841562904";
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

@@ -1,7 +1,7 @@
 import type { MigrationInterface, QueryRunner } from "typeorm";
 
-export class DiskMetricsOnMetricsHistory1789812000000 implements MigrationInterface {
-  name = "DiskMetricsOnMetricsHistory1789812000000";
+export class DiskMetricsOnMetricsHistory1789812047318 implements MigrationInterface {
+  name = "DiskMetricsOnMetricsHistory1789812047318";
 
   async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
