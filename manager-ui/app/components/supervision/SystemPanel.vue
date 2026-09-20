@@ -11,7 +11,14 @@
 const { t } = useI18n();
 const { snapshot, history, status, thresholds } = useSystemMetrics();
 
-const range = ref<MetricRange>("minute");
+const RANGE_STORAGE_KEY = "manager-supervision-range";
+
+// The window is the panel's, and this browser keeps it: a reader who watches
+// the day is shown the day again on the next visit rather than the minute and a
+// tag to click. Read on mount, so the server never renders one window and the
+// page hydrates on another, and anything that is not one of the four tags falls
+// back to the live minute.
+const stored = useLocalStorage<MetricRange>(RANGE_STORAGE_KEY, "minute", { initOnMounted: true });
 
 // One pause for the four curves, for the same reason there is one window: they
 // are read against each other, and holding one of them alone would put four
@@ -19,7 +26,20 @@ const range = ref<MetricRange>("minute");
 // header figures stay live and nothing is missing when it is lifted.
 const paused = ref(false);
 
-const { points, at, notice } = useMetricWindow(range, () => history.value, paused);
+const range = computed<MetricRange>({
+  get: () => (SUPERVISION_WINDOWS.includes(stored.value) ? stored.value : "minute"),
+  set: (window) => (stored.value = window),
+});
+
+const { points, at, notice, nextRefresh } = useMetricWindow(range, () => history.value, paused);
+
+// One window feeds the eight cards, so the wait is the same in all of them and
+// it is written once, beside the state of the feed rather than in every header.
+const countdown = computed(() => {
+  const left = nextRefresh.value;
+  if (left === null) return null;
+  return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
+});
 
 function togglePause() {
   paused.value = !paused.value;
@@ -35,6 +55,12 @@ function togglePause() {
       </h3>
 
       <div class="flex items-center gap-2">
+        <UTooltip v-if="countdown" :text="t('supervision.nextRefresh')">
+          <UBadge color="info" variant="subtle" icon="i-lucide-refresh-cw" class="tabular-nums">
+            {{ countdown }}
+          </UBadge>
+        </UTooltip>
+
         <MachineAlertsToggle />
 
         <UTooltip v-if="snapshot" :text="t(paused ? 'supervision.resume' : 'supervision.pause')">

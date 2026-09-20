@@ -1,8 +1,22 @@
+import type { Ref } from "vue";
+
 // How often a window is asked for again. It is the width of one of its own
 // points: an hour is drawn in minutes, so a request a minute is exactly one new
 // column, and asking a week every minute would be eighty-four identical answers
 // an hour.
+//
+// Counted on the clock and never from the click: the recorded buckets are
+// themselves `FLOOR(at / step) * step`, so the refresh lands where the samples
+// do, at the minute and at the half hour, and the same second whichever card
+// was clicked, whenever the page was opened and in whichever tab.
 const REFRESH_MS = { hour: 60_000, day: 300_000, week: 1_800_000 };
+
+function nextTurnOf(every: number) {
+  return Math.floor(Date.now() / every) * every + every;
+}
+
+/** The windows a card can be drawn over, in the order the tags read them. */
+export const SUPERVISION_WINDOWS: readonly MetricRange[] = ["week", "day", "hour", "minute"];
 
 // Where a card's curve comes from, for the window it is set to. The live minute
 // is the socket's own history, nothing else is that fresh, and the three longer
@@ -23,7 +37,16 @@ export function useMetricWindow(range: Ref<MetricRange>, live: () => HistoryPoin
   // hole where the paused seconds were.
   const held = ref<HistoryPoint[] | null>(null);
 
-  let timer: ReturnType<typeof setInterval> | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let ticker: ReturnType<typeof setInterval> | null = null;
+
+  // When the next request is due, and the second it is read against. The badge
+  // counts down the very moment the window is asked for again and never a
+  // second copy of it. Null on the live minute, which has nothing to wait for.
+  const dueAt = ref(0);
+  const now = ref(0);
+
+  const nextRefresh = computed(() => (dueAt.value ? Math.max(0, Math.round((dueAt.value - now.value) / 1000)) : null));
 
   async function load() {
     if (range.value === "minute") return;
@@ -49,11 +72,30 @@ export function useMetricWindow(range: Ref<MetricRange>, live: () => HistoryPoin
   }
 
   function schedule() {
-    if (timer) clearInterval(timer);
+    if (timer) clearTimeout(timer);
+    if (ticker) clearInterval(ticker);
     timer = null;
+    ticker = null;
+    dueAt.value = 0;
     if (range.value === "minute") return;
 
-    timer = setInterval(() => void load(), REFRESH_MS[range.value]);
+    const every = REFRESH_MS[range.value];
+
+    // Waited out one turn at a time rather than on a repeating interval: the
+    // turn is aimed at a moment of the clock, and a browser that held the timers
+    // back while the tab was in the background would otherwise stay off by
+    // whatever it kept.
+    const wait = () => {
+      dueAt.value = nextTurnOf(every);
+      timer = setTimeout(() => {
+        void load();
+        wait();
+      }, dueAt.value - Date.now());
+    };
+
+    now.value = Date.now();
+    wait();
+    ticker = setInterval(() => (now.value = Date.now()), 1000);
   }
 
   watch(range, () => {
@@ -73,7 +115,8 @@ export function useMetricWindow(range: Ref<MetricRange>, live: () => HistoryPoin
   });
 
   onScopeDispose(() => {
-    if (timer) clearInterval(timer);
+    if (timer) clearTimeout(timer);
+    if (ticker) clearInterval(ticker);
   });
 
   const current = computed(() => (range.value === "minute" ? live() : stored.value));
@@ -107,5 +150,5 @@ export function useMetricWindow(range: Ref<MetricRange>, live: () => HistoryPoin
     return t("supervision.rangeEmpty");
   });
 
-  return { points, at, notice, loading, failed };
+  return { points, at, notice, loading, failed, nextRefresh };
 }

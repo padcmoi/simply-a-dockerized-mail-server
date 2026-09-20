@@ -9,12 +9,14 @@ function select(range: MetricRange) {
   model.value = range;
 }
 
-const ranges = computed(() => [
-  { id: "week" as const, label: t("supervision.rangeWeek") },
-  { id: "day" as const, label: t("supervision.rangeDay") },
-  { id: "hour" as const, label: t("supervision.rangeHour") },
-  { id: "minute" as const, label: t("supervision.rangeMinute") },
-]);
+const LABELS: Record<MetricRange, string> = {
+  week: "supervision.rangeWeek",
+  day: "supervision.rangeDay",
+  hour: "supervision.rangeHour",
+  minute: "supervision.rangeMinute",
+};
+
+const ranges = computed(() => SUPERVISION_WINDOWS.map((id) => ({ id, label: t(LABELS[id]) })));
 </script>
 
 <template>

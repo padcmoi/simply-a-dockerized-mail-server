@@ -2116,6 +2116,7 @@ export interface Locales {
     rangeLoading: string;
     rangeEmpty: string;
     rangeFailed: string;
+    nextRefresh: string;
     cpu: string;
     cores: string;
     load: string;

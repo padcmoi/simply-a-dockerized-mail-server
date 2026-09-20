@@ -23,6 +23,7 @@ export default {
   rangeLoading: "Lecture des mesures enregistrées…",
   rangeEmpty: "Rien n'a encore été enregistré sur cette fenêtre",
   rangeFailed: "Les mesures enregistrées sont illisibles",
+  nextRefresh: "Prochain rafraîchissement",
   cpu: "CPU",
   cores: "{n} cœurs vCPU",
   load: "Charge moyenne",

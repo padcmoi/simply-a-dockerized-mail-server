@@ -23,6 +23,7 @@ export default {
   rangeLoading: "Reading the recorded samples…",
   rangeEmpty: "Nothing was recorded over this window yet",
   rangeFailed: "The recorded samples cannot be read",
+  nextRefresh: "Next refresh",
   cpu: "CPU",
   cores: "{n} vCPU cores",
   load: "Load average",
