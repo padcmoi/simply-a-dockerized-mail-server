@@ -1,0 +1,46 @@
+import type { Locales } from "../../Locales";
+
+export default {
+  title: "Antivirus",
+  subtitle:
+    "Le moteur qui analyse les pièces jointes, les bases de signatures qu'il a reçues et leur retard éventuel sur ce que publie ClamAV.",
+  loadFailed: "L'état de l'antivirus est illisible",
+  engine: {
+    title: "Moteur",
+    version: "Version",
+    published: "Publiée",
+    upToDate: "À jour",
+    outdated: "Une version plus récente existe",
+    online: "En service",
+    offline: "Injoignable",
+    offlineHint: "clamd ne répond pas sur son socket. Les bases restent lisibles, ce sont des fichiers.",
+    unknown: "Inconnue",
+  },
+  stats: {
+    title: "Analyse",
+    threads: "Fils",
+    threadsDetail: "{live} en cours sur {max}",
+    queue: "En attente",
+    queueDetail: "{n} fichier | {n} fichiers",
+    pools: "Signatures en mémoire",
+  },
+  databases: {
+    title: "Bases de signatures",
+    name: "Base",
+    file: "Fichier",
+    version: "Version",
+    published: "Publiée",
+    built: "Construite le",
+    signatures: "Signatures",
+    size: "Taille",
+    state: "État",
+    current: "À jour",
+    behind: "{n} version de retard | {n} versions de retard",
+    unknown: "Inconnue",
+    none: "Aucune base de signatures lisible",
+    main: "Principale",
+    daily: "Quotidienne",
+    bytecode: "Bytecode",
+    lastBuilt: "Dernière base construite le {at}",
+  },
+} satisfies Locales["clamav"];

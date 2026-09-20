@@ -66,6 +66,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "GET /api/v1/auth/passport/:provider  ::  auth=PUBLIC guards=[PassportProviderGuard]",
   "GET /api/v1/auth/passport/:provider/callback  ::  auth=PUBLIC guards=[PassportProviderGuard]",
   "GET /api/v1/auth/passport/providers  ::  auth=PUBLIC guards=[]",
+  "GET /api/v1/clamav/status  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:clamav[access,view-clamav-status]",
   "GET /api/v1/config/general  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "GET /api/v1/config/general/tlds  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "GET /api/v1/config/login-risk  ::  auth=ApiToken+JWT guards=[RootGuard]",

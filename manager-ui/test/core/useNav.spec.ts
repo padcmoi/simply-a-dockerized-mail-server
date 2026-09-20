@@ -105,6 +105,7 @@ describe("useNav global nav items", () => {
       "/admin/activity",
       "/admin/mail-logs",
       "/admin/fail2ban",
+      "/admin/clamav",
       "/about",
     ]);
   });

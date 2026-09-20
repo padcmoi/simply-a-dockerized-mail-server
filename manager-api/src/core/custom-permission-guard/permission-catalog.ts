@@ -114,6 +114,9 @@ export const GLOBAL_ACTIONS = {
   // question the route also asks.
   deliverability: ["access", "run-diagnostics"],
   fail2ban: ["access", "view-fail2ban-jails", "ban-ip", "unban-ip"],
+  // The virus scanner. `view-clamav-status` covers what it runs and how old the
+  // signatures it was given are, which is a reading, not a command.
+  clamav: ["access", "view-clamav-status"],
   superadmin: ["access", "resize-any-domain-quota", "delete-any-domain"],
 } as const;
 

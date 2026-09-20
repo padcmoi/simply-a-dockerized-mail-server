@@ -119,6 +119,7 @@ export default {
         tickets: "Support tickets",
         supervision: "Supervision",
         fail2ban: "Fail2ban",
+        clamav: "Antivirus",
         superadmin: "Super admin",
         domainOwnerElevated: "Domain owner elevated",
       },
@@ -224,6 +225,10 @@ export default {
           "view-fail2ban-jails": "View the jails, the banned addresses and the history",
           "ban-ip": "Ban an address",
           "unban-ip": "Unban an address",
+        },
+        clamav: {
+          access: "Access",
+          "view-clamav-status": "View the engine, the signature databases and their age",
         },
         deliverability: {
           access: "Access",

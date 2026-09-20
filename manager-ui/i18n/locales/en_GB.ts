@@ -36,6 +36,7 @@ import activity from "./en_GB/activity";
 import known from "./en_GB/known";
 import mailLogs from "./en_GB/mailLogs";
 import fail2ban from "./en_GB/fail2ban";
+import clamav from "./en_GB/clamav";
 
 // One file per top-level namespace under ./en_GB/, this file only assembles
 // them. `satisfies Locales` still type-checks the whole tree here, and each
@@ -78,4 +79,5 @@ export default {
   known,
   mailLogs,
   fail2ban,
+  clamav,
 } satisfies Locales;

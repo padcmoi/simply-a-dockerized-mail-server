@@ -23,6 +23,7 @@ export default {
   activity: "Activity log",
   mailLogs: "Mail logs",
   fail2ban: "Fail2ban",
+  clamav: "Antivirus",
   sectionMail: "Mail",
   sectionAccess: "Access",
   sectionSystem: "System",

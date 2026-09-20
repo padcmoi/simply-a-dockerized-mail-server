@@ -93,6 +93,7 @@ export interface Locales {
     activity: string;
     mailLogs: string;
     fail2ban: string;
+    clamav: string;
     sectionMail: string;
     sectionAccess: string;
     sectionSystem: string;
@@ -1870,6 +1871,7 @@ export interface Locales {
           domainOwnerElevated: string;
           supervision: string;
           fail2ban: string;
+          clamav: string;
         };
         domain: {
           domain: string;
@@ -1967,6 +1969,10 @@ export interface Locales {
             "view-metrics-history": string;
             "view-activity-log": string;
             "view-mail-logs": string;
+          };
+          clamav: {
+            access: string;
+            "view-clamav-status": string;
           };
           fail2ban: {
             access: string;
@@ -2144,6 +2150,49 @@ export interface Locales {
     postfix: string;
     postfixWaiting: string;
     postfixUnavailable: string;
+  };
+  clamav: {
+    title: string;
+    subtitle: string;
+    loadFailed: string;
+    engine: {
+      title: string;
+      version: string;
+      published: string;
+      upToDate: string;
+      outdated: string;
+      online: string;
+      offline: string;
+      offlineHint: string;
+      unknown: string;
+    };
+    stats: {
+      title: string;
+      threads: string;
+      threadsDetail: string;
+      queue: string;
+      queueDetail: string;
+      pools: string;
+    };
+    databases: {
+      title: string;
+      name: string;
+      file: string;
+      version: string;
+      published: string;
+      built: string;
+      signatures: string;
+      size: string;
+      state: string;
+      current: string;
+      behind: string;
+      unknown: string;
+      none: string;
+      main: string;
+      daily: string;
+      bytecode: string;
+      lastBuilt: string;
+    };
   };
   fail2ban: {
     title: string;

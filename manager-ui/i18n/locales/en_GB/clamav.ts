@@ -1,0 +1,46 @@
+import type { Locales } from "../../Locales";
+
+export default {
+  title: "Antivirus",
+  subtitle:
+    "The engine that scans attachments, the signature databases it was given, and how far behind they are from what ClamAV publishes.",
+  loadFailed: "The antivirus state cannot be read",
+  engine: {
+    title: "Engine",
+    version: "Version",
+    published: "Published",
+    upToDate: "Up to date",
+    outdated: "A newer version exists",
+    online: "Running",
+    offline: "Out of reach",
+    offlineHint: "clamd is not answering on its socket. The databases are still readable, they are files.",
+    unknown: "Unknown",
+  },
+  stats: {
+    title: "Scanning",
+    threads: "Threads",
+    threadsDetail: "{live} busy of {max}",
+    queue: "Waiting",
+    queueDetail: "{n} file | {n} files",
+    pools: "Signatures in memory",
+  },
+  databases: {
+    title: "Signature databases",
+    name: "Database",
+    file: "File",
+    version: "Version",
+    published: "Published",
+    built: "Built on",
+    signatures: "Signatures",
+    size: "Size",
+    state: "State",
+    current: "Up to date",
+    behind: "{n} version behind | {n} versions behind",
+    unknown: "Unknown",
+    none: "No readable signature database",
+    main: "Main",
+    daily: "Daily",
+    bytecode: "Bytecode",
+    lastBuilt: "Newest database built on {at}",
+  },
+} satisfies Locales["clamav"];
