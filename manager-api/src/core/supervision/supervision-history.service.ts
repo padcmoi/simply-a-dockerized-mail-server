@@ -26,6 +26,8 @@ export interface MetricPoint {
   postfix: [number, number, number, number] | null;
   /** Most addresses each fail2ban jail held banned at once over the bucket. */
   fail2ban: Record<string, number> | null;
+  /** Oldest the newest signature database was over the bucket, in seconds. */
+  clamavAge: number | null;
 }
 
 type Figure = number | string | null;
@@ -52,6 +54,7 @@ interface Bucket {
   postfix_deferred: Figure;
   postfix_hold: Figure;
   postfix_incoming: Figure;
+  clamav_age: Figure;
 }
 
 // A week holds around sixty thousand rows and a chart holds eighty-four columns
@@ -83,7 +86,8 @@ const QUERY = `
          MAX(postfix_active) AS postfix_active,
          MAX(postfix_deferred) AS postfix_deferred,
          MAX(postfix_hold) AS postfix_hold,
-         MAX(postfix_incoming) AS postfix_incoming
+         MAX(postfix_incoming) AS postfix_incoming,
+         MAX(clamav_age) AS clamav_age
     FROM metrics_history
    WHERE at >= ?
 GROUP BY 1
@@ -144,7 +148,18 @@ export class SupervisionHistoryService {
       const row = recorded.get(at);
       const fail2ban = bans.get(at) ?? null;
       if (!row)
-        return { at, cpu: null, load: null, memory: null, disk: null, network: null, rspamd: null, postfix: null, fail2ban };
+        return {
+          at,
+          cpu: null,
+          load: null,
+          memory: null,
+          disk: null,
+          network: null,
+          rspamd: null,
+          postfix: null,
+          fail2ban,
+          clamavAge: null,
+        };
 
       const total = Number(row.memory_total);
       return {
@@ -169,6 +184,7 @@ export class SupervisionHistoryService {
           row.postfix_incoming
         ),
         fail2ban,
+        clamavAge: row.clamav_age === null ? null : Number(row.clamav_age),
       };
     });
 
@@ -196,6 +212,7 @@ function nothing(point: MetricPoint) {
     point.network === null &&
     point.rspamd === null &&
     point.postfix === null &&
-    point.fail2ban === null
+    point.fail2ban === null &&
+    point.clamavAge === null
   );
 }

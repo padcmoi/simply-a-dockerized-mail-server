@@ -30,6 +30,7 @@ function bucket(at: number | string, over: Record<string, unknown> = {}) {
     postfix_deferred: 3,
     postfix_hold: 0,
     postfix_incoming: 0,
+    clamav_age: 32400,
     ...over,
   };
 }
@@ -113,6 +114,7 @@ describe("SupervisionHistoryService", () => {
       rspamd: null,
       postfix: null,
       fail2ban: null,
+      clamavAge: null,
     });
     expect(points[1]).toEqual({
       at: at + step,
@@ -124,6 +126,7 @@ describe("SupervisionHistoryService", () => {
       rspamd: RSPAMD,
       postfix: POSTFIX,
       fail2ban: null,
+      clamavAge: 32400,
     });
   });
 
@@ -157,6 +160,7 @@ describe("SupervisionHistoryService", () => {
       rspamd: RSPAMD,
       postfix: POSTFIX,
       fail2ban: null,
+      clamavAge: 32400,
     });
   });
 

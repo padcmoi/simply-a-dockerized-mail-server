@@ -4,6 +4,7 @@ import { LessThan, Repository } from "typeorm";
 import { MetricsHistory } from "../entities/metrics-history.entity";
 import { Fail2banHistory } from "../entities/fail2ban-history.entity";
 import { AppSettingsService } from "../settings/app-settings.service";
+import { ClamavAlertsService } from "../clamav/clamav-alerts.service";
 import { MachineAlertsService } from "./machine-alerts.service";
 import { ServiceMetricsService, type ServiceSample } from "./service-metrics.service";
 import { SystemMetricsService, type SystemSnapshot } from "./system-metrics.service";
@@ -47,7 +48,8 @@ export class SupervisionRecorderService {
     @InjectRepository(MetricsHistory) private readonly history: Repository<MetricsHistory>,
     @InjectRepository(Fail2banHistory) private readonly bans: Repository<Fail2banHistory>,
     private readonly settings: AppSettingsService,
-    private readonly alerts: MachineAlertsService
+    private readonly alerts: MachineAlertsService,
+    private readonly clamavAlerts: ClamavAlertsService
   ) {}
 
   // A tab that has just opened is on the live minute, and a minute it has to
@@ -73,6 +75,7 @@ export class SupervisionRecorderService {
     // The one loop that reads the host is also the one that knows a figure has
     // just gone red: watching for it anywhere else would mean a second reader.
     await this.alerts.inspect(snapshot);
+    await this.clamavAlerts.inspect(snapshot.clamav, snapshot.at);
 
     const now = snapshot.at;
     if (!this.lastWriteAt) this.lastWriteAt = now;
@@ -145,6 +148,7 @@ export class SupervisionRecorderService {
         postfixDeferred: this.mean(postfix.map((queue) => queue.deferred)),
         postfixHold: this.mean(postfix.map((queue) => queue.hold)),
         postfixIncoming: this.mean(postfix.map((queue) => queue.incoming)),
+        clamavAge: age(last),
       });
     } catch (e) {
       this.log.warn(`recording the machine failed: ${(e as Error).message}`);
@@ -173,4 +177,12 @@ export class SupervisionRecorderService {
       this.log.warn(`pruning the recorded machine history failed: ${(e as Error).message}`);
     }
   }
+}
+
+/** How old the newest signature database was at the end of the row, in seconds.
+ *  Counted rather than averaged: an age is a clock, and the mean of a clock over
+ *  ten seconds is five seconds before its end. */
+function age(sample: SupervisionSnapshot) {
+  const built = sample.clamav.signaturesAt;
+  return built === null ? null : Math.max(0, Math.round((sample.at - built) / 1000));
 }

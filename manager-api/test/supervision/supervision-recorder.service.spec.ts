@@ -5,6 +5,7 @@ import { MetricsHistory } from "../../src/core/entities/metrics-history.entity";
 import { LIVE_POINTS, SupervisionRecorderService } from "../../src/core/supervision/supervision-recorder.service";
 import type { SystemMetricsService, SystemSnapshot } from "../../src/core/supervision/system-metrics.service";
 import { APP_SETTINGS_DEFAULTS, type AppSettingsService } from "../../src/core/settings/app-settings.service";
+import type { ClamavAlertsService } from "../../src/core/clamav/clamav-alerts.service";
 import type { MachineAlertsService } from "../../src/core/supervision/machine-alerts.service";
 import type { ServiceMetricsService, ServiceSample } from "../../src/core/supervision/service-metrics.service";
 import { providerMock, repoMock } from "../helpers/mocks";
@@ -22,11 +23,15 @@ function snapshotAt(at: number, over: Partial<SystemSnapshot> = {}): SystemSnaps
   };
 }
 
+/** An hour before the moment every spec here sets the clock to. */
+const SIGNATURES_AT = 1_800_000_000_000 - 3_600_000;
+
 function servicesSample(over: Partial<ServiceSample> = {}): ServiceSample {
   return {
     rspamd: { scanned: 100, noAction: 80, greylist: 4, addHeader: 8, reject: 5, learned: 7 },
     postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },
     fail2ban: { dovecot: 2, manager: 1 },
+    clamav: { available: true, signaturesAt: SIGNATURES_AT },
     ...over,
   };
 }
@@ -38,6 +43,7 @@ describe("SupervisionRecorderService", () => {
   let sample: ReturnType<typeof vi.fn>;
   let services: ReturnType<typeof vi.fn>;
   let inspect: ReturnType<typeof vi.fn>;
+  let inspectClamav: ReturnType<typeof vi.fn>;
   let service: SupervisionRecorderService;
   let retentionMs = 30 * 24 * 3_600_000;
 
@@ -46,13 +52,15 @@ describe("SupervisionRecorderService", () => {
     sample = vi.fn(async () => snapshotAt(now));
     services = vi.fn(async () => servicesSample());
     inspect = vi.fn(async () => undefined);
+    inspectClamav = vi.fn(async () => undefined);
     const metrics = providerMock<SystemMetricsService>({ sample });
     const serviceMetrics = providerMock<ServiceMetricsService>({ sample: services });
     const settings = providerMock<AppSettingsService>({
       get: vi.fn(() => ({ ...APP_SETTINGS_DEFAULTS, supervisionRetentionMs: retentionMs })),
     });
     const alerts = providerMock<MachineAlertsService>({ inspect });
-    return new SupervisionRecorderService(metrics, serviceMetrics, history, bans, settings, alerts);
+    const clamavAlerts = providerMock<ClamavAlertsService>({ inspect: inspectClamav });
+    return new SupervisionRecorderService(metrics, serviceMetrics, history, bans, settings, alerts, clamavAlerts);
   }
 
   beforeEach(() => {

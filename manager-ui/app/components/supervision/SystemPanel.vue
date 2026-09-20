@@ -136,6 +136,7 @@ function togglePause() {
         <RspamdActivityCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
         <PostfixQueueCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
         <Fail2banBansCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
+        <ClamavSignaturesCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
       </div>
     </template>
   </section>

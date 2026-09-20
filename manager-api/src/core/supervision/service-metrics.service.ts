@@ -1,4 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import { ClamavService } from "../clamav/clamav.service";
+import type { ClamavSample } from "../clamav/clamav.types";
 import { Fail2banService, type Fail2banBanned } from "../fail2ban/fail2ban.service";
 import { PostfixService, type QueueDirStats } from "../postfix/postfix.service";
 import { RspamdService, type RspamdStats } from "../rspamd/rspamd.service";
@@ -23,6 +25,8 @@ export interface ServiceSample {
   postfix: QueueDirStats | null;
   /** Addresses each fail2ban jail bans right now; null while fail2ban is out of reach. */
   fail2ban: Fail2banBanned | null;
+  /** The scanner as it was read at most a minute ago; see ClamavService.sample. */
+  clamav: ClamavSample;
 }
 
 export function countersOf(stats: RspamdStats): RspamdCounters {
@@ -45,12 +49,13 @@ export class ServiceMetricsService {
   constructor(
     private readonly rspamd: RspamdService,
     private readonly postfix: PostfixService,
-    private readonly fail2ban: Fail2banService
+    private readonly fail2ban: Fail2banService,
+    private readonly clamav: ClamavService
   ) {}
 
   async sample(): Promise<ServiceSample> {
-    const [rspamd, postfix] = await Promise.all([this.readRspamd(), this.readPostfix()]);
-    return { rspamd, postfix, fail2ban: this.fail2ban.latestBanned() };
+    const [rspamd, postfix, clamav] = await Promise.all([this.readRspamd(), this.readPostfix(), this.clamav.sample()]);
+    return { rspamd, postfix, fail2ban: this.fail2ban.latestBanned(), clamav };
   }
 
   private async readRspamd() {

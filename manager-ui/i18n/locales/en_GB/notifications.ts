@@ -60,6 +60,8 @@ export default {
     "ticket-taken": '{actor} took charge of the ticket "{subject}"',
     "ticket-status": 'The ticket "{subject}" is now {status}',
     "machine-load": "The machine's load is at {percent}% of its cores",
+    "clamav-unreachable": "The antivirus has stopped answering",
+    "clamav-stale": "The antivirus signatures are {hours} h old",
     "machine-memory": "The machine's memory is {percent}% full",
   },
 } satisfies Locales["notifications"];

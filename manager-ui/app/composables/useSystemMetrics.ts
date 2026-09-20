@@ -13,7 +13,7 @@ const STALE_MS = 8_000;
 const CLOCK_MS = 1_000;
 
 export function pointOf(frame: SystemSnapshot) {
-  const { at, cpu, load, memory, disk, network, rspamd, postfix, fail2ban } = frame;
+  const { at, cpu, load, memory, disk, network, rspamd, postfix, fail2ban, clamav } = frame;
 
   const point: HistoryPoint = {
     at,
@@ -25,6 +25,9 @@ export function pointOf(frame: SystemSnapshot) {
     rspamd: rspamd ? [rspamd.scanned, rspamd.noAction, rspamd.greylist, rspamd.addHeader, rspamd.reject, rspamd.learned] : null,
     postfix: postfix ? [postfix.active, postfix.deferred, postfix.hold, postfix.incoming] : null,
     fail2ban: fail2ban ?? null,
+    // Counted here rather than carried: the frame says when the signatures were
+    // built, and that moment is what the curve is drawn from.
+    clamavAge: clamav?.signaturesAt ? Math.max(0, Math.round((at - clamav.signaturesAt) / 1000)) : null,
   };
 
   return point;

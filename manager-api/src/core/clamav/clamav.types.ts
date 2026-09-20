@@ -42,3 +42,11 @@ export interface ClamavStatus {
   databases: ClamavDatabase[];
   stats: ClamavStats | null;
 }
+
+/** What the supervision loop carries on every sample of the machine. */
+export interface ClamavSample {
+  /** clamd answered its ping when it was last asked, a minute ago at most. */
+  available: boolean;
+  /** When the newest signature database was built, epoch milliseconds. */
+  signaturesAt: number | null;
+}

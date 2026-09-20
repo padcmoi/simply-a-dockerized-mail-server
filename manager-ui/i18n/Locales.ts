@@ -571,6 +571,8 @@ export interface Locales {
       "ticket-status": string;
       "machine-load": string;
       "machine-memory": string;
+      "clamav-unreachable": string;
+      "clamav-stale": string;
     };
   };
   tickets: {
@@ -2145,6 +2147,10 @@ export interface Locales {
     fail2ban: string;
     fail2banBanned: string;
     fail2banUnavailable: string;
+    clamav: string;
+    clamavHours: string;
+    clamavOffline: string;
+    clamavUnavailable: string;
     services: string;
     rspamd: string;
     rspamdScanned: string;

@@ -61,5 +61,7 @@ export default {
     "ticket-status": 'Le ticket "{subject}" est maintenant {status}',
     "machine-load": "La charge de la machine est à {percent} % de ses cœurs",
     "machine-memory": "La mémoire de la machine est occupée à {percent} %",
+    "clamav-unreachable": "L'antivirus ne répond plus",
+    "clamav-stale": "Les signatures antivirus datent de {hours} h",
   },
 } satisfies Locales["notifications"];

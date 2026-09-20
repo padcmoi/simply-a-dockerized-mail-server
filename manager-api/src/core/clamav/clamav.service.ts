@@ -3,7 +3,13 @@ import { ClamavDatabasesService } from "./clamav-databases.service";
 import { ClamavPublishedService } from "./clamav-published.service";
 import { ClamavUpdaterService } from "./clamav-updater.service";
 import { ClamdClient } from "./clamd.client";
-import type { ClamavStatus } from "./clamav.types";
+import type { ClamavSample, ClamavStatus } from "./clamav.types";
+
+/** How long a reading serves the supervision loop. The loop ticks every second
+ *  and a signature set changes a few times a day: reading the scanner on every
+ *  one of them would be a connection a second for a figure that moves once an
+ *  hour at most. */
+const SAMPLE_MS = 60_000;
 
 // The one place the scanner is read. Three sources, each answering for what only
 // it knows: clamd for the engine it runs and what it is doing, the files on disk
@@ -13,6 +19,10 @@ import type { ClamavStatus } from "./clamav.types";
 // still databases with a date.
 @Injectable()
 export class ClamavService {
+  /** The last reading the supervision loop was given, and when it was taken. */
+  private held: ClamavSample = { available: false, signaturesAt: null };
+  private sampledAt = 0;
+
   constructor(
     private readonly clamd: ClamdClient,
     private readonly files: ClamavDatabasesService,
@@ -68,6 +78,23 @@ export class ClamavService {
   async reload() {
     if (!(await this.clamd.reload())) throw new ServiceUnavailableException("The antivirus is out of reach");
     return { status: await this.status() };
+  }
+
+  // What the supervision loop puts on every sample of the machine. Two things
+  // only, and held for a minute: whether the scanner answers, and when its
+  // newest signatures were built. The age itself is not held, it is counted
+  // from that moment at every tick, so the card still moves by the second.
+  async sample(): Promise<ClamavSample> {
+    if (this.sampledAt && Date.now() - this.sampledAt < SAMPLE_MS) return this.held;
+
+    const builds = this.files
+      .read()
+      .map((database) => database.builtAt)
+      .filter((at) => at !== null);
+
+    this.held = { available: await this.clamd.ping(), signaturesAt: builds.length ? Math.max(...builds) : null };
+    this.sampledAt = Date.now();
+    return this.held;
   }
 }
 

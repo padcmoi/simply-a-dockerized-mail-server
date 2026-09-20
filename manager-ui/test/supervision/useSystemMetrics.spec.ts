@@ -28,6 +28,7 @@ function snapshot(at: number, over: Partial<SystemSnapshot> = {}): SystemSnapsho
     rspamd: { scanned: 100, noAction: 80, greylist: 4, addHeader: 8, reject: 5, learned: 7 },
     postfix: { active: 1, deferred: 3, hold: 0, incoming: 0 },
     fail2ban: { dovecot: 1 },
+    clamav: { available: true, signaturesAt: at - 3_600_000 },
     ...over,
   };
 }

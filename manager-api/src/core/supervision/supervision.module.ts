@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { ClamavCoreModule } from "../clamav/clamav.module";
 import { CustomPermissionGuardModule } from "../custom-permission-guard/custom-permission-guard.module";
 import { Account } from "../entities/account.entity";
 import { MetricsHistory } from "../entities/metrics-history.entity";
@@ -24,6 +25,7 @@ import { SystemMetricsService } from "./system-metrics.service";
     RspamdCoreModule,
     PostfixCoreModule,
     Fail2banCoreModule,
+    ClamavCoreModule,
   ],
   providers: [
     SystemMetricsService,

@@ -27,6 +27,8 @@ export interface SystemSnapshot {
   postfix: QueueDirStats | null;
   /** Addresses each fail2ban jail bans; null while fail2ban is out of reach. */
   fail2ban: Record<string, number> | null;
+  /** The virus scanner as it was read at most a minute ago. */
+  clamav: { available: boolean; signaturesAt: number | null };
 }
 
 // One point's worth of what the curves draw, as percentages except the load.
@@ -49,6 +51,8 @@ export interface HistoryPoint {
   postfix: [number, number, number, number] | null;
   /** Addresses each fail2ban jail bans at the point. */
   fail2ban: Record<string, number> | null;
+  /** How old the newest signature database was at the point, in seconds. */
+  clamavAge: number | null;
 }
 
 export type MetricsStatus = "connecting" | "live" | "offline";

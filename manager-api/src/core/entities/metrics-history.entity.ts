@@ -81,4 +81,9 @@ export class MetricsHistory {
 
   @Column({ name: "postfix_incoming", type: "double", nullable: true })
   postfixIncoming!: number | null;
+
+  /** How old the newest signature database was, in seconds; null while the
+   *  scanner's files could not be read. */
+  @Column({ name: "clamav_age", type: "double", nullable: true })
+  clamavAge!: number | null;
 }

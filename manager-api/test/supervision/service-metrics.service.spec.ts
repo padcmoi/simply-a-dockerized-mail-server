@@ -1,3 +1,4 @@
+import type { ClamavService } from "../../src/core/clamav/clamav.service";
 import type { Fail2banService } from "../../src/core/fail2ban/fail2ban.service";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ServiceMetricsService, countersOf } from "../../src/core/supervision/service-metrics.service";
@@ -37,6 +38,9 @@ describe("countersOf", () => {
   });
 });
 
+/** The scanner as the loop is given it: read at most a minute ago, never per tick. */
+const CLAMAV = { available: true, signaturesAt: 1_789_885_560_000 };
+
 describe("ServiceMetricsService", () => {
   let rspamdStats: ReturnType<typeof vi.fn>;
   let queueStats: ReturnType<typeof vi.fn>;
@@ -48,7 +52,8 @@ describe("ServiceMetricsService", () => {
     service = new ServiceMetricsService(
       providerMock<RspamdService>({ stats: rspamdStats }),
       providerMock<PostfixService>({ queueStats }),
-      providerMock<Fail2banService>({ latestBanned: vi.fn(() => ({ dovecot: 2, manager: 1 })) })
+      providerMock<Fail2banService>({ latestBanned: vi.fn(() => ({ dovecot: 2, manager: 1 })) }),
+      providerMock<ClamavService>({ sample: vi.fn(async () => CLAMAV) })
     );
   });
 
