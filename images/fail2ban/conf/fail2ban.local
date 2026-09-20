@@ -1,0 +1,4 @@
+[Definition]
+loglevel  = INFO
+logtarget = STDOUT
+dbpurgeage = ${FAIL2BAN_DB_PURGE_AGE}

@@ -1,6 +1,9 @@
 [DEFAULT]
 ignoreip = 127.0.0.1/8 ::1 172.200.0.0/24
 bantime  = ${FAIL2BAN_BANTIME}
+bantime.increment = true
+bantime.factor    = 2
+bantime.maxtime   = ${FAIL2BAN_BANTIME_MAX}
 findtime = ${FAIL2BAN_FINDTIME}
 maxretry = ${FAIL2BAN_MAXRETRY}
 backend  = polling
@@ -24,6 +27,27 @@ enabled  = true
 filter   = postfix[mode=auth]
 port     = smtp,465,587
 logpath  = /var/log/mail/postfix.log
+
+[postfix-abuse]
+enabled  = true
+filter   = postfix[mode=aggressive]
+port     = smtp,465,587
+logpath  = /var/log/mail/postfix.log
+maxretry = ${FAIL2BAN_ABUSE_MAXRETRY}
+
+[postfix-postscreen]
+enabled  = true
+filter   = postscreen
+port     = smtp,465,587
+logpath  = /var/log/mail/postfix.log
+maxretry = ${FAIL2BAN_BOT_MAXRETRY}
+
+[dovecot-abuse]
+enabled  = true
+filter   = dovecot[mode=aggressive]
+port     = 993,143,110,995
+logpath  = /var/log/mail/dovecot.log
+maxretry = ${FAIL2BAN_ABUSE_MAXRETRY}
 
 [postfix-relay]
 enabled  = true
