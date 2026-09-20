@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- chore(tooling): the changelog goes through prettier on every commit, like the code, and the one line whose wildcards it would have rewritten is now code (20-09-2026)
+
 ## [2.0.0-rc.12] - 2026-09-20
 
 ### Added
@@ -88,7 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Authenticated submission on 465 and 587 goes through its own cleanup that drops the ESMTPSA Received header, so a recipient no longer sees the sender's private IP, home IP and provider _(postfix)_ [bd7bfd0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bd7bfd067b2bf9b5c4187c8d42aaea20fb832544) (16-09-2026)
 - The entrypoint gives the queue directories the owners, groups and modes postfix-files declares, instead of a recursive chown that took pid away from root and public and maildrop away from postdrop at every start _(postfix)_ [5b6f86b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/5b6f86bc2ca9f610c14fd9596477eb7fd1f39702) (16-09-2026)
 - The postfix main.cf no longer sets smtpd_use_tls, a deprecated parameter that smtpd_tls_security_level already overrides _(postfix)_ [e3f467d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e3f467dd1e70bfdaa4a90d80e1c7dd46a8bf8640) (16-09-2026)
-- The API token middleware binds to the named wildcard {*path}, the bare * made Nest warn about an unsupported /api/* route at every boot _(api)_ [b4b134f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b4b134fc43ba2859fa755c512b7e39f40b44f037) (16-09-2026)
+- The API token middleware binds to the named wildcard `{*path}`, the bare `*` made Nest warn about an unsupported `/api/*` route at every boot _(api)_ [b4b134f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b4b134fc43ba2859fa755c512b7e39f40b44f037) (16-09-2026)
 - The image moves to Alpine 3.24 and ClamAV 1.4.6, the 1.2.2 of Alpine 3.20 is reported outdated and heads for the end of signature updates _(clamav)_ [9582d79](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9582d79871b1bbcbc9ea7b197b432e28cb278702) (16-09-2026)
 - The collapsed sidebar footer narrows its padding so the account avatar is no longer cropped _(ui)_ [b700194](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/b7001941fd45a30b13d4741519c4de92b73015d6) (16-09-2026)
 
