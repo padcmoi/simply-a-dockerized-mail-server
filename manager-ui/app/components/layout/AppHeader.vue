@@ -7,7 +7,7 @@ const { t } = useI18n();
 const { items } = useBreadcrumb();
 const { y } = useWindowScroll();
 
-const hidden = shallowRef(false);
+const hidden = useHeadroom();
 
 watch(y, (now, before) => {
   if (now <= 0 || atBottom(now)) hidden.value = false;

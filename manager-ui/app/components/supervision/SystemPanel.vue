@@ -11,6 +11,15 @@
 const { t } = useI18n();
 const { snapshot, history, status, thresholds } = useSystemMetrics();
 
+// Where the top bar is: the panel's own header line sits under it and takes the
+// top of the window when it slides away.
+const headroom = useHeadroom();
+
+const { y } = useWindowScroll();
+
+const panel = useTemplateRef<HTMLElement>("panel");
+const line = useTemplateRef<HTMLElement>("line");
+
 const RANGE_STORAGE_KEY = "manager-supervision-range";
 
 // The window is the panel's, and this browser keeps it: a reader who watches
@@ -25,6 +34,13 @@ const stored = useLocalStorage<MetricRange>(RANGE_STORAGE_KEY, "minute", { initO
 // different moments side by side. It holds the drawing, not the feed, so the
 // header figures stay live and nothing is missing when it is lifted.
 const paused = ref(false);
+
+// Whether the header line has left its place and is riding the top of the
+// window, which is when it needs a ground of its own: over a chart, a line
+// wearing the page's own background is a line standing on nothing. Read from
+// the line against the panel it opens, so the offset it is pinned at, which
+// moves with the top bar, is never a number written here.
+const stuck = shallowRef(false);
 
 const range = computed<MetricRange>({
   get: () => (SUPERVISION_WINDOWS.includes(stored.value) ? stored.value : "minute"),
@@ -41,14 +57,33 @@ const countdown = computed(() => {
   return `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`;
 });
 
+watch(y, measure);
+
+function measure() {
+  const opening = panel.value?.getBoundingClientRect().top;
+  const here = line.value?.getBoundingClientRect().top;
+  stuck.value = opening !== undefined && here !== undefined && here - opening > 2;
+}
+
 function togglePause() {
   paused.value = !paused.value;
 }
+
+onMounted(measure);
 </script>
 
 <template>
-  <section class="space-y-3">
-    <div class="flex items-center justify-between gap-3">
+  <section ref="panel" class="space-y-3">
+    <!-- Pinned: the state of the feed, the alerts, the pause and the wait
+         before the next window are read against a card that is being scrolled,
+         and a row that has left the window is a row that has to be scrolled
+         back to. It rides under the top bar and takes its place the moment the
+         bar slides away, rather than the two of them sharing a strip. -->
+    <div
+      ref="line"
+      class="sticky z-30 -mx-4 flex items-center justify-between gap-3 px-4 py-2 transition-colors sm:-mx-6 sm:px-6 xl:-mx-8 xl:px-8"
+      :class="[headroom ? 'top-0' : 'top-(--ui-header-height)', stuck && 'border-b border-default bg-elevated shadow-sm']"
+    >
       <h3 class="flex items-center gap-2 text-sm font-medium">
         <UIcon name="i-lucide-activity" class="size-4 text-primary" />
         {{ t("supervision.machine") }}
