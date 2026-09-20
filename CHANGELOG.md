@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(supervision): the first refresh of a recorded window never waits longer than the window's own interval, the few seconds left for the newest bucket to be written shifting the whole cadence instead of being added to the next turn (20-09-2026)
 - fix(supervision): a refresh of the 1 h, 24 h and 7 days windows brings back the bucket of the moment it happens instead of stopping one column short of it, the window being asked for a few seconds past the turn, once the bucket that opened on it holds a recorded row (20-09-2026)
 - fix(fail2ban): a jail counts and lists the addresses it still bans, where every address it had ever banned in the past week was shown as banned, fail2ban keeping its rows until the database is swept (20-09-2026)
 - fix(supervision): the 1 h, 24 h and 7 days windows draw the highest figure every bucket holds instead of its mean, so a peak the machine really had reaches the chart, where one column of the 24 h window averaged ninety recorded rows and turned a load of 16 into 11 and a cpu of 65 % into 8 % against the quiet minutes around them (20-09-2026)

@@ -18,8 +18,13 @@ const REFRESH_MS = { hour: 60_000, day: 300_000, week: 1_800_000 };
 // newest point the recorder has.
 const SETTLE_MS = 12_000;
 
+// The settle shifts the whole grid rather than being added to the next turn:
+// added, a window opened in the first seconds of a minute would wait that
+// minute plus the settle, more than the interval it promises, and two refreshes
+// would sit further apart than one of its own points.
 function nextTurnOf(every: number) {
-  return Math.floor(Date.now() / every) * every + every + SETTLE_MS;
+  const settled = Date.now() - SETTLE_MS;
+  return Math.floor(settled / every) * every + every + SETTLE_MS;
 }
 
 /** The windows a card can be drawn over, in the order the tags read them. */
