@@ -15,6 +15,7 @@ export function useNotificationLabel() {
       actor: p.actor ?? t("notifications.someone"),
       status: p.status ? t(`tickets.status.${p.status}`) : "",
       percent: p.percent ?? 0,
+      hours: p.hours ?? 0,
     });
   }
 

@@ -15,6 +15,7 @@ export interface NotificationRow {
     /** Machine alerts: which figure went red, and how far it went. */
     metric?: string;
     percent?: number;
+    hours?: number;
   } | null;
   link: string | null;
   readAt: string | null;

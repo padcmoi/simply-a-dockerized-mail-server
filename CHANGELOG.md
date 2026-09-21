@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- fix(notifications): the stale antivirus signatures notification says how many hours old they are, where its title showed an empty gap in place of the figure (21-09-2026)
 - test(supervision): the history query is expected to add up the Postfix queues over each step, as it now does (21-09-2026)
 - fix(supervision): over an hour, a day and a week, each point of the Postfix card adds up every second of its step instead of keeping one ten-second row, so the curve and its tooltip say the same whole figure (21-09-2026)
 - fix(supervision): the antivirus card says the signatures were built so many hours ago, where the figure alone said nothing about what it measured (20-09-2026)
