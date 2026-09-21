@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
+import { WRITE_MS } from "./supervision-recorder.service";
 
 export const METRIC_RANGES = {
   hour: { span: 3_600_000, step: 60_000 },
@@ -83,10 +84,10 @@ const QUERY = `
          MAX(rspamd_add_header) AS rspamd_add_header,
          MAX(rspamd_reject) AS rspamd_reject,
          MAX(rspamd_learned) AS rspamd_learned,
-         MAX(postfix_active) AS postfix_active,
-         MAX(postfix_deferred) AS postfix_deferred,
-         MAX(postfix_hold) AS postfix_hold,
-         MAX(postfix_incoming) AS postfix_incoming,
+         ROUND(SUM(postfix_active) * ${WRITE_MS / 1000}) AS postfix_active,
+         ROUND(SUM(postfix_deferred) * ${WRITE_MS / 1000}) AS postfix_deferred,
+         ROUND(SUM(postfix_hold) * ${WRITE_MS / 1000}) AS postfix_hold,
+         ROUND(SUM(postfix_incoming) * ${WRITE_MS / 1000}) AS postfix_incoming,
          MAX(clamav_age) AS clamav_age
     FROM metrics_history
    WHERE at >= ?
