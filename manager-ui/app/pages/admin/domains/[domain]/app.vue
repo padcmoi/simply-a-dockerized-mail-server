@@ -42,6 +42,7 @@ const {
 const accordionItems = computed(() => [
   { label: t("domainDashboard.status.title"), icon: "i-lucide-power", slot: "status" as const },
   { label: t("domains.table.validity"), icon: "i-lucide-calendar-range", slot: "validity" as const },
+  { label: t("domainDashboard.spf.title"), icon: "i-lucide-send-horizontal", slot: "spf" as const },
   { label: t("domainDashboard.dkim.title"), icon: "i-lucide-key", slot: "dkim" as const },
   { label: t("domainDashboard.dmarc.title"), icon: "i-lucide-mail-search", slot: "dmarc" as const },
   { label: t("domainDashboard.owner.title"), icon: "i-lucide-crown", slot: "owner" as const },
@@ -78,6 +79,10 @@ watchEffect(() => {
 
       <template #validity>
         <DateRangeCard v-model="validity" saveable :saving="savingValidity" :can-save="canSaveValidity" @save="saveValidity" />
+      </template>
+
+      <template #spf>
+        <DomainSpfSection :domain-id="domain?.id ?? null" @copy="copyToClipboard" />
       </template>
 
       <template #dkim>

@@ -15,6 +15,22 @@ export default {
     title: "Top {count} boîtes par taux d'occupation",
     noData: "Aucune donnée de boîte",
   },
+  spf: {
+    title: "SPF",
+    loadFailed: "Impossible de préparer l'enregistrement SPF de ce domaine",
+    state: {
+      ok: "L'enregistrement SPF publié autorise ce serveur à envoyer pour le domaine",
+      notCovered: "L'enregistrement SPF publié n'autorise pas ce serveur ({ips}) à envoyer pour le domaine",
+      multiple: "Plusieurs enregistrements SPF sont publiés, ce qui fait échouer SPF : il ne doit en rester qu'un",
+      missing: "Aucun enregistrement SPF n'est publié pour ce domaine",
+    },
+    seeAdmin: "L'enregistrement à publier est dans la page Administration.",
+    recheck: "Revérifier le DNS",
+    hint: "Enregistrement TXT à publier sur le domaine lui-même. Il autorise {host} ({ips}) à envoyer pour ce domaine, en gardant les autres sources déjà publiées.",
+    noAddress: "{host} ne résout vers aucune adresse IPv4 : l'enregistrement ne peut pas encore autoriser ce serveur.",
+    published: "Publié aujourd'hui :",
+    notPublished: "Aucun enregistrement SPF publié pour ce domaine",
+  },
   dmarc: {
     title: "DMARC",
     loadFailed: "Impossible de préparer l'enregistrement DMARC de ce domaine",

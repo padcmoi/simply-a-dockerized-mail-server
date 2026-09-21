@@ -15,6 +15,22 @@ export default {
     title: "Top {count} mailboxes by occupancy rate",
     noData: "No mailbox data yet",
   },
+  spf: {
+    title: "SPF",
+    loadFailed: "The SPF record of this domain could not be prepared",
+    state: {
+      ok: "The published SPF record authorizes this server to send for the domain",
+      notCovered: "The published SPF record does not authorize this server ({ips}) to send for the domain",
+      multiple: "Several SPF records are published, which makes SPF fail: only one may remain",
+      missing: "No SPF record is published for this domain",
+    },
+    seeAdmin: "The record to publish is on the Administration page.",
+    recheck: "Check DNS again",
+    hint: "TXT record to publish on the domain itself. It authorizes {host} ({ips}) to send for this domain, keeping the other sources already published.",
+    noAddress: "{host} resolves to no IPv4 address: the record cannot authorize this server yet.",
+    published: "Published today:",
+    notPublished: "No SPF record published for this domain",
+  },
   dmarc: {
     title: "DMARC",
     loadFailed: "The DMARC record of this domain could not be prepared",

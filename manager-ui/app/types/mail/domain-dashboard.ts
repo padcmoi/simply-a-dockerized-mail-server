@@ -62,6 +62,17 @@ export interface DkimCheckResult {
   found: { value: string } | null;
 }
 
+export interface SpfRecord {
+  dnsName: string;
+  txtRecord: string;
+  mailHost: string;
+  ips: string[];
+  published: string | null;
+  multiple: boolean;
+  covered: boolean;
+  error: string | null;
+}
+
 export interface DomainDashboardData {
   domain: Domain | null;
   recipients: Recipient[];

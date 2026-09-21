@@ -1565,6 +1565,17 @@ export interface Locales {
       title: string;
       noData: string;
     };
+    spf: {
+      title: string;
+      loadFailed: string;
+      state: { ok: string; notCovered: string; multiple: string; missing: string };
+      seeAdmin: string;
+      recheck: string;
+      hint: string;
+      noAddress: string;
+      published: string;
+      notPublished: string;
+    };
     dmarc: {
       title: string;
       loadFailed: string;

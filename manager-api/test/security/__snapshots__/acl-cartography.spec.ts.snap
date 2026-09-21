@@ -100,6 +100,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "GET /api/v1/domains/:domainId/recipients/headroom  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:recipients[access,view-recipient-headroom]",
   "GET /api/v1/domains/:domainId/rspamd/history  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:rspamd[access,view-rspamd-history]",
   "GET /api/v1/domains/:domainId/rspamd/stats  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:rspamd[access,view-rspamd-stats]",
+  "GET /api/v1/domains/:domainId/spf-record  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] domain:admin[access,view-admin-page]",
   "GET /api/v1/domains/disk  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:domains[access,view-disk-usage]",
   "GET /api/v1/fail2ban/jails  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:fail2ban[access,view-fail2ban-jails]",
   "GET /api/v1/groups  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard,DomainPermissionGuard] global:groups[access,list-groups]",

@@ -14,6 +14,7 @@ import { DomainsDelegationsModule } from "./delegations/delegations.module";
 import { DomainsDkimModule } from "./dkim/dkim.module";
 import { DomainsDkimCheckModule } from "./dkim-check/dkim-check.module";
 import { DomainsDmarcRecordModule } from "./dmarc-record/dmarc-record.module";
+import { DomainsSpfRecordModule } from "./spf-record/spf-record.module";
 import { DomainsDeliverabilityModule } from "./deliverability/deliverability.module";
 import { DomainsController } from "./domains.controller";
 import { DomainsService } from "./domains.service";
@@ -34,6 +35,7 @@ import { DomainsRspamdModule } from "./rspamd/rspamd.module";
     DomainsDkimModule,
     DomainsDkimCheckModule,
     DomainsDmarcRecordModule,
+    DomainsSpfRecordModule,
     DomainsDeliverabilityModule,
     DomainsQuotasModule,
     DomainsRspamdModule,

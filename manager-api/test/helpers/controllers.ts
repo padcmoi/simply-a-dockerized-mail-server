@@ -16,6 +16,7 @@ import { AliasesController } from "../../src/api/domains/aliases/aliases.control
 import { DelegationsController } from "../../src/api/domains/delegations/delegations.controller";
 import { DkimCheckController } from "../../src/api/domains/dkim-check/dkim-check.controller";
 import { DmarcRecordController } from "../../src/api/domains/dmarc-record/dmarc-record.controller";
+import { SpfRecordController } from "../../src/api/domains/spf-record/spf-record.controller";
 import { DeliverabilityController } from "../../src/api/domains/deliverability/deliverability.controller";
 import { DkimController } from "../../src/api/domains/dkim/dkim.controller";
 import { DomainsController } from "../../src/api/domains/domains.controller";
@@ -61,6 +62,7 @@ export const ALL_CONTROLLERS = [
   DelegationsController,
   DkimCheckController,
   DmarcRecordController,
+  SpfRecordController,
   DeliverabilityController,
   DkimController,
   DomainsController,

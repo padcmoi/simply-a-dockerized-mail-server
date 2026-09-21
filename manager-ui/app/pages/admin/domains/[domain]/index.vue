@@ -101,6 +101,8 @@ watchEffect(() => {
             {{ domain.active ? $t("common.active") : $t("common.inactive") }}
           </UBadge>
 
+          <DomainSpfBadge v-if="canViewDmarc" :domain-id="domain.id" />
+
           <DomainDmarcBadge v-if="canViewDmarc" :domain-id="domain.id" />
 
           <UTooltip v-if="canViewAdmin && dkimCheck" :text="dkimStatusText">
