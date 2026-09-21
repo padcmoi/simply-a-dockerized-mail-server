@@ -7,13 +7,23 @@ import { Account } from "../entities/account.entity";
 import { Notification } from "../entities/notification.entity";
 import { NotificationPreference } from "../entities/notification-preference.entity";
 
-export const NOTIFICATION_SOURCES = ["support", "supervision"] as const;
+export const NOTIFICATION_SOURCES = ["support", "supervision", "clamav-stale", "clamav-unreachable"] as const;
 export type NotificationSource = (typeof NOTIFICATION_SOURCES)[number];
 
 export interface NotificationChannels {
   inApp: boolean;
   email: boolean;
 }
+
+const CLAMAV_STATUS = [
+  { resource: "clamav", action: "access" },
+  { resource: "clamav", action: "view-clamav-status" },
+];
+
+export const NOTIFICATION_SOURCE_PERMISSIONS: Partial<Record<NotificationSource, { resource: string; action: string }[]>> = {
+  "clamav-stale": CLAMAV_STATUS,
+  "clamav-unreachable": CLAMAV_STATUS,
+};
 
 export interface DispatchInput {
   accountIds: string[];
@@ -31,6 +41,8 @@ export interface DispatchInput {
 const DEFAULT_CHANNELS: Record<NotificationSource, NotificationChannels> = {
   support: { inApp: true, email: true },
   supervision: { inApp: false, email: false },
+  "clamav-stale": { inApp: false, email: false },
+  "clamav-unreachable": { inApp: false, email: false },
 };
 const FEED_LIMIT = 20;
 export const NOTIFICATION_SORTABLE_COLUMNS = ["createdAt", "source", "type", "readAt"] as const;

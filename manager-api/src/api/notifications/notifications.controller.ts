@@ -1,8 +1,14 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Query, Req } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, Param, ParseIntPipe, Post, Put, Query, Req } from "@nestjs/common";
 import type { Request } from "express";
 
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
-import { NotificationsService } from "../../core/notifications/notifications.service";
+import { CustomPermissionGuardService } from "../../core/custom-permission-guard/custom-permission-guard.service";
+import {
+  NOTIFICATION_SOURCE_PERMISSIONS,
+  NotificationsService,
+  type NotificationChannels,
+  type NotificationSource,
+} from "../../core/notifications/notifications.service";
 import {
   DeleteNotificationDocs,
   MarkNotificationUnreadDocs,
@@ -31,7 +37,29 @@ type AuthedRequest = Request & {
 @NotificationsApi()
 @Controller({ path: "notifications", version: "1" })
 export class NotificationsController {
-  constructor(private readonly svc: NotificationsService) {}
+  constructor(
+    private readonly svc: NotificationsService,
+    private readonly cpg: CustomPermissionGuardService
+  ) {}
+
+  private async allowedSources(user: AuthedRequest["user"]): Promise<(source: NotificationSource) => boolean> {
+    if (user.isRoot) return () => true;
+    const { global } = await this.cpg.guard.getEffectivePermissions(user.id);
+    return (source) =>
+      (NOTIFICATION_SOURCE_PERMISSIONS[source] ?? []).every((needed) =>
+        global.some((p) => p.resource === needed.resource && p.action === needed.action)
+      );
+  }
+
+  private async described(user: AuthedRequest["user"], preferences: Record<NotificationSource, NotificationChannels>) {
+    const allowed = await this.allowedSources(user);
+    return Object.fromEntries(
+      Object.entries(preferences).map(([source, channels]) => [
+        source,
+        { ...channels, allowed: allowed(source as NotificationSource) },
+      ])
+    );
+  }
 
   @Get()
   @ListNotificationsDocs()
@@ -47,14 +75,25 @@ export class NotificationsController {
 
   @Get("preferences")
   @GetNotificationPreferencesDocs()
-  preferences(@Req() req: AuthedRequest) {
-    return this.svc.preferencesFor(req.user.id);
+  async preferences(@Req() req: AuthedRequest) {
+    return this.described(req.user, await this.svc.preferencesFor(req.user.id));
   }
 
   @Put("preferences")
   @UpdateNotificationPreferencesDocs()
-  updatePreferences(@Req() req: AuthedRequest, @Body(new ZodValidationPipe(updatePreferenceSchema)) body: UpdatePreferenceDto) {
-    return this.svc.setPreference(req.user.id, body.source, { inApp: body.inApp, email: body.email });
+  async updatePreferences(
+    @Req() req: AuthedRequest,
+    @Body(new ZodValidationPipe(updatePreferenceSchema)) body: UpdatePreferenceDto
+  ) {
+    const current = await this.svc.channelsFor(req.user.id, body.source);
+    const enabling = (body.inApp && !current.inApp) || (body.email && !current.email);
+    if (enabling && !(await this.allowedSources(req.user))(body.source)) {
+      throw new ForbiddenException("You cannot turn on a source whose pages you have no access to");
+    }
+    return this.described(
+      req.user,
+      await this.svc.setPreference(req.user.id, body.source, { inApp: body.inApp, email: body.email })
+    );
   }
 
   @Post("read-all")

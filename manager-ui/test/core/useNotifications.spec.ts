@@ -164,4 +164,16 @@ describe("useNotificationPreferences", () => {
       body: { source: "support", inApp: false, email: true },
     });
   });
+
+  // The preferences come back with `allowed` on each source, and the route
+  // rejects any field it does not know: a row handed back as it was read must
+  // still send only the two channels.
+  it("sends only the two channels when handed a row read from the API", async () => {
+    const row = { inApp: true, email: false, allowed: true };
+    await useNotificationPreferences().save("clamav-stale", row);
+    expect(call).toHaveBeenCalledWith("/notifications/preferences", {
+      method: "PUT",
+      body: { source: "clamav-stale", inApp: true, email: false },
+    });
+  });
 });

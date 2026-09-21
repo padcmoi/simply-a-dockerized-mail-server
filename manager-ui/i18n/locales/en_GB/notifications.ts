@@ -48,11 +48,19 @@ export default {
     on: "On",
     off: "Off",
   },
-  source: { support: "Support", supervision: "Machine" },
+  source: {
+    support: "Support",
+    supervision: "Machine",
+    "clamav-stale": "Antivirus signatures",
+    "clamav-unreachable": "Antivirus unreachable",
+  },
   sourceHint: {
     support: "New tickets, replies, assignments and status changes, on the domains you have access to.",
     supervision:
       "Warn when one of the machine's figures goes red, the load per core or the memory. Nothing until you ask for it.",
+    "clamav-stale":
+      "Warn when the antivirus signatures are more than 24 h old, a sign that their updates no longer get through. Nothing until you ask for it.",
+    "clamav-unreachable": "Warn when the antivirus stops answering. Nothing until you ask for it.",
   },
   event: {
     "ticket-created": '{actor} opened the ticket "{subject}" on {domain}',

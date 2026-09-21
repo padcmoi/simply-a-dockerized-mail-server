@@ -562,8 +562,8 @@ export interface Locales {
     pageDescription: string;
     channel: { inApp: string; email: string };
     sound: { title: string; hint: string; on: string; off: string };
-    source: { support: string; supervision: string };
-    sourceHint: { support: string; supervision: string };
+    source: { support: string; supervision: string; "clamav-stale": string; "clamav-unreachable": string };
+    sourceHint: { support: string; supervision: string; "clamav-stale": string; "clamav-unreachable": string };
     event: {
       "ticket-created": string;
       "ticket-replied": string;

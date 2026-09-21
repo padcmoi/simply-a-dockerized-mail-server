@@ -4,7 +4,7 @@ import { useAuthStore } from "~/stores/auth";
 // Mirrors the API's own list, whose `GET /notifications/preferences` answers
 // with every source and the defaults it applies to each: the page reads its rows
 // from that answer, so this is a type and never a second catalogue.
-export const NOTIFICATION_SOURCES = ["support", "supervision"] as const;
+export const NOTIFICATION_SOURCES = ["support", "supervision", "clamav-stale", "clamav-unreachable"] as const;
 
 const EMPTY: NotificationFeed = { unread: 0, items: [] };
 
@@ -120,7 +120,7 @@ export function useNotificationPreferences() {
   function save(source: NotificationSource, channels: NotificationChannels) {
     return call<NotificationPreferences>("/notifications/preferences", {
       method: "PUT",
-      body: { source, ...channels },
+      body: { source, inApp: channels.inApp, email: channels.email },
     });
   }
 

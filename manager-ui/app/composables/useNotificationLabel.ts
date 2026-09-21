@@ -2,6 +2,8 @@
 const ICONS: Record<string, string> = {
   support: "i-lucide-life-buoy",
   supervision: "i-lucide-activity",
+  "clamav-stale": "i-lucide-bug",
+  "clamav-unreachable": "i-lucide-unplug",
 };
 
 export function useNotificationLabel() {

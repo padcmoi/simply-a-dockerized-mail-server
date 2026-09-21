@@ -8,6 +8,15 @@ const base = "/api/v1/notifications";
 
 type Method = "get" | "post" | "put" | "delete";
 
+type EffectiveMock = { getEffectivePermissions: ReturnType<typeof vi.fn> };
+const effective = (h: Harness) => h.cpg.guard as typeof h.cpg.guard & EffectiveMock;
+const CLAMAV_STATUS = [
+  { resource: "clamav", action: "access" },
+  { resource: "clamav", action: "view-clamav-status" },
+];
+const OFF = { inApp: false, email: false };
+const PREFERENCES = { support: { inApp: true, email: true }, supervision: OFF, "clamav-stale": OFF, "clamav-unreachable": OFF };
+
 describe("NotificationsController (e2e: auth + ownership)", () => {
   let h: Harness;
   const svc = {
@@ -15,6 +24,7 @@ describe("NotificationsController (e2e: auth + ownership)", () => {
     feed: vi.fn(),
     preferencesFor: vi.fn(),
     setPreference: vi.fn(),
+    channelsFor: vi.fn(),
     markRead: vi.fn(),
     markAllRead: vi.fn(),
     markUnread: vi.fn(),
@@ -32,6 +42,10 @@ describe("NotificationsController (e2e: auth + ownership)", () => {
   beforeEach(() => {
     h.cpg.reset();
     for (const fn of Object.values(svc)) fn.mockReset().mockResolvedValue({ unread: 0, items: [] });
+    svc.preferencesFor.mockResolvedValue(PREFERENCES);
+    svc.setPreference.mockResolvedValue(PREFERENCES);
+    svc.channelsFor.mockResolvedValue(OFF);
+    effective(h).getEffectivePermissions = vi.fn().mockResolvedValue({ global: [] });
   });
 
   const api = () => request(h.app.getHttpServer());
@@ -117,6 +131,72 @@ describe("NotificationsController (e2e: auth + ownership)", () => {
         .send({ source: "support", inApp: false, email: true })
         .expect(200);
       expect(svc.setPreference).toHaveBeenCalledWith(USER.id, "support", { inApp: false, email: true });
+    });
+  });
+
+  describe("sources gated by a permission", () => {
+    const put = (body: Record<string, unknown>) => api().put(`${base}/preferences`).set("Authorization", user()).send(body);
+
+    it("reports the antivirus sources as not allowed without the antivirus permissions", async () => {
+      const res = await call("get", `${base}/preferences`).set("Authorization", user()).expect(200);
+      expect(res.body["clamav-stale"]).toEqual({ ...OFF, allowed: false });
+      expect(res.body["clamav-unreachable"]).toEqual({ ...OFF, allowed: false });
+      expect(res.body.support).toEqual({ inApp: true, email: true, allowed: true });
+    });
+
+    it("reports them as allowed once both permissions are held", async () => {
+      effective(h).getEffectivePermissions.mockResolvedValue({ global: CLAMAV_STATUS });
+      const res = await call("get", `${base}/preferences`).set("Authorization", user()).expect(200);
+      expect(res.body["clamav-stale"].allowed).toBe(true);
+      expect(res.body["clamav-unreachable"].allowed).toBe(true);
+    });
+
+    it("reports them as not allowed when only one of the two permissions is held", async () => {
+      effective(h).getEffectivePermissions.mockResolvedValue({ global: [CLAMAV_STATUS[0]] });
+      const res = await call("get", `${base}/preferences`).set("Authorization", user()).expect(200);
+      expect(res.body["clamav-stale"].allowed).toBe(false);
+    });
+
+    it("lets root turn them on without asking the permission library", async () => {
+      await api()
+        .put(`${base}/preferences`)
+        .set("Authorization", `Bearer ${h.token(ROOT)}`)
+        .send({ source: "clamav-stale", inApp: true, email: false })
+        .expect(200);
+      expect(effective(h).getEffectivePermissions).not.toHaveBeenCalled();
+      expect(svc.setPreference).toHaveBeenCalledWith(ROOT.id, "clamav-stale", { inApp: true, email: false });
+    });
+
+    it("403 on turning one on without the permissions, and nothing is written", async () => {
+      await put({ source: "clamav-unreachable", inApp: true, email: false }).expect(403);
+      await put({ source: "clamav-unreachable", inApp: false, email: true }).expect(403);
+      expect(svc.setPreference).not.toHaveBeenCalled();
+    });
+
+    it("turns one on once the permissions are held", async () => {
+      effective(h).getEffectivePermissions.mockResolvedValue({ global: CLAMAV_STATUS });
+      await put({ source: "clamav-stale", inApp: true, email: true }).expect(200);
+      expect(svc.setPreference).toHaveBeenCalledWith(USER.id, "clamav-stale", { inApp: true, email: true });
+    });
+
+    // A permission lost after the box was ticked: the box stays as it was, and
+    // it can always be unticked.
+    it("lets an account that lost the permissions turn a channel off", async () => {
+      svc.channelsFor.mockResolvedValue({ inApp: true, email: true });
+      await put({ source: "clamav-stale", inApp: false, email: false }).expect(200);
+      expect(svc.setPreference).toHaveBeenCalledWith(USER.id, "clamav-stale", { inApp: false, email: false });
+    });
+
+    it("lets it keep a channel that was already on while turning the other off", async () => {
+      svc.channelsFor.mockResolvedValue({ inApp: true, email: true });
+      await put({ source: "clamav-stale", inApp: true, email: false }).expect(200);
+      expect(svc.setPreference).toHaveBeenCalledWith(USER.id, "clamav-stale", { inApp: true, email: false });
+    });
+
+    it("still refuses to turn on the channel that was off", async () => {
+      svc.channelsFor.mockResolvedValue({ inApp: true, email: false });
+      await put({ source: "clamav-stale", inApp: true, email: true }).expect(403);
+      expect(svc.setPreference).not.toHaveBeenCalled();
     });
   });
 

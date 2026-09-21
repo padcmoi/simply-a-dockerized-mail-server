@@ -32,4 +32,8 @@ export interface NotificationChannels {
   email: boolean;
 }
 
-export type NotificationPreferences = Record<NotificationSource, NotificationChannels>;
+export interface NotificationPreference extends NotificationChannels {
+  allowed: boolean;
+}
+
+export type NotificationPreferences = Record<NotificationSource, NotificationPreference>;

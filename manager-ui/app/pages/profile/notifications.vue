@@ -23,6 +23,8 @@ setBreadcrumb([{ label: t("layout.profile"), to: "/profile" }, { label: t("notif
 const ICONS: Record<string, string> = {
   support: "i-lucide-life-buoy",
   supervision: "i-lucide-activity",
+  "clamav-stale": "i-lucide-bug",
+  "clamav-unreachable": "i-lucide-unplug",
 };
 
 // A source whose pages nobody may open has nothing to offer: the machine's
@@ -130,13 +132,13 @@ async function update(source: NotificationSource, channel: "inApp" | "email", va
               <UCheckbox
                 :model-value="entry.channels.inApp"
                 :label="t('notifications.channel.inApp')"
-                :disabled="saving === entry.source"
+                :disabled="saving === entry.source || (!entry.channels.inApp && !entry.channels.allowed)"
                 @update:model-value="update(entry.source, 'inApp', $event === true)"
               />
               <UCheckbox
                 :model-value="entry.channels.email"
                 :label="t('notifications.channel.email')"
-                :disabled="saving === entry.source || !mailEnabled"
+                :disabled="saving === entry.source || !mailEnabled || (!entry.channels.email && !entry.channels.allowed)"
                 @update:model-value="update(entry.source, 'email', $event === true)"
               />
             </div>

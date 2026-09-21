@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- feat(notifications): the stale signatures and the unreachable antivirus each get their own row in the notification preferences, off by default, and only an account allowed to open the Antivirus page can turn them on while anyone can always turn them off (21-09-2026)
 - fix(notifications): the stale antivirus signatures notification says how many hours old they are, where its title showed an empty gap in place of the figure (21-09-2026)
 - test(supervision): the history query is expected to add up the Postfix queues over each step, as it now does (21-09-2026)
 - fix(supervision): over an hour, a day and a week, each point of the Postfix card adds up every second of its step instead of keeping one ten-second row, so the curve and its tooltip say the same whole figure (21-09-2026)

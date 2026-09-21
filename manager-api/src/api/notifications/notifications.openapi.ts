@@ -1,5 +1,5 @@
 import { applyDecorators } from "@nestjs/common";
-import { ApiOperation, ApiParam, ApiQuery, ApiSecurity, ApiTags } from "@nestjs/swagger";
+import { ApiForbiddenResponse, ApiOperation, ApiParam, ApiQuery, ApiSecurity, ApiTags } from "@nestjs/swagger";
 import { ApiPaginationQuery } from "../../core/common/pagination.openapi";
 import {
   NOTIFICATION_SEARCHABLE_COLUMNS,
@@ -64,7 +64,22 @@ export const PurgeNotificationsDocs = () =>
   );
 
 export const GetNotificationPreferencesDocs = () =>
-  applyDecorators(ApiOperation({ summary: "Read the caller's per-source notification channels" }));
+  applyDecorators(
+    ApiOperation({
+      summary: "Read the caller's per-source notification channels",
+      description:
+        "Each source carries `allowed`: whether the caller holds the permissions that source needs to be turned on. " +
+        "A channel already on stays on when the permissions are lost.",
+    })
+  );
 
 export const UpdateNotificationPreferencesDocs = () =>
-  applyDecorators(ApiOperation({ summary: "Enable or disable the in-app and email channels for one source" }));
+  applyDecorators(
+    ApiOperation({
+      summary: "Enable or disable the in-app and email channels for one source",
+      description:
+        "Turning a channel off is always accepted. Turning one on answers 403 when the caller lacks the permissions " +
+        "of that source, the ones `allowed` reports.",
+    }),
+    ApiForbiddenResponse({ description: "Turning on a source the caller holds no permission for" })
+  );

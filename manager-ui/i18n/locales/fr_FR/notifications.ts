@@ -48,11 +48,19 @@ export default {
     on: "Activé",
     off: "Désactivé",
   },
-  source: { support: "Support", supervision: "Machine" },
+  source: {
+    support: "Support",
+    supervision: "Machine",
+    "clamav-stale": "Signatures antivirus",
+    "clamav-unreachable": "Antivirus injoignable",
+  },
   sourceHint: {
     support: "Nouveaux tickets, réponses, prises en charge et changements de statut, sur les domaines auxquels vous avez accès.",
     supervision:
       "Avertir quand une des mesures de la machine passe au rouge, la charge par cœur ou la mémoire. Rien tant que vous ne le demandez pas.",
+    "clamav-stale":
+      "Avertir quand les signatures de l'antivirus ont plus de 24 h, signe que leurs mises à jour ne passent plus. Rien tant que vous ne le demandez pas.",
+    "clamav-unreachable": "Avertir quand l'antivirus cesse de répondre. Rien tant que vous ne le demandez pas.",
   },
   event: {
     "ticket-created": '{actor} a ouvert le ticket "{subject}" sur {domain}',

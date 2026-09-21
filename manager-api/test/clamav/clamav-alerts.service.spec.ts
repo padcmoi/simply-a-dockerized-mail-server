@@ -42,7 +42,7 @@ describe("ClamavAlertsService", () => {
 
     expect(dispatch).toHaveBeenCalledWith({
       accountIds: [ROOT, WATCHER],
-      source: "supervision",
+      source: "clamav-unreachable",
       type: "clamav-unreachable",
       payload: {},
       link: "/admin/clamav",
@@ -52,7 +52,9 @@ describe("ClamavAlertsService", () => {
   it("tells how old the signatures are once they are a day behind", async () => {
     await svc.inspect(stale, NOW);
 
-    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "clamav-stale", payload: { hours: 24 } }));
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "clamav-stale", type: "clamav-stale", payload: { hours: 24 } })
+    );
   });
 
   it("says nothing about signatures a minute short of a day", async () => {

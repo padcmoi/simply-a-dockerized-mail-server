@@ -52,6 +52,8 @@ describe("NotificationsService", () => {
       await expect(svc.preferencesFor(ALICE)).resolves.toEqual({
         support: { inApp: true, email: true },
         supervision: { inApp: false, email: false },
+        "clamav-stale": { inApp: false, email: false },
+        "clamav-unreachable": { inApp: false, email: false },
       });
     });
 

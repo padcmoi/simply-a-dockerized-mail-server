@@ -74,7 +74,7 @@ export class ClamavAlertsService {
     try {
       const accountIds = await this.recipients();
       if (!accountIds.length) return;
-      await this.notifications.dispatch({ accountIds, source: "supervision", type, payload, link: "/admin/clamav" });
+      await this.notifications.dispatch({ accountIds, source: type, type, payload, link: "/admin/clamav" });
     } catch (e) {
       // The loop that reads the scanner also records the machine: a
       // notification that cannot be written is a line in the log, never a
