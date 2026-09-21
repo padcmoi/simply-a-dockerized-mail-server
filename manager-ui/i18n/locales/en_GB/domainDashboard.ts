@@ -12,7 +12,7 @@ export default {
     unlimited: "Unlimited",
   },
   topMailboxes: {
-    title: "Top {count} mailboxes by size",
+    title: "Top {count} mailboxes by occupancy rate",
     noData: "No mailbox data yet",
   },
   dkim: {

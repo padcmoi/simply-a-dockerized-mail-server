@@ -12,7 +12,7 @@ export default {
     unlimited: "Illimité",
   },
   topMailboxes: {
-    title: "Top {count} boîtes par taille",
+    title: "Top {count} boîtes par taux d'occupation",
     noData: "Aucune donnée de boîte",
   },
   dkim: {
