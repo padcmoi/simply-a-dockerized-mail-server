@@ -229,6 +229,30 @@ describe("AccountsInvitationsService", () => {
       expect(m.invitations.create).toHaveBeenCalledWith(expect.objectContaining({ groupIds: JSON.stringify(["g1", "g2"]) }));
     });
 
+    it("refuses to stage the dmarc_reports mailbox for the new account", async () => {
+      m.invitations.findOne.mockResolvedValue(null);
+      m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });
+      m.recipients.findBy.mockResolvedValue([
+        { id: 3, domain: "example.com", email: "dmarc_reports@example.com", ownerId: null },
+      ]);
+      await expect(
+        svc.sendInvitation(
+          { id: "root-id", isRoot: true },
+          {
+            email: "new@x.com",
+            domainId: 1,
+            groupIds: [],
+            makeOwner: false,
+            recipientIds: [3],
+            aliasIds: [],
+            useDomainGroup: false,
+          },
+          BASE
+        )
+      ).rejects.toThrow("dmarc_reports@ cannot be assigned to an account");
+      expect(m.invitations.save).not.toHaveBeenCalled();
+    });
+
     it("throws NotFound when a chosen group does not exist", async () => {
       m.invitations.findOne.mockResolvedValue(null);
       m.domains.findOne.mockResolvedValue({ id: 1, domain: "example.com" });

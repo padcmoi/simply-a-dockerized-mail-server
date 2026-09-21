@@ -33,16 +33,14 @@ export function useRecipientEdit() {
 
   const recipientId = computed(() => Number(route.params.id));
   const listPath = computed(() => `/admin/domains/${domainFqdn.value}/recipients`);
-  const isPostmaster = computed(() => !!recipient.value?.email.toLowerCase().startsWith("postmaster@"));
+  const isReserved = computed(() => !!recipient.value?.reserved);
   const canAssignOwner = computed(
     () =>
-      !isPostmaster.value &&
-      !!domainId.value &&
-      (isRoot.value || hasDomain(domainId.value, "mailboxes", "assign-recipient-owner"))
+      !isReserved.value && !!domainId.value && (isRoot.value || hasDomain(domainId.value, "mailboxes", "assign-recipient-owner"))
   );
   const canUnassignOwner = computed(
     () =>
-      !isPostmaster.value &&
+      !isReserved.value &&
       !!domainId.value &&
       (isRoot.value || hasDomain(domainId.value, "mailboxes", "unassign-recipient-owner"))
   );
@@ -181,7 +179,7 @@ export function useRecipientEdit() {
     savingValidity,
     form,
     listPath,
-    isPostmaster,
+    isReserved,
     canAssignOwner,
     canUnassignOwner,
     floorMb,

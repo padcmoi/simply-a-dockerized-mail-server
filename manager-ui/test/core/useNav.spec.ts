@@ -97,6 +97,7 @@ describe("useNav global nav items", () => {
       "/admin/rspamd",
       "/admin/postfix",
       "/admin/sieve",
+      "/admin/dmarc",
       "/admin/accounts",
       "/admin/groups",
       "/admin/api-tokens",

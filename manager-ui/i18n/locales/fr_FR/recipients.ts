@@ -49,6 +49,10 @@ export default {
     badge: "Système",
     locked: "La boîte postmaster est gérée automatiquement et ne peut être ni modifiée, ni activée, ni supprimée",
   },
+  dmarcReports: {
+    locked:
+      "La boîte dmarc_reports reçoit les rapports DMARC des autres fournisseurs : gérée automatiquement, elle ne peut être ni modifiée, ni désactivée, ni supprimée. Un alias peut y mener ou en partir.",
+  },
   editPage: {
     button: "Modifier",
     title: "Modifier {email}",

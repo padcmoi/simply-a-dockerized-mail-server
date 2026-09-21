@@ -30,6 +30,7 @@ import { ActivityApiModule } from "./api/activity/activity.module";
 import { MailLogsApiModule } from "./api/mail-logs/mail-logs.module";
 import { ClamavApiModule } from "./api/clamav/clamav.module";
 import { Fail2banApiModule } from "./api/fail2ban/fail2ban.module";
+import { DmarcApiModule } from "./api/dmarc/dmarc.module";
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { Fail2banApiModule } from "./api/fail2ban/fail2ban.module";
     MailLogsApiModule,
     Fail2banApiModule,
     ClamavApiModule,
+    DmarcApiModule,
     ThemeApiModule,
     WebsocketModule,
   ],

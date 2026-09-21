@@ -20,8 +20,11 @@ if [ ! -s "$PSL" ] || [ "$(find "$PSL" -mtime +7 2>/dev/null)" ]; then
 		echo "warn: failed to fetch PSL, keeping existing copy" >&2
 fi
 
-: >"$DATA_DIR/opendmarc.dat"
-[ -f "$DATA_DIR/ignore.hosts" ] || : >"$DATA_DIR/ignore.hosts"
+[ -f "$DATA_DIR/opendmarc.dat" ] || : >"$DATA_DIR/opendmarc.dat"
+{
+	printf '%s\n' 127.0.0.1 ::1 172.200.0.0/24
+	[ -f "$DATA_DIR/ignore.hosts" ] && cat "$DATA_DIR/ignore.hosts"
+} >"$CONF_DIR/ignore.hosts"
 [ -f "$DATA_DIR/whitelist.domains" ] || : >"$DATA_DIR/whitelist.domains"
 
 mkdir -p /var/run/opendmarc

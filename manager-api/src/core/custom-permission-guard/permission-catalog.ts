@@ -117,6 +117,7 @@ export const GLOBAL_ACTIONS = {
   // The virus scanner. `view-clamav-status` covers what it runs and how old the
   // signatures it was given are, which is a reading, not a command.
   clamav: ["access", "view-clamav-status", "update-signatures", "reload-database"],
+  dmarc: ["access", "view-dmarc-reports", "send-dmarc-reports", "import-dmarc-reports", "manage-dmarc-settings"],
   superadmin: ["access", "resize-any-domain-quota", "delete-any-domain"],
 } as const;
 

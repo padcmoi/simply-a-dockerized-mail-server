@@ -15,6 +15,10 @@ export interface Locales {
       notFound: string;
       postmasterImmutable: string;
       postmasterUndeletable: string;
+      dmarcReportsReserved: string;
+      dmarcReportsUnassignable: string;
+      dmarcReportsImmutable: string;
+      dmarcReportsUndeletable: string;
       quotaBelowUsage: string;
       quotaExceedsDomain: string;
       windowReversed: string;
@@ -94,6 +98,7 @@ export interface Locales {
     mailLogs: string;
     fail2ban: string;
     clamav: string;
+    dmarc: string;
     sectionMail: string;
     sectionAccess: string;
     sectionSystem: string;
@@ -1052,6 +1057,9 @@ export interface Locales {
       badge: string;
       locked: string;
     };
+    dmarcReports: {
+      locked: string;
+    };
     editPage: {
       button: string;
       title: string;
@@ -1557,6 +1565,16 @@ export interface Locales {
       title: string;
       noData: string;
     };
+    dmarc: {
+      title: string;
+      loadFailed: string;
+      dnsMatch: string;
+      dnsMismatch: string;
+      recheck: string;
+      mailboxHint: string;
+      published: string;
+      notPublished: string;
+    };
     dkim: {
       title: string;
       noKey: string;
@@ -1874,6 +1892,7 @@ export interface Locales {
           supervision: string;
           fail2ban: string;
           clamav: string;
+          dmarc: string;
         };
         domain: {
           domain: string;
@@ -1977,6 +1996,13 @@ export interface Locales {
             "view-clamav-status": string;
             "update-signatures": string;
             "reload-database": string;
+          };
+          dmarc: {
+            access: string;
+            "view-dmarc-reports": string;
+            "send-dmarc-reports": string;
+            "import-dmarc-reports": string;
+            "manage-dmarc-settings": string;
           };
           fail2ban: {
             access: string;
@@ -2152,6 +2178,11 @@ export interface Locales {
     clamavBuilt: string;
     clamavOffline: string;
     clamavUnavailable: string;
+    dmarc: string;
+    dmarcEvaluated: string;
+    dmarcPass: string;
+    dmarcFail: string;
+    dmarcNoLive: string;
     services: string;
     rspamd: string;
     rspamdScanned: string;
@@ -2213,6 +2244,109 @@ export interface Locales {
       daily: string;
       bytecode: string;
       lastBuilt: string;
+    };
+  };
+  dmarc: {
+    title: string;
+    subtitle: string;
+    allDomains: string;
+    loadFailed: string;
+    sections: { overview: string; received: string; sent: string; inbox: string; settings: string };
+    overview: {
+      evaluations: string;
+      sent: string;
+      failed: string;
+      skipped: string;
+      received: string;
+      imported: string;
+      sendingOn: string;
+      sendingOff: string;
+      noInbox: string;
+      inboxes: string;
+      lastIngest: string;
+      lastRun: string;
+      lastScan: string;
+      never: string;
+      run: string;
+      scan: string;
+      runDone: string;
+      scanDone: string;
+      runFailed: string;
+      scanFailed: string;
+      domainsTitle: string;
+      domainsEmpty: string;
+      col: { domain: string; reports: string; reporters: string; messages: string; pass: string; dkim: string; spf: string };
+    };
+    received: {
+      empty: string;
+      col: { period: string; org: string; domain: string; messages: string; pass: string; received: string };
+    };
+    report: {
+      back: string;
+      download: string;
+      notFound: string;
+      sentBy: string;
+      period: string;
+      policy: string;
+      policyValue: string;
+      messages: string;
+      pass: string;
+      dkim: string;
+      spf: string;
+      rowsTitle: string;
+      col: {
+        ip: string;
+        count: string;
+        disposition: string;
+        dkim: string;
+        spf: string;
+        from: string;
+        envelope: string;
+        auth: string;
+      };
+    };
+    sent: {
+      empty: string;
+      allStatuses: string;
+      retry: string;
+      download: string;
+      retried: string;
+      retryFailed: string;
+      col: {
+        created: string;
+        reporter: string;
+        domain: string;
+        recipient: string;
+        period: string;
+        messages: string;
+        status: string;
+        attempts: string;
+      };
+    };
+    inbox: {
+      empty: string;
+      allStatuses: string;
+      col: { scanned: string; mailbox: string; sender: string; subject: string; status: string; reports: string };
+    };
+    outgoingStatus: { sent: string; failed: string; skipped: string };
+    inboxStatus: { imported: string; duplicate: string; "not-a-report": string; failed: string };
+    reason: { "too-large": string; "not-authorized": string };
+    verdict: { pass: string; fail: string };
+    disposition: { none: string; quarantine: string; reject: string };
+    settings: {
+      title: string;
+      sending: string;
+      sendingHint: string;
+      hour: string;
+      hourHint: string;
+      inboxes: string;
+      inboxesHint: string;
+      inboxesPlaceholder: string;
+      retention: string;
+      retentionHint: string;
+      save: string;
+      saved: string;
+      saveFailed: string;
     };
   };
   fail2ban: {

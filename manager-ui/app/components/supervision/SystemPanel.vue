@@ -10,6 +10,7 @@
 
 const { t } = useI18n();
 const { snapshot, history, status, thresholds } = useSystemMetrics();
+const { canView: canSeeDmarc } = useDmarcAccess();
 
 const RANGE_STORAGE_KEY = "manager-supervision-range";
 
@@ -137,6 +138,7 @@ function togglePause() {
         <PostfixQueueCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
         <Fail2banBansCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
         <ClamavSignaturesCard v-bind="{ snapshot, points, at, notice }" v-model:range="range" />
+        <DmarcEvaluationsCard v-if="canSeeDmarc" v-bind="{ points, at, notice }" v-model:range="range" />
       </div>
     </template>
   </section>

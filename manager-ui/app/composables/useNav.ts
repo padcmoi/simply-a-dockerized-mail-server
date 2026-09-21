@@ -79,6 +79,7 @@ export function useNav(onSignOut: () => Promise<void>) {
       ...entry("rspamd", "nav.rspamd", "i-lucide-shield", "/admin/rspamd"),
       ...entry("postfix", "nav.postfix", "i-lucide-send", "/admin/postfix"),
       ...entry("sieve", "nav.sieve", "i-lucide-filter", "/admin/sieve"),
+      ...entry("dmarc", "nav.dmarc", "i-lucide-mail-search", "/admin/dmarc", "view-dmarc-reports"),
     ]),
     ...section("access", "nav.sectionAccess", "i-lucide-shield-check", [
       ...entry("accounts", "nav.accounts", "i-lucide-user-cog", "/admin/accounts"),

@@ -20,7 +20,7 @@ const {
   savingValidity,
   form,
   listPath,
-  isPostmaster,
+  isReserved,
   canAssignOwner,
   canUnassignOwner,
   floorMb,
@@ -109,7 +109,7 @@ watchEffect(() => {
       </UForm>
 
       <div
-        v-if="recipient && domainId && !isPostmaster && (recipient.ownerEmail || canAssignOwner || canUnassignOwner)"
+        v-if="recipient && domainId && !isReserved && (recipient.ownerEmail || canAssignOwner || canUnassignOwner)"
         class="pt-4 mt-4 border-t border-default"
       >
         <MailboxOwnerField
@@ -134,7 +134,7 @@ watchEffect(() => {
     </UCard>
 
     <DateRangeCard
-      v-if="recipient && !isPostmaster"
+      v-if="recipient && !isReserved"
       v-model="form.validity"
       saveable
       :saving="savingValidity"
@@ -142,7 +142,7 @@ watchEffect(() => {
       @save="saveValidity"
     />
 
-    <UCard v-if="recipient && !isPostmaster">
+    <UCard v-if="recipient && !isReserved">
       <template #header>
         <h2 class="font-semibold flex items-center gap-1.5">
           <UIcon name="i-lucide-key-round" class="size-4 text-muted" />

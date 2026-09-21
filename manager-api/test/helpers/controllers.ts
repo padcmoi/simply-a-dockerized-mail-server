@@ -15,6 +15,7 @@ import { AdminDomainsController } from "../../src/api/domains/admin-domains/admi
 import { AliasesController } from "../../src/api/domains/aliases/aliases.controller";
 import { DelegationsController } from "../../src/api/domains/delegations/delegations.controller";
 import { DkimCheckController } from "../../src/api/domains/dkim-check/dkim-check.controller";
+import { DmarcRecordController } from "../../src/api/domains/dmarc-record/dmarc-record.controller";
 import { DeliverabilityController } from "../../src/api/domains/deliverability/deliverability.controller";
 import { DkimController } from "../../src/api/domains/dkim/dkim.controller";
 import { DomainsController } from "../../src/api/domains/domains.controller";
@@ -42,6 +43,7 @@ import { MfaController } from "../../src/core/auth/mfa/mfa.controller";
 import { ActivityController } from "../../src/api/activity/activity.controller";
 import { MailLogsController } from "../../src/api/mail-logs/mail-logs.controller";
 import { ClamavController } from "../../src/api/clamav/clamav.controller";
+import { DmarcController } from "../../src/api/dmarc/dmarc.controller";
 import { Fail2banController } from "../../src/api/fail2ban/fail2ban.controller";
 
 export const ALL_CONTROLLERS = [
@@ -58,6 +60,7 @@ export const ALL_CONTROLLERS = [
   AliasesController,
   DelegationsController,
   DkimCheckController,
+  DmarcRecordController,
   DeliverabilityController,
   DkimController,
   DomainsController,
@@ -86,4 +89,5 @@ export const ALL_CONTROLLERS = [
   MailLogsController,
   Fail2banController,
   ClamavController,
+  DmarcController,
 ] as const;

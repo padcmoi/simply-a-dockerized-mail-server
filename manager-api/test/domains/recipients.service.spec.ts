@@ -103,9 +103,20 @@ describe("RecipientsService", () => {
 
       expect(recipients.find).toHaveBeenCalledWith({ where: { domain: FQDN }, order: { email: "ASC" } });
       expect(res).toEqual([
-        { email: "a@example.com", usedBytes: "123" },
-        { email: "b@example.com", usedBytes: "0" },
+        { email: "a@example.com", usedBytes: "123", reserved: null },
+        { email: "b@example.com", usedBytes: "0", reserved: null },
       ]);
+    });
+
+    it("says which rows are the reserved mailboxes", async () => {
+      recipients.find.mockResolvedValue([
+        { email: `postmaster@${FQDN}` },
+        { email: `DMARC_reports@${FQDN}` },
+        { email: `dmarc_reports@other.test` },
+      ]);
+      recipientQuotas.find.mockResolvedValue([]);
+      const res = (await svc.list(FQDN, q())) as { reserved: string | null }[];
+      expect(res.map((row) => row.reserved)).toEqual(["postmaster", "dmarc_reports", null]);
     });
 
     it("skips the quota lookup entirely for an empty domain", async () => {
@@ -136,8 +147,8 @@ describe("RecipientsService", () => {
       expect(qb.take).toHaveBeenCalledWith(10);
       expect(res).toEqual({
         items: [
-          { id: 1, email: "a@example.com", usedBytes: "999", ownerEmail: "owner@example.com" },
-          { id: 2, email: "b@example.com", usedBytes: "0", ownerEmail: null },
+          { id: 1, email: "a@example.com", usedBytes: "999", ownerEmail: "owner@example.com", reserved: null },
+          { id: 2, email: "b@example.com", usedBytes: "0", ownerEmail: null, reserved: null },
         ],
         total: 2,
       });
@@ -253,6 +264,13 @@ describe("RecipientsService", () => {
       expect(recipients.save).not.toHaveBeenCalled();
     });
 
+    it("409s when the local-part is dmarc_reports (case-insensitive, reserved)", async () => {
+      const e = await rejection(svc.create(dto({ localPart: "DMARC_Reports" }), FQDN));
+      expect((e as ApiError).getStatus()).toBe(409);
+      expect((e as ApiError).getResponse()).toMatchObject({ code: "recipients.dmarcReportsReserved" });
+      expect(recipients.save).not.toHaveBeenCalled();
+    });
+
     it("409s on a duplicate address", async () => {
       recipients.findOne.mockResolvedValue({ id: 9 });
       const e = await rejection(svc.create(dto(), FQDN));
@@ -339,6 +357,14 @@ describe("RecipientsService", () => {
       expect(recipients.save).not.toHaveBeenCalled();
     });
 
+    it("403s (dmarcReportsImmutable) for dmarc_reports@<domain>", async () => {
+      recipients.findOne.mockResolvedValue(current({ email: `dmarc_reports@${FQDN}` }));
+      const e = await rejection(svc.update(5, { active: false }, FQDN));
+      expect((e as ApiError).getStatus()).toBe(403);
+      expect((e as ApiError).getResponse()).toMatchObject({ code: "recipients.dmarcReportsImmutable" });
+      expect(recipients.save).not.toHaveBeenCalled();
+    });
+
     it("400s (quotaBelowUsage) when the new quota is under what the mailbox already stores", async () => {
       recipients.findOne.mockResolvedValue(current({ quota: "104857600" }));
       recipientQuotas.findOne.mockResolvedValue({ bytes: "5000000" }); // ~5 MB used
@@ -411,6 +437,19 @@ describe("RecipientsService", () => {
   });
 
   describe("remove", () => {
+    it("403s (dmarcReportsUndeletable) for dmarc_reports@<domain>", async () => {
+      recipients.findOne.mockResolvedValue({ id: 1, email: `dmarc_reports@${FQDN}`, maildir: `${FQDN}/dmarc_reports/` });
+      const e = await rejection(svc.remove(1, FQDN));
+      expect((e as ApiError).getStatus()).toBe(403);
+      expect((e as ApiError).getResponse()).toMatchObject({ code: "recipients.dmarcReportsUndeletable" });
+      expect(storage.removeRecipient).not.toHaveBeenCalled();
+    });
+
+    it("lets a look-alike address that is not the reserved one be deleted", async () => {
+      recipients.findOne.mockResolvedValue({ id: 2, email: `dmarc_reports_old@${FQDN}`, maildir: `${FQDN}/dmarc_reports_old/` });
+      await expect(svc.remove(2, FQDN)).resolves.toEqual({ ok: true });
+    });
+
     it("403s (postmasterUndeletable) for postmaster@<domain>", async () => {
       recipients.findOne.mockResolvedValue({ id: 1, email: `postmaster@${FQDN}`, maildir: `${FQDN}/postmaster/` });
       const e = await rejection(svc.remove(1, FQDN));
@@ -462,6 +501,14 @@ describe("RecipientsService", () => {
       expect((e as ApiError).getResponse()).toMatchObject({ code: "recipients.postmasterUnassignable" });
       expect(accounts.findOne).not.toHaveBeenCalled();
       expect(recipients.save).not.toHaveBeenCalled();
+    });
+
+    it("403s (dmarcReportsUnassignable) and never touches accounts for the dmarc_reports mailbox", async () => {
+      recipients.findOne.mockResolvedValue({ id: 9, domain: FQDN, ownerId: null, email: `dmarc_reports@${FQDN}` });
+      const e = await rejection(svc.assignOwner(9, FQDN, "acc-1"));
+      expect((e as ApiError).getStatus()).toBe(403);
+      expect((e as ApiError).getResponse()).toMatchObject({ code: "recipients.dmarcReportsUnassignable" });
+      expect(accounts.findOne).not.toHaveBeenCalled();
     });
 
     it("404s when the target account does not exist", async () => {

@@ -76,6 +76,10 @@ export default {
     fail2ban_unbanned: "Ban levé",
     clamav_updated: "Signatures antivirus mises à jour",
     clamav_reloaded: "Bases antivirus rechargées",
+    "dmarc_settings-updated": "Réglages DMARC modifiés",
+    "dmarc_reports-sent": "Rapports DMARC envoyés",
+    "dmarc_report-retried": "Rapport DMARC renvoyé",
+    "dmarc_inbox-scanned": "Boîtes de rapports DMARC lues",
   },
   event: {
     auth_login: "S'est connecté",
@@ -118,5 +122,9 @@ export default {
     fail2ban_unbanned: "A levé le ban de l'adresse {label} dans la prison {jail}",
     clamav_updated: "A demandé la mise à jour des signatures antivirus",
     clamav_reloaded: "A fait recharger les bases de signatures antivirus",
+    "dmarc_settings-updated": "A modifié les réglages des rapports DMARC",
+    "dmarc_reports-sent": "A lancé l'envoi des rapports DMARC",
+    "dmarc_report-retried": "A renvoyé le rapport DMARC destiné à {label}",
+    "dmarc_inbox-scanned": "A lancé la lecture des boîtes de rapports DMARC",
   },
 } satisfies Locales["activity"];

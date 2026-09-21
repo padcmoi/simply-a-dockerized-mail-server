@@ -15,6 +15,18 @@ export default {
     title: "Top {count} mailboxes by occupancy rate",
     noData: "No mailbox data yet",
   },
+  dmarc: {
+    title: "DMARC",
+    loadFailed: "The DMARC record of this domain could not be prepared",
+    dnsMatch: "The published DMARC record sends its reports to the domain's reserved mailbox",
+    dnsMismatch:
+      "The published DMARC record does not send its reports to the domain's reserved mailbox: publish the record below",
+    recheck: "Check DNS again",
+    mailboxHint:
+      "TXT record to publish at this name. The reports other providers send will arrive in {mailbox}, a reserved mailbox the DMARC reports page reads automatically.",
+    published: "Published today:",
+    notPublished: "No DMARC record is published for this domain",
+  },
   dkim: {
     title: "DKIM keys",
     noKey: "No DKIM key configured",

@@ -75,6 +75,10 @@ export default {
     fail2ban_unbanned: "Ban lifted",
     clamav_updated: "Antivirus signatures updated",
     clamav_reloaded: "Antivirus databases reloaded",
+    "dmarc_settings-updated": "DMARC settings changed",
+    "dmarc_reports-sent": "DMARC reports sent",
+    "dmarc_report-retried": "DMARC report sent again",
+    "dmarc_inbox-scanned": "DMARC report inboxes read",
   },
   event: {
     auth_login: "Signed in",
@@ -117,5 +121,9 @@ export default {
     fail2ban_unbanned: "Lifted the ban of the address {label} in the {jail} jail",
     clamav_updated: "Asked for the antivirus signatures to be updated",
     clamav_reloaded: "Had the antivirus signature databases reloaded",
+    "dmarc_settings-updated": "Changed the DMARC report settings",
+    "dmarc_reports-sent": "Started sending the DMARC reports",
+    "dmarc_report-retried": "Sent the DMARC report for {label} again",
+    "dmarc_inbox-scanned": "Started reading the DMARC report inboxes",
   },
 } satisfies Locales["activity"];

@@ -29,6 +29,8 @@ export interface MetricPoint {
   fail2ban: Record<string, number> | null;
   /** Oldest the newest signature database was over the bucket, in seconds. */
   clamavAge: number | null;
+  /** Messages OpenDMARC evaluated over the bucket: aligned on DKIM or SPF, then aligned on neither. */
+  dmarc: [number, number] | null;
 }
 
 type Figure = number | string | null;
@@ -103,6 +105,22 @@ GROUP BY 1, jail
 ORDER BY 1
 `;
 
+const DMARC_QUERY = `
+  SELECT FLOOR(received_at / ?) * ? AS at,
+         SUM(dkim_aligned = 'pass' OR spf_aligned = 'pass') AS pass,
+         SUM(dkim_aligned <> 'pass' AND spf_aligned <> 'pass') AS fail
+    FROM dmarc_evaluations
+   WHERE received_at >= ?
+GROUP BY 1
+ORDER BY 1
+`;
+
+interface DmarcBucket {
+  at: number | string;
+  pass: number | string | null;
+  fail: number | string | null;
+}
+
 interface BanBucket {
   at: number | string;
   jail: string;
@@ -126,10 +144,14 @@ export class SupervisionHistoryService {
     const now = Date.now();
     const since = now - window.span;
 
-    const [rows, banRows] = (await Promise.all([
+    const [rows, banRows, dmarcRows] = (await Promise.all([
       this.dataSource.query(QUERY, [window.step, window.step, since]),
       this.dataSource.query(BANS_QUERY, [window.step, window.step, since]),
-    ])) as [Bucket[], BanBucket[]];
+      this.dataSource.query(DMARC_QUERY, [window.step, window.step, since]),
+    ])) as [Bucket[], BanBucket[], DmarcBucket[]];
+    const evaluated = new Map(
+      (dmarcRows ?? []).map((row) => [Number(row.at), [Number(row.pass ?? 0), Number(row.fail ?? 0)] as [number, number]])
+    );
     const recorded = new Map(rows.map((row) => [Number(row.at), row]));
     const bans = new Map<number, Record<string, number>>();
     for (const row of banRows) {
@@ -148,6 +170,7 @@ export class SupervisionHistoryService {
       const at = first + index * window.step;
       const row = recorded.get(at);
       const fail2ban = bans.get(at) ?? null;
+      const dmarc = evaluated.get(at) ?? (row ? ([0, 0] as [number, number]) : null);
       if (!row)
         return {
           at,
@@ -160,6 +183,7 @@ export class SupervisionHistoryService {
           postfix: null,
           fail2ban,
           clamavAge: null,
+          dmarc,
         };
 
       const total = Number(row.memory_total);
@@ -186,6 +210,7 @@ export class SupervisionHistoryService {
         ),
         fail2ban,
         clamavAge: row.clamav_age === null ? null : Number(row.clamav_age),
+        dmarc,
       };
     });
 
@@ -198,7 +223,7 @@ export class SupervisionHistoryService {
     // measured in, and a window with nothing at all keeps its whole grid so the
     // axis still says how long it covers.
     const open = points[points.length - 1];
-    if (points.length > 1 && open && nothing(open) && (recorded.size > 0 || bans.size > 0)) points.pop();
+    if (points.length > 1 && open && nothing(open) && (recorded.size > 0 || bans.size > 0 || evaluated.size > 0)) points.pop();
 
     return { range, step: window.step, points };
   }
@@ -214,6 +239,7 @@ function nothing(point: MetricPoint) {
     point.rspamd === null &&
     point.postfix === null &&
     point.fail2ban === null &&
-    point.clamavAge === null
+    point.clamavAge === null &&
+    point.dmarc === null
   );
 }

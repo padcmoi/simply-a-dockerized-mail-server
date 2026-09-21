@@ -53,6 +53,8 @@ export interface HistoryPoint {
   fail2ban: Record<string, number> | null;
   /** How old the newest signature database was at the point, in seconds. */
   clamavAge: number | null;
+  /** Messages OpenDMARC evaluated over the point: aligned, then not. Absent from the live minute. */
+  dmarc?: [number, number] | null;
 }
 
 export type MetricsStatus = "connecting" | "live" | "offline";

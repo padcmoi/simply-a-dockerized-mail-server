@@ -12,6 +12,10 @@ export default {
     notFound: "Le destinataire #{id} n'existe plus dans {domain}",
     postmasterImmutable: "La boîte postmaster est gérée automatiquement et ne peut pas être modifiée",
     postmasterUndeletable: "La boîte postmaster est gérée automatiquement et ne peut pas être supprimée",
+    dmarcReportsReserved: "dmarc_reports{'@'} est réservé et provisionné automatiquement pour chaque domaine",
+    dmarcReportsUnassignable: "La boîte dmarc_reports ne peut pas être attribuée à un compte",
+    dmarcReportsImmutable: "La boîte dmarc_reports est gérée automatiquement et ne peut pas être modifiée",
+    dmarcReportsUndeletable: "La boîte dmarc_reports est gérée automatiquement et ne peut pas être supprimée",
     quotaBelowUsage: "Le quota ne peut pas descendre sous les {usedMb} Mo déjà occupés par {email}",
     quotaExceedsDomain:
       "Il ne reste que {availableMb} Mo sur {domain} : son quota est de {domainQuotaMb} Mo, dont {allocatedMb} Mo déjà attribués à ses autres destinataires",

@@ -1,3 +1,5 @@
+export type ReservedMailbox = "postmaster" | "dmarc_reports";
+
 // A mailbox, in the shapes the API answers with.
 
 // The administration list's row: quota and usage plus the edit stamp.
@@ -18,6 +20,7 @@ export interface RecipientRow {
   // stamps the row's last edit, not mail traffic. Postfix-legacy name, kept.
   lastActivity: string | null;
   createdAt: string;
+  reserved: ReservedMailbox | null;
 }
 
 // What the edit page loads: no activity stamp, but the owner it can hand over.
@@ -32,6 +35,7 @@ export interface RecipientDetail {
   lastActivity: string | null;
   userStartDate: string | null;
   userEndDate: string | null;
+  reserved: ReservedMailbox | null;
 }
 
 // What an account owns, from the admin account detail and the profile.

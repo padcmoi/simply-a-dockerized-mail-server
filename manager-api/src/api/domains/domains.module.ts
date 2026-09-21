@@ -13,6 +13,7 @@ import { DomainsAliasesModule } from "./aliases/aliases.module";
 import { DomainsDelegationsModule } from "./delegations/delegations.module";
 import { DomainsDkimModule } from "./dkim/dkim.module";
 import { DomainsDkimCheckModule } from "./dkim-check/dkim-check.module";
+import { DomainsDmarcRecordModule } from "./dmarc-record/dmarc-record.module";
 import { DomainsDeliverabilityModule } from "./deliverability/deliverability.module";
 import { DomainsController } from "./domains.controller";
 import { DomainsService } from "./domains.service";
@@ -32,6 +33,7 @@ import { DomainsRspamdModule } from "./rspamd/rspamd.module";
     DomainsDelegationsModule,
     DomainsDkimModule,
     DomainsDkimCheckModule,
+    DomainsDmarcRecordModule,
     DomainsDeliverabilityModule,
     DomainsQuotasModule,
     DomainsRspamdModule,

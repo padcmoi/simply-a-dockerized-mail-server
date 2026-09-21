@@ -47,6 +47,12 @@ export default {
   clamavBuilt: "construites il y a {n} h",
   clamavOffline: "Moteur injoignable",
   clamavUnavailable: "Les signatures antivirus sont illisibles",
+  dmarc: "DMARC",
+  dmarcEvaluated: "{n} messages évalués",
+  dmarcPass: "Conformes",
+  dmarcFail: "Non conformes",
+  dmarcNoLive:
+    "Pas de vue minute pour DMARC : les évaluations d'OpenDMARC sont relues une fois par minute, la dernière minute serait toujours vide. Choisissez 1 h, 24 h ou 7 jours.",
   fail2banBanned: "{n} adresses bannies",
   fail2banUnavailable: "Fail2ban est hors de portée depuis ce conteneur",
   services: "Services",

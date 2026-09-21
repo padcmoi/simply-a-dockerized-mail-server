@@ -8,6 +8,7 @@ import { resolveSortColumn, type PaginationQuery } from "../../core/common/pagin
 import { AuditLogService } from "../../core/audit/audit-log.service";
 import { sha512crypt } from "../../core/common/sha512-crypt";
 import { DkimKey, DkimService } from "../../core/dkim/dkim.service";
+import { ensureDmarcReportsMailbox } from "../../core/dmarc/dmarc-mailbox";
 import { MailStorageService } from "../../core/mail-storage/mail-storage.service";
 import { Account } from "../../core/entities/account.entity";
 import { VirtualDomain } from "../../core/entities/virtual-domain.entity";
@@ -163,6 +164,7 @@ export class DomainsService {
         userEndDate: input.userEndDate ?? null,
       });
       await this.reservePostmaster(manager, domain.domain);
+      await ensureDmarcReportsMailbox(manager, domain.domain);
       return domain;
     });
     let dkim: DkimKey | null = null;

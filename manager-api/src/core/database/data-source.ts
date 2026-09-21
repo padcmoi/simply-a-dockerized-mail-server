@@ -35,6 +35,11 @@ import { Fail2banHistory } from "../entities/fail2ban-history.entity";
 import { GeoipCache } from "../entities/geoip-cache.entity";
 import { AccountNetwork } from "../entities/account-network.entity";
 import { AccountAddress } from "../entities/account-address.entity";
+import { DmarcEvaluation } from "../entities/dmarc-evaluation.entity";
+import { DmarcOutgoingReport } from "../entities/dmarc-outgoing-report.entity";
+import { DmarcIncomingReport } from "../entities/dmarc-incoming-report.entity";
+import { DmarcIncomingRecord } from "../entities/dmarc-incoming-record.entity";
+import { DmarcInboxMessage } from "../entities/dmarc-inbox-message.entity";
 
 // Stand-alone DataSource used exclusively by the TypeORM CLI (migration:generate,
 // migration:run, migration:revert, migration:show). The Nest runtime keeps its
@@ -97,6 +102,11 @@ export default new DataSource({
     GeoipCache,
     AccountNetwork,
     AccountAddress,
+    DmarcEvaluation,
+    DmarcOutgoingReport,
+    DmarcIncomingReport,
+    DmarcIncomingRecord,
+    DmarcInboxMessage,
   ],
   migrations: ["src/core/database/migrations/*.ts"],
   migrationsTableName: "migrations",

@@ -596,6 +596,8 @@ describe("AccountsService", () => {
 
       expect(page.andWhere).toHaveBeenCalledWith("r.email LIKE :s", { s: "%free%" });
       expect(page.take).toHaveBeenCalledWith(25);
+      expect(disc.andWhere).toHaveBeenCalledWith("LOWER(x.email) NOT LIKE 'dmarc\\_reports@%'");
+      expect(page.andWhere).toHaveBeenCalledWith("LOWER(r.email) NOT LIKE 'dmarc\\_reports@%'");
       expect(res.domains).toEqual([{ id: 5, domain: "ex.com" }]);
       expect(res.items).toEqual([{ id: 1, email: "free@ex.com", domain: "ex.com", domainId: 5 }]);
     });
@@ -679,6 +681,17 @@ describe("AccountsService", () => {
       m.accounts.findOne.mockResolvedValue({ id: "a1" });
       m.virtualUsers.findOne.mockResolvedValue(null);
       await expect(svc.attachRecipient("a1", 1)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it("forbids assigning the dmarc_reports mailbox", async () => {
+      m.accounts.findOne.mockResolvedValue({ id: "a1" });
+      m.virtualUsers.findOne.mockResolvedValue({ id: 1, email: "DMARC_reports@ex.com", ownerId: null });
+
+      const err = await svc.attachRecipient("a1", 1).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(ApiError);
+      if (err instanceof ApiError) expect(err.getResponse()).toMatchObject({ code: "recipients.dmarcReportsUnassignable" });
+      expect(m.virtualUsers.save).not.toHaveBeenCalled();
     });
 
     it("forbids assigning a postmaster mailbox", async () => {

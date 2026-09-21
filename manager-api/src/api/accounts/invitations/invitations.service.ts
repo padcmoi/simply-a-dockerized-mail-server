@@ -72,6 +72,8 @@ export class AccountsInvitationsService {
     if (rows.some((r) => r.domain !== domain)) throw new BadRequestException("A recipient does not belong to the chosen domain");
     if (rows.some((r) => r.email.toLowerCase().startsWith("postmaster@")))
       throw new BadRequestException("postmaster@ cannot be assigned to an account");
+    if (rows.some((r) => r.email.toLowerCase().startsWith("dmarc_reports@")))
+      throw new BadRequestException("dmarc_reports@ cannot be assigned to an account");
     if (rows.some((r) => r.ownerId)) throw new ConflictException("A recipient is already assigned to an account");
   }
 

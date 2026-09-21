@@ -42,6 +42,7 @@ describe("SupervisionHistoryService", () => {
   let query: ReturnType<typeof vi.fn>;
   let rows: unknown[];
   let banRows: unknown[];
+  let dmarcRows: unknown[];
   let service: SupervisionHistoryService;
 
   beforeEach(() => {
@@ -49,7 +50,10 @@ describe("SupervisionHistoryService", () => {
     vi.setSystemTime(NOW);
     rows = [];
     banRows = [];
-    query = vi.fn(async (sql: string) => (sql.includes("fail2ban_history") ? banRows : rows));
+    dmarcRows = [];
+    query = vi.fn(async (sql: string) =>
+      sql.includes("fail2ban_history") ? banRows : sql.includes("dmarc_evaluations") ? dmarcRows : rows
+    );
     service = new SupervisionHistoryService(providerMock<DataSource>({ query }));
   });
   afterEach(() => vi.useRealTimers());
@@ -115,6 +119,7 @@ describe("SupervisionHistoryService", () => {
       postfix: null,
       fail2ban: null,
       clamavAge: null,
+      dmarc: null,
     });
     expect(points[1]).toEqual({
       at: at + step,
@@ -127,6 +132,7 @@ describe("SupervisionHistoryService", () => {
       postfix: POSTFIX,
       fail2ban: null,
       clamavAge: 32400,
+      dmarc: [0, 0],
     });
   });
 
@@ -161,7 +167,27 @@ describe("SupervisionHistoryService", () => {
       postfix: POSTFIX,
       fail2ban: null,
       clamavAge: 32400,
+      dmarc: [0, 0],
     });
+  });
+
+  it("counts the messages OpenDMARC evaluated in each bucket, even one the recorder missed", async () => {
+    const step = METRIC_RANGES.hour.step;
+    const at = Math.floor((NOW - METRIC_RANGES.hour.span) / step) * step;
+    rows = [bucket(at + step)];
+    dmarcRows = [
+      { at: String(at), pass: "7", fail: "2" },
+      { at: at + step, pass: null, fail: 1 },
+    ];
+
+    const { points } = await service.read("hour");
+    expect(points[0]?.dmarc).toEqual([7, 2]);
+    expect(points[0]?.cpu).toBeNull();
+    expect(points[1]?.dmarc).toEqual([0, 1]);
+    expect(points[2]?.dmarc).toBeNull();
+    const [sql, params] = query.mock.calls[2] as [string, unknown[]];
+    expect(sql).toContain("FROM dmarc_evaluations");
+    expect(params).toEqual([step, step, NOW - METRIC_RANGES.hour.span]);
   });
 
   // A service's figures stand or fall together: one missing is the service out

@@ -43,6 +43,7 @@ const accordionItems = computed(() => [
   { label: t("domainDashboard.status.title"), icon: "i-lucide-power", slot: "status" as const },
   { label: t("domains.table.validity"), icon: "i-lucide-calendar-range", slot: "validity" as const },
   { label: t("domainDashboard.dkim.title"), icon: "i-lucide-key", slot: "dkim" as const },
+  { label: t("domainDashboard.dmarc.title"), icon: "i-lucide-mail-search", slot: "dmarc" as const },
   { label: t("domainDashboard.owner.title"), icon: "i-lucide-crown", slot: "owner" as const },
 ]);
 
@@ -88,6 +89,10 @@ watchEffect(() => {
           @delete="deleteDkim"
           @copy="copyToClipboard"
         />
+      </template>
+
+      <template #dmarc>
+        <DomainDmarcSection :domain-id="domain?.id ?? null" @copy="copyToClipboard" />
       </template>
 
       <template #owner>

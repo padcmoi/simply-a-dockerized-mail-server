@@ -21,6 +21,10 @@ services:
       CLAMAV_HOST: 172.200.0.12
       CLAMAV_PORT: 3310
       CLAMAV_API_URL: http://172.200.0.12:8082
+      DMARC_HISTORY_PATH: /var/lib/opendmarc/opendmarc.dat
+      DMARC_PSL_PATH: /var/lib/opendmarc/public_suffix_list.dat
+      DMARC_SMTP_HOST: 172.200.0.17
+      DMARC_SMTP_PORT: 25
     volumes:
       # Read-write, see manager-api.yml.
       - ${VOLUMES_PATH}/mail:/var/mail
@@ -30,6 +34,7 @@ services:
       # The signature files carry their own version and build date in their
       # header, which is what the Clamav page reads them for.
       - ${VOLUMES_PATH}/clamav:/var/lib/clamav:ro
+      - ${VOLUMES_PATH}/opendmarc:/var/lib/opendmarc
       # The machine cards read /proc. Docker does not namespace /proc/stat,
       # /proc/loadavg or /proc/meminfo, so those are the host's own figures
       # already, but /proc/net IS namespaced: without the host's own /proc

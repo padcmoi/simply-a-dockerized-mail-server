@@ -49,6 +49,10 @@ export default {
     badge: "System",
     locked: "The postmaster mailbox is managed automatically and cannot be edited, activated or deleted",
   },
+  dmarcReports: {
+    locked:
+      "The dmarc_reports mailbox receives the DMARC reports other providers send: managed automatically, it cannot be edited, disabled or deleted. An alias can lead to it or away from it.",
+  },
   editPage: {
     button: "Edit",
     title: "Edit {email}",

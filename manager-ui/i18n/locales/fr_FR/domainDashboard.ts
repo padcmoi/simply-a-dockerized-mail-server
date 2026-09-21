@@ -15,6 +15,18 @@ export default {
     title: "Top {count} boîtes par taux d'occupation",
     noData: "Aucune donnée de boîte",
   },
+  dmarc: {
+    title: "DMARC",
+    loadFailed: "Impossible de préparer l'enregistrement DMARC de ce domaine",
+    dnsMatch: "L'enregistrement DMARC publié envoie bien ses rapports à la boîte réservée du domaine",
+    dnsMismatch:
+      "L'enregistrement DMARC publié n'envoie pas ses rapports à la boîte réservée du domaine : publiez l'enregistrement ci-dessous",
+    recheck: "Revérifier le DNS",
+    mailboxHint:
+      "Enregistrement TXT à publier sur ce nom. Les rapports des autres fournisseurs arriveront dans {mailbox}, boîte réservée lue automatiquement par la page Rapports DMARC.",
+    published: "Publié aujourd'hui :",
+    notPublished: "Aucun enregistrement DMARC publié pour ce domaine",
+  },
   dkim: {
     title: "Clés DKIM",
     noKey: "Aucune clé DKIM configurée",

@@ -51,6 +51,10 @@ export const ACTIVITY_ACTIONS = [
   "fail2ban.unbanned",
   "clamav.updated",
   "clamav.reloaded",
+  "dmarc.settings-updated",
+  "dmarc.reports-sent",
+  "dmarc.report-retried",
+  "dmarc.inbox-scanned",
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];

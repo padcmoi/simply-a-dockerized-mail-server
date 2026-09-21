@@ -12,6 +12,10 @@ export default {
     notFound: "Recipient #{id} no longer exists in {domain}",
     postmasterImmutable: "The postmaster mailbox is managed automatically and cannot be modified",
     postmasterUndeletable: "The postmaster mailbox is managed automatically and cannot be deleted",
+    dmarcReportsReserved: "dmarc_reports{'@'} is reserved and provisioned automatically for every domain",
+    dmarcReportsUnassignable: "The dmarc_reports mailbox cannot be assigned to an account",
+    dmarcReportsImmutable: "The dmarc_reports mailbox is managed automatically and cannot be modified",
+    dmarcReportsUndeletable: "The dmarc_reports mailbox is managed automatically and cannot be deleted",
     quotaBelowUsage: "The quota cannot go below the {usedMb} MB {email} already stores",
     quotaExceedsDomain:
       "Only {availableMb} MB left on {domain}: its quota is {domainQuotaMb} MB, of which {allocatedMb} MB are already allocated to its other recipients",

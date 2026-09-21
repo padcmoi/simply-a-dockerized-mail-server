@@ -1,7 +1,8 @@
 import { HttpStatus, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
-import { ApiError } from "../../../core/common/api-error";
+import { ApiError, type ApiErrorCode } from "../../../core/common/api-error";
+import { asReservedLocalPart, reservedLocalPartOf, type ReservedLocalPart } from "../../../core/common/reserved-mailboxes";
 import { resolveSearchColumn, resolveSortColumn, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { sha512crypt } from "../../../core/common/sha512-crypt";
 import { Account } from "../../../core/entities/account.entity";
@@ -21,9 +22,32 @@ const UNBOUNDED_START_DATE = "1970-01-01";
 // mailbox, so activating it, giving it quota, renaming it, or deleting it
 // would either let it accept mail it must never accept or silently reserve
 // disk space for nothing.
-function isPostmaster(email: string, domain: string) {
-  return email.toLowerCase() === `postmaster@${domain.toLowerCase()}`;
-}
+const RESERVED_ERRORS: Record<
+  ReservedLocalPart,
+  Record<"reserved" | "unassignable" | "immutable" | "undeletable", { code: ApiErrorCode; message: string }>
+> = {
+  postmaster: {
+    reserved: {
+      code: "recipients.postmasterReserved",
+      message: "postmaster@ is reserved and provisioned automatically for every domain",
+    },
+    unassignable: { code: "recipients.postmasterUnassignable", message: "postmaster@ cannot be assigned to an account" },
+    immutable: { code: "recipients.postmasterImmutable", message: "postmaster@ is managed automatically and cannot be modified" },
+    undeletable: { code: "recipients.postmasterUndeletable", message: "postmaster@ cannot be deleted" },
+  },
+  dmarc_reports: {
+    reserved: {
+      code: "recipients.dmarcReportsReserved",
+      message: "dmarc_reports@ is reserved and provisioned automatically for every domain",
+    },
+    unassignable: { code: "recipients.dmarcReportsUnassignable", message: "dmarc_reports@ cannot be assigned to an account" },
+    immutable: {
+      code: "recipients.dmarcReportsImmutable",
+      message: "dmarc_reports@ is managed automatically and cannot be modified",
+    },
+    undeletable: { code: "recipients.dmarcReportsUndeletable", message: "dmarc_reports@ cannot be deleted" },
+  },
+};
 
 // `id` has no dedicated UI column/header (no createdAt on this table, see
 // pagination.validation.ts's original design notes) but stays an accepted
@@ -82,13 +106,10 @@ export class RecipientsService {
   // first. postmaster@<domain> is never a real mailbox and is never owned.
   async assignOwner(id: number, domain: string, ownerId: string) {
     const recipient = await this.get(id, domain);
-    if (isPostmaster(recipient.email, domain)) {
-      throw new ApiError(
-        HttpStatus.FORBIDDEN,
-        "recipients.postmasterUnassignable",
-        "postmaster@ cannot be assigned to an account",
-        { id }
-      );
+    const reserved = reservedLocalPartOf(recipient.email, domain);
+    if (reserved) {
+      const { code, message } = RESERVED_ERRORS[reserved].unassignable;
+      throw new ApiError(HttpStatus.FORBIDDEN, code, message, { id });
     }
     if (recipient.ownerId) {
       throw new ApiError(
@@ -138,7 +159,10 @@ export class RecipientsService {
   async list(domain: string, query: PaginationQuery) {
     if (query.limit === undefined) {
       const rows = await this.recipients.find({ where: { domain }, order: { email: "ASC" } });
-      return this.attachUsage(rows);
+      return (await this.attachUsage(rows)).map((row) => ({
+        ...row,
+        reserved: reservedLocalPartOf(row.email, domain),
+      }));
     }
 
     const sortBy = resolveSortColumn(query.sortBy, RECIPIENTS_SORTABLE_COLUMNS, "id");
@@ -173,6 +197,7 @@ export class RecipientsService {
       ...entity,
       usedBytes: String(raw[i]?.usedBytes ?? "0"),
       ownerEmail: (raw[i] as { ownerEmail?: string | null } | undefined)?.ownerEmail ?? null,
+      reserved: reservedLocalPartOf(entity.email, domain),
     }));
     return { items, total };
   }
@@ -209,7 +234,11 @@ export class RecipientsService {
   async getWithUsage(id: number, domain: string) {
     const found = await this.get(id, domain);
     const [withUsage] = await this.attachUsage([found]);
-    return { ...withUsage, ownerEmail: await this.resolveOwnerEmail(found.ownerId) };
+    return {
+      ...withUsage,
+      ownerEmail: await this.resolveOwnerEmail(found.ownerId),
+      reserved: reservedLocalPartOf(found.email, domain),
+    };
   }
 
   // The domain's own quota is the hard ceiling on what its recipients may
@@ -289,12 +318,10 @@ export class RecipientsService {
   // grant was already immobilized against the domain, so the domain-level check
   // would count that space twice.
   async create(input: CreateRecipientDto, domain: string, opts: { ownerId?: string; skipDomainQuota?: boolean } = {}) {
-    if (input.localPart.toLowerCase() === "postmaster") {
-      throw new ApiError(
-        HttpStatus.CONFLICT,
-        "recipients.postmasterReserved",
-        "postmaster@ is reserved and provisioned automatically for every domain"
-      );
+    const reservedPart = asReservedLocalPart(input.localPart);
+    if (reservedPart) {
+      const { code, message } = RESERVED_ERRORS[reservedPart].reserved;
+      throw new ApiError(HttpStatus.CONFLICT, code, message);
     }
     const email = `${input.localPart}@${domain}`;
     if (await this.recipients.findOne({ where: { email } })) {
@@ -332,12 +359,10 @@ export class RecipientsService {
   // domain-level check would count that space twice.
   async update(id: number, input: UpdateRecipientDto, domain: string, opts: { skipDomainQuota?: boolean } = {}) {
     const current = await this.get(id, domain);
-    if (isPostmaster(current.email, domain)) {
-      throw new ApiError(
-        HttpStatus.FORBIDDEN,
-        "recipients.postmasterImmutable",
-        "postmaster@ is managed automatically and cannot be modified"
-      );
+    const reserved = reservedLocalPartOf(current.email, domain);
+    if (reserved) {
+      const { code, message } = RESERVED_ERRORS[reserved].immutable;
+      throw new ApiError(HttpStatus.FORBIDDEN, code, message);
     }
     if (input.password) current.password = await sha512crypt(input.password);
     if (input.quota !== undefined) {
@@ -380,8 +405,10 @@ export class RecipientsService {
   //    row is definitely gone.
   async remove(id: number, domain: string) {
     const current = await this.get(id, domain);
-    if (isPostmaster(current.email, domain)) {
-      throw new ApiError(HttpStatus.FORBIDDEN, "recipients.postmasterUndeletable", "postmaster@ cannot be deleted");
+    const reserved = reservedLocalPartOf(current.email, domain);
+    if (reserved) {
+      const { code, message } = RESERVED_ERRORS[reserved].undeletable;
+      throw new ApiError(HttpStatus.FORBIDDEN, code, message);
     }
     await this.recipientQuotas.delete({ email: current.email });
     await this.recipients.remove(current);

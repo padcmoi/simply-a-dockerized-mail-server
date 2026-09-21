@@ -379,12 +379,13 @@ export class AccountsService {
   private async unassignedDomains(kind: "recipients" | "aliases"): Promise<{ id: number; domain: string }[]> {
     const repo = kind === "recipients" ? this.virtualUsers : this.aliases;
     const addr = kind === "recipients" ? "x.email" : "x.source";
-    const rows = await repo
+    const qb = repo
       .createQueryBuilder("x")
       .select("DISTINCT x.domain", "domain")
       .where("x.owner_id IS NULL")
-      .andWhere(`LOWER(${addr}) NOT LIKE 'postmaster@%'`)
-      .getRawMany<{ domain: string }>();
+      .andWhere(`LOWER(${addr}) NOT LIKE 'postmaster@%'`);
+    if (kind === "recipients") qb.andWhere(`LOWER(${addr}) NOT LIKE 'dmarc\\_reports@%'`);
+    const rows = await qb.getRawMany<{ domain: string }>();
     const names = rows.map((r) => r.domain);
     if (!names.length) return [];
     return this.domains.find({ where: { domain: In(names) }, select: { id: true, domain: true }, order: { domain: "ASC" } });
@@ -397,7 +398,8 @@ export class AccountsService {
     const qb = this.virtualUsers
       .createQueryBuilder("r")
       .where("r.owner_id IS NULL")
-      .andWhere("LOWER(r.email) NOT LIKE 'postmaster@%'");
+      .andWhere("LOWER(r.email) NOT LIKE 'postmaster@%'")
+      .andWhere("LOWER(r.email) NOT LIKE 'dmarc\\_reports@%'");
     if (domainId !== undefined) {
       const picked = domains.find((d) => d.id === domainId);
       if (!picked) return { domains, items: [] };
@@ -445,6 +447,14 @@ export class AccountsService {
         HttpStatus.FORBIDDEN,
         "recipients.postmasterUnassignable",
         "postmaster@ cannot be assigned to an account",
+        { id: recipientId }
+      );
+    }
+    if (recipient.email.toLowerCase().startsWith("dmarc_reports@")) {
+      throw new ApiError(
+        HttpStatus.FORBIDDEN,
+        "recipients.dmarcReportsUnassignable",
+        "dmarc_reports@ cannot be assigned to an account",
         { id: recipientId }
       );
     }

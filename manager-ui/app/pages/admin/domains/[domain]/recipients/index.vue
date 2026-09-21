@@ -72,8 +72,12 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sor
     [domainId]
   );
 
-function isPostmaster(item: RecipientRow) {
-  return item.email.toLowerCase().startsWith("postmaster@");
+function isReserved(item: RecipientRow) {
+  return item.reserved !== null;
+}
+
+function lockedText(item: RecipientRow) {
+  return item.reserved === "dmarc_reports" ? t("recipients.dmarcReports.locked") : t("recipients.postmaster.locked");
 }
 
 function editTo(item: RecipientRow) {
@@ -145,7 +149,7 @@ async function onDeleteConfirmed() {
         <div class="flex items-center gap-2 min-w-0">
           <FullTooltip :text="row.email">
             <NuxtLink
-              v-if="canEditRecipients && !isPostmaster(row)"
+              v-if="canEditRecipients && !isReserved(row)"
               :to="editTo(row)"
               class="font-medium text-primary hover:underline"
             >
@@ -153,7 +157,7 @@ async function onDeleteConfirmed() {
             </NuxtLink>
             <span v-else class="font-medium">{{ truncateChars(row.email, 44) }}</span>
           </FullTooltip>
-          <UBadge v-if="isPostmaster(row)" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock">
+          <UBadge v-if="isReserved(row)" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock">
             {{ t("recipients.postmaster.badge") }}
           </UBadge>
         </div>
@@ -186,7 +190,7 @@ async function onDeleteConfirmed() {
       </template>
 
       <template #actions="{ row }">
-        <template v-if="!isPostmaster(row)">
+        <template v-if="!isReserved(row)">
           <UButton
             v-if="canEditRecipients"
             :to="editTo(row)"
@@ -205,7 +209,7 @@ async function onDeleteConfirmed() {
             @click="requestDelete(() => remove(row))"
           />
         </template>
-        <FullTooltip v-else :text="t('recipients.postmaster.locked')">
+        <FullTooltip v-else :text="lockedText(row)">
           <UIcon name="i-lucide-lock" class="text-dimmed" />
         </FullTooltip>
       </template>

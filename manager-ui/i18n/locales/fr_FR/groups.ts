@@ -123,6 +123,7 @@ export default {
         supervision: "Supervision",
         fail2ban: "Fail2ban",
         clamav: "Antivirus",
+        dmarc: "Rapports DMARC",
         superadmin: "Super administrateur",
         domainOwnerElevated: "Propriétaire de domaine élevé",
       },
@@ -234,6 +235,13 @@ export default {
           "view-clamav-status": "Voir le moteur, les bases de signatures et leur âge",
           "update-signatures": "Lancer la mise à jour des signatures",
           "reload-database": "Faire recharger les bases au moteur",
+        },
+        dmarc: {
+          access: "Accès",
+          "view-dmarc-reports": "Voir les rapports reçus, les rapports envoyés et les boîtes lues",
+          "send-dmarc-reports": "Envoyer et renvoyer les rapports agrégés",
+          "import-dmarc-reports": "Lancer la lecture des boîtes de réception des rapports",
+          "manage-dmarc-settings": "Régler l'envoi et les boîtes de réception des rapports",
         },
         deliverability: {
           access: "Accès",
