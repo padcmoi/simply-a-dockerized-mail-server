@@ -3,17 +3,8 @@ const emit = defineEmits<{ copy: [text: string] }>();
 const { domainId } = defineProps<{ domainId: number | null }>();
 
 const { t } = useI18n();
-const { call } = useApi();
 
-const {
-  data: record,
-  status,
-  refresh,
-} = useAsyncData(
-  () => `domain-dmarc-record-${domainId ?? "none"}`,
-  () => (domainId ? call<DmarcRecord>(`/domains/${domainId}/dmarc-record`) : Promise.resolve(null)),
-  { server: false, watch: [() => domainId] }
-);
+const { data: record, status, refresh } = useDomainDmarcRecord(() => domainId);
 </script>
 
 <template>

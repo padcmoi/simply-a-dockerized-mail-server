@@ -1570,6 +1570,7 @@ export interface Locales {
       loadFailed: string;
       dnsMatch: string;
       dnsMismatch: string;
+      badgeMismatch: string;
       recheck: string;
       mailboxHint: string;
       published: string;

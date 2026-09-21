@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- feat(domains): the dashboard of a domain shows its DMARC badge left of the DKIM one, green when the published record sends its reports to the domain's `dmarc_reports` mailbox, for whoever may open its Administration page (21-09-2026)
 - feat(dmarc): the DMARC aggregate reports are back, each hosted domain sending from its own `dmarc_reports` mailbox, signed with its own DKIM key, one daily report per domain it received mail from, while the reports other providers send are read from those mailboxes, all of it tracked in the database and shown under Courrier with a supervision chart, a per-domain filter and the DNS record of every domain ready to copy (21-09-2026)
 - fix(domains): the dashboard chart of the fullest mailboxes is titled by occupancy rate, which is what it ranks them by, and no longer by size (21-09-2026)
 - feat(notifications): the stale signatures and the unreachable antivirus each get their own row in the notification preferences, off by default, and only an account allowed to open the Antivirus page can turn them on while anyone can always turn them off (21-09-2026)

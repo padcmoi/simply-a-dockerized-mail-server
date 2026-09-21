@@ -48,6 +48,11 @@ const canViewRspamd = computed(
     (domain.value && hasDomain(domain.value.id, "rspamd", "access") && hasDomain(domain.value.id, "rspamd", "view-rspamd-stats"))
 );
 const canViewAdmin = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "admin", "access")));
+const canViewDmarc = computed(
+  () =>
+    isRoot.value ||
+    (domain.value && hasDomain(domain.value.id, "admin", "access") && hasDomain(domain.value.id, "admin", "view-admin-page"))
+);
 
 const domainPath = computed(() => (domain.value ? `/admin/domains/${domain.value.domain}` : null));
 
@@ -95,6 +100,8 @@ watchEffect(() => {
           <UBadge :color="domain.active ? 'success' : 'warning'" variant="subtle">
             {{ domain.active ? $t("common.active") : $t("common.inactive") }}
           </UBadge>
+
+          <DomainDmarcBadge v-if="canViewDmarc" :domain-id="domain.id" />
 
           <UTooltip v-if="canViewAdmin && dkimCheck" :text="dkimStatusText">
             <UBadge :color="dkimStatusOk ? 'success' : 'error'" variant="subtle" :icon="dkimStatusIcon"> DKIM </UBadge>

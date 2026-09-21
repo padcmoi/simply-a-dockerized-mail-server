@@ -21,6 +21,8 @@ export default {
     dnsMatch: "The published DMARC record sends its reports to the domain's reserved mailbox",
     dnsMismatch:
       "The published DMARC record does not send its reports to the domain's reserved mailbox: publish the record below",
+    badgeMismatch:
+      "The published DMARC record does not send its reports to the domain's reserved mailbox: the record to publish is on the Administration page",
     recheck: "Check DNS again",
     mailboxHint:
       "TXT record to publish at this name. The reports other providers send will arrive in {mailbox}, a reserved mailbox the DMARC reports page reads automatically.",

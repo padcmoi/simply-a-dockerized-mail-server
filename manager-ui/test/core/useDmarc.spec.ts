@@ -20,7 +20,7 @@ beforeEach(() => {
   }));
 });
 
-const { useDmarcAccess, useDmarcActions, useDmarcFormat } = await import("~/composables/useDmarc");
+const { useDmarcAccess, useDmarcActions, useDmarcFormat, useDomainDmarcRecord } = await import("~/composables/useDmarc");
 
 describe("useDmarcAccess", () => {
   it("needs access and the action, and lets root through", () => {
@@ -111,5 +111,24 @@ describe("useDmarcFormat", () => {
     expect(when(null)).toBe("dmarc.overview.never");
     expect(when(0)).not.toBe("dmarc.overview.never");
     expect(count(1234)).toBe((1234).toLocaleString("en-GB"));
+  });
+});
+
+describe("useDomainDmarcRecord", () => {
+  it("reads the record of the domain under a key of its own, and nothing without a domain", async () => {
+    const asyncData = vi.fn<(key: () => string, handler: () => Promise<unknown>, options: { server: boolean }) => void>();
+    vi.stubGlobal("useAsyncData", asyncData);
+    const id = ref<number | null>(4);
+    useDomainDmarcRecord(() => id.value);
+    const [key, handler, options] = asyncData.mock.calls[0]!;
+    call.mockResolvedValue({ reportsHere: true });
+    expect(key()).toBe("domain-dmarc-record-4");
+    await expect(handler()).resolves.toEqual({ reportsHere: true });
+    expect(call).toHaveBeenCalledWith("/domains/4/dmarc-record");
+    expect(options.server).toBe(false);
+    id.value = null;
+    expect(key()).toBe("domain-dmarc-record-none");
+    await expect(handler()).resolves.toBeNull();
+    expect(call).toHaveBeenCalledTimes(1);
   });
 });

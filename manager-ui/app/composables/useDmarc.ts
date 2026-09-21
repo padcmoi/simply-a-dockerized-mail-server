@@ -120,3 +120,15 @@ export function useDmarcDomains() {
   });
   return { hosted: computed(() => data.value?.hostedDomains ?? []) };
 }
+
+export function useDomainDmarcRecord(domainId: () => number | null) {
+  const { call } = useApi();
+  return useAsyncData(
+    () => `domain-dmarc-record-${domainId() ?? "none"}`,
+    () => {
+      const id = domainId();
+      return id ? call<DmarcRecord>(`/domains/${id}/dmarc-record`) : Promise.resolve(null);
+    },
+    { server: false, watch: [domainId] }
+  );
+}

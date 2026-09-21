@@ -21,6 +21,8 @@ export default {
     dnsMatch: "L'enregistrement DMARC publié envoie bien ses rapports à la boîte réservée du domaine",
     dnsMismatch:
       "L'enregistrement DMARC publié n'envoie pas ses rapports à la boîte réservée du domaine : publiez l'enregistrement ci-dessous",
+    badgeMismatch:
+      "L'enregistrement DMARC publié n'envoie pas ses rapports à la boîte réservée du domaine : l'enregistrement à publier est dans la page Administration",
     recheck: "Revérifier le DNS",
     mailboxHint:
       "Enregistrement TXT à publier sur ce nom. Les rapports des autres fournisseurs arriveront dans {mailbox}, boîte réservée lue automatiquement par la page Rapports DMARC.",
