@@ -31,7 +31,7 @@ export default {
     run: "Send yesterday's reports",
     scan: "Read the inboxes now",
     runDone: "Reports of {day}: {sent} sent, {failed} failed, {skipped} skipped",
-    scanDone: "{scanned} mails read, {imported} reports imported",
+    scanDone: "{scanned} mails read, {imported} reports imported, {deleted} mails deleted",
     runFailed: "Sending the reports failed",
     scanFailed: "Reading the inboxes failed",
     domainsTitle: "Your domains as other providers see them (30 d)",
@@ -128,7 +128,7 @@ export default {
     hourHint: "The hour of the server's clock after which yesterday's reports go out.",
     inboxes: "Report inboxes",
     inboxesHint:
-      "Every domain's dmarc_reports mailbox is read anyway. Add here other mailboxes of this server that receive reports.",
+      "Every domain's dmarc_reports mailbox is read anyway, and a mail whose report is stored is deleted from it. Add here other mailboxes of this server that receive reports: they are only read, nothing is deleted from them.",
     inboxesPlaceholder: "Pick mailboxes",
     retention: "Retention (days)",
     retentionHint: "Beyond it, the evaluations, the sent reports and the received reports are deleted.",

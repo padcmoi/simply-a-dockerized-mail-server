@@ -20,7 +20,7 @@ export class DmarcMailboxService implements OnApplicationBootstrap {
   }
 
   async ensureAll(): Promise<Record<string, number>> {
-    const outcome: Record<string, number> = { created: 0, reactivated: 0, resized: 0, present: 0, failed: 0 };
+    const outcome: Record<string, number> = { created: 0, reactivated: 0, updated: 0, present: 0, failed: 0 };
     try {
       const domains = await this.domains.find({ select: { domain: true } });
       for (const { domain } of domains) {

@@ -15,6 +15,7 @@ import { providerMock, qbMock, repoMock } from "../helpers/mocks";
 // branch must not spawn a real process, so the whole module is stubbed.
 vi.mock("../../src/core/common/sha512-crypt", () => ({
   sha512crypt: vi.fn().mockResolvedValue("$6$salt$hash"),
+  sha512cryptMatches: vi.fn().mockResolvedValue(true),
 }));
 
 // `disk()` is the only caller of statfs; keep every other fs/promises export

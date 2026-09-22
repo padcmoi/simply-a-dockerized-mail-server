@@ -10,7 +10,7 @@ vi.mock("child_process", () => ({
 }));
 
 import { execFile } from "child_process";
-import { sha512crypt } from "../../src/core/common/sha512-crypt";
+import { sha512crypt, sha512cryptMatches } from "../../src/core/common/sha512-crypt";
 
 describe("sha512crypt", () => {
   it("hashes via `openssl passwd -6` and trims the output", async () => {
@@ -29,5 +29,18 @@ describe("sha512crypt", () => {
     expect(salt.length).toBeLessThanOrEqual(16);
     expect(salt).toMatch(/^[a-zA-Z0-9./]*$/);
     expect((args as string[])[4]).toBe("pw");
+  });
+
+  it("checks a password against a hash by hashing it again with the hash's own salt", async () => {
+    await expect(sha512cryptMatches("pw", "$6$deadbeef$hashedpassword")).resolves.toBe(true);
+    const [, args] = vi.mocked(execFile).mock.calls.at(-1)!;
+    expect((args as string[]).slice(2)).toEqual(["-salt", "deadbeef", "pw"]);
+    await expect(sha512cryptMatches("pw", "$6$deadbeef$other")).resolves.toBe(false);
+  });
+
+  it("never matches a hash that is not SHA512-CRYPT, without running openssl", async () => {
+    const calls = vi.mocked(execFile).mock.calls.length;
+    await expect(sha512cryptMatches("pw", "{PLAIN}pw")).resolves.toBe(false);
+    expect(vi.mocked(execFile).mock.calls.length).toBe(calls);
   });
 });

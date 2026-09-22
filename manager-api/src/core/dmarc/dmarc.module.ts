@@ -8,6 +8,7 @@ import { DmarcIncomingReport } from "../entities/dmarc-incoming-report.entity";
 import { DmarcOutgoingReport } from "../entities/dmarc-outgoing-report.entity";
 import { VirtualDomain } from "../entities/virtual-domain.entity";
 import { VirtualUser } from "../entities/virtual-user.entity";
+import { DmarcImapService } from "./dmarc-imap.service";
 import { DmarcInboxService } from "./dmarc-inbox.service";
 import { DmarcIngestService } from "./dmarc-ingest.service";
 import { DmarcMailerService } from "./dmarc-mailer.service";
@@ -39,6 +40,7 @@ import { DmarcService } from "./dmarc.service";
     DmarcPslService,
     DmarcMailerService,
     DmarcReporterService,
+    DmarcImapService,
     DmarcInboxService,
     DmarcSchedulerService,
     DmarcMailboxService,

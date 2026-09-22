@@ -33,7 +33,7 @@ const idParam = () => ApiParam({ name: "id", type: Number, example: 1 });
 const settingsExample = { sendingEnabled: true, reportHour: 2, inboxes: ["dmarc@example.com"], retentionDays: 90 };
 
 const runExample = { day: "2026-09-20", domains: 3, sent: 4, failed: 0, skipped: 1, unchanged: 0 };
-const scanExample = { mailboxes: 1, scanned: 6, imported: 5, duplicates: 0, ignored: 1, failed: 0 };
+const scanExample = { mailboxes: 1, scanned: 6, imported: 5, duplicates: 0, ignored: 1, failed: 0, deleted: 5 };
 
 const incomingExample = {
   id: 1,
@@ -200,7 +200,10 @@ export const DmarcScanDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: "Read the report mailboxes now instead of waiting for the next pass",
-      description: "Recorded in the activity journal.",
+      description:
+        "Recorded in the activity journal. In each `dmarc_reports@` mailbox, the mails whose reports are stored (imported or " +
+        "duplicate) are then deleted over IMAP, so Dovecot keeps its quota right; `deleted` counts them. The other mails, and " +
+        "every mail of an extra inbox from the settings, are left where they are.",
     }),
     ApiResponse({ status: 200, description: "What the pass found", schema: { example: scanExample } }),
     forbidden("import-dmarc-reports")

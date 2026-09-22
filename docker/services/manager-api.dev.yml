@@ -25,6 +25,8 @@ services:
       DMARC_PSL_PATH: /var/lib/opendmarc/public_suffix_list.dat
       DMARC_SMTP_HOST: 172.200.0.17
       DMARC_SMTP_PORT: 25
+      DMARC_IMAP_HOST: 172.200.0.16
+      DMARC_IMAP_PORT: 993
     volumes:
       # Read-write, see manager-api.yml.
       - ${VOLUMES_PATH}/mail:/var/mail

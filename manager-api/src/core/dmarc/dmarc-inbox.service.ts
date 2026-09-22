@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { readFile, readdir, stat } from "fs/promises";
-import { join } from "path";
+import { basename, join } from "path";
 import { DataSource, In, LessThan, Like, Repository } from "typeorm";
 import { DmarcInboxMessage } from "../entities/dmarc-inbox-message.entity";
 import { DmarcIncomingRecord } from "../entities/dmarc-incoming-record.entity";
@@ -10,6 +10,7 @@ import { VirtualUser } from "../entities/virtual-user.entity";
 import { DMARC_REPORTS_LOCAL_PART } from "../common/reserved-mailboxes";
 import { readDmarcMessage } from "./dmarc-attachments";
 import { parseFeedback } from "./dmarc-feedback.parser";
+import { DmarcImapService, type DmarcImapTarget } from "./dmarc-imap.service";
 import { DmarcSettingsService } from "./dmarc-settings.service";
 import type { DmarcFeedback, DmarcInboxStatus } from "./dmarc.types";
 
@@ -23,6 +24,12 @@ export interface DmarcScanSummary {
   duplicates: number;
   ignored: number;
   failed: number;
+  deleted: number;
+}
+
+interface MailFile {
+  path: string;
+  folder: string;
 }
 
 export function messageKey(filename: string) {
@@ -62,30 +69,49 @@ export class DmarcInboxService {
     @InjectRepository(VirtualUser)
     private readonly users: Repository<VirtualUser>,
     private readonly settings: DmarcSettingsService,
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    private readonly imap: DmarcImapService
   ) {}
 
   private mailRoot() {
     return process.env.MAIL_VOLUME_PATH ?? "/var/mail";
   }
 
-  private async files(mailbox: string): Promise<string[]> {
+  private async files(mailbox: string): Promise<MailFile[]> {
     const user = await this.users.findOne({ where: { email: mailbox } });
     if (!user) return [];
     const base = join(this.mailRoot(), "vhosts", user.maildir);
     const entries = await readdir(base, { withFileTypes: true }).catch(() => []);
     const folders = [
-      base,
-      ...entries.filter((entry) => entry.isDirectory() && entry.name.startsWith(".")).map((entry) => join(base, entry.name)),
+      { dir: base, folder: "INBOX" },
+      ...entries
+        .filter((entry) => entry.isDirectory() && entry.name.startsWith("."))
+        .map((entry) => ({ dir: join(base, entry.name), folder: entry.name.slice(1).split(".").join("/") })),
     ];
-    const found: string[] = [];
-    for (const folder of folders) {
+    const found: MailFile[] = [];
+    for (const { dir, folder } of folders) {
       for (const part of ["new", "cur"]) {
-        const names = await readdir(join(folder, part)).catch(() => [] as string[]);
-        found.push(...names.map((name) => join(folder, part, name)));
+        const names = await readdir(join(dir, part)).catch(() => [] as string[]);
+        found.push(...names.map((name) => ({ path: join(dir, part, name), folder })));
       }
     }
     return found;
+  }
+
+  private async purge(mailbox: string, files: MailFile[], statuses: Map<string, string>): Promise<number> {
+    if (!mailbox.startsWith(`${DMARC_REPORTS_LOCAL_PART}@`)) return 0;
+    const targets: DmarcImapTarget[] = files.flatMap((file) => {
+      const key = messageKey(basename(file.path));
+      const status = statuses.get(key);
+      return status === "imported" || status === "duplicate" ? [{ folder: file.folder, key }] : [];
+    });
+    if (!targets.length) return 0;
+    try {
+      return await this.imap.expunge(mailbox, targets);
+    } catch (e) {
+      this.log.warn(`deleting the imported reports of ${mailbox} failed: ${(e as Error).message}`);
+      return 0;
+    }
   }
 
   async store(feedback: DmarcFeedback, xml: string, mailbox: string): Promise<boolean> {
@@ -187,19 +213,30 @@ export class DmarcInboxService {
   }
 
   async scan(): Promise<DmarcScanSummary> {
-    const summary: DmarcScanSummary = { mailboxes: 0, scanned: 0, imported: 0, duplicates: 0, ignored: 0, failed: 0 };
+    const summary: DmarcScanSummary = {
+      mailboxes: 0,
+      scanned: 0,
+      imported: 0,
+      duplicates: 0,
+      ignored: 0,
+      failed: 0,
+      deleted: 0,
+    };
     if (this.running) return summary;
     this.running = true;
     try {
       for (const mailbox of await this.mailboxes()) {
         summary.mailboxes += 1;
         const files = await this.files(mailbox);
-        const keys = files.map((file) => messageKey(file.slice(file.lastIndexOf("/") + 1)));
-        const known = new Set(
+        const keys = files.map((file) => messageKey(basename(file.path)));
+        const known = new Map(
           keys.length
-            ? (await this.messages.find({ where: { mailbox, messageKey: In(keys) }, select: { messageKey: true } })).map(
-                (row) => row.messageKey
-              )
+            ? (
+                await this.messages.find({
+                  where: { mailbox, messageKey: In(keys) },
+                  select: { messageKey: true, status: true },
+                })
+              ).map((row) => [row.messageKey, row.status])
             : []
         );
 
@@ -207,22 +244,24 @@ export class DmarcInboxService {
           if (summary.scanned >= MAX_PER_SCAN) break;
           const key = keys[index] as string;
           if (known.has(key)) continue;
-          known.add(key);
           summary.scanned += 1;
 
           let outcome: Partial<DmarcInboxMessage>;
           try {
-            outcome = await this.read(file, mailbox);
+            outcome = await this.read(file.path, mailbox);
           } catch (e) {
             outcome = { status: "failed", detail: (e as Error).message.slice(0, 1024) };
           }
           await this.messages.insert({ mailbox, messageKey: key.slice(0, 255), reports: 0, ...outcome });
+          known.set(key, outcome.status ?? "failed");
 
           if (outcome.status === "imported") summary.imported += outcome.reports ?? 0;
           else if (outcome.status === "duplicate") summary.duplicates += 1;
           else if (outcome.status === "not-a-report") summary.ignored += 1;
           else summary.failed += 1;
         }
+
+        summary.deleted += await this.purge(mailbox, files, known);
       }
       this.lastRunAt = Date.now();
       this.lastSummary = summary;

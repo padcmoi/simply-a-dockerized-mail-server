@@ -17,6 +17,7 @@ export interface DmarcScanSummary {
   duplicates: number;
   ignored: number;
   failed: number;
+  deleted: number;
 }
 
 export interface DmarcDomainSummary {

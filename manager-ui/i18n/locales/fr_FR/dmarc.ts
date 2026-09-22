@@ -31,7 +31,7 @@ export default {
     run: "Envoyer les rapports d'hier",
     scan: "Lire les boîtes maintenant",
     runDone: "Rapports du {day} : {sent} envoyés, {failed} en échec, {skipped} écartés",
-    scanDone: "{scanned} mails lus, {imported} rapports importés",
+    scanDone: "{scanned} mails lus, {imported} rapports importés, {deleted} mails supprimés",
     runFailed: "L'envoi des rapports a échoué",
     scanFailed: "La lecture des boîtes a échoué",
     domainsTitle: "Vos domaines vus par les autres fournisseurs (30 j)",
@@ -128,7 +128,7 @@ export default {
     hourHint: "Heure de l'horloge du serveur après laquelle les rapports de la veille partent.",
     inboxes: "Boîtes de réception des rapports",
     inboxesHint:
-      "Les boîtes dmarc_reports de chaque domaine sont lues d'office. Ajoutez ici d'autres boîtes de ce serveur qui reçoivent des rapports.",
+      "Les boîtes dmarc_reports de chaque domaine sont lues d'office, et un mail dont le rapport est enregistré y est supprimé. Ajoutez ici d'autres boîtes de ce serveur qui reçoivent des rapports : elles sont seulement lues, rien n'y est supprimé.",
     inboxesPlaceholder: "Choisir des boîtes",
     retention: "Conservation (jours)",
     retentionHint: "Au-delà, les évaluations, les rapports envoyés et les rapports reçus sont supprimés.",

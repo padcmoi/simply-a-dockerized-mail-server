@@ -3,6 +3,8 @@ import type { DataSource, EntityManager } from "typeorm";
 import type { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
 import type { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { DmarcMailboxService } from "../../src/core/dmarc/dmarc-mailbox.service";
+import { dmarcReportsPassword } from "../../src/core/dmarc/dmarc-mailbox";
+import { sha512crypt, sha512cryptMatches } from "../../src/core/common/sha512-crypt";
 import { asReservedLocalPart, dmarcReportsAddress, reservedLocalPartOf } from "../../src/core/common/reserved-mailboxes";
 import { entity, providerMock, repoMock } from "../helpers/mocks";
 
@@ -13,6 +15,7 @@ describe("DmarcMailboxService", () => {
   let svc: DmarcMailboxService;
 
   beforeEach(() => {
+    vi.stubEnv("MANAGER_API_TOKEN_PEPPER", "");
     existing = new Map();
     domains = repoMock<VirtualDomain>();
     domains.find.mockResolvedValue([
@@ -35,7 +38,7 @@ describe("DmarcMailboxService", () => {
     existing.set("dmarc_reports@b.test", { id: 2, email: "dmarc_reports@b.test", active: 0, quota: "104857600" });
     existing.set("dmarc_reports@c.test", { id: 3, email: "dmarc_reports@c.test", active: 1, quota: "104857600" });
 
-    await expect(svc.ensureAll()).resolves.toEqual({ created: 1, reactivated: 1, resized: 0, present: 1, failed: 0 });
+    await expect(svc.ensureAll()).resolves.toEqual({ created: 1, reactivated: 1, updated: 0, present: 1, failed: 0 });
     expect(manager.save).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -55,13 +58,49 @@ describe("DmarcMailboxService", () => {
     existing.set("dmarc_reports@b.test", { id: 2, email: "dmarc_reports@b.test", active: 0, quota: "0" });
     existing.set("dmarc_reports@c.test", { id: 3, email: "dmarc_reports@c.test", active: 1, quota: "209715200" });
 
-    await expect(svc.ensureAll()).resolves.toEqual({ created: 0, reactivated: 1, resized: 2, present: 0, failed: 0 });
+    await expect(svc.ensureAll()).resolves.toEqual({ created: 0, reactivated: 1, updated: 2, present: 0, failed: 0 });
     for (const id of [1, 2, 3]) {
       expect(manager.save).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ id, active: 1, quota: "104857600" })
       );
     }
+  });
+
+  it("gives each mailbox the password the API derives from its pepper, and rewrites one that differs", async () => {
+    vi.stubEnv("MANAGER_API_TOKEN_PEPPER", "pepper");
+    const derived = (address: string) => dmarcReportsPassword(address) ?? "";
+    existing.set("dmarc_reports@b.test", {
+      id: 2,
+      email: "dmarc_reports@b.test",
+      active: 1,
+      quota: "104857600",
+      password: await sha512crypt("someone-else"),
+    });
+    existing.set("dmarc_reports@c.test", {
+      id: 3,
+      email: "dmarc_reports@c.test",
+      active: 1,
+      quota: "104857600",
+      password: await sha512crypt(derived("dmarc_reports@c.test")),
+    });
+
+    await expect(svc.ensureAll()).resolves.toEqual({ created: 1, reactivated: 0, updated: 1, present: 1, failed: 0 });
+    const saved = manager.save.mock.calls.map((call) => call[1] as Partial<VirtualUser>);
+    const created = saved.find((user) => user.email === "dmarc_reports@a.test");
+    const rewritten = saved.find((user) => user.id === 2);
+    await expect(sha512cryptMatches(derived("dmarc_reports@a.test"), created?.password ?? "")).resolves.toBe(true);
+    await expect(sha512cryptMatches(derived("dmarc_reports@b.test"), rewritten?.password ?? "")).resolves.toBe(true);
+    expect(saved.some((user) => user.id === 3)).toBe(false);
+  });
+
+  it("derives a distinct password per address, whatever its case, and none without a pepper", () => {
+    expect(dmarcReportsPassword("dmarc_reports@a.test")).toBeNull();
+    vi.stubEnv("MANAGER_API_TOKEN_PEPPER", "pepper");
+    const password = dmarcReportsPassword("dmarc_reports@a.test");
+    expect(password).toMatch(/^[0-9a-f]{64}$/);
+    expect(dmarcReportsPassword("DMARC_Reports@A.test")).toBe(password);
+    expect(dmarcReportsPassword("dmarc_reports@b.test")).not.toBe(password);
   });
 
   it("carries on past a domain that fails", async () => {

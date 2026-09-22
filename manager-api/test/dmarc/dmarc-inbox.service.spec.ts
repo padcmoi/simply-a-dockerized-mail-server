@@ -9,6 +9,7 @@ import type { DmarcIncomingReport } from "../../src/core/entities/dmarc-incoming
 import type { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { DmarcInboxService, messageKey, totals } from "../../src/core/dmarc/dmarc-inbox.service";
 import { parseFeedback } from "../../src/core/dmarc/dmarc-feedback.parser";
+import type { DmarcImapService } from "../../src/core/dmarc/dmarc-imap.service";
 import type { DmarcSettingsService } from "../../src/core/dmarc/dmarc-settings.service";
 import type { DmarcSettingsView } from "../../src/core/dmarc/dmarc.types";
 import { entity, providerMock, repoMock } from "../helpers/mocks";
@@ -28,6 +29,7 @@ describe("DmarcInboxService", () => {
   let reports: ReturnType<typeof repoMock<DmarcIncomingReport>>;
   let users: ReturnType<typeof repoMock<VirtualUser>>;
   let manager: ReturnType<typeof providerMock<EntityManager>>;
+  let imap: ReturnType<typeof providerMock<DmarcImapService>>;
   let inboxes: string[];
   let svc: DmarcInboxService;
 
@@ -57,12 +59,15 @@ describe("DmarcInboxService", () => {
     const transaction = vi.fn();
     transaction.mockImplementation(async (work: (m: EntityManager) => unknown) => work(manager));
     const dataSource = providerMock<DataSource>({ transaction });
+    imap = providerMock<DmarcImapService>({ expunge: vi.fn() });
+    imap.expunge.mockImplementation(async (_mailbox: string, targets: unknown[]) => targets.length);
     svc = new DmarcInboxService(
       messages,
       reports,
       users,
       providerMock<DmarcSettingsService>({ get: vi.fn(async () => ({ ...SETTINGS, inboxes })) }),
-      dataSource
+      dataSource,
+      imap
     );
   });
   afterEach(async () => {
@@ -75,7 +80,16 @@ describe("DmarcInboxService", () => {
       join(maildir, "new", "1789.M1.host"),
       mimeMessage({ filename: "r.zip", type: "application/zip", content: zipped() })
     );
-    await expect(svc.scan()).resolves.toEqual({ mailboxes: 1, scanned: 1, imported: 1, duplicates: 0, ignored: 0, failed: 0 });
+    await expect(svc.scan()).resolves.toEqual({
+      mailboxes: 1,
+      scanned: 1,
+      imported: 1,
+      duplicates: 0,
+      ignored: 0,
+      failed: 0,
+      deleted: 0,
+    });
+    expect(imap.expunge).not.toHaveBeenCalled();
 
     expect(manager.save).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -188,6 +202,56 @@ describe("DmarcInboxService", () => {
     const first = svc.scan();
     await expect(svc.scan()).resolves.toMatchObject({ mailboxes: 0 });
     await first;
+  });
+
+  it("deletes over IMAP the mails of a dmarc_reports mailbox whose reports are stored, and only those", async () => {
+    inboxes = [];
+    users.find.mockResolvedValue([entity<VirtualUser>({ email: "dmarc_reports@example.com" })]);
+    await mkdir(join(maildir, ".Junk", "cur"), { recursive: true });
+    await mkdir(join(maildir, ".Archive.2026", "new"), { recursive: true });
+    await writeFile(
+      join(maildir, "new", "1789.M1.host"),
+      mimeMessage({ filename: "r.zip", type: "application/zip", content: zipped() })
+    );
+    await writeFile(join(maildir, "new", "1789.M3.host"), mimeMessage(null));
+    await writeFile(join(maildir, ".Junk", "cur", "1789.M2.host:2,S"), "x");
+    await writeFile(join(maildir, ".Archive.2026", "new", "1789.M4.host,S=1"), "x");
+    await writeFile(join(maildir, "cur", "1789.M5.host:2,S"), "x");
+    messages.find.mockResolvedValue([
+      entity<DmarcInboxMessage>({ messageKey: "1789.M2.host", status: "duplicate" }),
+      entity<DmarcInboxMessage>({ messageKey: "1789.M4.host,S=1", status: "imported" }),
+      entity<DmarcInboxMessage>({ messageKey: "1789.M5.host", status: "not-a-report" }),
+    ]);
+
+    await expect(svc.scan()).resolves.toMatchObject({ scanned: 2, imported: 1, ignored: 1, deleted: 3 });
+    expect(imap.expunge).toHaveBeenCalledTimes(1);
+    const [mailbox, targets] = imap.expunge.mock.calls[0] as [string, { folder: string; key: string }[]];
+    expect(mailbox).toBe("dmarc_reports@example.com");
+    expect([...targets].sort((a, b) => a.key.localeCompare(b.key))).toEqual([
+      { folder: "INBOX", key: "1789.M1.host" },
+      { folder: "Junk", key: "1789.M2.host" },
+      { folder: "Archive/2026", key: "1789.M4.host,S=1" },
+    ]);
+  });
+
+  it("never deletes from an extra inbox, calls nothing with nothing to delete, and survives an IMAP failure", async () => {
+    await writeFile(
+      join(maildir, "new", "1789.M1.host"),
+      mimeMessage({ filename: "r.zip", type: "application/zip", content: zipped() })
+    );
+    await expect(svc.scan()).resolves.toMatchObject({ imported: 1, deleted: 0 });
+    expect(imap.expunge).not.toHaveBeenCalled();
+
+    inboxes = [];
+    users.find.mockResolvedValue([entity<VirtualUser>({ email: "dmarc_reports@example.com" })]);
+    messages.find.mockResolvedValue([entity<DmarcInboxMessage>({ messageKey: "1789.M1.host", status: "failed" })]);
+    await expect(svc.scan()).resolves.toMatchObject({ scanned: 0, deleted: 0 });
+    expect(imap.expunge).not.toHaveBeenCalled();
+
+    messages.find.mockResolvedValue([]);
+    imap.expunge.mockRejectedValue(new Error("IMAP NO [AUTHENTICATIONFAILED]"));
+    await expect(svc.scan()).resolves.toMatchObject({ scanned: 1, deleted: 0 });
+    expect(imap.expunge).toHaveBeenCalledTimes(1);
   });
 
   it("stores a report without rows without inserting any", async () => {
