@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, utimes, writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import { Readable } from "stream";
+import { text } from "stream/consumers";
 import * as nodemailer from "nodemailer";
 import { DmarcPslService } from "../../src/core/dmarc/dmarc-psl.service";
 import { DmarcMailerService } from "../../src/core/dmarc/dmarc-mailer.service";
@@ -87,5 +89,52 @@ describe("DmarcMailerService", () => {
       content: Buffer.alloc(0),
     });
     expect(nodemailer.createTransport).toHaveBeenLastCalledWith(expect.objectContaining({ host: "mail-postfix", port: 25 }));
+  });
+
+  describe("resending a mail", () => {
+    let dir: string;
+    let raw: Promise<string> | null;
+
+    beforeEach(async () => {
+      dir = await mkdtemp(join(tmpdir(), "dmarc-resend-"));
+      raw = null;
+      sendMail.mockImplementation(async (options: { raw: Readable }) => {
+        raw = text(options.raw);
+        await raw;
+        return {};
+      });
+    });
+    afterEach(() => rm(dir, { recursive: true, force: true }));
+
+    it("hands the mail to the relay as it is, from the reports mailbox, the Resent headers on top", async () => {
+      const file = join(dir, "1789.M1.host");
+      await writeFile(file, "From: a@google.com\nSubject: report\n\nbody\n");
+      await new DmarcMailerService().resend(
+        file,
+        "dmarc_reports@example.org",
+        "archive@example.org",
+        new Date("2026-09-22T12:00:00Z")
+      );
+
+      expect(sendMail).toHaveBeenCalledWith({
+        envelope: { from: "dmarc_reports@example.org", to: "archive@example.org" },
+        raw: expect.any(Readable),
+      });
+      await expect(raw).resolves.toMatch(
+        /^Resent-From: dmarc_reports@example\.org\nResent-To: archive@example\.org\nResent-Date: Tue, 22 Sep 2026 12:00:00 GMT\nResent-Message-ID: <[0-9a-f-]{36}@example\.org>\nFrom: a@google\.com\nSubject: report\n\nbody\n$/
+      );
+    });
+
+    it("fails with the relay's refusal, and with a file that is gone", async () => {
+      const file = join(dir, "1789.M1.host");
+      await writeFile(file, "x");
+      sendMail.mockRejectedValueOnce(Object.assign(new Error("550 5.7.1 no"), { responseCode: 550 }));
+      await expect(new DmarcMailerService().resend(file, "dmarc_reports@example.org", "archive@example.org")).rejects.toThrow(
+        "550 5.7.1 no"
+      );
+      await expect(
+        new DmarcMailerService().resend(join(dir, "gone"), "dmarc_reports@example.org", "archive@example.org")
+      ).rejects.toThrow("ENOENT");
+    });
   });
 });

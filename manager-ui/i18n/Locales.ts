@@ -2357,6 +2357,9 @@ export interface Locales {
       inboxes: string;
       inboxesHint: string;
       inboxesPlaceholder: string;
+      copyTo: string;
+      copyToHint: string;
+      copyToPlaceholder: string;
       retention: string;
       retentionHint: string;
       save: string;

@@ -20,6 +20,7 @@ const SETTINGS = {
   reportHour: 2,
   inboxes: ["dmarc@example.org"],
   retentionDays: 90,
+  copyTo: null,
 };
 
 describe("DmarcService", () => {
@@ -263,7 +264,7 @@ describe("DmarcService", () => {
   });
 
   it("saves inboxes that are mailboxes of the server, once each, and refuses the others", async () => {
-    users.find.mockResolvedValue([entity<VirtualUser>({ email: "dmarc@example.org" })]);
+    users.find.mockResolvedValue([entity<VirtualUser>({ email: "dmarc@example.org", domain: "example.org" })]);
     await expect(svc.updateSettings({ ...SETTINGS, inboxes: ["DMARC@example.org", "dmarc@example.org"] })).resolves.toMatchObject(
       {
         inboxes: ["dmarc@example.org"],
@@ -272,12 +273,51 @@ describe("DmarcService", () => {
     await expect(svc.updateSettings({ ...SETTINGS, inboxes: ["ghost@example.org"] })).rejects.toThrow("ghost@example.org");
   });
 
-  it("lists the mailboxes in order", async () => {
+  it("saves a copy target that is an ordinary mailbox of the server, turns it off with null and keeps it when left out", async () => {
     users.find.mockResolvedValue([
-      entity<VirtualUser>({ email: "a@example.org" }),
-      entity<VirtualUser>({ email: "b@example.org" }),
+      entity<VirtualUser>({ email: "archive@example.org", domain: "example.org" }),
+      entity<VirtualUser>({ email: "dmarc@example.org", domain: "example.org" }),
+      entity<VirtualUser>({ email: "dmarc_reports@example.org", domain: "example.org" }),
+      entity<VirtualUser>({ email: "postmaster@example.org", domain: "example.org" }),
     ]);
-    await expect(svc.mailboxes()).resolves.toEqual(["a@example.org", "b@example.org"]);
-    expect(users.find).toHaveBeenCalledWith({ select: { email: true }, order: { email: "ASC" } });
+    await expect(svc.updateSettings({ ...SETTINGS, copyTo: "Archive@example.org" })).resolves.toMatchObject({
+      copyTo: "archive@example.org",
+    });
+    await expect(svc.updateSettings({ ...SETTINGS, copyTo: null })).resolves.toMatchObject({ copyTo: null });
+
+    settings.update.mockClear();
+    const { copyTo: _left, ...withoutCopy } = SETTINGS;
+    await svc.updateSettings(withoutCopy);
+    expect(settings.update).toHaveBeenCalledWith(expect.objectContaining({ copyTo: undefined }));
+  });
+
+  it("refuses a copy target that is not a mailbox of the server, or one the server reserves", async () => {
+    users.find.mockResolvedValue([
+      entity<VirtualUser>({ email: "dmarc@example.org", domain: "example.org" }),
+      entity<VirtualUser>({ email: "dmarc_reports@example.org", domain: "example.org" }),
+      entity<VirtualUser>({ email: "postmaster@example.org", domain: "example.org" }),
+    ]);
+    await expect(svc.updateSettings({ ...SETTINGS, copyTo: "ghost@example.org" })).rejects.toThrow(
+      "Not a mailbox of this server: ghost@example.org"
+    );
+    await expect(svc.updateSettings({ ...SETTINGS, copyTo: "dmarc_reports@example.org" })).rejects.toThrow(
+      "A reserved mailbox cannot receive the copies: dmarc_reports@example.org"
+    );
+    await expect(svc.updateSettings({ ...SETTINGS, copyTo: "Postmaster@example.org" })).rejects.toThrow("reserved");
+    expect(settings.update).not.toHaveBeenCalled();
+  });
+
+  it("lists the mailboxes in order, each with what the server reserves it for", async () => {
+    users.find.mockResolvedValue([
+      entity<VirtualUser>({ email: "a@example.org", domain: "example.org" }),
+      entity<VirtualUser>({ email: "dmarc_reports@example.org", domain: "example.org" }),
+      entity<VirtualUser>({ email: "postmaster@example.org", domain: "example.org" }),
+    ]);
+    await expect(svc.mailboxes()).resolves.toEqual([
+      { email: "a@example.org", reserved: null },
+      { email: "dmarc_reports@example.org", reserved: "dmarc_reports" },
+      { email: "postmaster@example.org", reserved: "postmaster" },
+    ]);
+    expect(users.find).toHaveBeenCalledWith({ select: { email: true, domain: true }, order: { email: "ASC" } });
   });
 });

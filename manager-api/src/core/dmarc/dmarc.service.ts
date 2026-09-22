@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { InjectRepository } from "@nestjs/typeorm";
 import { FindOptionsWhere, Like, MoreThanOrEqual, Repository } from "typeorm";
 import { PaginatedResult, resolveSearchColumn, resolveSortColumn } from "../common/pagination.validation";
+import { reservedLocalPartOf } from "../common/reserved-mailboxes";
 import { DmarcEvaluation } from "../entities/dmarc-evaluation.entity";
 import { DmarcInboxMessage } from "../entities/dmarc-inbox-message.entity";
 import { DmarcIncomingRecord } from "../entities/dmarc-incoming-record.entity";
@@ -14,7 +15,6 @@ import { DmarcIngestService } from "./dmarc-ingest.service";
 import { DmarcRecipientsService } from "./dmarc-recipients.service";
 import { DmarcReporterService, dayWindow, previousDay } from "./dmarc-reporter.service";
 import { DmarcSettingsService } from "./dmarc-settings.service";
-import type { DmarcSettingsView } from "./dmarc.types";
 import {
   DMARC_INBOX_SEARCHABLE,
   DMARC_INBOX_SORTABLE,
@@ -25,6 +25,7 @@ import {
   type DmarcInboxQuery,
   type DmarcIncomingQuery,
   type DmarcOutgoingQuery,
+  type DmarcSettingsDto,
 } from "./dmarc.validation";
 
 const WINDOW_MS = 30 * 86_400_000;
@@ -273,15 +274,21 @@ export class DmarcService {
     return this.settings.get();
   }
 
-  async updateSettings(input: DmarcSettingsView) {
-    const known = new Set((await this.mailboxes()).map((email) => email.toLowerCase()));
-    const unknown = input.inboxes.filter((email) => !known.has(email.toLowerCase()));
+  async updateSettings(input: DmarcSettingsDto) {
+    const known = new Map((await this.mailboxes()).map((mailbox) => [mailbox.email.toLowerCase(), mailbox.reserved]));
+    const copyTo = typeof input.copyTo === "string" ? input.copyTo.toLowerCase() : input.copyTo;
+    const unknown = [...input.inboxes, ...(copyTo ? [copyTo] : [])].filter((email) => !known.has(email.toLowerCase()));
     if (unknown.length) throw new BadRequestException(`Not a mailbox of this server: ${unknown.join(", ")}`);
-    return this.settings.update({ ...input, inboxes: [...new Set(input.inboxes.map((email) => email.toLowerCase()))] });
+    if (copyTo && known.get(copyTo)) throw new BadRequestException(`A reserved mailbox cannot receive the copies: ${copyTo}`);
+    return this.settings.update({
+      ...input,
+      inboxes: [...new Set(input.inboxes.map((email) => email.toLowerCase()))],
+      copyTo,
+    });
   }
 
-  async mailboxes(): Promise<string[]> {
-    const users = await this.users.find({ select: { email: true }, order: { email: "ASC" } });
-    return users.map((user) => user.email);
+  async mailboxes() {
+    const users = await this.users.find({ select: { email: true, domain: true }, order: { email: "ASC" } });
+    return users.map((user) => ({ email: user.email, reserved: reservedLocalPartOf(user.email, user.domain) }));
   }
 }

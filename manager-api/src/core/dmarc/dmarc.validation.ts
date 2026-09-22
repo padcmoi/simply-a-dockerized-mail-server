@@ -41,6 +41,7 @@ export const dmarcSettingsSchema = z
     reportHour: z.number().int().min(0).max(23),
     inboxes: z.array(z.email().max(255)).max(10),
     retentionDays: z.number().int().min(7).max(3650),
+    copyTo: z.email().max(255).nullable().optional(),
   })
   .strict();
 export type DmarcSettingsDto = z.infer<typeof dmarcSettingsSchema>;

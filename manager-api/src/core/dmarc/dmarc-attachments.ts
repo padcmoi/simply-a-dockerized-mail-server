@@ -41,6 +41,7 @@ export interface DmarcMessage {
   messageId: string | null;
   from: string | null;
   subject: string | null;
+  resentFrom: string | null;
   documents: string[];
 }
 
@@ -58,5 +59,11 @@ export async function readDmarcMessage(raw: Uint8Array): Promise<DmarcMessage> {
   }
   if (!documents.length && email.text && looksLikeXml(email.text)) documents.push(email.text);
 
-  return { messageId: email.messageId ?? null, from: email.from?.address ?? null, subject: email.subject ?? null, documents };
+  return {
+    messageId: email.messageId ?? null,
+    from: email.from?.address ?? null,
+    subject: email.subject ?? null,
+    resentFrom: email.headers.find((header) => header.key === "resent-from")?.value ?? null,
+    documents,
+  };
 }

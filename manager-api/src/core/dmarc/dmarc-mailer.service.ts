@@ -1,5 +1,8 @@
 import { Injectable } from "@nestjs/common";
+import { randomUUID } from "crypto";
+import { createReadStream } from "fs";
 import * as nodemailer from "nodemailer";
+import { PassThrough } from "stream";
 
 export interface DmarcMail {
   from: string;
@@ -30,5 +33,20 @@ export class DmarcMailerService {
       text: mail.text,
       attachments: [{ filename: mail.filename, content: mail.content, contentType: "application/gzip" }],
     });
+  }
+
+  async resend(path: string, from: string, to: string, now = new Date()): Promise<void> {
+    const file = createReadStream(path);
+    const raw = new PassThrough();
+    raw.write(
+      `Resent-From: ${from}\nResent-To: ${to}\nResent-Date: ${now.toUTCString()}\n` +
+        `Resent-Message-ID: <${randomUUID()}@${from.slice(from.indexOf("@") + 1)}>\n`
+    );
+    file.on("error", (error) => raw.destroy(error)).pipe(raw);
+    try {
+      await this.transport().sendMail({ envelope: { from, to }, raw });
+    } finally {
+      file.destroy();
+    }
   }
 }

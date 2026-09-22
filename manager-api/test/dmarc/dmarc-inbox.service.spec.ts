@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdir, mkdtemp, rm, truncate, writeFile } from "fs/promises";
 import { tmpdir } from "os";
-import { join } from "path";
+import { basename, join } from "path";
 import { strToU8, zipSync } from "fflate";
 import type { DataSource, EntityManager } from "typeorm";
 import type { DmarcInboxMessage } from "../../src/core/entities/dmarc-inbox-message.entity";
@@ -10,6 +10,7 @@ import type { VirtualUser } from "../../src/core/entities/virtual-user.entity";
 import { DmarcInboxService, messageKey, totals } from "../../src/core/dmarc/dmarc-inbox.service";
 import { parseFeedback } from "../../src/core/dmarc/dmarc-feedback.parser";
 import type { DmarcImapService } from "../../src/core/dmarc/dmarc-imap.service";
+import type { DmarcMailerService } from "../../src/core/dmarc/dmarc-mailer.service";
 import type { DmarcSettingsService } from "../../src/core/dmarc/dmarc-settings.service";
 import type { DmarcSettingsView } from "../../src/core/dmarc/dmarc.types";
 import { entity, providerMock, repoMock } from "../helpers/mocks";
@@ -20,6 +21,7 @@ const SETTINGS: DmarcSettingsView = {
   reportHour: 2,
   inboxes: [],
   retentionDays: 30,
+  copyTo: null,
 };
 
 describe("DmarcInboxService", () => {
@@ -30,7 +32,9 @@ describe("DmarcInboxService", () => {
   let users: ReturnType<typeof repoMock<VirtualUser>>;
   let manager: ReturnType<typeof providerMock<EntityManager>>;
   let imap: ReturnType<typeof providerMock<DmarcImapService>>;
+  let mailer: ReturnType<typeof providerMock<DmarcMailerService>>;
   let inboxes: string[];
+  let copyTo: string | null;
   let svc: DmarcInboxService;
 
   const zipped = () => zipSync({ "report.xml": strToU8(GOOGLE_REPORT) });
@@ -43,6 +47,7 @@ describe("DmarcInboxService", () => {
     vi.stubEnv("MAIL_VOLUME_PATH", root);
 
     inboxes = ["dmarc@example.com"];
+    copyTo = null;
     messages = repoMock<DmarcInboxMessage>();
     messages.find.mockResolvedValue([]);
     messages.insert.mockResolvedValue(undefined);
@@ -61,13 +66,16 @@ describe("DmarcInboxService", () => {
     const dataSource = providerMock<DataSource>({ transaction });
     imap = providerMock<DmarcImapService>({ expunge: vi.fn() });
     imap.expunge.mockImplementation(async (_mailbox: string, targets: unknown[]) => targets.length);
+    mailer = providerMock<DmarcMailerService>({ resend: vi.fn() });
+    mailer.resend.mockResolvedValue(undefined);
     svc = new DmarcInboxService(
       messages,
       reports,
       users,
-      providerMock<DmarcSettingsService>({ get: vi.fn(async () => ({ ...SETTINGS, inboxes })) }),
+      providerMock<DmarcSettingsService>({ get: vi.fn(async () => ({ ...SETTINGS, inboxes, copyTo })) }),
       dataSource,
-      imap
+      imap,
+      mailer
     );
   });
   afterEach(async () => {
@@ -87,6 +95,7 @@ describe("DmarcInboxService", () => {
       duplicates: 0,
       ignored: 0,
       failed: 0,
+      copied: 0,
       deleted: 0,
     });
     expect(imap.expunge).not.toHaveBeenCalled();
@@ -254,6 +263,80 @@ describe("DmarcInboxService", () => {
     imap.expunge.mockRejectedValue(new Error("IMAP NO [AUTHENTICATIONFAILED]"));
     await expect(svc.scan()).resolves.toMatchObject({ deleted: 0 });
     expect(imap.expunge).toHaveBeenCalledTimes(2);
+  });
+
+  describe("with a copy target", () => {
+    beforeEach(() => {
+      inboxes = [];
+      copyTo = "archive@example.com";
+      users.find.mockResolvedValue([entity<VirtualUser>({ email: "dmarc_reports@example.com" })]);
+    });
+
+    it("copies every mail read in a dmarc_reports mailbox, a report or not, before deleting it", async () => {
+      await writeFile(
+        join(maildir, "new", "1789.M1.host"),
+        mimeMessage({ filename: "r.zip", type: "application/zip", content: zipped() })
+      );
+      await writeFile(join(maildir, "new", "1789.M3.host"), mimeMessage(null));
+
+      await expect(svc.scan()).resolves.toMatchObject({ scanned: 2, imported: 1, ignored: 1, copied: 2, deleted: 2 });
+      expect(mailer.resend.mock.calls.map((call) => call.slice(1))).toEqual([
+        ["dmarc_reports@example.com", "archive@example.com"],
+        ["dmarc_reports@example.com", "archive@example.com"],
+      ]);
+      expect((mailer.resend.mock.calls.map((call) => basename(call[0] as string)) as string[]).sort()).toEqual([
+        "1789.M1.host",
+        "1789.M3.host",
+      ]);
+      expect(Math.max(...mailer.resend.mock.invocationCallOrder)).toBeLessThan(imap.expunge.mock.invocationCallOrder[0] ?? 0);
+    });
+
+    it("never copies a copy it made itself, nor a mail of an extra inbox", async () => {
+      await writeFile(
+        join(maildir, "new", "1789.M1.host"),
+        Buffer.concat([Buffer.from("Resent-From: DMARC_Reports@example.org\r\n"), mimeMessage(null)])
+      );
+      await expect(svc.scan()).resolves.toMatchObject({ scanned: 1, ignored: 1, copied: 0, deleted: 1 });
+      expect(messages.insert).toHaveBeenCalledWith(expect.objectContaining({ sender: "noreply-dmarc-support@google.com" }));
+
+      users.find.mockResolvedValue([]);
+      inboxes = ["dmarc@example.com"];
+      messages.find.mockResolvedValue([]);
+      await writeFile(join(maildir, "new", "1789.M2.host"), mimeMessage(null));
+      await expect(svc.scan()).resolves.toMatchObject({ copied: 0, deleted: 0 });
+      expect(mailer.resend).not.toHaveBeenCalled();
+    });
+
+    it("keeps a mail Postfix could not take yet for the next pass, and deletes one it refused, noting why", async () => {
+      await writeFile(join(maildir, "new", "1789.M1.host"), mimeMessage(null));
+      mailer.resend.mockRejectedValueOnce(Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }));
+      await expect(svc.scan()).resolves.toMatchObject({ scanned: 1, copied: 0, deleted: 0 });
+      mailer.resend.mockRejectedValueOnce(Object.assign(new Error("451 4.3.0 try later"), { responseCode: 451 }));
+      await expect(svc.scan()).resolves.toMatchObject({ scanned: 1, copied: 0, deleted: 0 });
+      expect(messages.insert).not.toHaveBeenCalled();
+      expect(imap.expunge).not.toHaveBeenCalled();
+
+      mailer.resend.mockRejectedValueOnce(Object.assign(new Error("550 5.7.1 virus found"), { responseCode: 550 }));
+      await expect(svc.scan()).resolves.toMatchObject({ scanned: 1, copied: 0, deleted: 1 });
+      expect(messages.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: "not-a-report",
+          detail: "copy to archive@example.com refused: 550 5.7.1 virus found",
+        })
+      );
+    });
+
+    it("keeps the reason of a report it could not read next to the refused copy", async () => {
+      const broken = GOOGLE_REPORT.replace("<domain>example.com</domain>\n    <adkim>", "<adkim>");
+      await writeFile(join(maildir, "new", "a"), mimeMessage({ filename: "r.xml", type: "text/xml", content: strToU8(broken) }));
+      mailer.resend.mockRejectedValueOnce(Object.assign(new Error("554 no"), { responseCode: 554 }));
+      await expect(svc.scan()).resolves.toMatchObject({ failed: 1, deleted: 1 });
+      expect(messages.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: expect.stringMatching(/names no domain.*; copy to archive@example.com refused: 554 no$/),
+        })
+      );
+    });
   });
 
   it("stores a report without rows without inserting any", async () => {

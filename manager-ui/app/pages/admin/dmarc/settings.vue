@@ -15,7 +15,10 @@ setBreadcrumb([{ label: t("nav.dmarc"), to: "/admin/dmarc" }, { label: t("dmarc.
 const { data, status } = useAsyncData(
   "dmarc-settings",
   async () => {
-    const [settings, mailboxes] = await Promise.all([call<DmarcSettings>("/dmarc/settings"), call<string[]>("/dmarc/mailboxes")]);
+    const [settings, mailboxes] = await Promise.all([
+      call<DmarcSettings>("/dmarc/settings"),
+      call<DmarcMailbox[]>("/dmarc/mailboxes"),
+    ]);
     return { settings, mailboxes };
   },
   { server: false }

@@ -77,4 +77,5 @@ export interface DmarcSettingsView {
   reportHour: number;
   inboxes: string[];
   retentionDays: number;
+  copyTo: string | null;
 }

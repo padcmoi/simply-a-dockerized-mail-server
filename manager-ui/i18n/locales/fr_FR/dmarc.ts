@@ -31,7 +31,7 @@ export default {
     run: "Envoyer les rapports d'hier",
     scan: "Lire les boîtes maintenant",
     runDone: "Rapports du {day} : {sent} envoyés, {failed} en échec, {skipped} écartés",
-    scanDone: "{scanned} mails lus, {imported} rapports importés, {deleted} mails supprimés",
+    scanDone: "{scanned} mails lus, {imported} rapports importés, {copied} mails copiés, {deleted} mails supprimés",
     runFailed: "L'envoi des rapports a échoué",
     scanFailed: "La lecture des boîtes a échoué",
     domainsTitle: "Vos domaines vus par les autres fournisseurs (30 j)",
@@ -130,6 +130,10 @@ export default {
     inboxesHint:
       "Les boîtes dmarc_reports de chaque domaine sont lues d'office, et chaque mail lu y est ensuite supprimé, rapport ou non. Ajoutez ici d'autres boîtes de ce serveur qui reçoivent des rapports : elles sont seulement lues, rien n'y est supprimé.",
     inboxesPlaceholder: "Choisir des boîtes",
+    copyTo: "Copie de tous les mails reçus",
+    copyToHint:
+      "Chaque mail lu dans une boîte dmarc_reports, rapport ou non, est d'abord copié dans cette boîte de ce serveur, puis supprimé. Laissez vide pour ne rien copier.",
+    copyToPlaceholder: "Aucune copie",
     retention: "Conservation (jours)",
     retentionHint: "Au-delà, les évaluations, les rapports envoyés et les rapports reçus sont supprimés.",
     save: "Enregistrer",

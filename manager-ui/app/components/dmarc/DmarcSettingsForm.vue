@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const emit = defineEmits<{ saved: [settings: DmarcSettings] }>();
-const props = defineProps<{ settings: DmarcSettings; mailboxes: string[] }>();
+const props = defineProps<{ settings: DmarcSettings; mailboxes: DmarcMailbox[] }>();
 
 const { t } = useI18n();
 const { call } = useApi();
@@ -11,6 +11,17 @@ const saving = ref(false);
 const form = reactive<DmarcSettings>({ ...props.settings, inboxes: [...props.settings.inboxes] });
 
 const hours = Array.from({ length: 24 }, (_, hour) => ({ label: `${String(hour).padStart(2, "0")}:00`, value: hour }));
+
+const addresses = computed(() => props.mailboxes.map((mailbox) => mailbox.email));
+const copyTargets = computed(() =>
+  props.mailboxes.filter((mailbox) => mailbox.reserved === null).map((mailbox) => mailbox.email)
+);
+const copyTo = computed({
+  get: () => form.copyTo ?? undefined,
+  set: (value: string | undefined) => {
+    form.copyTo = value || null;
+  },
+});
 
 const valid = computed(
   () => Number.isInteger(form.retentionDays) && form.retentionDays >= 7 && form.retentionDays <= 3650 && form.inboxes.length <= 10
@@ -62,10 +73,21 @@ async function save() {
       <UFormField :label="t('dmarc.settings.inboxes')" name="inboxes" :description="t('dmarc.settings.inboxesHint')">
         <USelectMenu
           v-model="form.inboxes"
-          :items="mailboxes"
+          :items="addresses"
           multiple
           icon="i-lucide-mailbox"
           :placeholder="t('dmarc.settings.inboxesPlaceholder')"
+          class="w-full"
+        />
+      </UFormField>
+
+      <UFormField :label="t('dmarc.settings.copyTo')" name="copyTo" :description="t('dmarc.settings.copyToHint')">
+        <USelectMenu
+          v-model="copyTo"
+          :items="copyTargets"
+          clear
+          icon="i-lucide-copy"
+          :placeholder="t('dmarc.settings.copyToPlaceholder')"
           class="w-full"
         />
       </UFormField>

@@ -30,10 +30,16 @@ const notFound = () =>
 
 const idParam = () => ApiParam({ name: "id", type: Number, example: 1 });
 
-const settingsExample = { sendingEnabled: true, reportHour: 2, inboxes: ["dmarc@example.com"], retentionDays: 90 };
+const settingsExample = {
+  sendingEnabled: true,
+  reportHour: 2,
+  inboxes: ["dmarc@example.com"],
+  retentionDays: 90,
+  copyTo: "reports-archive@example.com",
+};
 
 const runExample = { day: "2026-09-20", domains: 3, sent: 4, failed: 0, skipped: 1, unchanged: 0 };
-const scanExample = { mailboxes: 1, scanned: 6, imported: 5, duplicates: 0, ignored: 1, failed: 0, deleted: 5 };
+const scanExample = { mailboxes: 1, scanned: 6, imported: 5, duplicates: 0, ignored: 1, failed: 0, copied: 6, deleted: 6 };
 
 const incomingExample = {
   id: 1,
@@ -223,16 +229,37 @@ export const DmarcUpdateSettingsDocs = () =>
       summary: "Change how DMARC reporting is set up",
       description:
         "`reportHour` is the hour of the server's clock after which yesterday's reports are sent. Each hosted domain signs and sends the reports about the mail it received " +
-        "from its own dmarc_reports mailbox. `inboxes` are mailboxes of this server, read for the reports other providers send. Recorded in the activity journal.",
+        "from its own dmarc_reports mailbox. `inboxes` are mailboxes of this server, read for the reports other providers send. `copyTo`, a " +
+        "mailbox of this server that is not reserved, receives a copy of every mail read in a dmarc_reports mailbox, a report or not, before " +
+        "it is deleted: resent unchanged through Postfix with `Resent-*` headers on top, the mail staying for the next pass while Postfix " +
+        "is unreachable or answers 4xx, and deleted anyway on a 5xx, the refusal kept in the inbox log. null turns the copy off, and " +
+        "leaving it out keeps the current one. Recorded in the activity journal.",
     }),
     ApiResponse({ status: 200, description: "The settings as saved", schema: { example: settingsExample } }),
-    ApiResponse({ status: 400, description: "A value out of range, or an inbox that is not a mailbox of this server" }),
+    ApiResponse({
+      status: 400,
+      description:
+        "A value out of range, an inbox or a copy target that is not a mailbox of this server, or a reserved copy target",
+    }),
     forbidden("manage-dmarc-settings")
   );
 
 export const DmarcMailboxesDocs = () =>
   applyDecorators(
-    ApiOperation({ summary: "The mailboxes of this server that can be read for reports" }),
-    ApiResponse({ status: 200, description: "Their addresses", schema: { example: ["dmarc@example.com"] } }),
+    ApiOperation({
+      summary: "The mailboxes of this server, to read for reports or to receive the copies",
+      description:
+        "`reserved` names a mailbox the server provisions itself (`postmaster`, `dmarc_reports`), which cannot receive the copies.",
+    }),
+    ApiResponse({
+      status: 200,
+      description: "Their addresses, in order",
+      schema: {
+        example: [
+          { email: "dmarc@example.com", reserved: null },
+          { email: "dmarc_reports@example.com", reserved: "dmarc_reports" },
+        ],
+      },
+    }),
     forbidden("manage-dmarc-settings")
   );

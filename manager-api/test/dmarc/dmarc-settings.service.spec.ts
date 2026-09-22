@@ -23,6 +23,7 @@ describe("DmarcSettingsService", () => {
       reportHour: 4,
       inboxes: [],
       retentionDays: 90,
+      copyTo: null,
     });
   });
 
@@ -39,23 +40,27 @@ describe("DmarcSettingsService", () => {
       entity<AppSetting>({ key: "dmarc_report_hour", value: "7" }),
       entity<AppSetting>({ key: "dmarc_inboxes", value: "a@example.org,b@example.org" }),
       entity<AppSetting>({ key: "dmarc_retention_days", value: "-3" }),
+      entity<AppSetting>({ key: "dmarc_copy_to", value: "archive@example.org" }),
     ]);
     await expect(svc.get()).resolves.toEqual({
       sendingEnabled: true,
       reportHour: 7,
       inboxes: ["a@example.org", "b@example.org"],
       retentionDays: 90,
+      copyTo: "archive@example.org",
     });
   });
 
-  it("reads an emptied inbox list as no inbox and a stored false as off", async () => {
+  it("reads an emptied inbox list as no inbox, a stored false as off and an emptied copy target as none", async () => {
     repo.find.mockResolvedValue([
       entity<AppSetting>({ key: "dmarc_inboxes", value: "" }),
       entity<AppSetting>({ key: "dmarc_sending_enabled", value: "false" }),
+      entity<AppSetting>({ key: "dmarc_copy_to", value: "" }),
     ]);
     const settings = await svc.get();
     expect(settings.inboxes).toEqual([]);
     expect(settings.sendingEnabled).toBe(false);
+    expect(settings.copyTo).toBeNull();
   });
 
   it("writes only the fields it was given, a list as one comma separated value", async () => {
@@ -68,6 +73,16 @@ describe("DmarcSettingsService", () => {
       ],
       ["key"]
     );
+  });
+
+  it("writes a copy target as it is, and none as an empty value", async () => {
+    await svc.update({ copyTo: "archive@example.org" });
+    expect(repo.upsert).toHaveBeenLastCalledWith(
+      [{ key: "dmarc_copy_to", typeField: "string", value: "archive@example.org" }],
+      ["key"]
+    );
+    await svc.update({ copyTo: null });
+    expect(repo.upsert).toHaveBeenLastCalledWith([{ key: "dmarc_copy_to", typeField: "string", value: "" }], ["key"]);
   });
 
   it("writes nothing when given nothing", async () => {

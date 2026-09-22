@@ -17,6 +17,7 @@ export interface DmarcScanSummary {
   duplicates: number;
   ignored: number;
   failed: number;
+  copied: number;
   deleted: number;
 }
 
@@ -118,6 +119,12 @@ export interface DmarcSettings {
   reportHour: number;
   inboxes: string[];
   retentionDays: number;
+  copyTo: string | null;
+}
+
+export interface DmarcMailbox {
+  email: string;
+  reserved: ReservedMailbox | null;
 }
 
 export interface DmarcXml {

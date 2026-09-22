@@ -228,6 +228,17 @@ describe("DmarcController (e2e: auth + ACL + behavior)", () => {
       expect(dmarc.updateSettings).toHaveBeenCalledWith(SETTINGS);
       expect(activity.record).toHaveBeenCalledWith(expect.objectContaining({ action: "dmarc.settings-updated" }));
     });
+
+    it("takes a copy target, or null to turn the copy off, and settings without one", async () => {
+      for (const copyTo of ["archive@example.org", null]) {
+        await api()
+          .put(`${base}/settings`)
+          .set("Authorization", auth(ROOT))
+          .send({ ...SETTINGS, copyTo })
+          .expect(200);
+        expect(dmarc.updateSettings).toHaveBeenLastCalledWith({ ...SETTINGS, copyTo });
+      }
+    });
   });
 
   describe("validation (400)", () => {
@@ -259,6 +270,8 @@ describe("DmarcController (e2e: auth + ACL + behavior)", () => {
         { ...SETTINGS, inboxes: ["not-an-address"] },
         { ...SETTINGS, inboxes: Array.from({ length: 11 }, (_, i) => `u${i}@example.org`) },
         { ...SETTINGS, retentionDays: 3 },
+        { ...SETTINGS, copyTo: "not-an-address" },
+        { ...SETTINGS, copyTo: "" },
         { ...SETTINGS, orgName: "example.org" },
         { sendingEnabled: true },
         { ...SETTINGS, extra: 1 },

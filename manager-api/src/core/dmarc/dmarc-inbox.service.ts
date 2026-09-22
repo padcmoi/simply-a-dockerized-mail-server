@@ -8,9 +8,10 @@ import { DmarcIncomingRecord } from "../entities/dmarc-incoming-record.entity";
 import { DmarcIncomingReport } from "../entities/dmarc-incoming-report.entity";
 import { VirtualUser } from "../entities/virtual-user.entity";
 import { DMARC_REPORTS_LOCAL_PART } from "../common/reserved-mailboxes";
-import { readDmarcMessage } from "./dmarc-attachments";
+import { readDmarcMessage, type DmarcMessage } from "./dmarc-attachments";
 import { parseFeedback } from "./dmarc-feedback.parser";
 import { DmarcImapService, type DmarcImapTarget } from "./dmarc-imap.service";
+import { DmarcMailerService } from "./dmarc-mailer.service";
 import { DmarcSettingsService } from "./dmarc-settings.service";
 import type { DmarcFeedback, DmarcInboxStatus } from "./dmarc.types";
 
@@ -24,6 +25,7 @@ export interface DmarcScanSummary {
   duplicates: number;
   ignored: number;
   failed: number;
+  copied: number;
   deleted: number;
 }
 
@@ -70,7 +72,8 @@ export class DmarcInboxService {
     private readonly users: Repository<VirtualUser>,
     private readonly settings: DmarcSettingsService,
     private readonly dataSource: DataSource,
-    private readonly imap: DmarcImapService
+    private readonly imap: DmarcImapService,
+    private readonly mailer: DmarcMailerService
   ) {}
 
   private mailRoot() {
@@ -164,11 +167,15 @@ export class DmarcInboxService {
     return true;
   }
 
-  private async read(file: string, mailbox: string): Promise<Partial<DmarcInboxMessage>> {
+  private async read(file: string, mailbox: string): Promise<{ row: Partial<DmarcInboxMessage>; resentFrom: string | null }> {
     const size = (await stat(file)).size;
-    if (size > MAX_MESSAGE_BYTES) return { status: "not-a-report", detail: "too-large" };
+    if (size > MAX_MESSAGE_BYTES) return { row: { status: "not-a-report", detail: "too-large" }, resentFrom: null };
 
     const message = await readDmarcMessage(new Uint8Array(await readFile(file)));
+    return { row: await this.import(message, mailbox), resentFrom: message.resentFrom };
+  }
+
+  private async import(message: DmarcMessage, mailbox: string): Promise<Partial<DmarcInboxMessage>> {
     const base = {
       messageId: clip(message.messageId, 512),
       sender: clip(message.from, 320),
@@ -190,6 +197,16 @@ export class DmarcInboxService {
 
     const status: DmarcInboxStatus = imported ? "imported" : duplicates ? "duplicate" : "failed";
     return { ...base, status, reports: imported, detail: errors.length ? errors.join("; ").slice(0, 1024) : null };
+  }
+
+  private async copy(path: string, mailbox: string, to: string) {
+    try {
+      await this.mailer.resend(path, mailbox, to);
+      return null;
+    } catch (e) {
+      const code = (e as { responseCode?: number }).responseCode;
+      return { permanent: code !== undefined && code >= 500, reason: `copy to ${to} refused: ${(e as Error).message}` };
+    }
   }
 
   async mailboxes(): Promise<string[]> {
@@ -219,13 +236,16 @@ export class DmarcInboxService {
       duplicates: 0,
       ignored: 0,
       failed: 0,
+      copied: 0,
       deleted: 0,
     };
     if (this.running) return summary;
     this.running = true;
     try {
+      const { copyTo } = await this.settings.get();
       for (const mailbox of await this.mailboxes()) {
         summary.mailboxes += 1;
+        const reserved = mailbox.startsWith(`${DMARC_REPORTS_LOCAL_PART}@`);
         const files = await this.files(mailbox);
         const keys = files.map((file) => messageKey(basename(file.path)));
         const known = new Set(
@@ -243,11 +263,23 @@ export class DmarcInboxService {
           summary.scanned += 1;
 
           let outcome: Partial<DmarcInboxMessage>;
+          let resentFrom: string | null = null;
           try {
-            outcome = await this.read(file.path, mailbox);
+            ({ row: outcome, resentFrom } = await this.read(file.path, mailbox));
           } catch (e) {
             outcome = { status: "failed", detail: (e as Error).message.slice(0, 1024) };
           }
+
+          if (reserved && copyTo && !resentFrom?.toLowerCase().includes(`${DMARC_REPORTS_LOCAL_PART}@`)) {
+            const failure = await this.copy(file.path, mailbox, copyTo);
+            if (failure && !failure.permanent) {
+              this.log.warn(`${failure.reason}, the mail stays in ${mailbox} for the next pass`);
+              continue;
+            }
+            if (failure) outcome.detail = [outcome.detail, failure.reason].filter(Boolean).join("; ").slice(0, 1024);
+            else summary.copied += 1;
+          }
+
           await this.messages.insert({ mailbox, messageKey: key.slice(0, 255), reports: 0, ...outcome });
           known.add(key);
 

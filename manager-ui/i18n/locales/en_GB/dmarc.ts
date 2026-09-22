@@ -31,7 +31,7 @@ export default {
     run: "Send yesterday's reports",
     scan: "Read the inboxes now",
     runDone: "Reports of {day}: {sent} sent, {failed} failed, {skipped} skipped",
-    scanDone: "{scanned} mails read, {imported} reports imported, {deleted} mails deleted",
+    scanDone: "{scanned} mails read, {imported} reports imported, {copied} mails copied, {deleted} mails deleted",
     runFailed: "Sending the reports failed",
     scanFailed: "Reading the inboxes failed",
     domainsTitle: "Your domains as other providers see them (30 d)",
@@ -130,6 +130,10 @@ export default {
     inboxesHint:
       "Every domain's dmarc_reports mailbox is read anyway, and every mail read is then deleted from it, a report or not. Add here other mailboxes of this server that receive reports: they are only read, nothing is deleted from them.",
     inboxesPlaceholder: "Pick mailboxes",
+    copyTo: "Copy of every mail received",
+    copyToHint:
+      "Every mail read in a dmarc_reports mailbox, a report or not, is first copied to this mailbox of the server, then deleted. Leave empty to copy nothing.",
+    copyToPlaceholder: "No copy",
     retention: "Retention (days)",
     retentionHint: "Beyond it, the evaluations, the sent reports and the received reports are deleted.",
     save: "Save",

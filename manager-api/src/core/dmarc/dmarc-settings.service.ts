@@ -9,6 +9,7 @@ const KEYS: Record<keyof DmarcSettingsView, { key: string; type: AppSettingType 
   reportHour: { key: "dmarc_report_hour", type: "number" },
   inboxes: { key: "dmarc_inboxes", type: "string" },
   retentionDays: { key: "dmarc_retention_days", type: "number" },
+  copyTo: { key: "dmarc_copy_to", type: "string" },
 };
 
 export function serverDomain(): string {
@@ -30,7 +31,13 @@ export class DmarcSettingsService {
   constructor(@InjectRepository(AppSetting) private readonly repo: Repository<AppSetting>) {}
 
   defaults(): DmarcSettingsView {
-    return { sendingEnabled: false, reportHour: hourOf(process.env.DMARC_REPORT_HOUR, 2), inboxes: [], retentionDays: 90 };
+    return {
+      sendingEnabled: false,
+      reportHour: hourOf(process.env.DMARC_REPORT_HOUR, 2),
+      inboxes: [],
+      retentionDays: 90,
+      copyTo: null,
+    };
   }
 
   async get(): Promise<DmarcSettingsView> {
@@ -46,6 +53,7 @@ export class DmarcSettingsService {
       reportHour: hourOf(read("reportHour"), defaults.reportHour),
       inboxes: inboxes === undefined ? defaults.inboxes : inboxes.split(",").filter(Boolean),
       retentionDays: Number.isInteger(retention) && retention > 0 ? retention : defaults.retentionDays,
+      copyTo: read("copyTo") || defaults.copyTo,
     };
   }
 
@@ -54,7 +62,11 @@ export class DmarcSettingsService {
     for (const [field, spec] of Object.entries(KEYS) as [keyof DmarcSettingsView, (typeof KEYS)[keyof DmarcSettingsView]][]) {
       const value = input[field];
       if (value === undefined) continue;
-      rows.push({ key: spec.key, typeField: spec.type, value: Array.isArray(value) ? value.join(",") : String(value) });
+      rows.push({
+        key: spec.key,
+        typeField: spec.type,
+        value: Array.isArray(value) ? value.join(",") : value === null ? "" : String(value),
+      });
     }
     if (rows.length) await this.repo.upsert(rows, ["key"]);
     return this.get();

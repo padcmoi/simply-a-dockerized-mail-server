@@ -31,6 +31,7 @@ describe("readDmarcMessage", () => {
       messageId: "<report-1@google.com>",
       from: "noreply-dmarc-support@google.com",
       subject: "Report domain: example.com Submitter: google.com Report-ID: 12345678901234567890",
+      resentFrom: null,
       documents: [GOOGLE_REPORT],
     });
   });
@@ -47,6 +48,14 @@ describe("readDmarcMessage", () => {
     const message = await readDmarcMessage(mimeMessage({ filename: "broken.gz", type: "application/gzip", content: broken }));
     expect(message.documents).toEqual([]);
     expect((await readDmarcMessage(mimeMessage(null))).documents).toEqual([]);
+  });
+
+  it("tells who resent the message, when someone did", async () => {
+    expect((await readDmarcMessage(mimeMessage(null))).resentFrom).toBeNull();
+    const resent = new TextEncoder().encode(
+      `Resent-From: dmarc_reports@example.org\r\n${new TextDecoder().decode(mimeMessage(null))}`
+    );
+    expect((await readDmarcMessage(resent)).resentFrom).toBe("dmarc_reports@example.org");
   });
 
   it("takes a report written in the body of the message", async () => {

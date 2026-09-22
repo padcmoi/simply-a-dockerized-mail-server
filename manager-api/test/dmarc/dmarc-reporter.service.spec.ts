@@ -17,6 +17,7 @@ const SETTINGS: DmarcSettingsView = {
   reportHour: 2,
   inboxes: [],
   retentionDays: 30,
+  copyTo: null,
 };
 
 function evaluation(overrides: Partial<DmarcEvaluation> = {}): DmarcEvaluation {
