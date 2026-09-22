@@ -67,10 +67,6 @@ const props = withDefaults(
     // `update:page` by fetching the next window. A table of a hundred thousand production rows is
     // not loaded into a tab to be paged in it.
     total?: number | null;
-    // How many page buttons stand either side of the current one. Two, not one: a pager showing
-    // 4 [5] 6 turns every jump of more than one page into a second click, and the first and last
-    // chevrons are no help in the middle of a long table.
-    siblingCount?: number;
     withSearch?: boolean;
     // A fixed handful of rows that arrive together and are read whole (a domain's own
     // totals, the two bayes statfiles) has nothing to page through, and a pager under
@@ -84,7 +80,6 @@ const props = withDefaults(
     rowClass: undefined,
     pageSizes: () => [10, 25, 50],
     total: null,
-    siblingCount: 2,
     withSearch: true,
     withPagination: true,
     emptyLabel: undefined,
@@ -102,7 +97,8 @@ const SEARCH_DEBOUNCE_MS = 300;
 const { t } = useI18n();
 
 const root = useTemplateRef<HTMLElement>("root");
-const { asTable } = useTableLayout(root);
+const { asTable, width } = useTableLayout(root);
+const { showEdges, siblingCount } = usePagerLayout(width);
 
 // The field writes `search` on every keystroke, so what was typed appears at
 // once and a caller fetching over the network sees it as it is typed and applies
@@ -245,9 +241,15 @@ function flipSortDirection() {
     <!-- Always rendered, including on one row and on none. A control that appears and disappears with
          the result count moves everything under it, and a filter that empties the list would take the
          count away at the moment it is most worth reading. -->
-    <div v-if="withPagination" class="mt-4 flex flex-col items-center gap-3 @lg:flex-row @lg:justify-between">
-      <div class="flex items-center gap-2">
-        <UPagination v-model:page="page" :total="totalRows" :items-per-page="limit" :sibling-count="siblingCount" />
+    <div v-if="withPagination" class="mt-4 flex flex-wrap items-center justify-center gap-3 @lg:justify-between">
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        <UPagination
+          v-model:page="page"
+          :total="totalRows"
+          :items-per-page="limit"
+          :sibling-count="siblingCount"
+          :show-edges="showEdges"
+        />
         <PageJump v-model:page="page" :pages="pageCount" />
       </div>
       <span class="text-sm text-muted">{{ t("table.count", { shown: paged.length, total: totalRows }) }}</span>

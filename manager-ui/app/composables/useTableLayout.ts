@@ -16,7 +16,7 @@ const FALLBACK_ROOT_PX = 16;
 // Only ever reached once a width has been measured, which is to say in a browser, so there is no
 // server-side branch to guard here. The fallback covers the other case: a stylesheet that leaves the
 // root font size unreadable would otherwise turn the threshold into NaN and pin the layout to cards.
-function rootFontSizePx() {
+export function rootFontSizePx() {
   const size = Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
   return Number.isFinite(size) && size > 0 ? size : FALLBACK_ROOT_PX;
 }

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- fix(ui): on a narrow table the pager keeps only the current page and its chevrons, and shows the first and last pages once it is wide enough (22-09-2026)
 - feat(dmarc): an optional mailbox of the server receives a copy of every mail read in the `dmarc_reports` mailboxes, a report or not, before it is deleted (22-09-2026)
 - fix(dmarc): every mail read in a `dmarc_reports` mailbox is deleted over IMAP, a report or not, so nobody can fill it with other mail (22-09-2026)
 - fix(dmarc): the `dmarc_reports` mailboxes are unlimited again, with their quota 0 put back at every start (22-09-2026)
