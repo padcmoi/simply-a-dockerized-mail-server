@@ -5,22 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0-rc.13] - 2026-09-22
+
+### Added
+
+- The antivirus alerts get their own preference rows, gated by the antivirus permissions _(notifications)_ [c944530](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c94453024c55f64b2f7b5def56323de523cada1b) (21-09-2026)
+- Aggregate reports sent by each hosted domain and received reports tracked in the manager _(dmarc)_ [840004d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/840004d82bef8ef315da1750c6c866658db78554) (21-09-2026)
+- The domain dashboard shows the DMARC badge next to the DKIM one _(domains)_ [873bd3e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/873bd3e46cf2c3b8396bccd3c1fd42eddb51d4f0) (21-09-2026)
+- The SPF record of every domain ready to copy, with its badge on the dashboard _(domains)_ [120afdc](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/120afdcfeba8eeec3675caaeac00c1019c6a8311) (21-09-2026)
+- Dashboard badges lead to their fix, DKIM shows and rechecks what DNS publishes, SPF proposes the real address _(domains)_ [a99830e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a99830ecf8514b062c10ab37d7dc42e6c3e70e18) (22-09-2026)
 
 ### Changed
 
-- feat(domains): a red SPF, DMARC or DKIM badge of the dashboard, and the inactive one, opens the Administration page on its own section, the DKIM keys get a DNS check button and the record DNS publishes for them, and the proposed SPF record always names the server's real address, keeping from the published one only the third-party senders and its ending (22-09-2026)
-- feat(domains): the SPF record of every domain is ready to copy in its Administration page, the published one kept with the server's address added when missing, and the dashboard shows an SPF badge left of the DMARC one, green when a single record authorizes this server (21-09-2026)
-- feat(domains): the dashboard of a domain shows its DMARC badge left of the DKIM one, green when the published record sends its reports to the domain's `dmarc_reports` mailbox, for whoever may open its Administration page (21-09-2026)
-- feat(dmarc): the DMARC aggregate reports are back, each hosted domain sending from its own `dmarc_reports` mailbox, signed with its own DKIM key, one daily report per domain it received mail from, while the reports other providers send are read from those mailboxes, all of it tracked in the database and shown under Courrier with a supervision chart, a per-domain filter and the DNS record of every domain ready to copy (21-09-2026)
-- fix(domains): the dashboard chart of the fullest mailboxes is titled by occupancy rate, which is what it ranks them by, and no longer by size (21-09-2026)
-- feat(notifications): the stale signatures and the unreachable antivirus each get their own row in the notification preferences, off by default, and only an account allowed to open the Antivirus page can turn them on while anyone can always turn them off (21-09-2026)
-- fix(notifications): the stale antivirus signatures notification says how many hours old they are, where its title showed an empty gap in place of the figure (21-09-2026)
-- test(supervision): the history query is expected to add up the Postfix queues over each step, as it now does (21-09-2026)
-- fix(supervision): over an hour, a day and a week, each point of the Postfix card adds up every second of its step instead of keeping one ten-second row, so the curve and its tooltip say the same whole figure (21-09-2026)
-- fix(supervision): the antivirus card says the signatures were built so many hours ago, where the figure alone said nothing about what it measured (20-09-2026)
-- chore(tooling): every markdown file of the repository goes through prettier on every commit, like the code, the list coming from git so nothing untracked is touched (20-09-2026)
-- chore(changelog): every identifier carrying an underscore is written as code, whatever its case, which is what kept prettier from rewriting the sentence around it as emphasis (20-09-2026)
+- The changelog goes through prettier on every commit, like the code _(tooling)_ [155f2cb](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/155f2cbd188251d56954747280811eef5b3f7755) (20-09-2026)
+- Every bare identifier is written as code, so prettier leaves the sentences alone _(changelog)_ [d6b0409](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/d6b04092430b47240e7fed8f1cd2caea1c0db5fa) (20-09-2026)
+- The uppercase identifiers are written as code too, so a save never deforms the file _(changelog)_ [0d3e680](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0d3e680a6564213d0daaeeecab76cec35d07ab2b) (20-09-2026)
+- Every markdown file goes through prettier on every commit _(tooling)_ [bc7a889](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/bc7a889823e3da81fdb2a9163d64a52f6b56613f) (20-09-2026)
+- The history query is expected to add up the Postfix queues over each step _(supervision)_ [e0d34d1](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e0d34d19e1b7eb3963b64b30042682de1852aad2) (21-09-2026)
+
+### Fixed
+
+- The antivirus card says what its figure measures, the age of the signatures _(supervision)_ [7f76743](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/7f76743546c48234e78170c1143f8a2d8ac6fc55) (20-09-2026)
+- Each point of the Postfix card adds up every second of its step _(supervision)_ [9138847](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9138847f6bbc6f4dbe68b09a1cfc1ea073f64cb9) (21-09-2026)
+- The stale antivirus signatures notification says how many hours old they are _(notifications)_ [e7516c0](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e7516c0890ac615a0c803f8404cc687ff7e7a5cf) (21-09-2026)
+- The fullest mailboxes chart is titled by occupancy rate, what it ranks them by _(domains)_ [a14752b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/a14752b64ea972341950f0bb2f72543cb3c7f9e7) (21-09-2026)
 
 ## [2.0.0-rc.12] - 2026-09-20
 
