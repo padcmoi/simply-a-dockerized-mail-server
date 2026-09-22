@@ -28,6 +28,8 @@ const {
   dkimKeys,
   dkimLoading,
   dkimCheck,
+  dkimChecking,
+  refreshDkimCheck,
   isOwnerOrRoot,
   rotateDkim,
   deleteDkim,
@@ -40,13 +42,18 @@ const {
 // Each item's `slot` names the matching #<slot> template below -- same
 // pattern as GroupDetailTabs/GroupPermissionsPanel's own UTabs items.
 const accordionItems = computed(() => [
-  { label: t("domainDashboard.status.title"), icon: "i-lucide-power", slot: "status" as const },
-  { label: t("domains.table.validity"), icon: "i-lucide-calendar-range", slot: "validity" as const },
-  { label: t("domainDashboard.spf.title"), icon: "i-lucide-send-horizontal", slot: "spf" as const },
-  { label: t("domainDashboard.dkim.title"), icon: "i-lucide-key", slot: "dkim" as const },
-  { label: t("domainDashboard.dmarc.title"), icon: "i-lucide-mail-search", slot: "dmarc" as const },
-  { label: t("domainDashboard.owner.title"), icon: "i-lucide-crown", slot: "owner" as const },
+  { label: t("domainDashboard.status.title"), icon: "i-lucide-power", slot: "status" as const, value: "status" },
+  { label: t("domains.table.validity"), icon: "i-lucide-calendar-range", slot: "validity" as const, value: "validity" },
+  { label: t("domainDashboard.spf.title"), icon: "i-lucide-send-horizontal", slot: "spf" as const, value: "spf" },
+  { label: t("domainDashboard.dkim.title"), icon: "i-lucide-key", slot: "dkim" as const, value: "dkim" },
+  { label: t("domainDashboard.dmarc.title"), icon: "i-lucide-mail-search", slot: "dmarc" as const, value: "dmarc" },
+  { label: t("domainDashboard.owner.title"), icon: "i-lucide-crown", slot: "owner" as const, value: "owner" },
 ]);
+
+const openSection = computed(() => {
+  const wanted = String(route.query.open ?? "");
+  return accordionItems.value.some((item) => item.value === wanted) ? wanted : undefined;
+});
 
 watchEffect(() => {
   setBreadcrumb([
@@ -61,7 +68,7 @@ watchEffect(() => {
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
     <UAlert color="warning" variant="subtle" icon="i-lucide-shield-alert" :title="t('domainDashboard.admin.subtitle')" />
 
-    <UAccordion :items="accordionItems" :ui="{ trigger: 'py-4', body: 'pb-6' }">
+    <UAccordion :items="accordionItems" :default-value="openSection" :ui="{ trigger: 'py-4', body: 'pb-6' }">
       <template #status>
         <ContentPanel class="flex items-center justify-between gap-3">
           <div>
@@ -90,7 +97,9 @@ watchEffect(() => {
           :keys="dkimKeys"
           :loading="dkimLoading"
           :check-result="dkimCheck"
+          :checking="dkimChecking"
           @rotate="rotateDkim"
+          @recheck="refreshDkimCheck()"
           @delete="deleteDkim"
           @copy="copyToClipboard"
         />

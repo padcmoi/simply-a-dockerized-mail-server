@@ -26,15 +26,19 @@ function passing(term: string): string | null {
   return term.replace(/^\+/, "").toLowerCase();
 }
 
-export function recommendedSpfRecord(published: string | null, ips: string[], covered: boolean): string {
-  const literals = ips.map((ip) => `ip4:${ip}`);
-  if (!published) return ["v=spf1", "mx", ...literals, "-all"].join(" ");
+export function recommendedSpfRecord(published: string | null, ips: string[]): string {
+  const ours = ["mx", ...ips.map((ip) => `ip4:${ip}`)];
+  if (!published) return ["v=spf1", ...ours, "-all"].join(" ");
   const terms = spfTerms(published);
-  const added = covered
-    ? []
-    : literals.filter((literal) => !terms.some((term) => passing(term) === literal || passing(term) === `${literal}/32`));
-  const ending = terms.some((term) => /^[+~?-]?all$/i.test(term) || /^redirect=/i.test(term)) ? [] : ["-all"];
-  return ["v=spf1", ...added, ...terms, ...ending].join(" ");
+  const bare = (term: string) => term.replace(/^[+~?-]/, "").toLowerCase();
+  const ending = terms.find((term) => bare(term) === "all") ?? terms.find((term) => bare(term).startsWith("redirect=")) ?? "-all";
+  const kept = terms.filter((term) => {
+    const name = bare(term);
+    if (name === "all" || name.startsWith("redirect=")) return false;
+    if (name === "mx" || name.startsWith("mx/")) return false;
+    return ips.length === 0 || !/^ip[46]:/.test(name);
+  });
+  return ["v=spf1", ...ours, ...kept.filter((term) => !ours.includes(bare(term))), ending].join(" ");
 }
 
 @Injectable()
@@ -82,7 +86,7 @@ export class SpfRecordService {
       (await Promise.all(ips.map((ip) => this.authorizes(name, published, ip)))).every(Boolean);
     return {
       dnsName: name,
-      txtRecord: recommendedSpfRecord(published, ips, covered),
+      txtRecord: recommendedSpfRecord(published, ips),
       mailHost,
       ips,
       published,

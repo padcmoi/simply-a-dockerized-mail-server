@@ -48,13 +48,18 @@ const canViewRspamd = computed(
     (domain.value && hasDomain(domain.value.id, "rspamd", "access") && hasDomain(domain.value.id, "rspamd", "view-rspamd-stats"))
 );
 const canViewAdmin = computed(() => isRoot.value || (domain.value && hasDomain(domain.value.id, "admin", "access")));
-const canViewDmarc = computed(
+const canOpenAdmin = computed(
   () =>
     isRoot.value ||
     (domain.value && hasDomain(domain.value.id, "admin", "access") && hasDomain(domain.value.id, "admin", "view-admin-page"))
 );
 
 const domainPath = computed(() => (domain.value ? `/admin/domains/${domain.value.domain}` : null));
+const adminLinks = computed(() => {
+  const base = canOpenAdmin.value && domainPath.value ? `${domainPath.value}/app?open=` : null;
+  if (!base) return { status: null, spf: null, dmarc: null, dkim: null };
+  return { status: `${base}status`, spf: `${base}spf`, dmarc: `${base}dmarc`, dkim: `${base}dkim` };
+});
 
 const { t } = useI18n();
 const { set: setBreadcrumb } = useBreadcrumb();
@@ -97,17 +102,28 @@ watchEffect(() => {
         </div>
 
         <div class="ml-auto flex items-center gap-3">
-          <UBadge :color="domain.active ? 'success' : 'warning'" variant="subtle">
+          <NuxtLink
+            v-if="!domain.active && adminLinks.status"
+            :to="adminLinks.status"
+            class="rounded-md transition-opacity hover:opacity-75"
+          >
+            <UBadge color="warning" variant="subtle" class="cursor-pointer">{{ $t("common.inactive") }}</UBadge>
+          </NuxtLink>
+          <UBadge v-else :color="domain.active ? 'success' : 'warning'" variant="subtle">
             {{ domain.active ? $t("common.active") : $t("common.inactive") }}
           </UBadge>
 
-          <DomainSpfBadge v-if="canViewDmarc" :domain-id="domain.id" />
+          <DomainSpfBadge v-if="canOpenAdmin" :domain-id="domain.id" :to="adminLinks.spf" />
 
-          <DomainDmarcBadge v-if="canViewDmarc" :domain-id="domain.id" />
+          <DomainDmarcBadge v-if="canOpenAdmin" :domain-id="domain.id" :to="adminLinks.dmarc" />
 
-          <UTooltip v-if="canViewAdmin && dkimCheck" :text="dkimStatusText">
-            <UBadge :color="dkimStatusOk ? 'success' : 'error'" variant="subtle" :icon="dkimStatusIcon"> DKIM </UBadge>
-          </UTooltip>
+          <DomainStatusBadge
+            v-if="canViewAdmin && dkimCheck"
+            label="DKIM"
+            :ok="dkimStatusOk"
+            :tooltip="dkimStatusText"
+            :to="adminLinks.dkim"
+          />
         </div>
       </template>
       <div v-else class="min-w-0 space-y-1.5">

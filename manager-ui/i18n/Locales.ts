@@ -1592,6 +1592,9 @@ export interface Locales {
       noKey: string;
       generate: string;
       rotate: string;
+      recheck: string;
+      published: string;
+      notPublished: string;
       copied: string;
       statusGenerated: string;
       statusMissing: string;

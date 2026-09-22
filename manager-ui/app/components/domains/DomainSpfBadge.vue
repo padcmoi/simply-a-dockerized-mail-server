@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { domainId } = defineProps<{ domainId: number }>();
+const { domainId, to = null } = defineProps<{ domainId: number; to?: string | null }>();
 
 const { t } = useI18n();
 
@@ -15,13 +15,5 @@ const tooltip = computed(() => {
 
 <template>
   <USkeleton v-if="status === 'pending' && !record" class="h-6 w-16" />
-  <UTooltip v-else-if="record" :text="tooltip">
-    <UBadge
-      :color="state === 'ok' ? 'success' : 'error'"
-      variant="subtle"
-      :icon="state === 'ok' ? 'i-lucide-shield-check' : 'i-lucide-shield-x'"
-    >
-      SPF
-    </UBadge>
-  </UTooltip>
+  <DomainStatusBadge v-else-if="record" label="SPF" :ok="state === 'ok'" :tooltip="tooltip" :to="to" />
 </template>

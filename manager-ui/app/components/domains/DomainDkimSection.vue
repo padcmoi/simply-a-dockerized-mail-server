@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const emit = defineEmits<{
   rotate: [];
+  recheck: [];
   delete: [selector: string];
   copy: [text: string];
 }>();
@@ -9,6 +10,7 @@ const props = defineProps<{
   keys: DkimKey[];
   loading: boolean;
   checkResult: DkimCheckResult | null;
+  checking: boolean;
 }>();
 
 // The check endpoint only ever evaluates the current (latest) selector, so
@@ -17,6 +19,11 @@ const props = defineProps<{
 function matchFor(selector: string) {
   if (!props.checkResult || props.checkResult.expected?.selector !== selector) return null;
   return props.checkResult.match;
+}
+
+function checkedRow(selector: string, index: number) {
+  const expected = props.checkResult?.expected?.selector;
+  return expected ? expected === selector : index === 0;
 }
 
 const confirmDeleteOpen = ref(false);
@@ -70,7 +77,7 @@ function onActionConfirmed() {
     </div>
 
     <div v-else class="space-y-6">
-      <ContentPanel v-for="key in props.keys" :key="key.selector" class="space-y-3">
+      <ContentPanel v-for="(key, index) in props.keys" :key="key.selector" class="space-y-3">
         <div class="flex items-center justify-between gap-2 flex-wrap">
           <div class="flex items-center gap-2 min-w-0 flex-wrap">
             <UIcon name="i-lucide-key" class="text-warning shrink-0" />
@@ -104,7 +111,27 @@ function onActionConfirmed() {
               />
             </div>
           </div>
-          <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" square @click="requestDelete(key.selector)" />
+          <div class="flex items-center gap-1">
+            <UButton
+              v-if="checkedRow(key.selector, index)"
+              icon="i-lucide-refresh-cw"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              :loading="props.checking"
+              @click="emit('recheck')"
+            >
+              {{ t("domainDashboard.dkim.recheck") }}
+            </UButton>
+            <UButton
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="ghost"
+              size="xs"
+              square
+              @click="requestDelete(key.selector)"
+            />
+          </div>
         </div>
         <div class="bg-elevated rounded-md p-3">
           <div class="flex items-start justify-between gap-2">
@@ -121,6 +148,11 @@ function onActionConfirmed() {
               @click="emit('copy', key.txtRecord)"
             />
           </div>
+        </div>
+        <div v-if="props.checkResult?.expected?.selector === key.selector" class="text-xs">
+          <p class="text-muted">{{ t("domainDashboard.dkim.published") }}</p>
+          <p v-if="props.checkResult.found" class="font-mono break-all text-dimmed mt-1">{{ props.checkResult.found.value }}</p>
+          <p v-else class="text-warning mt-1">{{ t("domainDashboard.dkim.notPublished") }}</p>
         </div>
         <div class="flex justify-end">
           <UButton

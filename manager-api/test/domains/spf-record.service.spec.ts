@@ -23,24 +23,32 @@ describe("the SPF record helpers", () => {
   });
 
   it("proposes mx, the server's addresses and -all for a domain that publishes nothing", () => {
-    expect(recommendedSpfRecord(null, ["203.0.113.10"], false)).toBe("v=spf1 mx ip4:203.0.113.10 -all");
-    expect(recommendedSpfRecord(null, [], false)).toBe("v=spf1 mx -all");
+    expect(recommendedSpfRecord(null, ["203.0.113.10"])).toBe("v=spf1 mx ip4:203.0.113.10 -all");
+    expect(recommendedSpfRecord(null, [])).toBe("v=spf1 mx -all");
   });
 
-  it("keeps every published term, putting the missing addresses in front, and its own ending", () => {
-    expect(recommendedSpfRecord("v=spf1 include:_spf.example.net ~all", ["203.0.113.10"], false)).toBe(
-      "v=spf1 ip4:203.0.113.10 include:_spf.example.net ~all"
-    );
-    expect(recommendedSpfRecord("v=spf1 ip4:203.0.113.10/32 a:x.test", ["203.0.113.10", "198.51.100.7"], false)).toBe(
-      "v=spf1 ip4:198.51.100.7 ip4:203.0.113.10/32 a:x.test -all"
-    );
-    expect(recommendedSpfRecord("v=spf1 redirect=_spf.example.net", ["203.0.113.10"], false)).toBe(
-      "v=spf1 ip4:203.0.113.10 redirect=_spf.example.net"
+  it("always names the server's own addresses, never an address it cannot vouch for", () => {
+    expect(recommendedSpfRecord("v=spf1 mx ip4:203.0.113.11 -all", ["203.0.113.10"])).toBe("v=spf1 mx ip4:203.0.113.10 -all");
+    expect(recommendedSpfRecord("v=spf1 mx -all", ["203.0.113.10"])).toBe("v=spf1 mx ip4:203.0.113.10 -all");
+    expect(recommendedSpfRecord("v=spf1 +ip4:203.0.113.10/32 ip6:2001:db8::1 a:x.test", ["203.0.113.10", "198.51.100.7"])).toBe(
+      "v=spf1 mx ip4:203.0.113.10 ip4:198.51.100.7 a:x.test -all"
     );
   });
 
-  it("leaves a record that already covers the server as it is", () => {
-    expect(recommendedSpfRecord("v=spf1 mx -all", ["203.0.113.10"], true)).toBe("v=spf1 mx -all");
+  it("keeps the third-party senders and the published ending", () => {
+    expect(recommendedSpfRecord("v=spf1 include:_spf.example.net mx:relay.example.net a ~all", ["203.0.113.10"])).toBe(
+      "v=spf1 mx ip4:203.0.113.10 include:_spf.example.net mx:relay.example.net a ~all"
+    );
+    expect(recommendedSpfRecord("v=spf1 redirect=_spf.example.net", ["203.0.113.10"])).toBe(
+      "v=spf1 mx ip4:203.0.113.10 redirect=_spf.example.net"
+    );
+    expect(recommendedSpfRecord("v=spf1 ?all redirect=_spf.example.net", ["203.0.113.10"])).toBe(
+      "v=spf1 mx ip4:203.0.113.10 ?all"
+    );
+  });
+
+  it("keeps the published addresses when the server's own could not be found", () => {
+    expect(recommendedSpfRecord("v=spf1 ip4:203.0.113.11 -all", [])).toBe("v=spf1 mx ip4:203.0.113.11 -all");
   });
 });
 
@@ -70,7 +78,7 @@ describe("SpfRecordService", () => {
     published("google-site-verification=abc", "v=spf1 mx -all");
     await expect(svc.describe("Example.org")).resolves.toEqual({
       dnsName: "example.org",
-      txtRecord: "v=spf1 mx -all",
+      txtRecord: "v=spf1 mx ip4:203.0.113.10 -all",
       mailHost: "mail.example.org",
       ips: ["203.0.113.10"],
       published: "v=spf1 mx -all",
@@ -97,7 +105,7 @@ describe("SpfRecordService", () => {
     published("v=spf1 include:_spf.example.net ~all", "v=spf1 -all");
     const record = await svc.describe("example.org");
     expect(record).toMatchObject({
-      txtRecord: "v=spf1 ip4:203.0.113.10 include:_spf.example.net ~all",
+      txtRecord: "v=spf1 mx ip4:203.0.113.10 include:_spf.example.net ~all",
       published: "v=spf1 include:_spf.example.net ~all",
       multiple: true,
       covered: false,
@@ -120,5 +128,11 @@ describe("SpfRecordService", () => {
     await expect(svc.describe("example.org")).resolves.toMatchObject({ mailHost: "", ips: [], error: "timeout", covered: false });
     published("v=spf1 mx -all");
     await expect(svc.describe("example.org")).resolves.toMatchObject({ covered: false, txtRecord: "v=spf1 mx -all" });
+    published("v=spf1 mx ip4:203.0.113.11 -all");
+    vi.stubEnv("MAIL_HOSTNAME", "mail.example.org");
+    await expect(svc.describe("example.org")).resolves.toMatchObject({
+      covered: true,
+      txtRecord: "v=spf1 mx ip4:203.0.113.10 -all",
+    });
   });
 });

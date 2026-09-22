@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- feat(domains): a red SPF, DMARC or DKIM badge of the dashboard, and the inactive one, opens the Administration page on its own section, the DKIM keys get a DNS check button and the record DNS publishes for them, and the proposed SPF record always names the server's real address, keeping from the published one only the third-party senders and its ending (22-09-2026)
 - feat(domains): the SPF record of every domain is ready to copy in its Administration page, the published one kept with the server's address added when missing, and the dashboard shows an SPF badge left of the DMARC one, green when a single record authorizes this server (21-09-2026)
 - feat(domains): the dashboard of a domain shows its DMARC badge left of the DKIM one, green when the published record sends its reports to the domain's `dmarc_reports` mailbox, for whoever may open its Administration page (21-09-2026)
 - feat(dmarc): the DMARC aggregate reports are back, each hosted domain sending from its own `dmarc_reports` mailbox, signed with its own DKIM key, one daily report per domain it received mail from, while the reports other providers send are read from those mailboxes, all of it tracked in the database and shown under Courrier with a supervision chart, a per-domain filter and the DNS record of every domain ready to copy (21-09-2026)

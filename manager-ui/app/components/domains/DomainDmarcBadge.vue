@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { domainId } = defineProps<{ domainId: number }>();
+const { domainId, to = null } = defineProps<{ domainId: number; to?: string | null }>();
 
 const { t } = useI18n();
 
@@ -8,16 +8,11 @@ const { data: record, status } = useDomainDmarcRecord(() => domainId);
 
 <template>
   <USkeleton v-if="status === 'pending' && !record" class="h-6 w-20" />
-  <UTooltip
+  <DomainStatusBadge
     v-else-if="record"
-    :text="record.reportsHere ? t('domainDashboard.dmarc.dnsMatch') : t('domainDashboard.dmarc.badgeMismatch')"
-  >
-    <UBadge
-      :color="record.reportsHere ? 'success' : 'error'"
-      variant="subtle"
-      :icon="record.reportsHere ? 'i-lucide-shield-check' : 'i-lucide-shield-x'"
-    >
-      DMARC
-    </UBadge>
-  </UTooltip>
+    label="DMARC"
+    :ok="record.reportsHere"
+    :tooltip="record.reportsHere ? t('domainDashboard.dmarc.dnsMatch') : t('domainDashboard.dmarc.badgeMismatch')"
+    :to="to"
+  />
 </template>

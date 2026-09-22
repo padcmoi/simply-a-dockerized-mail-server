@@ -74,7 +74,11 @@ export function useDomainSettings(domainFqdn: () => string) {
   const dkimKeys = computed(() => dkimData.value ?? []);
   const dkimLoading = computed(() => dkimStatus.value !== "success" && dkimStatus.value !== "error");
 
-  const { data: dkimCheckData, refresh: refreshDkimCheck } = useAsyncData<DkimCheckResult | null>(
+  const {
+    data: dkimCheckData,
+    status: dkimCheckStatus,
+    refresh: refreshDkimCheck,
+  } = useAsyncData<DkimCheckResult | null>(
     "domain-admin-dkim-check",
     async () => {
       if (!domainId.value) return null;
@@ -87,6 +91,7 @@ export function useDomainSettings(domainFqdn: () => string) {
     { server: false, immediate: false, watch: [domainId], default: () => null }
   );
   const dkimCheck = computed(() => dkimCheckData.value);
+  const dkimChecking = computed(() => dkimCheckStatus.value === "pending");
 
   const isOwnerOrRoot = computed(
     () => isRoot.value || (domain.value?.ownerEmail != null && domain.value.ownerEmail === auth.session?.email)
@@ -219,6 +224,8 @@ export function useDomainSettings(domainFqdn: () => string) {
     dkimKeys,
     dkimLoading,
     dkimCheck,
+    dkimChecking,
+    refreshDkimCheck,
     isOwnerOrRoot,
     rotateDkim,
     deleteDkim,
