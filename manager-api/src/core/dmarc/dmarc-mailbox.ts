@@ -4,7 +4,7 @@ import { sha512crypt, sha512cryptMatches } from "../common/sha512-crypt";
 import { DMARC_REPORTS_LOCAL_PART, dmarcReportsAddress } from "../common/reserved-mailboxes";
 import { VirtualUser } from "../entities/virtual-user.entity";
 
-export const DMARC_REPORTS_QUOTA_BYTES = 100 * 1024 * 1024;
+export const DMARC_REPORTS_QUOTA_BYTES = 0;
 
 export function dmarcReportsPassword(address: string): string | null {
   const pepper = process.env.MANAGER_API_TOKEN_PEPPER;
