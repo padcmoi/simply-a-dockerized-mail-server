@@ -128,7 +128,7 @@ export default {
     hourHint: "Heure de l'horloge du serveur après laquelle les rapports de la veille partent.",
     inboxes: "Boîtes de réception des rapports",
     inboxesHint:
-      "Les boîtes dmarc_reports de chaque domaine sont lues d'office, et un mail dont le rapport est enregistré y est supprimé. Ajoutez ici d'autres boîtes de ce serveur qui reçoivent des rapports : elles sont seulement lues, rien n'y est supprimé.",
+      "Les boîtes dmarc_reports de chaque domaine sont lues d'office, et chaque mail lu y est ensuite supprimé, rapport ou non. Ajoutez ici d'autres boîtes de ce serveur qui reçoivent des rapports : elles sont seulement lues, rien n'y est supprimé.",
     inboxesPlaceholder: "Choisir des boîtes",
     retention: "Conservation (jours)",
     retentionHint: "Au-delà, les évaluations, les rapports envoyés et les rapports reçus sont supprimés.",

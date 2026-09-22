@@ -201,9 +201,9 @@ export const DmarcScanDocs = () =>
     ApiOperation({
       summary: "Read the report mailboxes now instead of waiting for the next pass",
       description:
-        "Recorded in the activity journal. In each `dmarc_reports@` mailbox, the mails whose reports are stored (imported or " +
-        "duplicate) are then deleted over IMAP, so Dovecot keeps its quota right; `deleted` counts them. The other mails, and " +
-        "every mail of an extra inbox from the settings, are left where they are.",
+        "Recorded in the activity journal. In each `dmarc_reports@` mailbox, every mail read is then deleted over IMAP, " +
+        "a report or not, its trace staying in the inbox log and a report's data in the database; `deleted` counts them. " +
+        "The mails of an extra inbox from the settings are never deleted.",
     }),
     ApiResponse({ status: 200, description: "What the pass found", schema: { example: scanExample } }),
     forbidden("import-dmarc-reports")

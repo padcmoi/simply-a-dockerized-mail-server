@@ -204,7 +204,7 @@ describe("DmarcInboxService", () => {
     await first;
   });
 
-  it("deletes over IMAP the mails of a dmarc_reports mailbox whose reports are stored, and only those", async () => {
+  it("deletes over IMAP every mail read in a dmarc_reports mailbox, a report or not, in every folder", async () => {
     inboxes = [];
     users.find.mockResolvedValue([entity<VirtualUser>({ email: "dmarc_reports@example.com" })]);
     await mkdir(join(maildir, ".Junk", "cur"), { recursive: true });
@@ -218,23 +218,25 @@ describe("DmarcInboxService", () => {
     await writeFile(join(maildir, ".Archive.2026", "new", "1789.M4.host,S=1"), "x");
     await writeFile(join(maildir, "cur", "1789.M5.host:2,S"), "x");
     messages.find.mockResolvedValue([
-      entity<DmarcInboxMessage>({ messageKey: "1789.M2.host", status: "duplicate" }),
-      entity<DmarcInboxMessage>({ messageKey: "1789.M4.host,S=1", status: "imported" }),
-      entity<DmarcInboxMessage>({ messageKey: "1789.M5.host", status: "not-a-report" }),
+      entity<DmarcInboxMessage>({ messageKey: "1789.M2.host" }),
+      entity<DmarcInboxMessage>({ messageKey: "1789.M4.host,S=1" }),
+      entity<DmarcInboxMessage>({ messageKey: "1789.M5.host" }),
     ]);
 
-    await expect(svc.scan()).resolves.toMatchObject({ scanned: 2, imported: 1, ignored: 1, deleted: 3 });
+    await expect(svc.scan()).resolves.toMatchObject({ scanned: 2, imported: 1, ignored: 1, deleted: 5 });
     expect(imap.expunge).toHaveBeenCalledTimes(1);
     const [mailbox, targets] = imap.expunge.mock.calls[0] as [string, { folder: string; key: string }[]];
     expect(mailbox).toBe("dmarc_reports@example.com");
     expect([...targets].sort((a, b) => a.key.localeCompare(b.key))).toEqual([
       { folder: "INBOX", key: "1789.M1.host" },
       { folder: "Junk", key: "1789.M2.host" },
+      { folder: "INBOX", key: "1789.M3.host" },
       { folder: "Archive/2026", key: "1789.M4.host,S=1" },
+      { folder: "INBOX", key: "1789.M5.host" },
     ]);
   });
 
-  it("never deletes from an extra inbox, calls nothing with nothing to delete, and survives an IMAP failure", async () => {
+  it("never deletes from an extra inbox, leaves a mail it has not read yet, and survives an IMAP failure", async () => {
     await writeFile(
       join(maildir, "new", "1789.M1.host"),
       mimeMessage({ filename: "r.zip", type: "application/zip", content: zipped() })
@@ -244,14 +246,14 @@ describe("DmarcInboxService", () => {
 
     inboxes = [];
     users.find.mockResolvedValue([entity<VirtualUser>({ email: "dmarc_reports@example.com" })]);
-    messages.find.mockResolvedValue([entity<DmarcInboxMessage>({ messageKey: "1789.M1.host", status: "failed" })]);
-    await expect(svc.scan()).resolves.toMatchObject({ scanned: 0, deleted: 0 });
-    expect(imap.expunge).not.toHaveBeenCalled();
+    for (let i = 0; i < 100; i += 1) await writeFile(join(maildir, "new", `m${i}`), "Subject: x\r\n\r\nhello");
+    await expect(svc.scan()).resolves.toMatchObject({ scanned: 100, deleted: 100 });
+    const [, targets] = imap.expunge.mock.calls[0] as [string, { key: string }[]];
+    expect(targets).toHaveLength(100);
 
-    messages.find.mockResolvedValue([]);
     imap.expunge.mockRejectedValue(new Error("IMAP NO [AUTHENTICATIONFAILED]"));
-    await expect(svc.scan()).resolves.toMatchObject({ scanned: 1, deleted: 0 });
-    expect(imap.expunge).toHaveBeenCalledTimes(1);
+    await expect(svc.scan()).resolves.toMatchObject({ deleted: 0 });
+    expect(imap.expunge).toHaveBeenCalledTimes(2);
   });
 
   it("stores a report without rows without inserting any", async () => {

@@ -128,7 +128,7 @@ export default {
     hourHint: "The hour of the server's clock after which yesterday's reports go out.",
     inboxes: "Report inboxes",
     inboxesHint:
-      "Every domain's dmarc_reports mailbox is read anyway, and a mail whose report is stored is deleted from it. Add here other mailboxes of this server that receive reports: they are only read, nothing is deleted from them.",
+      "Every domain's dmarc_reports mailbox is read anyway, and every mail read is then deleted from it, a report or not. Add here other mailboxes of this server that receive reports: they are only read, nothing is deleted from them.",
     inboxesPlaceholder: "Pick mailboxes",
     retention: "Retention (days)",
     retentionHint: "Beyond it, the evaluations, the sent reports and the received reports are deleted.",

@@ -168,7 +168,7 @@ export class DmarcImapService {
           await session.command(`UID EXPUNGE ${uids.join(",")}`);
           deleted += uids.length;
         } catch (e) {
-          this.log.warn(`deleting the imported reports of ${mailbox} in ${folder} failed: ${(e as Error).message}`);
+          this.log.warn(`deleting the mails read in ${mailbox}, folder ${folder}, failed: ${(e as Error).message}`);
         }
       }
     } finally {

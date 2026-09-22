@@ -98,18 +98,17 @@ export class DmarcInboxService {
     return found;
   }
 
-  private async purge(mailbox: string, files: MailFile[], statuses: Map<string, string>): Promise<number> {
+  private async purge(mailbox: string, files: MailFile[], read: Set<string>): Promise<number> {
     if (!mailbox.startsWith(`${DMARC_REPORTS_LOCAL_PART}@`)) return 0;
     const targets: DmarcImapTarget[] = files.flatMap((file) => {
       const key = messageKey(basename(file.path));
-      const status = statuses.get(key);
-      return status === "imported" || status === "duplicate" ? [{ folder: file.folder, key }] : [];
+      return read.has(key) ? [{ folder: file.folder, key }] : [];
     });
     if (!targets.length) return 0;
     try {
       return await this.imap.expunge(mailbox, targets);
     } catch (e) {
-      this.log.warn(`deleting the imported reports of ${mailbox} failed: ${(e as Error).message}`);
+      this.log.warn(`deleting the mails read in ${mailbox} failed: ${(e as Error).message}`);
       return 0;
     }
   }
@@ -229,14 +228,11 @@ export class DmarcInboxService {
         summary.mailboxes += 1;
         const files = await this.files(mailbox);
         const keys = files.map((file) => messageKey(basename(file.path)));
-        const known = new Map(
+        const known = new Set(
           keys.length
-            ? (
-                await this.messages.find({
-                  where: { mailbox, messageKey: In(keys) },
-                  select: { messageKey: true, status: true },
-                })
-              ).map((row) => [row.messageKey, row.status])
+            ? (await this.messages.find({ where: { mailbox, messageKey: In(keys) }, select: { messageKey: true } })).map(
+                (row) => row.messageKey
+              )
             : []
         );
 
@@ -253,7 +249,7 @@ export class DmarcInboxService {
             outcome = { status: "failed", detail: (e as Error).message.slice(0, 1024) };
           }
           await this.messages.insert({ mailbox, messageKey: key.slice(0, 255), reports: 0, ...outcome });
-          known.set(key, outcome.status ?? "failed");
+          known.add(key);
 
           if (outcome.status === "imported") summary.imported += outcome.reports ?? 0;
           else if (outcome.status === "duplicate") summary.duplicates += 1;

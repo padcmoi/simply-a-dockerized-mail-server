@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- fix(dmarc): every mail read in a `dmarc_reports` mailbox is deleted over IMAP, a report or not, so nobody can fill it with other mail (22-09-2026)
 - fix(dmarc): the `dmarc_reports` mailboxes are unlimited again, with their quota 0 put back at every start (22-09-2026)
 - feat(dmarc): the `dmarc_reports` mailboxes are emptied, over IMAP, of every mail whose report is stored, and the extra inboxes are never touched (22-09-2026)
 - fix(dmarc): the `dmarc_reports` mailbox of every domain gets a fixed 100 MB quota, never 0, and gets it back at every start (22-09-2026)
