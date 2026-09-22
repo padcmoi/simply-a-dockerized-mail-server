@@ -32,15 +32,36 @@ describe("DmarcMailboxService", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("creates the missing mailboxes, turns a disabled one back on and leaves the others alone", async () => {
-    existing.set("dmarc_reports@b.test", { id: 2, email: "dmarc_reports@b.test", active: 0 });
-    existing.set("dmarc_reports@c.test", { id: 3, email: "dmarc_reports@c.test", active: 1 });
+    existing.set("dmarc_reports@b.test", { id: 2, email: "dmarc_reports@b.test", active: 0, quota: "104857600" });
+    existing.set("dmarc_reports@c.test", { id: 3, email: "dmarc_reports@c.test", active: 1, quota: "104857600" });
 
-    await expect(svc.ensureAll()).resolves.toEqual({ created: 1, reactivated: 1, present: 1, failed: 0 });
+    await expect(svc.ensureAll()).resolves.toEqual({ created: 1, reactivated: 1, resized: 0, present: 1, failed: 0 });
     expect(manager.save).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ email: "dmarc_reports@a.test", domain: "a.test", active: 1, maildir: "a.test/dmarc_reports/" })
+      expect.objectContaining({
+        email: "dmarc_reports@a.test",
+        domain: "a.test",
+        active: 1,
+        quota: "104857600",
+        maildir: "a.test/dmarc_reports/",
+      })
     );
     expect(manager.save).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ id: 2, active: 1 }));
+    expect(manager.save).not.toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ id: 3 }));
+  });
+
+  it("puts back the fixed 100 MB quota on a mailbox that lost it, and on a disabled one it turns back on", async () => {
+    existing.set("dmarc_reports@a.test", { id: 1, email: "dmarc_reports@a.test", active: 1, quota: "0" });
+    existing.set("dmarc_reports@b.test", { id: 2, email: "dmarc_reports@b.test", active: 0, quota: "0" });
+    existing.set("dmarc_reports@c.test", { id: 3, email: "dmarc_reports@c.test", active: 1, quota: "209715200" });
+
+    await expect(svc.ensureAll()).resolves.toEqual({ created: 0, reactivated: 1, resized: 2, present: 0, failed: 0 });
+    for (const id of [1, 2, 3]) {
+      expect(manager.save).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ id, active: 1, quota: "104857600" })
+      );
+    }
   });
 
   it("carries on past a domain that fails", async () => {

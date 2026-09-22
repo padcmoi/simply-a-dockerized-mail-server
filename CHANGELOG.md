@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- fix(dmarc): the `dmarc_reports` mailbox of every domain gets a fixed 100 MB quota, never 0, and gets it back at every start (22-09-2026)
+
 ## [2.0.0-rc.13] - 2026-09-22
 
 ### Added

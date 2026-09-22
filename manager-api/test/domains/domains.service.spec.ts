@@ -283,7 +283,7 @@ describe("DomainsService", () => {
       expect(m.txSave).not.toHaveBeenCalledWith(VirtualUser, expect.objectContaining({ email: "postmaster@new.com" }));
     });
 
-    it("gives every new domain its dmarc_reports mailbox, active, with a random password and no quota", async () => {
+    it("gives every new domain its dmarc_reports mailbox, active, with a random password and a fixed 100 MB quota", async () => {
       m.repo.findOne.mockResolvedValueOnce(null);
       vi.spyOn(svc, "disk").mockResolvedValueOnce({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 99_999_999 });
       m.txFindOne.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
@@ -295,7 +295,7 @@ describe("DomainsService", () => {
         expect.objectContaining({
           email: "dmarc_reports@new.com",
           active: 1,
-          quota: "0",
+          quota: "104857600",
           maildir: "new.com/dmarc_reports/",
           password: expect.stringMatching(/^\$6\$/),
         })
@@ -305,15 +305,19 @@ describe("DomainsService", () => {
     it("turns an existing dmarc_reports mailbox back on, and leaves an active one alone", async () => {
       m.repo.findOne.mockResolvedValueOnce(null);
       vi.spyOn(svc, "disk").mockResolvedValueOnce({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 99_999_999 });
-      m.txFindOne.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 9, email: "dmarc_reports@new.com", active: 0 });
+      m.txFindOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 9, email: "dmarc_reports@new.com", active: 0, quota: "0" });
       m.dkim.create.mockResolvedValueOnce({ selector: "s" });
       await svc.create({ domain: "new.com", quota: 10485760 }, "owner-1");
-      expect(m.txSave).toHaveBeenCalledWith(VirtualUser, expect.objectContaining({ id: 9, active: 1 }));
+      expect(m.txSave).toHaveBeenCalledWith(VirtualUser, expect.objectContaining({ id: 9, active: 1, quota: "104857600" }));
 
       m.txSave.mockClear();
       m.repo.findOne.mockResolvedValueOnce(null);
       vi.spyOn(svc, "disk").mockResolvedValueOnce({ totalBytes: 0, freeBytes: 0, reservedBytes: 0, assignableBytes: 99_999_999 });
-      m.txFindOne.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 9, email: "dmarc_reports@new.com", active: 1 });
+      m.txFindOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 9, email: "dmarc_reports@new.com", active: 1, quota: "104857600" });
       m.dkim.create.mockResolvedValueOnce({ selector: "s" });
       await svc.create({ domain: "new.com", quota: 10485760 }, "owner-1");
       expect(m.txSave).not.toHaveBeenCalledWith(VirtualUser, expect.objectContaining({ email: "dmarc_reports@new.com" }));

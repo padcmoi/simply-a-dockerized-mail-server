@@ -111,7 +111,8 @@ export const CreateDomainDocs = () =>
     ApiOperation({
       summary: "Create a managed domain (reserves postmaster, provisions DKIM key best-effort)",
       description:
-        "The caller becomes the domain's owner. A postmaster@<domain> mailbox is always reserved (inactive, quota 0). " +
+        "The caller becomes the domain's owner. A postmaster@<domain> mailbox is always reserved (inactive, quota 0), " +
+        "and so is dmarc_reports@<domain> (active, a fixed 100 MB quota). " +
         "DKIM key generation is attempted but failures there are only logged, not surfaced -- the domain is still created.",
     }),
     ApiBody({
