@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- fix(ui): a long event in the activity journal is cut short, with the whole text in its tooltip, instead of widening the table into a horizontal scrollbar (23-09-2026)
 - feat(ui): every table shades one row out of two, and a row the caller already colours keeps its own colour (23-09-2026)
 - fix(ui): on a narrow table the pager keeps only the current page and its chevrons, and shows the first and last pages once it is wide enough (22-09-2026)
 - feat(dmarc): an optional mailbox of the server receives a copy of every mail read in the `dmarc_reports` mailboxes, a report or not, before it is deleted (22-09-2026)

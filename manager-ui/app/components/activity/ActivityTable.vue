@@ -117,10 +117,12 @@ function deviceLabel(ua: string | null) {
     </template>
 
     <template #action="{ row }">
-      <span class="flex items-center gap-2 min-w-0">
-        <UIcon :name="icon(row.action)" class="size-4 shrink-0 text-muted" />
-        <span class="truncate">{{ label(row) }}</span>
-      </span>
+      <FullTooltip :text="label(row)">
+        <span class="flex items-center gap-2 min-w-0">
+          <UIcon :name="icon(row.action)" class="size-4 shrink-0 text-muted" />
+          <span>{{ truncateChars(label(row), 64) }}</span>
+        </span>
+      </FullTooltip>
     </template>
 
     <template #entityLabel="{ row }">
