@@ -21,7 +21,12 @@ const slots = useSlots();
 
 // UTable states a row's class through its meta rather than on the element, the
 // row being rendered by the component itself.
-const meta = computed(() => ({ class: { tr: (row: { original: T }) => props.rowClass?.(row.original) ?? "" } }));
+const meta = computed(() => ({
+  class: {
+    tr: (row: { original: T; index: number }) =>
+      [row.index % 2 ? "bg-elevated/50" : "", props.rowClass?.(row.original) ?? ""].filter(Boolean).join(" "),
+  },
+}));
 
 // Display columns rather than accessors: every cell goes through the caller's own slot below, so
 // letting the table read the row a second time would be a second definition of what the column shows.
