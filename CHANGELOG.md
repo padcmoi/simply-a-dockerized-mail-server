@@ -5,18 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0-rc.14] - 2026-09-24
 
-### Changed
+### Added
 
-- fix(ui): a long event in the activity journal is cut short, with the whole text in its tooltip, instead of widening the table into a horizontal scrollbar (23-09-2026)
-- feat(ui): every table shades one row out of two, and a row the caller already colours keeps its own colour (23-09-2026)
-- fix(ui): on a narrow table the pager keeps only the current page and its chevrons, and shows the first and last pages once it is wide enough (22-09-2026)
-- feat(dmarc): an optional mailbox of the server receives a copy of every mail read in the `dmarc_reports` mailboxes, a report or not, before it is deleted (22-09-2026)
-- fix(dmarc): every mail read in a `dmarc_reports` mailbox is deleted over IMAP, a report or not, so nobody can fill it with other mail (22-09-2026)
-- fix(dmarc): the `dmarc_reports` mailboxes are unlimited again, with their quota 0 put back at every start (22-09-2026)
-- feat(dmarc): the `dmarc_reports` mailboxes are emptied, over IMAP, of every mail whose report is stored, and the extra inboxes are never touched (22-09-2026)
-- fix(dmarc): the `dmarc_reports` mailbox of every domain gets a fixed 100 MB quota, never 0, and gets it back at every start (22-09-2026)
+- The `dmarc_reports` mailboxes are emptied, over IMAP, of every mail whose report is stored, and the extra inboxes are never touched _(dmarc)_ [9ae2eb3](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/9ae2eb3fb4b06c12320d42ad7d08a5f6d66db081) (22-09-2026)
+- An optional mailbox of the server receives a copy of every mail read in the `dmarc_reports` mailboxes, a report or not, before it is deleted _(dmarc)_ [fd7d33f](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fd7d33f807bb4bd07a276d7aca0bffc3c9e021df) (22-09-2026)
+- Every table shades one row out of two, and a row the caller already colours keeps its own colour _(ui)_ [48a7cde](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/48a7cde991e44b47ccd105bd7b7b2d85e58bf9fa) (23-09-2026)
+
+### Fixed
+
+- The `dmarc_reports` mailbox of every domain gets a fixed 100 MB quota, never 0, and gets it back at every start _(dmarc)_ [c634efd](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/c634efdbd03c3c9b9990da3b63e0af56a20d4129) (22-09-2026)
+- The `dmarc_reports` mailboxes are unlimited again, with their quota 0 put back at every start _(dmarc)_ [931659b](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/931659b32d5d832ecadd5bbbf5ff78f0073b0849) (22-09-2026)
+- Every mail read in a `dmarc_reports` mailbox is deleted over IMAP, a report or not, so nobody can fill it with other mail _(dmarc)_ [0a6e09e](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/0a6e09e7a0b4d3274ad7b49e30906677a870c836) (22-09-2026)
+- On a narrow table the pager keeps only the current page and its chevrons, and shows the first and last pages once it is wide enough _(ui)_ [90da688](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/90da6886e670216bc794d06592011bc2dd3bdbe3) (22-09-2026)
+- A long event in the activity journal is cut short, with the whole text in its tooltip, instead of widening the table into a horizontal scrollbar _(ui)_ [663a4d8](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/663a4d8318fb657a4e5592ad3519ca5bf29bfc8e) (23-09-2026)
 
 ## [2.0.0-rc.13] - 2026-09-22
 
