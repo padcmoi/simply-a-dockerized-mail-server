@@ -15,6 +15,17 @@ const tab = computed({
   set: (next: string) => void navigateTo(`/admin/mail-logs/${next}`),
 });
 
+const archiveItems = computed(() =>
+  (window.value?.archives ?? []).map((archive) => ({
+    label: t("mailLogs.archiveItem", {
+      at: new Date(archive.rotatedAt).toLocaleString(locale.value.replace(/_/g, "-")),
+      size: formatBytes(archive.size),
+    }),
+    icon: "i-lucide-file-archive",
+    onSelect: () => void download(archive),
+  }))
+);
+
 const updated = computed(() => {
   const at = window.value?.updatedAt;
   return at ? new Date(at).toLocaleString(locale.value.replace(/_/g, "-")) : null;
@@ -48,8 +59,19 @@ const updated = computed(() => {
         variant="subtle"
         :loading="downloading"
         :label="t('mailLogs.download')"
-        @click="download"
+        @click="download()"
       />
+      <UDropdownMenu :items="archiveItems" :disabled="!archiveItems.length">
+        <UButton
+          icon="i-lucide-archive"
+          color="neutral"
+          variant="subtle"
+          trailing-icon="i-lucide-chevron-down"
+          :disabled="!archiveItems.length"
+          :loading="downloading"
+          :label="archiveItems.length ? t('mailLogs.archives', { n: archiveItems.length }) : t('mailLogs.archivesNone')"
+        />
+      </UDropdownMenu>
       <span v-if="window" class="ml-auto text-xs text-dimmed">
         {{ t("mailLogs.summary", { n: window.lines.length, size: formatBytes(window.size) }) }}
         <template v-if="updated"> · {{ t("mailLogs.updated", { at: updated }) }}</template>

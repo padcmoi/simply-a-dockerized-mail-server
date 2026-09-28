@@ -7,7 +7,7 @@ import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
 
 describe("MailLogsController (e2e: auth + ACL + behavior)", () => {
   let h: Harness;
-  const logs = { tail: vi.fn(), file: vi.fn() };
+  const logs = { tail: vi.fn(), file: vi.fn(), archives: vi.fn() };
   const window = { service: "postfix", lines: ["a", "b"], size: 4, updatedAt: "2026-09-19T00:00:00.000Z", truncated: false };
 
   beforeAll(async () => {
@@ -18,6 +18,7 @@ describe("MailLogsController (e2e: auth + ACL + behavior)", () => {
     h.cpg.reset();
     vi.clearAllMocks();
     logs.tail.mockResolvedValue(window);
+    logs.archives.mockResolvedValue([]);
   });
 
   const api = () => request(h.app.getHttpServer());
@@ -44,7 +45,7 @@ describe("MailLogsController (e2e: auth + ACL + behavior)", () => {
   it("200 for a user granted the exact permission, with the default window", async () => {
     h.cpg.grantGlobal("supervision", "access", "view-mail-logs");
     const res = await api().get(postfix).set("Authorization", auth(USER)).expect(200);
-    expect(res.body).toEqual(window);
+    expect(res.body).toEqual({ ...window, archives: [] });
     expect(logs.tail).toHaveBeenCalledWith("postfix", { lines: 500 });
   });
   it("one permission reads both logs", async () => {

@@ -1,5 +1,11 @@
 export type MailLogService = "postfix" | "dovecot";
 
+export interface MailLogArchive {
+  name: string;
+  size: number;
+  rotatedAt: string;
+}
+
 export interface MailLogWindow {
   service: MailLogService;
   lines: string[];
@@ -7,6 +13,7 @@ export interface MailLogWindow {
   start: number;
   updatedAt: string | null;
   truncated: boolean;
+  archives: MailLogArchive[];
 }
 
 export interface MailLogFrame {

@@ -11,3 +11,11 @@ export const mailLogQuerySchema = z.object({
 });
 
 export type MailLogQuery = z.infer<typeof mailLogQuerySchema>;
+
+export const MAIL_LOG_ARCHIVE = /^(postfix|dovecot)\.log\.(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})(\.gz)?$/;
+
+export const mailLogDownloadSchema = z.object({
+  archive: z.string().regex(MAIL_LOG_ARCHIVE).optional(),
+});
+
+export type MailLogDownloadQuery = z.infer<typeof mailLogDownloadSchema>;

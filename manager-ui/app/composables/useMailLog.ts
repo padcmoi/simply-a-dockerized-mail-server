@@ -65,15 +65,18 @@ export function useMailLog(service: MailLogService) {
     }
   }
 
-  async function download() {
+  async function download(archive?: MailLogArchive) {
     downloading.value = true;
     downloadFailed.value = false;
     try {
-      const file = await call<Blob>(`/mail-logs/${service}/download`, { responseType: "blob" });
+      const path = archive
+        ? `/mail-logs/${service}/download?archive=${encodeURIComponent(archive.name)}`
+        : `/mail-logs/${service}/download`;
+      const file = await call<Blob>(path, { responseType: "blob" });
       const url = URL.createObjectURL(file);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${service}.log`;
+      link.download = archive ? `${archive.name.replace(/\.gz$/, "").replace(".log.", "-")}.log` : `${service}.log`;
       link.click();
       URL.revokeObjectURL(url);
     } catch {

@@ -12,7 +12,8 @@ export const ReadMailLogDocs = () =>
         "Reads the log file from its end, oldest line first in the answer. `q` keeps the lines containing it, " +
         "ignoring case, and the search stops after 32 MB read, which `truncated` reports. A log that does not " +
         "exist yet answers an empty window. `start` is the byte offset of the oldest line returned: passing it back as " +
-        "`before` reads the window just above, and 0 means the beginning of the file was reached.",
+        "`before` reads the window just above, and 0 means the beginning of the file was reached. `archives` lists the " +
+        "rotated files of that log, newest first, each downloadable through the download route's `archive` query.",
     }),
     ApiParam({ name: "service", enum: MAIL_LOG_SERVICES, description: "Which log to read" }),
     ApiQuery({ name: "lines", required: false, type: Number, description: "How many lines, 1 to 5000, 500 by default" }),
@@ -29,6 +30,7 @@ export const ReadMailLogDocs = () =>
           start: 6818722,
           updatedAt: "2026-09-19T14:53:02.000Z",
           truncated: false,
+          archives: [{ name: "postfix.log.20260919-000512.gz", size: 412803, rotatedAt: "2026-09-19T00:05:12.000Z" }],
         },
       },
     }),
@@ -48,13 +50,22 @@ export const DownloadMailLogDocs = () =>
   applyDecorators(
     ApiOperation({
       summary: "The whole Postfix or Dovecot log file",
-      description: "Streams the log file as it is on disk, with no line limit, as an attachment named after the service.",
+      description:
+        "Streams the log file as it is on disk, with no line limit, as an attachment named after the service. " +
+        "With `archive`, streams that rotated file instead, decompressed, named after the service and its rotation.",
     }),
     ApiParam({ name: "service", enum: MAIL_LOG_SERVICES, description: "Which log to download" }),
+    ApiQuery({
+      name: "archive",
+      required: false,
+      type: String,
+      example: "postfix.log.20260919-000512.gz",
+      description: "A rotated file of this service, as listed in `archives` by the read route",
+    }),
     ApiResponse({ status: 200, description: "The log file, text/plain." }),
     ApiResponse({
       status: 400,
-      description: "Unknown service",
+      description: "Unknown service, malformed archive name, or an archive of the other service",
       schema: { example: { statusCode: 400, message: "Unknown service", error: "Bad Request" } },
     }),
     ApiResponse({
@@ -64,7 +75,7 @@ export const DownloadMailLogDocs = () =>
     }),
     ApiResponse({
       status: 404,
-      description: "The log does not exist yet",
+      description: "The log does not exist yet, or no such archive",
       schema: { example: { statusCode: 404, message: "No log yet", error: "Not Found" } },
     })
   );

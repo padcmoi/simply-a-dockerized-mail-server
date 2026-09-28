@@ -1,8 +1,10 @@
 import { createReadStream } from "fs";
-import { open, stat } from "fs/promises";
+import { open, readdir, stat } from "fs/promises";
 import { join } from "path";
+import type { Readable } from "stream";
+import { createGunzip } from "zlib";
 import { Injectable } from "@nestjs/common";
-import type { MailLogQuery, MailLogService } from "./mail-logs.validation";
+import { MAIL_LOG_ARCHIVE, type MailLogQuery, type MailLogService } from "./mail-logs.validation";
 
 const CHUNK = 64 * 1024;
 const SCAN_LIMIT = 32 * 1024 * 1024;
@@ -17,6 +19,17 @@ export interface MailLogWindow {
   truncated: boolean;
 }
 
+export interface MailLogArchive {
+  name: string;
+  size: number;
+  rotatedAt: string;
+}
+
+export interface MailLogFile {
+  stream: Readable;
+  size: number | null;
+}
+
 export interface MailLogFrame {
   service: MailLogService;
   from: number;
@@ -29,11 +42,34 @@ export class MailLogsService {
   private readonly directory = process.env.MAIL_LOG_PATH ?? "/var/log/mail";
   private readonly offsets = new Map<MailLogService, number>();
 
-  async file(service: MailLogService) {
-    const path = join(this.directory, `${service}.log`);
+  async file(service: MailLogService, archive?: string): Promise<MailLogFile | null> {
+    const name = archive ?? `${service}.log`;
+    if (archive !== undefined && !(MAIL_LOG_ARCHIVE.test(archive) && archive.startsWith(`${service}.log.`))) return null;
+    const path = join(this.directory, name);
     const info = await stat(path).catch(() => null);
-    if (!info) return null;
+    if (!info?.isFile()) return null;
+    if (name.endsWith(".gz")) return { stream: createReadStream(path).pipe(createGunzip()), size: null };
     return { stream: createReadStream(path), size: info.size };
+  }
+
+  async archives(service: MailLogService): Promise<MailLogArchive[]> {
+    const names = await readdir(this.directory).catch(() => [] as string[]);
+    const present = new Set(names);
+    const found: MailLogArchive[] = [];
+    for (const name of names) {
+      const match = MAIL_LOG_ARCHIVE.exec(name);
+      if (!match || match[1] !== service) continue;
+      if (!match[8] && present.has(`${name}.gz`)) continue;
+      const info = await stat(join(this.directory, name)).catch(() => null);
+      if (!info?.isFile()) continue;
+      const [year, month, day, hour, minute, second] = match.slice(2, 8).map(Number);
+      found.push({
+        name,
+        size: info.size,
+        rotatedAt: new Date(Date.UTC(year, month - 1, day, hour, minute, second)).toISOString(),
+      });
+    }
+    return found.sort((a, b) => b.rotatedAt.localeCompare(a.rotatedAt));
   }
 
   async follow(service: MailLogService): Promise<MailLogFrame> {

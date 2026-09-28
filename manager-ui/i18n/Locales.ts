@@ -2408,6 +2408,9 @@ export interface Locales {
     live: string;
     download: string;
     downloadFailed: string;
+    archives: string;
+    archivesNone: string;
+    archiveItem: string;
     summary: string;
     updated: string;
     empty: string;

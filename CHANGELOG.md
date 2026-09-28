@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- feat(mail-logs): the rotated Postfix and Dovecot logs are listed in an Archives menu next to the download button, each downloaded decompressed, so a daily rotation loses nothing from the Logs mail page (28-09-2026)
+
 ### Fixed
 
 - fix(docker): every container keeps at most 30 MB of docker logs, and `postfix.log` and `dovecot.log` are rotated every day, gzipped and kept 30 days, where every log grew without limit (28-09-2026)
