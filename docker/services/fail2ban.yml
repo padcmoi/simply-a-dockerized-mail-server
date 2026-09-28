@@ -20,3 +20,4 @@ services:
     volumes:
       - ${VOLUMES_PATH}/log:/var/log/mail:ro
       - ${VOLUMES_PATH}/fail2ban:/var/lib/fail2ban
+      - ${VOLUMES_PATH}/roundcube-log:/var/log/roundcube

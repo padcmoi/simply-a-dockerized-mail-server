@@ -18,11 +18,14 @@ services:
       ROUNDCUBEMAIL_DEFAULT_PORT: 993
       ROUNDCUBEMAIL_SMTP_SERVER: tls://mail-postfix
       ROUNDCUBEMAIL_SMTP_PORT: 587
-      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,managesieve,markasjunk
+      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,managesieve,markasjunk,fail2ban
       ROUNDCUBE_LANGUAGE: ${ROUNDCUBE_LANGUAGE}
       ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: ${ATTACHMENT_MAX_SIZE_MB:-25}M
     volumes:
       - ../../images/roundcube/config:/var/roundcube/config:ro
+      - ../../images/roundcube/plugins/fail2ban:/var/www/html/plugins/fail2ban:ro
+      - ${VOLUMES_PATH}/roundcube-log:/var/log/roundcube
+      - ${VOLUMES_PATH}/fail2ban/roundcube-deny:/var/lib/fail2ban-deny:ro
     networks:
       mail:
         ipv4_address: 172.200.0.18

@@ -96,3 +96,18 @@ banaction = mailserver
 findtime  = 1d
 maxretry  = 5
 bantime   = 1w
+
+[roundcube]
+enabled   = true
+filter    = roundcube
+logpath   = /var/log/roundcube/failures.log
+banaction = roundcube-deny
+
+[roundcube-slow]
+enabled   = true
+filter    = roundcube
+logpath   = /var/log/roundcube/failures.log
+banaction = roundcube-deny
+findtime  = 1d
+maxretry  = 5
+bantime   = 1d

@@ -19,6 +19,9 @@ done
 
 mkdir -p /var/run/fail2ban /var/lib/fail2ban
 touch /var/lib/fail2ban/fail2ban.log
+mkdir -p /var/log/roundcube /var/lib/fail2ban/roundcube-deny
+touch /var/log/roundcube/failures.log
+chmod 0666 /var/log/roundcube/failures.log
 chmod 0644 /var/lib/fail2ban/fail2ban.log
 tail -F /var/lib/fail2ban/fail2ban.log 2>/dev/null &
 
