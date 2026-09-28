@@ -18,6 +18,9 @@ for src in /etc/fail2ban-templates/*.local; do
 done
 
 mkdir -p /var/run/fail2ban /var/lib/fail2ban
+touch /var/lib/fail2ban/fail2ban.log
+chmod 0644 /var/lib/fail2ban/fail2ban.log
+tail -F /var/lib/fail2ban/fail2ban.log 2>/dev/null &
 
 # Wait for postfix and dovecot to have created their log files. They share
 # the bind-mounted /var/log/mail directory and the mount is read-only here,
@@ -31,5 +34,8 @@ for f in /var/log/mail/postfix.log /var/log/mail/dovecot.log; do
 		T=$((T - 1))
 	done
 done
+
+/usr/local/bin/fail2ban-rules.py || echo "fail2ban-rules: the jail rules could not be published" >&2
+/usr/local/bin/log-rotate.sh &
 
 exec "$@"

@@ -7,6 +7,7 @@ export default {
   unavailable: "Fail2ban est hors de portée depuis le manager",
   permanentRule: "Bannissements posés depuis le manager, sans fin",
   rule: "{maxretry} échecs en {findtime} bannissent {bantime}",
+  recidiveRule: "{maxretry} bannissements en {findtime} bannissent {bantime} sur les ports mail",
   currentlyBanned: "Bannies",
   recentBans: "Bans enregistrés",
   noBan: "Aucune adresse bannie",

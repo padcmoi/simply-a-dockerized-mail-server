@@ -2374,6 +2374,7 @@ export interface Locales {
     unavailable: string;
     permanentRule: string;
     rule: string;
+    recidiveRule: string;
     currentlyBanned: string;
     recentBans: string;
     noBan: string;

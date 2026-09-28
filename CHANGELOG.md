@@ -9,10 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(fail2ban): a `recidive` jail bans for a week, on the mail ports only, an address banned 5 times in a day by the other jails, with its own card, its unban buttons and its line on the supervision chart (28-09-2026)
 - feat(mail-logs): the rotated Postfix and Dovecot logs are listed in an Archives menu next to the download button, each downloaded decompressed, so a daily rotation loses nothing from the Logs mail page (28-09-2026)
 
 ### Fixed
 
+- fix(fail2ban): every jail card shows the rule fail2ban really applies, published by the fail2ban container in `rules.json` at start, where every jail showed the global `.env` values, and the supervision chart gives every line a colour, where the eighth line on had none (28-09-2026)
+- fix(fail2ban): a ban now stops the client, through one `DOCKER-USER` rule bounded to the project subnet and the four mail ports, where the bans hooked in `INPUT` never saw the traffic docker forwards to the containers, and slow brute force is caught by jails counting 5 failures a day with repeat offenders banned longer across every jail (28-09-2026)
 - fix(docker): every container keeps at most 30 MB of docker logs, and `postfix.log` and `dovecot.log` are rotated every day, gzipped and kept 30 days, where every log grew without limit (28-09-2026)
 - fix(rspamd): the scan history is read from rspamd 200 rows at a time, so a ring grown past 2 MB no longer crashes manager-api in a restart loop, and every page still sees the whole ring (28-09-2026)
 - fix(supervision): each point of the Postfix card is the mean depth of its step, in messages, where the sum of its samples turned one stuck mail into a curve climbing to 7200 (28-09-2026)

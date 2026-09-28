@@ -7,6 +7,7 @@ export default {
   unavailable: "Fail2ban is out of reach from the manager",
   permanentRule: "Bans set from the manager, for good",
   rule: "{maxretry} failures in {findtime} ban for {bantime}",
+  recidiveRule: "{maxretry} bans in {findtime} ban for {bantime} on the mail ports",
   currentlyBanned: "Banned",
   recentBans: "Recorded bans",
   noBan: "No banned address",

@@ -27,9 +27,6 @@ const HUES = {
 
 type Hue = keyof typeof HUES;
 
-/** The hues in the order a chart deals them out when a card names none. */
-const HUE_ORDER = Object.keys(HUES) as Hue[];
-
 const {
   series,
   max,
@@ -88,8 +85,15 @@ const RAMP = [
 ];
 
 // One hue each, for when the curves have to be told apart at a glance rather
-// than read as a progression: the nine of HUES, dealt in order.
-const CATEGORICAL = HUE_ORDER.map((hue) => HUES[hue]);
+// than read as a progression: twelve hues that all draw, dealt in order and dealt again past the twelfth.
+const CATEGORICAL = [
+  ...(["primary", "warning", "error", "success", "info", "secondary", "inverted"] as const).map((hue) => HUES[hue]),
+  { line: "stroke-cyan-400", dot: "bg-cyan-400", width: 2 },
+  { line: "stroke-pink-400", dot: "bg-pink-400", width: 2 },
+  { line: "stroke-lime-400", dot: "bg-lime-400", width: 2 },
+  { line: "stroke-orange-400", dot: "bg-orange-400", width: 2 },
+  { line: "stroke-violet-400", dot: "bg-violet-400", width: 2 },
+];
 
 const { locale } = useI18n();
 
@@ -134,7 +138,7 @@ const reading = computed(() => {
   const values = series
     .map((curve, position) => ({
       name: names[position] ?? "",
-      dot: palette.value[position]?.dot,
+      dot: palette.value[position % palette.value.length]?.dot,
       value: curve[index] ?? null,
     }))
     .filter((mark) => mark.value !== null);
@@ -209,8 +213,8 @@ function track(event: PointerEvent) {
               v-for="(fragment, piece) in fragments"
               :key="piece"
               :d="fragment.path"
-              :class="palette[index]?.line"
-              :stroke-width="palette[index]?.width"
+              :class="palette[index % palette.length]?.line"
+              :stroke-width="palette[index % palette.length]?.width"
               fill="none"
               stroke-linejoin="round"
               stroke-linecap="round"
@@ -269,7 +273,7 @@ function track(event: PointerEvent) {
 
     <ul v-if="legend.length" class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-dimmed">
       <li v-for="(name, index) in legend" :key="name" class="flex items-center gap-1.5">
-        <span class="size-1.5 shrink-0 rounded-full" :class="palette[index]?.dot" />
+        <span class="size-1.5 shrink-0 rounded-full" :class="palette[index % palette.length]?.dot" />
         {{ name }}
       </li>
     </ul>

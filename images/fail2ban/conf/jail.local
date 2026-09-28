@@ -4,10 +4,11 @@ bantime  = ${FAIL2BAN_BANTIME}
 bantime.increment = true
 bantime.factor    = 2
 bantime.maxtime   = ${FAIL2BAN_BANTIME_MAX}
+bantime.overalljails = true
 findtime = ${FAIL2BAN_FINDTIME}
 maxretry = ${FAIL2BAN_MAXRETRY}
 backend  = polling
-banaction = iptables-multiport
+banaction = mailserver
 loglevel  = INFO
 logtarget = STDOUT
 
@@ -27,6 +28,15 @@ enabled  = true
 filter   = postfix[mode=auth]
 port     = smtp,465,587
 logpath  = /var/log/mail/postfix.log
+
+[postfix-sasl-slow]
+enabled  = true
+filter   = postfix[mode=auth]
+port     = smtp,465,587
+logpath  = /var/log/mail/postfix.log
+findtime = 1d
+maxretry = 5
+bantime  = 1d
 
 [postfix-abuse]
 enabled  = true
@@ -49,6 +59,15 @@ port     = 993,143,110,995
 logpath  = /var/log/mail/dovecot.log
 maxretry = ${FAIL2BAN_ABUSE_MAXRETRY}
 
+[dovecot-slow]
+enabled  = true
+filter   = dovecot
+port     = 993,143
+logpath  = /var/log/mail/dovecot.log
+findtime = 1d
+maxretry = 5
+bantime  = 1d
+
 [postfix-relay]
 enabled  = true
 filter   = postfix[mode=normal]
@@ -68,3 +87,12 @@ port     = smtp,465,587,993,143
 logpath  = /var/log/mail/postfix.log
 bantime  = -1
 maxretry = 1
+
+[recidive]
+enabled   = true
+filter    = recidive
+logpath   = /var/lib/fail2ban/fail2ban.log
+banaction = mailserver
+findtime  = 1d
+maxretry  = 5
+bantime   = 1w

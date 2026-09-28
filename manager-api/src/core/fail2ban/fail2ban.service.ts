@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { readFileSync } from "fs";
+import { dirname, join } from "path";
 import { Fail2banDbService } from "./fail2ban-db.service";
 import type { Fail2banBanned, Fail2banJail, Fail2banStatus } from "./fail2ban.types";
 
@@ -15,6 +17,7 @@ export class Fail2banService {
   private readonly log = new Logger(Fail2banService.name);
   private readonly baseUrl: string;
   private readonly rules: Rules;
+  private readonly rulesPath: string;
 
   constructor(
     cfg: ConfigService,
@@ -26,12 +29,14 @@ export class Fail2banService {
       findtime: Number(cfg.get<string>("FAIL2BAN_FINDTIME") ?? 300),
       maxretry: Number(cfg.get<string>("FAIL2BAN_MAXRETRY") ?? 5),
     };
+    this.rulesPath = join(dirname(cfg.get<string>("FAIL2BAN_DATABASE") ?? "/var/lib/fail2ban/fail2ban.sqlite3"), "rules.json");
   }
 
   status(): Fail2banStatus {
     const names = this.db.jails();
     const banned = this.db.bans();
     const recent = this.db.recentBans();
+    const published = this.publishedRules();
 
     return {
       available: names.length > 0,
@@ -39,7 +44,7 @@ export class Fail2banService {
         name,
         currentlyBanned: banned.get(name)?.length ?? 0,
         recentBans: recent.get(name) ?? 0,
-        ...this.rulesOf(name),
+        ...this.rulesOf(name, published),
         bans: banned.get(name) ?? [],
       })),
       history: this.db.history(),
@@ -69,7 +74,20 @@ export class Fail2banService {
     return found;
   }
 
-  private rulesOf(name: string): Rules {
+  private publishedRules(): Record<string, unknown> {
+    try {
+      const parsed: unknown = JSON.parse(readFileSync(this.rulesPath, "utf8"));
+      return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private rulesOf(name: string, published: Record<string, unknown>): Rules {
+    const rule = published[name] as Partial<Rules> | undefined;
+    if (rule && [rule.bantime, rule.findtime, rule.maxretry].every((value) => Number.isFinite(value))) {
+      return { bantime: Number(rule.bantime), findtime: Number(rule.findtime), maxretry: Number(rule.maxretry) };
+    }
     return name === MANAGER_JAIL ? { ...this.rules, bantime: -1, maxretry: 1 } : this.rules;
   }
 

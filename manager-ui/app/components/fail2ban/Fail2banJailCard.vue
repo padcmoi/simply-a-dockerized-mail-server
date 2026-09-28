@@ -8,7 +8,7 @@ const { t, locale } = useI18n();
 const rule = computed(() =>
   jail.bantime < 0
     ? t("fail2ban.permanentRule")
-    : t("fail2ban.rule", {
+    : t(jail.name === "recidive" ? "fail2ban.recidiveRule" : "fail2ban.rule", {
         maxretry: jail.maxretry,
         findtime: formatSeconds(jail.findtime, t),
         bantime: formatSeconds(jail.bantime, t),

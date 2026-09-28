@@ -1,4 +1,4 @@
 [Definition]
 loglevel  = INFO
-logtarget = STDOUT
+logtarget = /var/lib/fail2ban/fail2ban.log
 dbpurgeage = ${FAIL2BAN_DB_PURGE_AGE}
