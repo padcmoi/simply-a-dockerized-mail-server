@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- fix(supervision): each point of the Postfix card is the mean depth of its step, in messages, where the sum of its samples turned one stuck mail into a curve climbing to 7200 (28-09-2026)
+
 ## [2.0.0-rc.14] - 2026-09-24
 
 ### Added

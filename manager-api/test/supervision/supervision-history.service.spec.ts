@@ -67,7 +67,7 @@ describe("SupervisionHistoryService", () => {
     expect(sql).toContain("MAX(cpu)");
     expect(sql).toContain("MAX(load_1)");
     expect(sql).toContain("MAX(rspamd_no_action)");
-    expect(sql).toContain("ROUND(SUM(postfix_deferred) * 10)");
+    expect(sql).toContain("ROUND(AVG(postfix_deferred), 2)");
     expect(params).toEqual([60_000, 60_000, NOW - 3_600_000]);
   });
 

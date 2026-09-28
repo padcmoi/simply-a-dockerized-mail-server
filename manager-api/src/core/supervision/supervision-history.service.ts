@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectDataSource } from "@nestjs/typeorm";
 import { DataSource } from "typeorm";
-import { WRITE_MS } from "./supervision-recorder.service";
 
 export const METRIC_RANGES = {
   hour: { span: 3_600_000, step: 60_000 },
@@ -23,7 +22,7 @@ export interface MetricPoint {
   network: [number, number] | null;
   /** rspamd's counters at the end of the bucket: scanned, no action, greylist, add header, reject, learned. */
   rspamd: [number, number, number, number, number, number] | null;
-  /** Deepest each Postfix queue was over the bucket: active, deferred, hold, incoming. */
+  /** Mean depth of each Postfix queue over the bucket: active, deferred, hold, incoming. */
   postfix: [number, number, number, number] | null;
   /** Most addresses each fail2ban jail held banned at once over the bucket. */
   fail2ban: Record<string, number> | null;
@@ -86,10 +85,10 @@ const QUERY = `
          MAX(rspamd_add_header) AS rspamd_add_header,
          MAX(rspamd_reject) AS rspamd_reject,
          MAX(rspamd_learned) AS rspamd_learned,
-         ROUND(SUM(postfix_active) * ${WRITE_MS / 1000}) AS postfix_active,
-         ROUND(SUM(postfix_deferred) * ${WRITE_MS / 1000}) AS postfix_deferred,
-         ROUND(SUM(postfix_hold) * ${WRITE_MS / 1000}) AS postfix_hold,
-         ROUND(SUM(postfix_incoming) * ${WRITE_MS / 1000}) AS postfix_incoming,
+         ROUND(AVG(postfix_active), 2) AS postfix_active,
+         ROUND(AVG(postfix_deferred), 2) AS postfix_deferred,
+         ROUND(AVG(postfix_hold), 2) AS postfix_hold,
+         ROUND(AVG(postfix_incoming), 2) AS postfix_incoming,
          MAX(clamav_age) AS clamav_age
     FROM metrics_history
    WHERE at >= ?

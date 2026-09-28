@@ -12,7 +12,7 @@ const { snapshot, points } = defineProps<{
 const { t, locale } = useI18n();
 
 const tag = computed(() => locale.value.replace("_", "-"));
-const count = (value: number) => Math.round(value).toLocaleString(tag.value);
+const count = (value: number) => (Number.isInteger(value) ? value : Number(value.toFixed(2))).toLocaleString(tag.value);
 
 // The four lines of the Postfix page, as curves in one box, each in the
 // colour its dot wears there: active is mail on its way, deferred is mail that
