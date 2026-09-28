@@ -133,6 +133,8 @@ export interface RspamdHistoryRow {
 }
 
 const RSPAMD_BASE_URL = "http://mail-rspamd:11334";
+export const RSPAMD_HISTORY_RING = 1000;
+export const RSPAMD_HISTORY_CHUNK = 200;
 
 @Injectable()
 export class RspamdService {
@@ -220,26 +222,15 @@ export class RspamdService {
     size: number | undefined,
     query: PaginationQuery
   ): Promise<RspamdHistoryRow[] | PaginatedResult<RspamdHistoryRow>>;
-  // Rspamd itself has no deeper archive than its ring buffer (`size`,
-  // unchanged from before this feature) -- search/pagination/sortDir below
+  // Rspamd itself has no deeper archive than its ring buffer -- search/pagination/sortDir below
   // operate in-memory over that already-fetched window, `total` is bounded
   // to it.
   async history(
     domain: string | undefined,
-    size = 200,
+    _size?: number,
     query?: PaginationQuery
   ): Promise<RspamdHistoryRow[] | PaginatedResult<RspamdHistoryRow>> {
-    let res: Response;
-    try {
-      res = await fetch(`${RSPAMD_BASE_URL}/history?size=${size}`);
-    } catch {
-      throw new HttpException("Rspamd unreachable", HttpStatus.SERVICE_UNAVAILABLE);
-    }
-    if (!res.ok) {
-      throw new HttpException(`Rspamd returned ${res.status}`, HttpStatus.BAD_GATEWAY);
-    }
-    const data = (await res.json()) as { rows?: RspamdHistoryRow[] };
-    let rows = data.rows ?? [];
+    let rows = await this.historyRing();
     if (domain) {
       const suffix = `@${domain}`;
       // A scan belongs to the domain whether the domain SENT it (sender@domain,
@@ -273,5 +264,25 @@ export class RspamdService {
     const total = rows.length;
     const items = rows.slice(query.offset, query.offset + query.limit);
     return { items, total };
+  }
+
+  private async historyRing(): Promise<RspamdHistoryRow[]> {
+    const rows: RspamdHistoryRow[] = [];
+    while (rows.length < RSPAMD_HISTORY_RING) {
+      const from = rows.length;
+      let res: Response;
+      try {
+        res = await fetch(`${RSPAMD_BASE_URL}/history?from=${from}&to=${from + RSPAMD_HISTORY_CHUNK - 1}`);
+      } catch {
+        throw new HttpException("Rspamd unreachable", HttpStatus.SERVICE_UNAVAILABLE);
+      }
+      if (!res.ok) {
+        throw new HttpException(`Rspamd returned ${res.status}`, HttpStatus.BAD_GATEWAY);
+      }
+      const chunk = ((await res.json()) as { rows?: RspamdHistoryRow[] }).rows ?? [];
+      rows.push(...chunk);
+      if (chunk.length < RSPAMD_HISTORY_CHUNK) break;
+    }
+    return rows.slice(0, RSPAMD_HISTORY_RING);
   }
 }

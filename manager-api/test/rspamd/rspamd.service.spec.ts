@@ -190,22 +190,22 @@ describe("RspamdService", () => {
       fetchMock.mockResolvedValue(notOk(500));
       expect((await catchHttp(svc.history(undefined))).getStatus()).toBe(HttpStatus.BAD_GATEWAY);
     });
-    it("returns the full array (default size 200) when no query is given", async () => {
+    it("returns the full array when no query is given", async () => {
       fetchMock.mockResolvedValue(okJson({ rows: rows() }));
       const res = await svc.history(undefined);
       expect(Array.isArray(res)).toBe(true);
       expect(res).toHaveLength(3);
-      expect(fetchMock).toHaveBeenCalledWith("http://mail-rspamd:11334/history?size=200");
+      expect(fetchMock).toHaveBeenCalledWith("http://mail-rspamd:11334/history?from=0&to=199");
     });
     it("defaults rows to an empty array when rspamd omits them", async () => {
       fetchMock.mockResolvedValue(okJson({}));
       await expect(svc.history(undefined)).resolves.toEqual([]);
     });
-    it("requests the explicit size and filters to the domain's recipients", async () => {
+    it("reads the ring whatever size is given and filters to the domain's recipients", async () => {
       fetchMock.mockResolvedValue(okJson({ rows: rows() }));
       // The 2-arg overload returns the plain array (no pagination), so no narrowing needed.
       const res = await svc.history("example.com", 50);
-      expect(fetchMock).toHaveBeenCalledWith("http://mail-rspamd:11334/history?size=50");
+      expect(fetchMock).toHaveBeenCalledWith("http://mail-rspamd:11334/history?from=0&to=199");
       expect(res).toHaveLength(2);
       expect(res.every((r) => r.rcpt_smtp[0].endsWith("@example.com"))).toBe(true);
     });

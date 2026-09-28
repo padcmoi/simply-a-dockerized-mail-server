@@ -37,11 +37,17 @@ export const GetDomainRspamdHistoryDocs = () =>
     ApiOperation({
       summary: "Rspamd scan history filtered to this domain's recipients, paginated",
       description:
-        "Fetches the most recent rows from rspamd's /history endpoint and keeps only rows where at least one " +
-        "rcpt_smtp address ends with @<this domain>. `search`/pagination/`sortBy`/`sortDir` are applied in-memory " +
-        "over that same fetched window -- there is no deeper archive to page into, so `total` is bounded by `size`.",
+        "Reads rspamd's whole /history ring buffer, up to 1000 rows, 200 rows per request to rspamd, and keeps only " +
+        "rows where at least one rcpt_smtp address ends with @<this domain>. `search`/pagination/`sortBy`/`sortDir` " +
+        "are applied in-memory over that same window -- there is no deeper archive to page into, so `total` is " +
+        "bounded by the ring.",
     }),
-    ApiQuery({ name: "size", required: false, type: String, description: "Max rows to request from rspamd (default 200)" }),
+    ApiQuery({
+      name: "size",
+      required: false,
+      type: String,
+      description: "Accepted for compatibility and ignored: the whole ring buffer is always read",
+    }),
     ApiResponse({
       status: 200,
       description: "Scan history rows for this domain's recipients",
@@ -75,8 +81,8 @@ export const GetDomainRspamdStatsDocs = () =>
     ApiOperation({
       summary: "Rspamd action breakdown and per-recipient Bayes learns for this domain",
       description:
-        "Fetches this domain's scan history (same source as GET history, always requesting rspamd's default page " +
-        "size) and tallies a count per action -- rspamd has no per-domain stats endpoint of its own. The `bayes` " +
+        "Fetches this domain's scan history (same source as GET history, the whole ring buffer) and tallies a " +
+        "count per action -- rspamd has no per-domain stats endpoint of its own. The `bayes` " +
         "block is read from the Redis Bayes backend instead: rspamd trains a per-recipient statfile (selector " +
         "rcpt:addr), so learn counts ARE resolvable per domain by matching each statfile key's @domain suffix. " +
         "Redis being unreachable degrades to an empty `bayes` block, never a 5xx.",

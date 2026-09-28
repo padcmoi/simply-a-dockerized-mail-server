@@ -107,10 +107,10 @@ export const GetHistoryDocs = () =>
     ApiOperation({
       summary: "Rspamd scan history, optionally filtered by recipient domain, paginated",
       description:
-        "Proxies Rspamd's own `/history` controller endpoint (a ring buffer, `size` rows fetched). When `domain` " +
-        "is given, rows are filtered in-memory to only those whose `rcpt_smtp` list contains an address ending in " +
-        "`@<domain>`. `search`/pagination/`sortDir` are likewise applied in-memory over that same fetched window " +
-        "-- there is no deeper archive to page into, so `total` is bounded by `size`.",
+        "Reads Rspamd's whole `/history` ring buffer, up to 1000 rows, 200 rows per request to Rspamd. When " +
+        "`domain` is given, rows are filtered in-memory to only those whose `rcpt_smtp` list contains an address " +
+        "ending in `@<domain>`. `search`/pagination/`sortDir` are likewise applied in-memory over that same window " +
+        "-- there is no deeper archive to page into, so `total` is bounded by the ring.",
     }),
     ApiQuery({
       name: "domain",
@@ -124,7 +124,7 @@ export const GetHistoryDocs = () =>
       required: false,
       type: Number,
       example: 200,
-      description: "Max rows to fetch from Rspamd before any domain filtering (default 200)",
+      description: "Accepted for compatibility and ignored: the whole ring buffer is always read",
     }),
     ApiResponse({
       status: 200,
