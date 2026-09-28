@@ -2,6 +2,11 @@ services:
   deliverability-probe:
     container_name: mail-deliverability-probe
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     build:
       context: ../../images/deliverability-probe
     env_file: ../../.env

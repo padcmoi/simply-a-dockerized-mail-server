@@ -2,6 +2,11 @@ services:
   opendkim:
     container_name: mail-opendkim
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     build:
       context: ../../images/opendkim
     env_file: ../../.env

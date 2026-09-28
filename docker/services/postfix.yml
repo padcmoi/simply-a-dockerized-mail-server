@@ -2,6 +2,11 @@ services:
   postfix:
     container_name: mail-postfix
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     build:
       context: ../../images/postfix
     env_file: ../../.env

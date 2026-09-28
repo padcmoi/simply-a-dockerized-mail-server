@@ -2,6 +2,11 @@ services:
   manager-api:
     container_name: mail-manager-api
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     build:
       context: ../../manager-api
     env_file: ../../.env

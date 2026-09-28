@@ -17,7 +17,8 @@ RUN apk add --no-cache \
 COPY conf/ /etc/postfix-templates/
 COPY entrypoint.sh /entrypoint.sh
 COPY cert-watcher.sh /usr/local/bin/cert-watcher.sh
-RUN chmod +x /entrypoint.sh /usr/local/bin/cert-watcher.sh
+COPY log-rotate.sh /usr/local/bin/log-rotate.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/cert-watcher.sh /usr/local/bin/log-rotate.sh
 
 EXPOSE 25 465 587
 

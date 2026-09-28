@@ -23,7 +23,8 @@ RUN apk add --no-cache \
 COPY conf/ /etc/dovecot-templates/
 COPY entrypoint.sh /entrypoint.sh
 COPY cert-watcher.sh /usr/local/bin/cert-watcher.sh
-RUN chmod +x /entrypoint.sh /usr/local/bin/cert-watcher.sh
+COPY log-rotate.sh /usr/local/bin/log-rotate.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/cert-watcher.sh /usr/local/bin/log-rotate.sh
 
 # Bake a 2048-bit dhparam at build time so the entrypoint never has to
 # generate one on first boot. On a slow VPS this used to take 20-90s,

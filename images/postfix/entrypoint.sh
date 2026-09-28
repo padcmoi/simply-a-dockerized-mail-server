@@ -63,5 +63,6 @@ tail -F /var/log/mail/postfix.log 2>/dev/null &
 # Watch the bind-mounted Let's Encrypt cert dir; when it rotates we kill
 # PID 1 so docker's restart policy brings postfix back with the new cert.
 /usr/local/bin/cert-watcher.sh &
+/usr/local/bin/log-rotate.sh &
 
 exec "$@"

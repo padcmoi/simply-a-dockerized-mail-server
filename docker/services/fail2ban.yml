@@ -2,6 +2,11 @@ services:
   fail2ban:
     container_name: mail-fail2ban
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     build:
       context: ../../images/fail2ban
     env_file: ../../.env

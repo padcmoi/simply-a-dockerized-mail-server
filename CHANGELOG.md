@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(docker): every container keeps at most 30 MB of docker logs, and `postfix.log` and `dovecot.log` are rotated every day, gzipped and kept 30 days, where every log grew without limit (28-09-2026)
 - fix(rspamd): the scan history is read from rspamd 200 rows at a time, so a ring grown past 2 MB no longer crashes manager-api in a restart loop, and every page still sees the whole ring (28-09-2026)
 - fix(supervision): each point of the Postfix card is the mean depth of its step, in messages, where the sum of its samples turned one stuck mail into a curve climbing to 7200 (28-09-2026)
 

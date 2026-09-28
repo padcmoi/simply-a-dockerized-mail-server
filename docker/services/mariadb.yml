@@ -2,6 +2,11 @@ services:
   mariadb:
     container_name: mail-mariadb
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     build:
       context: ../../images/mariadb
     environment:
