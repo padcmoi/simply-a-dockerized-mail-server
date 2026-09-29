@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(fail2ban): postscreen bans on the first pregreet and no longer on a hangup, which goes to a jail tolerating 10 an hour, the server's own address is never banned, and the supervision chart gives each of the 13 jails its own colour (29-09-2026)
 - fix(fail2ban): a brute force through the webmail is banned, by `roundcube` jails fed by a Roundcube plugin that logs each failed sign-in with the address the proxy saw and answers 403 to a banned address, where Roundcube signed in from an address fail2ban ignores (28-09-2026)
 - fix(fail2ban): every jail card shows the rule fail2ban really applies, published by the fail2ban container in `rules.json` at start, where every jail showed the global `.env` values, and the supervision chart gives every line a colour, where the eighth line on had none (28-09-2026)
 - fix(fail2ban): a ban now stops the client, through one `DOCKER-USER` rule bounded to the project subnet and the four mail ports, where the bans hooked in `INPUT` never saw the traffic docker forwards to the containers, and slow brute force is caught by jails counting 5 failures a day with repeat offenders banned longer across every jail (28-09-2026)

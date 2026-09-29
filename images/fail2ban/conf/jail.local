@@ -1,5 +1,5 @@
 [DEFAULT]
-ignoreip = 127.0.0.1/8 ::1 172.200.0.0/24
+ignoreip = 127.0.0.1/8 ::1 172.200.0.0/24 ${MAIL_HOSTNAME}
 bantime  = ${FAIL2BAN_BANTIME}
 bantime.increment = true
 bantime.factor    = 2
@@ -51,6 +51,14 @@ filter   = postscreen
 port     = smtp,465,587
 logpath  = /var/log/mail/postfix.log
 maxretry = ${FAIL2BAN_BOT_MAXRETRY}
+
+[postscreen-hangup]
+enabled  = true
+filter   = postscreen-hangup
+port     = smtp,465,587
+logpath  = /var/log/mail/postfix.log
+findtime = 1h
+maxretry = 10
 
 [dovecot-abuse]
 enabled  = true

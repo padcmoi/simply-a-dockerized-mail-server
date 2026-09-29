@@ -85,7 +85,7 @@ const RAMP = [
 ];
 
 // One hue each, for when the curves have to be told apart at a glance rather
-// than read as a progression: twelve hues that all draw, dealt in order and dealt again past the twelfth.
+// than read as a progression: sixteen hues that all draw, dealt in order and dealt again past the sixteenth.
 const CATEGORICAL = [
   ...(["primary", "warning", "error", "success", "info", "secondary", "inverted"] as const).map((hue) => HUES[hue]),
   { line: "stroke-cyan-400", dot: "bg-cyan-400", width: 2 },
@@ -93,6 +93,10 @@ const CATEGORICAL = [
   { line: "stroke-lime-400", dot: "bg-lime-400", width: 2 },
   { line: "stroke-orange-400", dot: "bg-orange-400", width: 2 },
   { line: "stroke-violet-400", dot: "bg-violet-400", width: 2 },
+  { line: "stroke-teal-400", dot: "bg-teal-400", width: 2 },
+  { line: "stroke-amber-300", dot: "bg-amber-300", width: 2 },
+  { line: "stroke-rose-300", dot: "bg-rose-300", width: 2 },
+  { line: "stroke-sky-300", dot: "bg-sky-300", width: 2 },
 ];
 
 const { locale } = useI18n();

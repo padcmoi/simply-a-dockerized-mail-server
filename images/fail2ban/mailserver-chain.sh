@@ -21,6 +21,10 @@ case "$jail" in
 *[!A-Za-z0-9_-]* | "") usage ;;
 esac
 sub="f2b-mail-${jail}"
+if [ "${#sub}" -gt 28 ]; then
+	echo "$0: chain $sub is longer than the 28 characters iptables allows, rename the jail" >&2
+	exit 1
+fi
 
 start() {
 	ipt -N "$CHAIN" 2>/dev/null || true
