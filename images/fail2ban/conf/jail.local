@@ -1,5 +1,5 @@
 [DEFAULT]
-ignoreip = 127.0.0.1/8 ::1 172.200.0.0/24 ${MAIL_HOSTNAME}
+ignoreip = 127.0.0.1/8 ::1 172.200.0.0/24 ${MAIL_PUBLIC_IP}
 bantime  = ${FAIL2BAN_BANTIME}
 bantime.increment = true
 bantime.factor    = 2
