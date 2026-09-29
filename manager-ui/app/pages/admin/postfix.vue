@@ -12,6 +12,7 @@ const stats = ref<PostfixQueueStats | null>(null);
 const loading = ref(false);
 
 const { t } = useI18n();
+const { isRoot } = usePermissions();
 const { call } = useApi();
 const { set: setBreadcrumb } = useBreadcrumb();
 
@@ -49,7 +50,19 @@ onMounted(load);
 
     <UCard v-else-if="stats">
       <template #header>
-        <h2 class="font-semibold">{{ t("domainDashboard.postfix.title") }}</h2>
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="font-semibold">{{ t("domainDashboard.postfix.title") }}</h2>
+          <UButton
+            v-if="isRoot"
+            icon="i-lucide-settings-2"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            to="/admin/config/postfix"
+          >
+            {{ t("postfixPage.settings") }}
+          </UButton>
+        </div>
       </template>
       <div class="text-sm">
         <div

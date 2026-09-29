@@ -56,6 +56,9 @@ export default {
     alreadySet: "Your security question is already set and cannot change",
     required: "Choose your security question first",
   },
+  postfix: {
+    domainNotHosted: "{domain} is not an active domain hosted on this server",
+  },
   twoFactor: {
     alreadyEnabled: "Two-factor authentication is already enabled",
     notEnabled: "Two-factor authentication is not enabled",

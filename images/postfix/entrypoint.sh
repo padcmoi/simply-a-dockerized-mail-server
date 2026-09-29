@@ -64,5 +64,7 @@ tail -F /var/log/mail/postfix.log 2>/dev/null &
 # PID 1 so docker's restart policy brings postfix back with the new cert.
 /usr/local/bin/cert-watcher.sh &
 /usr/local/bin/log-rotate.sh &
+/usr/local/bin/settings-watcher.sh apply
+/usr/local/bin/settings-watcher.sh &
 
 exec "$@"

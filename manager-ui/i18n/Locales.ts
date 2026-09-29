@@ -49,6 +49,9 @@ export interface Locales {
       alreadySet: string;
       required: string;
     };
+    postfix: {
+      domainNotHosted: string;
+    };
     twoFactor: {
       alreadyEnabled: string;
       notEnabled: string;
@@ -210,6 +213,8 @@ export interface Locales {
     mailCardHint: string;
     cadenceCardLabel: string;
     cadenceCardHint: string;
+    postfixCardLabel: string;
+    postfixCardHint: string;
     generalCardLabel: string;
     generalCardHint: string;
     loginRiskCardLabel: string;
@@ -283,6 +288,44 @@ export interface Locales {
       doneActive: string;
       doneValidated: string;
       useProvider: string;
+    };
+    postfix: {
+      cardTitle: string;
+      alertTitle: string;
+      alertDescription: string;
+      bounceTitle: string;
+      sender: string;
+      senderHint: string;
+      senderDefault: string;
+      localPart: string;
+      localPartHint: string;
+      localPartInvalid: string;
+      preview: string;
+      queueTitle: string;
+      queueLink: string;
+      delayWarning: string;
+      delayWarningHint: string;
+      delayWarningRange: string;
+      delayWarningAfterLifetime: string;
+      lifetime: string;
+      lifetimeHint: string;
+      lifetimeRange: string;
+      save: string;
+      saved: string;
+      saveFailed: string;
+      loadFailed: string;
+      reset: string;
+      status: {
+        applied: string;
+        appliedAt: string;
+        appliedHint: string;
+        pending: string;
+        pendingHint: string;
+        error: string;
+        errorHint: string;
+        unknown: string;
+        unknownHint: string;
+      };
     };
     cadence: {
       cardTitle: string;
@@ -1670,6 +1713,7 @@ export interface Locales {
   };
   postfixPage: {
     subtitle: string;
+    settings: string;
   };
   rspamdPage: {
     subtitle: string;

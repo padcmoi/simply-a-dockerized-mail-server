@@ -80,6 +80,7 @@ export default {
     "dmarc_reports-sent": "Rapports DMARC envoyés",
     "dmarc_report-retried": "Rapport DMARC renvoyé",
     "dmarc_inbox-scanned": "Boîtes de rapports DMARC lues",
+    "postfix_settings-updated": "Réglages Postfix modifiés",
   },
   event: {
     auth_login: "S'est connecté",
@@ -126,5 +127,6 @@ export default {
     "dmarc_reports-sent": "A lancé l'envoi des rapports DMARC",
     "dmarc_report-retried": "A renvoyé le rapport DMARC destiné à {label}",
     "dmarc_inbox-scanned": "A lancé la lecture des boîtes de rapports DMARC",
+    "postfix_settings-updated": "A modifié les réglages de Postfix ({fields})",
   },
 } satisfies Locales["activity"];

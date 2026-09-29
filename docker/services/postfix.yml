@@ -14,6 +14,8 @@ services:
       - ${VOLUMES_PATH}/postfix-spool:/var/spool/postfix
       - ${VOLUMES_PATH}/log:/var/log/mail
       - ${TLS_LETSENCRYPT_PATH}:/etc/letsencrypt:ro
+      - ${VOLUMES_PATH}/postfix-managed/settings:/var/lib/postfix-managed/settings:ro
+      - ${VOLUMES_PATH}/postfix-managed/status:/var/lib/postfix-managed/status
     networks:
       mail:
         ipv4_address: 172.200.0.17

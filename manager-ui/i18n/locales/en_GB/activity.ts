@@ -79,6 +79,7 @@ export default {
     "dmarc_reports-sent": "DMARC reports sent",
     "dmarc_report-retried": "DMARC report sent again",
     "dmarc_inbox-scanned": "DMARC report inboxes read",
+    "postfix_settings-updated": "Postfix settings changed",
   },
   event: {
     auth_login: "Signed in",
@@ -125,5 +126,6 @@ export default {
     "dmarc_reports-sent": "Started sending the DMARC reports",
     "dmarc_report-retried": "Sent the DMARC report for {label} again",
     "dmarc_inbox-scanned": "Started reading the DMARC report inboxes",
+    "postfix_settings-updated": "Changed the Postfix settings ({fields})",
   },
 } satisfies Locales["activity"];

@@ -5,6 +5,7 @@ RUN apk add --no-cache \
       ca-certificates \
       gettext \
       inotify-tools \
+      jq \
       postfix \
       postfix-mysql \
       postfix-pcre \
@@ -15,10 +16,12 @@ RUN apk add --no-cache \
     && rm -rf /var/cache/apk/*
 
 COPY conf/ /etc/postfix-templates/
+COPY bounce/ /etc/postfix-bounce/
 COPY entrypoint.sh /entrypoint.sh
 COPY cert-watcher.sh /usr/local/bin/cert-watcher.sh
 COPY log-rotate.sh /usr/local/bin/log-rotate.sh
-RUN chmod +x /entrypoint.sh /usr/local/bin/cert-watcher.sh /usr/local/bin/log-rotate.sh
+COPY settings-watcher.sh /usr/local/bin/settings-watcher.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/cert-watcher.sh /usr/local/bin/log-rotate.sh /usr/local/bin/settings-watcher.sh
 
 EXPOSE 25 465 587
 

@@ -40,6 +40,13 @@ setBreadcrumb([{ label: t("nav.config") }]);
       />
 
       <ProfileActionCard
+        icon="i-lucide-send"
+        :label="t('config.postfixCardLabel')"
+        :hint="t('config.postfixCardHint')"
+        to="/admin/config/postfix"
+      />
+
+      <ProfileActionCard
         icon="i-lucide-activity"
         :label="t('config.supervisionCardLabel')"
         :hint="t('config.supervisionCardHint')"

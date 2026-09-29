@@ -56,6 +56,7 @@ export const API_ERROR_CODES = [
   "mfa.methodUnavailable",
   "securityQuestion.alreadySet",
   "securityQuestion.required",
+  "postfix.domainNotHosted",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

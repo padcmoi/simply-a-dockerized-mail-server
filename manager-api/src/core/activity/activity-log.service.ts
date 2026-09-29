@@ -55,6 +55,7 @@ export const ACTIVITY_ACTIONS = [
   "dmarc.reports-sent",
   "dmarc.report-retried",
   "dmarc.inbox-scanned",
+  "postfix.settings-updated",
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];

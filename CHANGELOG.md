@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(postfix): root accounts set the sender of bounce notifications, lowercase `mailer-daemon` by default and limited to an active hosted domain, and the delay warning and queue lifetime from a Postfix card in the configuration, also reached from the Postfix queue page, applied all or nothing by a watcher in the Postfix container that revalidates the settings, reloads Postfix without dropping a connection and reports whether the version is in force (29-09-2026)
 - feat(fail2ban): a `recidive` jail bans for a week, on the mail ports only, an address banned 5 times in a day by the other jails, with its own card, its unban buttons and its line on the supervision chart (28-09-2026)
 - feat(mail-logs): the rotated Postfix and Dovecot logs are listed in an Archives menu next to the download button, each downloaded decompressed, so a daily rotation loses nothing from the Logs mail page (28-09-2026)
 

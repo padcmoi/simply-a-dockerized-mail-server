@@ -56,6 +56,9 @@ export default {
     alreadySet: "Votre question de sécurité est déjà enregistrée et ne peut plus changer",
     required: "Choisissez d'abord votre question de sécurité",
   },
+  postfix: {
+    domainNotHosted: "{domain} n'est pas un domaine actif hébergé sur ce serveur",
+  },
   twoFactor: {
     alreadyEnabled: "L'authentification à deux facteurs est déjà activée",
     notEnabled: "L'authentification à deux facteurs n'est pas activée",
