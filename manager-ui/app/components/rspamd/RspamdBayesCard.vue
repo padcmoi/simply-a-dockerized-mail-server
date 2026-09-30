@@ -38,6 +38,7 @@ function symbolIcon(symbol: string) {
 
     <DataTable
       v-else
+      table-id="rspamd-bayes"
       :data="statfiles"
       :columns="columns"
       :loading="loading"

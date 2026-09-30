@@ -19,6 +19,7 @@ const tableColumns = computed<DataTableColumn<RspamdHistoryItem>[]>(() => [
 
 const { domainId, domainFqdn } = useCurrentDomain();
 const {
+  tableId,
   stats,
   historyItems,
   total,
@@ -73,6 +74,7 @@ watchEffect(() => {
         v-model:search-by="searchBy"
         v-model:sort-key="sortBy"
         v-model:sort-direction="sortDir"
+        :table-id="tableId"
         :data="historyItems"
         :columns="tableColumns"
         :total="total"

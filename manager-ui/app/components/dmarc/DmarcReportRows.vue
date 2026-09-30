@@ -29,6 +29,7 @@ function label(group: "verdict" | "disposition", value: string) {
 
 <template>
   <DataTable
+    table-id="dmarc-report-rows"
     :data="rows"
     :columns="columns"
     :row-key="(row: DmarcIncomingRow) => row.id"

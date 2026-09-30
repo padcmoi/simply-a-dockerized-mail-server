@@ -96,6 +96,7 @@ async function revoke() {
       <ListSkeleton v-if="!hasLoadedOnce" :columns="5" />
       <DataTable
         v-else
+        table-id="domain-invitations"
         :data="pending"
         :columns="columns"
         :loading="loading"

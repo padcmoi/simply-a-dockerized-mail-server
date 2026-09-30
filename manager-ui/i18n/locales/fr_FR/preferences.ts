@@ -27,5 +27,6 @@ export default {
     colour: "Ce fichier contient une valeur qui n'est pas une couleur hexadécimale",
   },
   pageSize: "Éléments par page par défaut",
-  pageSizeHint: "Nombre de lignes affichées par défaut dans les tableaux.",
+  pageSizeHint:
+    "Nombre de lignes affichées par défaut dans un tableau. Chaque tableau garde ensuite, dans ce navigateur, la taille choisie dans sa propre barre d'outils.",
 } satisfies Locales["preferences"];

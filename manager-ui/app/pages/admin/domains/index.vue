@@ -136,6 +136,7 @@ onMounted(refreshDisk);
       v-model:search="search"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="domains-list"
       :data="items"
       :columns="columns"
       :total="total"

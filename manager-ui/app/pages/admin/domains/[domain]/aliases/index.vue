@@ -110,6 +110,7 @@ function editAlias(alias: AliasRow) {
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="aliases-list"
       :data="items"
       :columns="columns"
       :total="total"

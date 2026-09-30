@@ -134,6 +134,7 @@ async function onDeleteConfirmed() {
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="groups-list"
       :data="groups"
       :columns="columns"
       :total="total"

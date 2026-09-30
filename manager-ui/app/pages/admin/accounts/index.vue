@@ -191,6 +191,7 @@ async function onResetTwoFactorConfirmed() {
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="accounts-list"
       :data="accounts"
       :columns="columns"
       :total="total"

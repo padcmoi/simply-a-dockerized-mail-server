@@ -7,7 +7,7 @@ definePageMeta({
 });
 
 const page = ref(1);
-const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
+const limit = useTablePageSize("domain-quotas");
 const search = ref("");
 const debouncedSearch = ref("");
 const sortBy = ref("id");
@@ -133,6 +133,7 @@ function occupancy(row: QuotaRow) {
 
     <DataTable
       v-else
+      table-id="domain-quota-totals"
       :data="domainRows"
       :columns="domainCols"
       :loading="loading"
@@ -175,6 +176,7 @@ function occupancy(row: QuotaRow) {
       v-model:search="search"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="domain-quotas"
       :data="recipientRows"
       :columns="recipientCols"
       :total="total"

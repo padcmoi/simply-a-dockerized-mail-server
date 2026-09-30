@@ -138,6 +138,7 @@ async function onDeleteConfirmed() {
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="recipients-list"
       :data="items"
       :columns="columns"
       :total="total"

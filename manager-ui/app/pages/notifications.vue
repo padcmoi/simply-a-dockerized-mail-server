@@ -117,6 +117,7 @@ const onPurgeConfirmed = () => purgeScope(purgeChoice.value);
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="notifications-history"
       :data="items"
       :columns="columns"
       :total="total"

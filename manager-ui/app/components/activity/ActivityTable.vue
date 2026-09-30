@@ -12,6 +12,7 @@ const sortDirection = defineModel<"asc" | "desc">("sortDirection", { default: "d
 const action = defineModel<string>("action", { default: "" });
 
 const props = defineProps<{
+  tableId: string;
   rows: ActivityRow[];
   total: number;
   loading: boolean;
@@ -87,6 +88,7 @@ function deviceLabel(ua: string | null) {
     v-model:search-by="searchBy"
     v-model:sort-key="sortKey"
     v-model:sort-direction="sortDirection"
+    :table-id="tableId"
     :data="rows"
     :columns="columns"
     :total="total"

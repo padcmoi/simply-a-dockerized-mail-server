@@ -106,6 +106,7 @@ watch(
 
       <DataTable
         v-else
+        table-id="my-space-domains"
         :data="domains"
         :columns="domainColumns"
         :loading="loading"

@@ -18,6 +18,7 @@ const tableColumns = computed<DataTableColumn<RspamdHistoryItem>[]>(() => [
 ]);
 
 const {
+  tableId,
   stats,
   historyItems,
   total,
@@ -105,6 +106,7 @@ async function onResetActions() {
         v-model:search-by="searchBy"
         v-model:sort-key="sortBy"
         v-model:sort-direction="sortDir"
+        :table-id="tableId"
         :data="historyItems"
         :columns="tableColumns"
         :total="total"

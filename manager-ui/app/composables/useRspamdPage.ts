@@ -27,7 +27,8 @@ export const RSPAMD_ACTION_STYLE = {
 // composable so they stay exact twins by construction, not by convention.
 export function useRspamdPage(domainId?: Ref<number | null>) {
   const page = ref(1);
-  const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
+  const tableId = domainId ? "domain-rspamd-history" : "rspamd-history";
+  const limit = useTablePageSize(tableId);
   const search = ref("");
   const debouncedSearch = ref("");
   // Which column the term is matched against, as everywhere else: the history
@@ -171,6 +172,7 @@ export function useRspamdPage(domainId?: Ref<number | null>) {
     historyHasLoadedOnce,
     statsUnavailable,
     page,
+    tableId,
     limit,
     search,
     searchBy,

@@ -27,7 +27,14 @@ const {
   searchBy,
   sortBy,
   sortDir,
-} = usePaginatedList<AccessEntry>(`api-token-access-${tokenId.value}`, `/api-tokens/${tokenId.value}/access`, "createdAt");
+} = usePaginatedList<AccessEntry>(
+  `api-token-access-${tokenId.value}`,
+  `/api-tokens/${tokenId.value}/access`,
+  "createdAt",
+  [],
+  () => ({}),
+  "api-token-access"
+);
 
 const columns = computed<DataTableColumn<AccessEntry>[]>(() => [
   { key: "createdAt", label: t("apiTokens.access.colWhen"), value: (row) => row.createdAt, primary: true, searchable: false },
@@ -98,6 +105,7 @@ function agentIcon(userAgent: string) {
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="api-token-access"
       :data="entries"
       :columns="columns"
       :total="total"

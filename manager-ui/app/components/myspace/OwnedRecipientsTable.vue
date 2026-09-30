@@ -42,6 +42,7 @@ function occupancy(r: OwnedRecipient) {
 
     <DataTable
       v-else
+      table-id="my-space-recipients"
       :data="recipients"
       :columns="columns"
       :loading="loading"

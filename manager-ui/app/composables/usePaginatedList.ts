@@ -1,11 +1,8 @@
 import { ALL_COLUMNS } from "~/composables/useDataTableRows";
 
-// Shared across every list on the site -- a single "items per page"
-// preference the user sets once (in DataTable's toolbar) and keeps everywhere,
-// persisted with VueUse's useLocalStorage (SSR-safe, syncs from
-// localStorage once mounted client-side). Exported so the two pages that
-// can't use this composable directly (quotas.vue, useRspamdPage.ts) sync
-// to the same key.
+// The default "items per page", set on the preferences page. Each table keeps
+// its own choice under its id (useTablePageSize) and falls back to this one
+// until the user picks a size in that table's toolbar.
 export const LIST_LIMIT_STORAGE_KEY = "manager-list-limit";
 
 // Shared fetch+state for every paginated table page (see pagination.validation.ts
@@ -30,14 +27,15 @@ export function usePaginatedList<T>(
   pathOrFn: string | (() => string | null),
   defaultSortBy: string,
   extraWatch: Ref<unknown>[] = [],
-  extraParams: () => Record<string, string> = () => ({})
+  extraParams: () => Record<string, string> = () => ({}),
+  tableId: string = key
 ) {
   const { call } = useApi();
   const { t } = useI18n();
   const toast = useToast();
 
   const page = ref(1);
-  const limit = useLocalStorage(LIST_LIMIT_STORAGE_KEY, 10);
+  const limit = useTablePageSize(tableId);
   const search = ref("");
   const debouncedSearch = ref("");
   // Which column the term is matched against, DataTable's scope select writing
@@ -109,5 +107,5 @@ export function usePaginatedList<T>(
   // gone and only this drives feedback during reloads.
   const loading = computed(() => status.value === "pending");
 
-  return { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sortBy, sortDir, load: refresh };
+  return { tableId, items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sortBy, sortDir, load: refresh };
 }

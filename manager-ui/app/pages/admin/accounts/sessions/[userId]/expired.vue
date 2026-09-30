@@ -42,7 +42,10 @@ const {
 } = usePaginatedList<SessionRow>(
   `account-sessions-history-${userId.value}`,
   `/accounts/${userId.value}/sessions/history`,
-  "createdAt"
+  "createdAt",
+  [],
+  () => ({}),
+  "account-sessions-history"
 );
 
 // Declared once for both renderings, which DataTable chooses between on its own
@@ -177,6 +180,7 @@ onMounted(loadAccount);
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="account-sessions-history"
       :data="history"
       :columns="columns"
       :total="total"

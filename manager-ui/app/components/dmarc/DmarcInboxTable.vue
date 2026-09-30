@@ -51,6 +51,7 @@ const columns = computed<DataTableColumn<DmarcInboxMessage>[]>(() => [
     v-model:search-by="searchBy"
     v-model:sort-key="sortKey"
     v-model:sort-direction="sortDirection"
+    table-id="dmarc-inbox"
     :data="rows"
     :columns="columns"
     :total="total"

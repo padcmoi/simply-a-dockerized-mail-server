@@ -68,6 +68,7 @@ watch([action, actorId], () => {
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       v-model:action="action"
+      table-id="all-activity"
       :rows="items"
       :total="total"
       :loading="loading"

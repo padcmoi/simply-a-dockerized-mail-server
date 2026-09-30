@@ -142,6 +142,7 @@ onMounted(load);
 
       <DataTable
         v-else
+        table-id="all-sessions"
         :data="expiredAccounts"
         :columns="expiredColumns"
         :row-key="(row: AccountSessionSummary) => row.accountId"

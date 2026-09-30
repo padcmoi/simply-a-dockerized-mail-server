@@ -32,6 +32,7 @@ const columns = computed<DataTableColumn<OwnedAlias>[]>(() => [
 
     <DataTable
       v-else
+      table-id="my-space-aliases"
       :data="aliases"
       :columns="columns"
       :loading="loading"

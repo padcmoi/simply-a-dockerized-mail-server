@@ -22,6 +22,7 @@ const columns = computed<DataTableColumn<DmarcDomainSummary>[]>(() => [
     </template>
 
     <DataTable
+      table-id="dmarc-domains"
       :data="domains"
       :columns="columns"
       :row-key="(row: DmarcDomainSummary) => row.domain"

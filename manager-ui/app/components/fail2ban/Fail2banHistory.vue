@@ -52,6 +52,7 @@ function rowKey(row: Fail2banHistoryEntry) {
     <DataTable
       v-model:sort-key="sortKey"
       v-model:sort-direction="sortDirection"
+      table-id="fail2ban-history"
       :data="history"
       :columns="columns"
       :row-key="rowKey"

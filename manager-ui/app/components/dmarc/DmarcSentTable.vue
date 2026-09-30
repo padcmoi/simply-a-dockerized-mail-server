@@ -69,6 +69,7 @@ async function onRetry(row: DmarcOutgoingReport) {
     v-model:search-by="searchBy"
     v-model:sort-key="sortKey"
     v-model:sort-direction="sortDirection"
+    table-id="dmarc-sent"
     :data="rows"
     :columns="columns"
     :total="total"

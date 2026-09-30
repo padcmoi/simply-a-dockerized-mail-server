@@ -50,6 +50,9 @@ defineSlots<Record<string, (_props: { row: T }) => unknown> & { filters?: () => 
 
 const props = withDefaults(
   defineProps<{
+    // Names this table in the browser's storage: its page size is kept under
+    // it, so every table remembers its own choice.
+    tableId: string;
     data: T[];
     columns: DataTableColumn<T>[];
     loading?: boolean;
@@ -96,6 +99,8 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 const { t } = useI18n();
 
+const storedPageSize = useTablePageSize(props.tableId);
+
 const root = useTemplateRef<HTMLElement>("root");
 const { asTable, width } = useTableLayout(root);
 const { showEdges, siblingCount } = usePagerLayout(width);
@@ -139,6 +144,10 @@ const sortItems = computed(() => [
   ...sortableColumns.value.map((column) => ({ label: column.label, value: column.key })),
 ]);
 
+watch(limit, (size) => {
+  if (size !== storedPageSize.value) storedPageSize.value = size;
+});
+
 function applySort(next: { key: string; direction: "asc" | "desc" } | null) {
   sortKey.value = next?.key ?? "";
   if (next) sortDirection.value = next.direction;
@@ -157,6 +166,10 @@ function flipSortDirection() {
   if (!sort.value) return;
   applySort({ key: sort.value.key, direction: sort.value.direction === "asc" ? "desc" : "asc" });
 }
+
+onMounted(() => {
+  if (props.pageSizes.includes(storedPageSize.value) && limit.value !== storedPageSize.value) limit.value = storedPageSize.value;
+});
 </script>
 
 <template>

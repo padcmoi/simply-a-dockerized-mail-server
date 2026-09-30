@@ -36,6 +36,7 @@ function aliasCapReached(row: MyDelegation) {
 
     <DataTable
       v-else
+      table-id="my-delegations"
       :data="rows"
       :columns="columns"
       :loading="loading"

@@ -119,6 +119,7 @@ function open(row: TicketRow) {
       v-model:search="search"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="tickets-list"
       :data="items"
       :columns="columns"
       :total="total"

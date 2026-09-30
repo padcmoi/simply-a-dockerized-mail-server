@@ -149,6 +149,7 @@ function onAdd() {
       v-model:search-by="searchBy"
       v-model:sort-key="sortKey"
       v-model:sort-direction="sortDirection"
+      table-id="group-members"
       :data="members"
       :columns="columns"
       :total="total"

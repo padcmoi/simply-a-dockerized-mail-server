@@ -52,6 +52,7 @@ watch(action, () => {
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
       v-model:action="action"
+      table-id="my-activity"
       :rows="items"
       :total="total"
       :loading="loading"

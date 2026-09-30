@@ -49,6 +49,7 @@ vi.stubGlobal("useRuntimeConfig", () => ({ public: {} }));
 vi.stubGlobal("useState", (_k: string, init?: () => unknown) => vue.ref(init ? init() : undefined));
 vi.stubGlobal("useCookie", () => vue.ref(null));
 vi.stubGlobal("useLocalStorage", (_k: string, init: unknown) => vue.ref(init));
+vi.stubGlobal("useTablePageSize", () => vue.ref(10));
 vi.stubGlobal("useToast", () => ({ add: vi.fn() }));
 vi.stubGlobal("useNuxtApp", () => ({ $fetch: vi.fn() }));
 vi.stubGlobal("useRequestHeaders", () => ({}));

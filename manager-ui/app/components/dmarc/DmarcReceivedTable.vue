@@ -36,6 +36,7 @@ const columns = computed<DataTableColumn<DmarcIncomingReport>[]>(() => [
     v-model:search-by="searchBy"
     v-model:sort-key="sortKey"
     v-model:sort-direction="sortDirection"
+    table-id="dmarc-received"
     :data="rows"
     :columns="columns"
     :total="total"

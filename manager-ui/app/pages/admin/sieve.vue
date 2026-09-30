@@ -104,6 +104,7 @@ async function onDeleteConfirmed() {
       v-model:search="search"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      table-id="sieve-reject-senders-list"
       :data="items"
       :columns="columns"
       :total="total"

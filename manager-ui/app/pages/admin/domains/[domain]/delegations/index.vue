@@ -79,6 +79,7 @@ async function revoke() {
       <ListSkeleton v-if="!hasLoadedOnce" :columns="4" />
       <DataTable
         v-else
+        table-id="domain-delegations"
         :data="rows"
         :columns="columns"
         :loading="loading"

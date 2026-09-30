@@ -102,11 +102,11 @@ function reasonsOf(row: QueueMessage) {
       <DataTable
         v-else
         v-model:page="page"
+        table-id="postfix-queue-messages"
         :data="listing.messages"
         :columns="columns"
         :loading="loading"
         :row-key="(row: QueueMessage) => row.id"
-        :page-sizes="[25, 50, 100]"
         :empty-label="t('postfixPage.empty')"
       >
         <template #arrival="{ row }">

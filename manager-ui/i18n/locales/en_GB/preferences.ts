@@ -26,5 +26,6 @@ export default {
     colour: "This file holds a value that is not a hex colour",
   },
   pageSize: "Default items per page",
-  pageSizeHint: "Default number of rows shown in tables.",
+  pageSizeHint:
+    "How many rows a table shows by default. Each table then keeps, in this browser, the size picked in its own toolbar.",
 } satisfies Locales["preferences"];
