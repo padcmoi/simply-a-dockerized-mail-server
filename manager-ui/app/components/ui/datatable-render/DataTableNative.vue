@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T">
 import type { TableColumn } from "@nuxt/ui";
 
-const emit = defineEmits<{ toggleSort: [key: string] }>();
+const emit = defineEmits<{ toggleSort: [key: string]; toggleRow: [row: T, ticked: boolean]; togglePage: [ticked: boolean] }>();
 
 // One cell slot per column key, plus `actions`, forwarded whole by the wrapper.
 defineSlots<Record<string, (_props: { row: T }) => unknown>>();
@@ -13,7 +13,13 @@ const props = defineProps<{
   sort: { key: string; direction: "asc" | "desc" } | null;
   rowClass?: (_row: T) => string;
   emptyLabel?: string;
+  selectable?: boolean;
+  isSelected?: (_row: T) => boolean;
+  canTick?: (_row: T) => boolean;
+  pageSelection?: boolean | "indeterminate";
 }>();
+
+const SELECT_COLUMN = "__select";
 
 const { t } = useI18n();
 
@@ -24,7 +30,12 @@ const slots = useSlots();
 const meta = computed(() => ({
   class: {
     tr: (row: { original: T; index: number }) =>
-      [row.index % 2 ? "bg-elevated/50" : "", props.rowClass?.(row.original) ?? ""].filter(Boolean).join(" "),
+      [
+        props.selectable && props.isSelected?.(row.original) ? "bg-primary/10" : row.index % 2 ? "bg-elevated/50" : "",
+        props.rowClass?.(row.original) ?? "",
+      ]
+        .filter(Boolean)
+        .join(" "),
   },
 }));
 
@@ -32,7 +43,8 @@ const meta = computed(() => ({
 // letting the table read the row a second time would be a second definition of what the column shows.
 const tableColumns = computed<TableColumn<T>[]>(() => {
   const declared = props.columns.map((column) => ({ id: column.key, header: column.label }));
-  return slots.actions ? [...declared, { id: "actions" }] : declared;
+  const withSelect = props.selectable ? [{ id: SELECT_COLUMN }, ...declared] : declared;
+  return slots.actions ? [...withSelect, { id: "actions" }] : withSelect;
 });
 
 function headerSlot(key: string) {
@@ -71,6 +83,23 @@ function sortIcon(key: string) {
       <div :class="column.class ?? 'min-w-0 truncate'">
         <slot :name="column.key" :row="row.original">{{ dataTableText(column, row.original) }}</slot>
       </div>
+    </template>
+
+    <template v-if="selectable" #__select-header>
+      <UCheckbox
+        :model-value="pageSelection ?? false"
+        :aria-label="t('table.selectPage')"
+        @update:model-value="emit('togglePage', $event === true)"
+      />
+    </template>
+
+    <template v-if="selectable" #__select-cell="{ row }">
+      <UCheckbox
+        v-if="canTick?.(row.original) ?? true"
+        :model-value="isSelected?.(row.original) ?? false"
+        :aria-label="t('table.selectRow')"
+        @update:model-value="emit('toggleRow', row.original, $event === true)"
+      />
     </template>
 
     <template v-if="$slots.actions" #actions-cell="{ row }">

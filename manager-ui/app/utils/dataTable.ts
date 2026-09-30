@@ -17,3 +17,16 @@ export function dataTableText<T>(column: DataTableColumn<T>, row: T) {
   if (value instanceof Date) return value.toISOString();
   return String(value);
 }
+
+export function toggleKeys<K>(selected: K[], keys: K[], ticked: boolean) {
+  if (ticked) return [...new Set([...selected, ...keys])];
+  const dropped = new Set(keys);
+  return selected.filter((key) => !dropped.has(key));
+}
+
+export function pageSelectionState<K>(selected: K[], pageKeys: K[]) {
+  const chosen = new Set(selected);
+  const ticked = pageKeys.filter((key) => chosen.has(key)).length;
+  if (!ticked) return false;
+  return ticked === pageKeys.length ? true : ("indeterminate" as const);
+}

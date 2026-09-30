@@ -487,11 +487,11 @@ describe("RecipientsService", () => {
       expect(saved.ownerId).toBe("acc-1");
     });
 
-    it("409s (alreadyAssigned) when the recipient already has an owner", async () => {
+    it("hands a recipient that already has an owner to the new account", async () => {
       recipients.findOne.mockResolvedValue({ id: 9, domain: FQDN, ownerId: "other", email: `j@${FQDN}` });
-      const e = await rejection(svc.assignOwner(9, FQDN, "acc-1"));
-      expect((e as ApiError).getStatus()).toBe(409);
-      expect(recipients.save).not.toHaveBeenCalled();
+      accounts.findOne.mockResolvedValue({ id: "acc-1" });
+      const saved = await svc.assignOwner(9, FQDN, "acc-1");
+      expect(saved.ownerId).toBe("acc-1");
     });
 
     it("403s (postmasterUnassignable) and never touches accounts for the postmaster mailbox", async () => {

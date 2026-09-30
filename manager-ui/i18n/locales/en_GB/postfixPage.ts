@@ -11,6 +11,12 @@ export default {
     "The message is deleted for good from the Postfix queue, for all its recipients, with no notice to its sender.",
   purged: "Message {id} purged",
   purgeFailed: "Purge failed",
+  purgeSelection: "Purge the selection ({count})",
+  purgeManyTitle: "Purge {count} messages?",
+  purgeManyDescription:
+    "The messages are deleted for good from the Postfix queue, for all their recipients, with no notice to their senders.",
+  purgedMany: "{count} messages purged",
+  purgeFailedMany: "{count} message(s) not purged",
   empty: "No message in this queue.",
   truncated: "The {limit} most recent messages out of {total}.",
   nullSender: "<> (server notification)",

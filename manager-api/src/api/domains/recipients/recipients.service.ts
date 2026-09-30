@@ -111,14 +111,6 @@ export class RecipientsService {
       const { code, message } = RESERVED_ERRORS[reserved].unassignable;
       throw new ApiError(HttpStatus.FORBIDDEN, code, message, { id });
     }
-    if (recipient.ownerId) {
-      throw new ApiError(
-        HttpStatus.CONFLICT,
-        "recipients.alreadyAssigned",
-        `Recipient #${id} is already assigned to an account`,
-        { id }
-      );
-    }
     const account = await this.accounts.findOne({ where: { id: ownerId } });
     if (!account) throw new NotFoundException(`Account #${ownerId} not found`);
     recipient.ownerId = ownerId;

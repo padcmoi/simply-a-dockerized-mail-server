@@ -4,22 +4,13 @@ const props = defineProps<{ listing: PostfixQueueMessages | null; loading: boole
 
 const { t } = useI18n();
 const { formatDateTime, timeAgo } = useDateTime();
-const { isRoot, hasGlobal } = usePermissions();
-const { call } = useApi();
-const { apiErrorMessage } = useApiError();
-const toast = useToast();
+const { canPurge, confirmOpen, confirmTitle, confirmDescription, purging, ask, purge } = usePostfixPurge(
+  () => props.listing?.queue,
+  () => emit("purged")
+);
 
 const page = ref(1);
-const purgeTarget = ref<QueueMessage | null>(null);
-const canPurge = computed(
-  () => isRoot.value || (hasGlobal("postfix", "access") && hasGlobal("postfix", "purge-postfix-queue-message"))
-);
-const confirmOpen = computed({
-  get: () => purgeTarget.value !== null,
-  set: (open: boolean) => {
-    if (!open) purgeTarget.value = null;
-  },
-});
+const selected = ref<(string | number)[]>([]);
 const withReason = computed(() => props.listing?.queue === "deferred" || props.listing?.queue === "hold");
 
 const columns = computed<DataTableColumn<QueueMessage>[]>(() => [
@@ -46,25 +37,13 @@ watch(
   () => props.listing?.queue,
   () => {
     page.value = 1;
+    selected.value = [];
   }
 );
 
-function askPurge(row: QueueMessage) {
-  purgeTarget.value = row;
-}
-
-async function purge() {
-  const target = purgeTarget.value;
-  const queue = props.listing?.queue;
-  purgeTarget.value = null;
-  if (!target || !queue) return;
-  try {
-    await call(`/postfix/queue/${queue}/messages/${target.id}`, { method: "DELETE" });
-    toast.add({ title: t("postfixPage.purged", { id: target.id }), color: "success", icon: "i-lucide-check" });
-    emit("purged");
-  } catch (err) {
-    toast.add({ title: t("postfixPage.purgeFailed"), description: apiErrorMessage(err), color: "error" });
-  }
+async function confirmPurge() {
+  const done = new Set<string | number>(await purge());
+  selected.value = selected.value.filter((key) => !done.has(key));
 }
 
 function senderOf(row: QueueMessage) {
@@ -102,7 +81,9 @@ function reasonsOf(row: QueueMessage) {
       <DataTable
         v-else
         v-model:page="page"
+        v-model:selected="selected"
         table-id="postfix-queue-messages"
+        :multiple="canPurge"
         :data="listing.messages"
         :columns="columns"
         :loading="loading"
@@ -136,6 +117,11 @@ function reasonsOf(row: QueueMessage) {
         <template #id="{ row }">
           <span class="font-mono text-xs">{{ row.id }}</span>
         </template>
+        <template #selection="{ keys }">
+          <UButton icon="i-lucide-trash-2" color="error" variant="soft" size="sm" :loading="purging" @click="ask(keys)">
+            {{ t("postfixPage.purgeSelection", { count: keys.length }) }}
+          </UButton>
+        </template>
         <template v-if="canPurge" #actions="{ row }">
           <UButton
             icon="i-lucide-trash-2"
@@ -144,7 +130,7 @@ function reasonsOf(row: QueueMessage) {
             size="xs"
             :aria-label="t('postfixPage.purge')"
             :title="t('postfixPage.purge')"
-            @click="askPurge(row)"
+            @click="ask([row.id])"
           />
         </template>
       </DataTable>
@@ -153,9 +139,9 @@ function reasonsOf(row: QueueMessage) {
     <ConfirmModal
       v-model:open="confirmOpen"
       type="danger"
-      :title="t('postfixPage.purgeTitle', { id: purgeTarget?.id ?? '' })"
-      :description="t('postfixPage.purgeDescription')"
-      @confirm="purge"
+      :title="confirmTitle"
+      :description="confirmDescription"
+      @confirm="confirmPurge"
     />
   </div>
 </template>

@@ -8,6 +8,7 @@ definePageMeta({
 
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
+const selected = ref<(string | number)[]>([]);
 
 // Declared once for both renderings, which DataTable chooses between on its own
 // width rather than this page carrying one of each.
@@ -31,6 +32,24 @@ const canCreateAliases = computed(() => {
   if (!domainId.value) return false;
   return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "create-alias"));
 });
+const canAssignOwner = computed(() => {
+  if (!domainId.value) return false;
+  return (
+    isRoot.value ||
+    (hasDomain(domainId.value, "mailboxes", "access") && hasDomain(domainId.value, "mailboxes", "assign-alias-owner"))
+  );
+});
+const canUnassignOwner = computed(() => {
+  if (!domainId.value) return false;
+  return (
+    isRoot.value ||
+    (hasDomain(domainId.value, "mailboxes", "access") && hasDomain(domainId.value, "mailboxes", "unassign-alias-owner"))
+  );
+});
+const canDeleteAliases = computed(() => {
+  if (!domainId.value) return false;
+  return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "delete-alias"));
+});
 const canEditAliases = computed(() => {
   if (!domainId.value) return false;
   return isRoot.value || (hasDomain(domainId.value, "aliases", "access") && hasDomain(domainId.value, "aliases", "edit-alias"));
@@ -42,6 +61,10 @@ const { formatDateTime } = useDateTime();
 const { isRoot, hasDomain } = usePermissions();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
+
+watch(domainId, () => {
+  selected.value = [];
+});
 
 watchEffect(() => {
   setBreadcrumb([
@@ -57,6 +80,12 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sor
   "createdAt",
   [domainId]
 );
+
+function onBulkDone(keys: (string | number)[]) {
+  const done = new Set(keys);
+  selected.value = selected.value.filter((key) => !done.has(key));
+  load();
+}
 
 async function remove(row: AliasRow) {
   if (!domainId.value) return;
@@ -110,7 +139,9 @@ function editAlias(alias: AliasRow) {
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      v-model:selected="selected"
       table-id="aliases-list"
+      :multiple="canDeleteAliases || canAssignOwner || canUnassignOwner"
       :data="items"
       :columns="columns"
       :total="total"
@@ -118,6 +149,19 @@ function editAlias(alias: AliasRow) {
       :row-key="(row: AliasRow) => row.id"
       :empty-label="t('common.noResults')"
     >
+      <template #selection="{ keys }">
+        <OwnerBulkActions
+          v-if="domainId"
+          kind="aliases"
+          :domain-id="domainId"
+          :keys="keys"
+          :can-assign="canAssignOwner"
+          :can-unassign="canUnassignOwner"
+          @done="onBulkDone"
+        />
+        <AliasesBulkActions v-if="domainId && canDeleteAliases" :domain-id="domainId" :keys="keys" @done="onBulkDone" />
+      </template>
+
       <template #createdAt="{ row }">
         <span class="text-muted">{{ formatDateTime(row.createdAt) }}</span>
       </template>

@@ -2,6 +2,11 @@ import type { Locales } from "../../Locales";
 
 export default {
   allColumns: "All columns",
+  bulkFailed: "{count} item(s) not processed",
+  selected: "{count} selected",
+  clearSelection: "Clear selection",
+  selectPage: "Select the page",
+  selectRow: "Select the row",
   searchIn: "Search in",
   sortBy: "Sort by",
   noSort: "No sorting",

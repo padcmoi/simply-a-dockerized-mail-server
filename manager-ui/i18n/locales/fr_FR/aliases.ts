@@ -21,6 +21,12 @@ export default {
     owner: "Compte",
     validity: "Validité",
   },
+  bulk: {
+    delete: "Supprimer ({count})",
+    deleteTitle: "Supprimer {count} alias ?",
+    deleteDescription: "Les alias sont supprimés : le courrier qui leur est adressé n'est plus transféré.",
+    deleted: "{count} alias supprimé(s)",
+  },
   toast: {
     pickDomain: "Choisissez d'abord un domaine",
     created: "Alias créé",

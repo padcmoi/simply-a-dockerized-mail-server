@@ -39,6 +39,17 @@ export default {
     owner: "Compte",
     validity: "Validité",
   },
+  bulk: {
+    activate: "Activer",
+    deactivate: "Désactiver",
+    delete: "Supprimer ({count})",
+    deleteTitle: "Supprimer {count} boîte(s) ?",
+    deleteDescription:
+      "Chaque boîte et tout le courrier qu'elle contient sont effacés du disque. Leurs quotas sont rendus au domaine.",
+    activated: "{count} boîte(s) activée(s)",
+    deactivated: "{count} boîte(s) désactivée(s)",
+    deleted: "{count} boîte(s) supprimée(s)",
+  },
   toast: {
     pickDomain: "Choisissez d'abord un domaine",
     created: "Destinataire créé",

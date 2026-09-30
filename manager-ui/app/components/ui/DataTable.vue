@@ -43,10 +43,18 @@ const searchBy = defineModel<string>("searchBy", { default: ALL_COLUMNS });
 // that could be null would not bind to it.
 const sortKey = defineModel<string>("sortKey", { default: "" });
 const sortDirection = defineModel<"asc" | "desc">("sortDirection", { default: "asc" });
+// The keys of the rows ticked, kept across pages and reloads: a key stays until
+// its box is unticked or the caller clears the selection.
+const selected = defineModel<(string | number)[]>("selected", { default: () => [] });
 
 // One cell slot per column key plus `actions`, and `filters` for whatever the
 // caller wants standing in the toolbar next to the page size.
-defineSlots<Record<string, (_props: { row: T }) => unknown> & { filters?: () => unknown }>();
+defineSlots<
+  Record<string, (_props: { row: T }) => unknown> & {
+    filters?: () => unknown;
+    selection?: (_props: { keys: (string | number)[]; rows: T[]; clear: () => void }) => unknown;
+  }
+>();
 
 const props = withDefaults(
   defineProps<{
@@ -76,6 +84,17 @@ const props = withDefaults(
     // one row says "1 of 1" where there was never a second.
     withPagination?: boolean;
     emptyLabel?: string;
+    // Multiple selection, off unless asked for: a box per row and one for the
+    // page. Needs `rowKey`: the selection is a list of keys, which is what lets
+    // it outlive a page change. What is done with it is the caller's, through
+    // the `selection` slot or `v-model:selected`.
+    multiple?: boolean;
+    // Which rows may be ticked, all of them when left out: a row the caller
+    // never acts on in bulk (a system mailbox) gets no box.
+    rowSelectable?: (_row: T) => boolean;
+    // Where the bar holding the `selection` slot stands, shown only while
+    // something is ticked.
+    selectionPosition?: "top" | "bottom";
   }>(),
   {
     loading: false,
@@ -86,6 +105,9 @@ const props = withDefaults(
     withSearch: true,
     withPagination: true,
     emptyLabel: undefined,
+    multiple: false,
+    rowSelectable: undefined,
+    selectionPosition: "top",
   }
 );
 
@@ -100,9 +122,15 @@ const SEARCH_DEBOUNCE_MS = 300;
 const { t } = useI18n();
 
 const storedPageSize = useTablePageSize(props.tableId);
+// The width the table needed the last time it did not fit its box. A table
+// wider than its box would scroll sideways, so it gives way to the cards until
+// the box is that wide again.
+const overflowWidth = ref(0);
+const seenRows = shallowRef(new Map<string | number, T>());
 
 const root = useTemplateRef<HTMLElement>("root");
-const { asTable, width } = useTableLayout(root);
+const { asTable: wideEnough, width } = useTableLayout(root);
+const asTable = computed(() => wideEnough.value === true && width.value >= overflowWidth.value);
 const { showEdges, siblingCount } = usePagerLayout(width);
 
 // The field writes `search` on every keystroke, so what was typed appears at
@@ -130,6 +158,21 @@ const { searchableColumns, paged, totalRows, pageCount } = useDataTableRows<T>({
 
 const sortableColumns = computed(() => props.columns.filter((column) => column.sortable !== false));
 
+const canSelect = computed(() => props.multiple && !!props.rowKey);
+const selectedSet = computed(() => new Set(selected.value));
+const pageKeys = computed(() => {
+  const rowKey = props.rowKey;
+  if (!canSelect.value || !rowKey) return [];
+  return paged.value.filter((row) => props.rowSelectable?.(row) ?? true).map(rowKey);
+});
+const pageSelection = computed(() => pageSelectionState(selected.value, pageKeys.value));
+const selectedRows = computed(() =>
+  selected.value.flatMap((key) => {
+    const row = seenRows.value.get(key);
+    return row === undefined ? [] : [row];
+  })
+);
+
 const scopeItems = computed(() => [
   { label: t("table.allColumns"), value: ALL_COLUMNS },
   ...searchableColumns.value.map((column) => ({ label: column.label, value: dataTableSearchKey(column) })),
@@ -144,6 +187,19 @@ const sortItems = computed(() => [
   ...sortableColumns.value.map((column) => ({ label: column.label, value: column.key })),
 ]);
 
+watch(
+  () => props.data,
+  (rows) => {
+    if (!canSelect.value || !props.rowKey) return;
+    const next = new Map(seenRows.value);
+    for (const row of rows) next.set(props.rowKey(row), row);
+    seenRows.value = next;
+  },
+  { immediate: true }
+);
+
+watch([asTable, paged, () => props.columns], measureOverflow, { flush: "post" });
+
 watch(limit, (size) => {
   if (size !== storedPageSize.value) storedPageSize.value = size;
 });
@@ -156,6 +212,35 @@ function applySort(next: { key: string; direction: "asc" | "desc" } | null) {
 function toggleSort(key: string) {
   if (sort.value?.key !== key) applySort({ key, direction: "asc" });
   else applySort({ key, direction: sort.value.direction === "asc" ? "desc" : "asc" });
+}
+
+function measureOverflow() {
+  if (!asTable.value) return;
+  const table = root.value?.querySelector("table");
+  const box = table?.parentElement;
+  if (table && box && table.scrollWidth > box.clientWidth + 1)
+    overflowWidth.value = width.value + table.scrollWidth - box.clientWidth;
+}
+
+function isSelected(row: T) {
+  return !!props.rowKey && selectedSet.value.has(props.rowKey(row));
+}
+
+function canTick(row: T) {
+  return props.rowSelectable?.(row) ?? true;
+}
+
+function toggleRow(row: T, ticked: boolean) {
+  if (!props.rowKey || !canTick(row)) return;
+  selected.value = toggleKeys(selected.value, [props.rowKey(row)], ticked);
+}
+
+function togglePage(ticked: boolean) {
+  selected.value = toggleKeys(selected.value, pageKeys.value, ticked);
+}
+
+function clearSelection() {
+  selected.value = [];
 }
 
 function setSortKey(key: string) {
@@ -220,6 +305,23 @@ onMounted(() => {
       </div>
     </div>
 
+    <div
+      v-if="canSelect && selected.length && selectionPosition === 'top'"
+      class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2"
+    >
+      <span class="text-sm font-medium">{{ t("table.selected", { count: selected.length }) }}</span>
+      <UButton color="neutral" variant="link" size="xs" icon="i-lucide-x" @click="clearSelection">
+        {{ t("table.clearSelection") }}
+      </UButton>
+      <div class="flex flex-wrap items-center gap-2 @lg:ms-auto">
+        <slot name="selection" :keys="selected" :rows="selectedRows" :clear="clearSelection" />
+      </div>
+    </div>
+
+    <div v-if="canSelect && !asTable && pageKeys.length" class="mb-3 flex items-center gap-2 px-1">
+      <UCheckbox :model-value="pageSelection" :label="t('table.selectPage')" @update:model-value="togglePage($event === true)" />
+    </div>
+
     <!-- The caller's cell templates are forwarded WHOLE rather than listed here: the slot names are
          the caller's own column keys, so naming them would mean this wrapper knowing them. -->
     <DataTableNative
@@ -230,7 +332,13 @@ onMounted(() => {
       :sort="sort"
       :row-class="rowClass"
       :empty-label="emptyLabel"
+      :selectable="canSelect"
+      :is-selected="isSelected"
+      :can-tick="canTick"
+      :page-selection="pageSelection"
       @toggle-sort="toggleSort"
+      @toggle-row="toggleRow"
+      @toggle-page="togglePage"
     >
       <template v-for="(_, name) in $slots" #[name]="slotProps">
         <slot :name="name" v-bind="slotProps" />
@@ -245,11 +353,28 @@ onMounted(() => {
       :row-key="rowKey"
       :row-class="rowClass"
       :empty-label="emptyLabel"
+      :selectable="canSelect"
+      :is-selected="isSelected"
+      :can-tick="canTick"
+      @toggle-row="toggleRow"
     >
       <template v-for="(_, name) in $slots" #[name]="slotProps">
         <slot :name="name" v-bind="slotProps" />
       </template>
     </DataTableBlocks>
+
+    <div
+      v-if="canSelect && selected.length && selectionPosition === 'bottom'"
+      class="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2"
+    >
+      <span class="text-sm font-medium">{{ t("table.selected", { count: selected.length }) }}</span>
+      <UButton color="neutral" variant="link" size="xs" icon="i-lucide-x" @click="clearSelection">
+        {{ t("table.clearSelection") }}
+      </UButton>
+      <div class="flex flex-wrap items-center gap-2 @lg:ms-auto">
+        <slot name="selection" :keys="selected" :rows="selectedRows" :clear="clearSelection" />
+      </div>
+    </div>
 
     <!-- Always rendered, including on one row and on none. A control that appears and disappears with
          the result count moves everything under it, and a filter that empties the list would take the

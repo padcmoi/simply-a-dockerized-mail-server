@@ -11,6 +11,12 @@ export default {
     "Le message est supprimé définitivement de la file Postfix, pour tous ses destinataires, sans avis à son expéditeur.",
   purged: "Message {id} purgé",
   purgeFailed: "Échec de la purge",
+  purgeSelection: "Purger la sélection ({count})",
+  purgeManyTitle: "Purger {count} messages ?",
+  purgeManyDescription:
+    "Les messages sont supprimés définitivement de la file Postfix, pour tous leurs destinataires, sans avis à leurs expéditeurs.",
+  purgedMany: "{count} messages purgés",
+  purgeFailedMany: "{count} message(s) non purgé(s)",
   empty: "Aucun message dans cette file.",
   truncated: "Les {limit} messages les plus récents sur {total}.",
   nullSender: "<> (avis du serveur)",

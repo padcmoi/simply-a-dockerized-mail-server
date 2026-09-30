@@ -83,17 +83,12 @@ export class AliasesService {
   }
 
   // Assign this alias to an account. An alias belongs to at most one account, so
-  // assigning one already owned is refused: it must be released first.
+  // assigning one already owned hands it to the new account.
   // postmaster@<domain> can never be owned.
   async assignOwner(id: number, domain: string, ownerId: string) {
     const alias = await this.get(id, domain);
     if (isPostmaster(alias.source, domain)) {
       throw new ApiError(HttpStatus.FORBIDDEN, "aliases.postmasterUnassignable", "postmaster@ cannot be assigned to an account", {
-        id,
-      });
-    }
-    if (alias.ownerId) {
-      throw new ApiError(HttpStatus.CONFLICT, "aliases.alreadyAssigned", `Alias #${id} is already assigned to an account`, {
         id,
       });
     }

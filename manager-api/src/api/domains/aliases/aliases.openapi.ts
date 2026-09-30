@@ -220,8 +220,8 @@ export const AssignAliasOwnerDocs = () =>
     ApiOperation({
       summary: "Assign this alias to an account (set its owner)",
       description:
-        "An alias belongs to at most one account. Assigning one already owned returns 409; it must be released " +
-        "first. postmaster@<domain> can never be owned (403).",
+        "An alias belongs to at most one account. Assigning one already owned hands it to the new account, " +
+        "whoever owned it. postmaster@<domain> can never be owned (403).",
     }),
     ApiParam({ name: "id", type: Number, example: 1, description: "virtual_aliases.id" }),
     ApiBody({ schema: { example: { ownerId: "3f1c2b8e-0000-4a00-9000-000000000000" } } }),
@@ -230,8 +230,7 @@ export const AssignAliasOwnerDocs = () =>
       status: 403,
       description: "Missing permission mailboxes:assign-alias-owner, or target is postmaster@<domain>",
     }),
-    ApiResponse({ status: 404, description: "Parent domain, alias, or target account not found" }),
-    ApiResponse({ status: 409, description: "Alias already assigned to an account" })
+    ApiResponse({ status: 404, description: "Parent domain, alias, or target account not found" })
   );
 
 export const UnassignAliasOwnerDocs = () =>

@@ -705,14 +705,15 @@ describe("AccountsService", () => {
       expect(m.virtualUsers.save).not.toHaveBeenCalled();
     });
 
-    it("rejects a recipient already assigned to someone", async () => {
+    it("hands a recipient owned by someone else to the account", async () => {
       m.accounts.findOne.mockResolvedValue({ id: "a1" });
-      m.virtualUsers.findOne.mockResolvedValue({ id: 1, email: "a@ex.com", ownerId: "other" });
+      const recipient = { id: 1, email: "a@ex.com", ownerId: "other" };
+      m.virtualUsers.findOne.mockResolvedValue(recipient);
+      m.virtualUsers.save.mockImplementation(async (r: unknown) => r);
 
-      const err = await svc.attachRecipient("a1", 1).catch((e: unknown) => e);
+      await svc.attachRecipient("a1", 1);
 
-      expect(err).toBeInstanceOf(ApiError);
-      if (err instanceof ApiError) expect(err.getStatus()).toBe(HttpStatus.CONFLICT);
+      expect(m.virtualUsers.save).toHaveBeenCalledWith(expect.objectContaining({ id: 1, ownerId: "a1" }));
     });
 
     it("assigns a free recipient to the account", async () => {
@@ -760,14 +761,15 @@ describe("AccountsService", () => {
       if (err instanceof ApiError) expect(err.getStatus()).toBe(HttpStatus.FORBIDDEN);
     });
 
-    it("rejects an alias already assigned to someone", async () => {
+    it("hands an alias owned by someone else to the account", async () => {
       m.accounts.findOne.mockResolvedValue({ id: "a1" });
-      m.aliases.findOne.mockResolvedValue({ id: 1, source: "a@ex.com", ownerId: "other" });
+      const alias = { id: 1, source: "a@ex.com", ownerId: "other" };
+      m.aliases.findOne.mockResolvedValue(alias);
+      m.aliases.save.mockImplementation(async (a: unknown) => a);
 
-      const err = await svc.attachAlias("a1", 1).catch((e: unknown) => e);
+      await svc.attachAlias("a1", 1);
 
-      expect(err).toBeInstanceOf(ApiError);
-      if (err instanceof ApiError) expect(err.getStatus()).toBe(HttpStatus.CONFLICT);
+      expect(m.aliases.save).toHaveBeenCalledWith(expect.objectContaining({ id: 1, ownerId: "a1" }));
     });
 
     it("assigns a free alias to the account", async () => {

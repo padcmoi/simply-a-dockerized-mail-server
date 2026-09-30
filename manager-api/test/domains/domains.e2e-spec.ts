@@ -298,7 +298,11 @@ describe("DomainsController (e2e: auth + ACL + behavior)", () => {
     });
 
     it("400 when a date is missing, malformed, or an unknown key is sent", async () => {
-      for (const bad of [{ userStartDate: "2026-09-01" }, { userStartDate: "01/09/2026", userEndDate: null }, { ...body, active: true }]) {
+      for (const bad of [
+        { userStartDate: "2026-09-01" },
+        { userStartDate: "01/09/2026", userEndDate: null },
+        { ...body, active: true },
+      ]) {
         await api()
           .patch(`/api/v1/domains/${ID}/validity`)
           .set(...asRoot())

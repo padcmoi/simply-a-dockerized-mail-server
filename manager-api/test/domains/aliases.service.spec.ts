@@ -276,13 +276,23 @@ describe("AliasesService", () => {
     });
 
     it("updates the start date, storing an unlimited start as 1970-01-01", async () => {
-      aliases.findOne.mockResolvedValueOnce({ id: 5, source: "k@example.test", userStartDate: "2026-01-01", domain: "example.test" });
+      aliases.findOne.mockResolvedValueOnce({
+        id: 5,
+        source: "k@example.test",
+        userStartDate: "2026-01-01",
+        domain: "example.test",
+      });
       await svc.update(5, { userStartDate: null, userEndDate: null }, "example.test");
       expect(aliases.save).toHaveBeenCalledWith(expect.objectContaining({ userStartDate: "1970-01-01", userEndDate: null }));
     });
 
     it("400s (windowReversed) when the new end date comes before the stored start", async () => {
-      aliases.findOne.mockResolvedValueOnce({ id: 5, source: "k@example.test", userStartDate: "2030-06-01", domain: "example.test" });
+      aliases.findOne.mockResolvedValueOnce({
+        id: 5,
+        source: "k@example.test",
+        userStartDate: "2030-06-01",
+        domain: "example.test",
+      });
       await expect(svc.update(5, { userEndDate: "2030-01-01" }, "example.test")).rejects.toMatchObject({
         response: { code: "aliases.windowReversed" },
       });
@@ -328,10 +338,11 @@ describe("AliasesService", () => {
       expect(saved.ownerId).toBe("acc-1");
     });
 
-    it("409s (alreadyAssigned) when the alias already has an owner", async () => {
+    it("hands an alias that already has an owner to the new account", async () => {
       aliases.findOne.mockResolvedValue({ id: 7, domain: "example.test", ownerId: "other", source: "a@example.test" });
-      await expect(svc.assignOwner(7, "example.test", "acc-1")).rejects.toBeInstanceOf(ApiError);
-      expect(aliases.save).not.toHaveBeenCalled();
+      accounts.findOne.mockResolvedValue({ id: "acc-1" });
+      const saved = await svc.assignOwner(7, "example.test", "acc-1");
+      expect(saved.ownerId).toBe("acc-1");
     });
 
     it("403s (postmasterUnassignable) and never touches accounts for the postmaster alias", async () => {

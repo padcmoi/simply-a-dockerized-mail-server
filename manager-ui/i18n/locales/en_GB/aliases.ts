@@ -21,6 +21,12 @@ export default {
     owner: "Account",
     validity: "Validity",
   },
+  bulk: {
+    delete: "Delete ({count})",
+    deleteTitle: "Delete {count} alias(es)?",
+    deleteDescription: "The aliases are deleted: mail sent to them is no longer forwarded.",
+    deleted: "{count} alias(es) deleted",
+  },
   toast: {
     pickDomain: "Pick a domain first",
     created: "Alias created",

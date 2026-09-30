@@ -1,4 +1,6 @@
 <script setup lang="ts" generic="T">
+const emit = defineEmits<{ toggleRow: [row: T, ticked: boolean] }>();
+
 defineSlots<Record<string, (_props: { row: T }) => unknown>>();
 
 const props = defineProps<{
@@ -10,6 +12,9 @@ const props = defineProps<{
   rowKey?: (_row: T) => string | number;
   rowClass?: (_row: T) => string;
   emptyLabel?: string;
+  selectable?: boolean;
+  isSelected?: (_row: T) => boolean;
+  canTick?: (_row: T) => boolean;
 }>();
 
 const { t } = useI18n();
@@ -36,11 +41,21 @@ function keyOf(row: T, index: number) {
       <div
         v-for="(row, index) in rows"
         :key="keyOf(row, index)"
-        class="rounded-lg border border-default bg-elevated/40 p-4"
-        :class="rowClass?.(row)"
+        class="rounded-lg border p-4"
+        :class="[
+          selectable && isSelected?.(row) ? 'border-primary/50 bg-primary/10' : 'border-default bg-elevated/40',
+          rowClass?.(row),
+        ]"
       >
         <div class="flex items-start justify-between gap-3">
-          <div v-if="primaryColumn" class="min-w-0 font-medium">
+          <UCheckbox
+            v-if="selectable && (canTick?.(row) ?? true)"
+            class="mt-0.5 shrink-0"
+            :model-value="isSelected?.(row) ?? false"
+            :aria-label="t('table.selectRow')"
+            @update:model-value="emit('toggleRow', row, $event === true)"
+          />
+          <div v-if="primaryColumn" class="min-w-0 flex-1 font-medium">
             <slot :name="primaryColumn.key" :row="row">{{ dataTableText(primaryColumn, row) }}</slot>
           </div>
           <div v-if="$slots.actions" class="flex shrink-0 gap-1">

@@ -458,10 +458,6 @@ export class AccountsService {
         { id: recipientId }
       );
     }
-    if (recipient.ownerId)
-      throw new ApiError(HttpStatus.CONFLICT, "recipients.alreadyAssigned", `Recipient #${recipientId} is already assigned`, {
-        id: recipientId,
-      });
     recipient.ownerId = accountId;
     return this.virtualUsers.save(recipient);
   }
@@ -482,10 +478,6 @@ export class AccountsService {
         id: aliasId,
       });
     }
-    if (alias.ownerId)
-      throw new ApiError(HttpStatus.CONFLICT, "aliases.alreadyAssigned", `Alias #${aliasId} is already assigned`, {
-        id: aliasId,
-      });
     alias.ownerId = accountId;
     return this.aliases.save(alias);
   }

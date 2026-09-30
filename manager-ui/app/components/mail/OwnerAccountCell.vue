@@ -7,7 +7,7 @@
 // never lands on a 403; everyone else reads the address as plain text. A row
 // belonging to nobody says so rather than leaving an empty cell to be read as a
 // loading gap.
-defineProps<{ ownerId: string | null; ownerEmail: string | null }>();
+withDefaults(defineProps<{ ownerId: string | null; ownerEmail: string | null; limit?: number }>(), { limit: 32 });
 
 const { t } = useI18n();
 const { isRoot, hasGlobal } = usePermissions();
@@ -20,8 +20,8 @@ const canViewAccount = computed(() => isRoot.value || (hasGlobal("accounts", "ac
 
   <FullTooltip v-else :text="ownerEmail">
     <NuxtLink v-if="canViewAccount" :to="`/admin/accounts/${ownerId}`" class="font-medium text-primary hover:underline">
-      {{ truncateChars(ownerEmail, 32) }}
+      {{ truncateChars(ownerEmail, limit) }}
     </NuxtLink>
-    <span v-else>{{ truncateChars(ownerEmail, 32) }}</span>
+    <span v-else>{{ truncateChars(ownerEmail, limit) }}</span>
   </FullTooltip>
 </template>

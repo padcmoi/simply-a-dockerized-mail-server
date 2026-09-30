@@ -1052,6 +1052,16 @@ export interface Locales {
     };
   };
   recipients: {
+    bulk: {
+      activate: string;
+      deactivate: string;
+      delete: string;
+      deleteTitle: string;
+      deleteDescription: string;
+      activated: string;
+      deactivated: string;
+      deleted: string;
+    };
     alertTitle: string;
     alertDescription: string;
     backToList: string;
@@ -1116,6 +1126,12 @@ export interface Locales {
     };
   };
   aliases: {
+    bulk: {
+      delete: string;
+      deleteTitle: string;
+      deleteDescription: string;
+      deleted: string;
+    };
     alertTitle: string;
     backToList: string;
     form: {
@@ -1583,6 +1599,13 @@ export interface Locales {
     };
   };
   mailboxOwner: {
+    bulk: {
+      assign: string;
+      title: string;
+      hint: string;
+      assigned: string;
+      detached: string;
+    };
     label: string;
     hint: string;
     unassigned: string;
@@ -1721,6 +1744,11 @@ export interface Locales {
     purgeDescription: string;
     purged: string;
     purgeFailed: string;
+    purgeSelection: string;
+    purgeManyTitle: string;
+    purgeManyDescription: string;
+    purgedMany: string;
+    purgeFailedMany: string;
     empty: string;
     truncated: string;
     nullSender: string;
@@ -2176,6 +2204,11 @@ export interface Locales {
   // things it can say when there is nothing to show.
   table: {
     allColumns: string;
+    bulkFailed: string;
+    selected: string;
+    clearSelection: string;
+    selectPage: string;
+    selectRow: string;
     searchIn: string;
     sortBy: string;
     noSort: string;

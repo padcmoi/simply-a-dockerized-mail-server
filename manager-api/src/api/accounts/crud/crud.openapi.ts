@@ -176,11 +176,12 @@ export const AssignableResourcesDocs = () =>
 export const AttachResourceDocs = () =>
   applyDecorators(
     ApiParam({ name: "id", type: String, description: "accounts.id" }),
-    ApiOperation({ summary: "Attach an unassigned recipient / alias to this account (set its owner)" }),
+    ApiOperation({
+      summary: "Attach a recipient / alias to this account (set its owner), taking it from any account that owned it",
+    }),
     ApiResponse({ status: 201, description: "Attached" }),
     ApiResponse({ status: 403, description: "Insufficient permissions, or target is postmaster@ (never ownable)" }),
-    ApiResponse({ status: 404, description: "Account or resource not found" }),
-    ApiResponse({ status: 409, description: "Resource already assigned to an account" })
+    ApiResponse({ status: 404, description: "Account or resource not found" })
   );
 
 export const DetachResourceDocs = () =>

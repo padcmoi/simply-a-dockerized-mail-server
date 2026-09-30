@@ -8,6 +8,7 @@ definePageMeta({
 
 const confirmOpen = ref(false);
 const pendingDeleteFn = ref<(() => Promise<void>) | null>(null);
+const selected = ref<(string | number)[]>([]);
 
 // Declared once for both renderings, which DataTable chooses between on its own
 // width rather than this page carrying one of each.
@@ -49,10 +50,38 @@ const canEditRecipients = computed(() => {
 
 const { t } = useI18n();
 const { call } = useApi();
-const { formatDateTime } = useDateTime();
+const { formatDate, formatDateTime } = useDateTime();
 const { isRoot, hasDomain } = usePermissions();
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
+
+const canAssignOwner = computed(() => {
+  if (!domainId.value) return false;
+  return (
+    isRoot.value ||
+    (hasDomain(domainId.value, "mailboxes", "access") && hasDomain(domainId.value, "mailboxes", "assign-recipient-owner"))
+  );
+});
+
+const canUnassignOwner = computed(() => {
+  if (!domainId.value) return false;
+  return (
+    isRoot.value ||
+    (hasDomain(domainId.value, "mailboxes", "access") && hasDomain(domainId.value, "mailboxes", "unassign-recipient-owner"))
+  );
+});
+
+const canDeleteRecipients = computed(() => {
+  if (!domainId.value) return false;
+  return (
+    isRoot.value ||
+    (hasDomain(domainId.value, "recipients", "access") && hasDomain(domainId.value, "recipients", "delete-recipient"))
+  );
+});
+
+watch(domainId, () => {
+  selected.value = [];
+});
 
 // Below the composables it reads, unlike the computed above it: watchEffect
 // runs its callback straight away, so `setBreadcrumb` must already be bound.
@@ -71,6 +100,12 @@ const { items, total, loading, hasLoadedOnce, page, limit, search, searchBy, sor
     "createdAt",
     [domainId]
   );
+
+function onBulkDone(keys: (string | number)[]) {
+  const done = new Set(keys);
+  selected.value = selected.value.filter((key) => !done.has(key));
+  load();
+}
 
 function isReserved(item: RecipientRow) {
   return item.reserved !== null;
@@ -138,7 +173,10 @@ async function onDeleteConfirmed() {
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      v-model:selected="selected"
       table-id="recipients-list"
+      :multiple="canEditRecipients || canDeleteRecipients || canAssignOwner || canUnassignOwner"
+      :row-selectable="(row: RecipientRow) => !isReserved(row)"
       :data="items"
       :columns="columns"
       :total="total"
@@ -146,6 +184,26 @@ async function onDeleteConfirmed() {
       :row-key="(row: RecipientRow) => row.id"
       :empty-label="t('common.noResults')"
     >
+      <template #selection="{ keys }">
+        <RecipientsBulkActions
+          v-if="domainId"
+          :domain-id="domainId"
+          :keys="keys"
+          :can-edit="canEditRecipients"
+          :can-delete="canDeleteRecipients"
+          @done="onBulkDone"
+        />
+        <OwnerBulkActions
+          v-if="domainId"
+          kind="recipients"
+          :domain-id="domainId"
+          :keys="keys"
+          :can-assign="canAssignOwner"
+          :can-unassign="canUnassignOwner"
+          @done="onBulkDone"
+        />
+      </template>
+
       <template #email="{ row }">
         <div class="flex items-center gap-2 min-w-0">
           <FullTooltip :text="row.email">
@@ -154,13 +212,13 @@ async function onDeleteConfirmed() {
               :to="editTo(row)"
               class="font-medium text-primary hover:underline"
             >
-              {{ truncateChars(row.email, 44) }}
+              {{ truncateChars(row.email, 28) }}
             </NuxtLink>
-            <span v-else class="font-medium">{{ truncateChars(row.email, 44) }}</span>
+            <span v-else class="font-medium">{{ truncateChars(row.email, 28) }}</span>
           </FullTooltip>
-          <UBadge v-if="isReserved(row)" color="neutral" variant="subtle" size="xs" icon="i-lucide-lock">
-            {{ t("recipients.postmaster.badge") }}
-          </UBadge>
+          <FullTooltip v-if="isReserved(row)" :text="t('recipients.postmaster.badge')">
+            <UIcon name="i-lucide-lock" class="size-3.5 shrink-0 text-dimmed" />
+          </FullTooltip>
         </div>
       </template>
 
@@ -183,11 +241,13 @@ async function onDeleteConfirmed() {
       </template>
 
       <template #ownerEmail="{ row }">
-        <OwnerAccountCell :owner-id="row.ownerId" :owner-email="row.ownerEmail" />
+        <OwnerAccountCell :owner-id="row.ownerId" :owner-email="row.ownerEmail" :limit="24" />
       </template>
 
       <template #createdAt="{ row }">
-        <span class="text-muted">{{ formatDateTime(row.createdAt) }}</span>
+        <FullTooltip :text="formatDateTime(row.createdAt)">
+          <span class="text-muted whitespace-nowrap">{{ formatDate(row.createdAt) }}</span>
+        </FullTooltip>
       </template>
 
       <template #actions="{ row }">

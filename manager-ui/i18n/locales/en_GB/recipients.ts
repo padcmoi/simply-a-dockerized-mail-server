@@ -39,6 +39,16 @@ export default {
     owner: "Account",
     validity: "Validity",
   },
+  bulk: {
+    activate: "Enable",
+    deactivate: "Disable",
+    delete: "Delete ({count})",
+    deleteTitle: "Delete {count} mailbox(es)?",
+    deleteDescription: "Each mailbox and all the mail it holds are erased from disk. Their quotas go back to the domain.",
+    activated: "{count} mailbox(es) enabled",
+    deactivated: "{count} mailbox(es) disabled",
+    deleted: "{count} mailbox(es) deleted",
+  },
   toast: {
     pickDomain: "Pick a domain first",
     created: "Recipient created",

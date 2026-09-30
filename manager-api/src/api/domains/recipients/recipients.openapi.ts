@@ -273,8 +273,8 @@ export const AssignRecipientOwnerDocs = () =>
     ApiOperation({
       summary: "Assign this recipient to an account (set its owner)",
       description:
-        "A recipient belongs to at most one account. Assigning one already owned returns 409; it must be released " +
-        "first. postmaster@<domain> can never be owned (403).",
+        "A recipient belongs to at most one account. Assigning one already owned hands it to the new account, " +
+        "whoever owned it. postmaster@<domain> can never be owned (403).",
     }),
     ApiParam({ name: "id", type: Number, example: 1, description: "virtual_users.id" }),
     ApiBody({ schema: { example: { ownerId: "3f1c2b8e-0000-4a00-9000-000000000000" } } }),
@@ -283,8 +283,7 @@ export const AssignRecipientOwnerDocs = () =>
       status: 403,
       description: "Missing permission mailboxes:assign-recipient-owner, or target is postmaster@<domain>",
     }),
-    ApiResponse({ status: 404, description: "Parent domain, recipient, or target account not found" }),
-    ApiResponse({ status: 409, description: "Recipient already assigned to an account" })
+    ApiResponse({ status: 404, description: "Parent domain, recipient, or target account not found" })
   );
 
 export const UnassignRecipientOwnerDocs = () =>
