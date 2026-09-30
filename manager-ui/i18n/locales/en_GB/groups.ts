@@ -155,6 +155,7 @@ export default {
         postfix: {
           access: "Access",
           "view-postfix-queue": "View the mail queue",
+          "purge-postfix-queue-message": "Purge a queued message",
         },
         accounts: {
           access: "Access",

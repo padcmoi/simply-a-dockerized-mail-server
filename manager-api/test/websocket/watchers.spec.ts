@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import type { DataSource } from "typeorm";
 import type { DomainsService } from "../../src/api/domains/domains.service";
 import type { JwtAuthService } from "../../src/core/auth/jwt/jwt.service";
-import type { PostfixService } from "../../src/core/postfix/postfix.service";
+import type { PostfixService, QueueName } from "../../src/core/postfix/postfix.service";
 import type { NotificationsService } from "../../src/core/notifications/notifications.service";
 import type { TicketsService } from "../../src/api/tickets/tickets.service";
 import type { AccountPresenceService } from "../../src/core/websocket/account-presence.service";
@@ -17,7 +17,9 @@ import { providerMock } from "../helpers/mocks";
 const watchers = buildWatchers({
   dataSource: {} as DataSource,
   domains: providerMock<DomainsService>({}),
-  postfix: providerMock<PostfixService>({}),
+  postfix: providerMock<PostfixService>({
+    queueMessages: vi.fn(async (queue: QueueName) => ({ queue, total: 0, limit: 500, messages: [], available: true })),
+  }),
   sessions: providerMock<JwtAuthService>({}),
   notifications: providerMock<NotificationsService>({}),
   tickets: providerMock<TicketsService>({}),
@@ -95,6 +97,15 @@ describe("websocket watchers", () => {
     expect(watcher?.permissions).toEqual([{ resource: "supervision", actions: ["access", "view-mail-logs"] }]);
     expect(await watcher?.fn("dovecot")).toEqual({ service: "dovecot", from: 0, to: 0, lines: [] });
     expect(await watcher?.fn("../../etc/passwd")).toBeNull();
+  });
+
+  it("gates postfix-queue-messages exactly like the REST route it mirrors, one topic per queue", async () => {
+    const watcher = watchers.find((w) => w.topic === "postfix-queue-messages");
+    expect(watcher?.parameterized).toBe(true);
+    expect(watcher?.permissions).toEqual([{ resource: "postfix", actions: ["access", "view-postfix-queue"] }]);
+    expect(await watcher?.fn("deferred")).toEqual({ queue: "deferred", total: 0, limit: 500, messages: [], available: true });
+    expect(await watcher?.fn("../../etc")).toBeNull();
+    expect(await watcher?.fn("maildrop")).toBeNull();
   });
 
   it("gates fail2ban exactly like the REST route it mirrors", () => {

@@ -20,7 +20,7 @@ import { fail2banWatcher } from "./fail2ban.watcher";
 import { notificationsWatcher } from "./notifications.watcher";
 import { presenceWatcher } from "./presence.watcher";
 import { ticketThreadWatcher } from "./ticket-thread.watcher";
-import { postfixQueueWatcher } from "./postfix-queue.watcher";
+import { postfixQueueMessagesWatcher, postfixQueueWatcher } from "./postfix-queue.watcher";
 import { rspamdStatsWatcher } from "./rspamd-stats.watcher";
 import { sessionsWatcher } from "./sessions.watcher";
 import { supervisionWatcher } from "./supervision.watcher";
@@ -47,6 +47,7 @@ export function buildWatchers(deps: WatcherDeps): Watcher[] {
     rspamdStatsWatcher(),
     diskWatcher(deps.domains),
     postfixQueueWatcher(deps.postfix),
+    postfixQueueMessagesWatcher(deps.postfix),
     sessionsWatcher(deps.sessions),
     dashboardWatcher(dataSource, deps.domains),
     domainRecipientsWatcher(dataSource),

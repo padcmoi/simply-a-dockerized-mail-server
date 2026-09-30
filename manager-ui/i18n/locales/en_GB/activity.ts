@@ -80,6 +80,7 @@ export default {
     "dmarc_report-retried": "DMARC report sent again",
     "dmarc_inbox-scanned": "DMARC report inboxes read",
     "postfix_settings-updated": "Postfix settings changed",
+    "postfix_message-purged": "Message purged from the Postfix queue",
   },
   event: {
     auth_login: "Signed in",
@@ -127,5 +128,6 @@ export default {
     "dmarc_report-retried": "Sent the DMARC report for {label} again",
     "dmarc_inbox-scanned": "Started reading the DMARC report inboxes",
     "postfix_settings-updated": "Changed the Postfix settings ({fields})",
+    "postfix_message-purged": "Purged message {label} from the Postfix queue",
   },
 } satisfies Locales["activity"];

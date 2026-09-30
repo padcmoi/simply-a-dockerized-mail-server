@@ -6,34 +6,50 @@ definePageMeta({
   ],
 });
 
-const QUEUE_DIRS = ["active", "deferred", "hold", "incoming"] as const;
+const ICONS: Record<QueueName, string> = {
+  active: "i-lucide-send",
+  deferred: "i-lucide-clock",
+  hold: "i-lucide-pause",
+  incoming: "i-lucide-inbox",
+};
+const TINTS: Record<QueueName, string> = {
+  active: "text-success",
+  deferred: "text-warning",
+  hold: "text-error",
+  incoming: "text-primary",
+};
 
-const stats = ref<PostfixQueueStats | null>(null);
-const loading = ref(false);
+const INDICATORS: Record<QueueName, string> = {
+  active: "bg-success",
+  deferred: "bg-warning",
+  hold: "bg-error",
+  incoming: "bg-primary",
+};
 
 const { t } = useI18n();
 const { isRoot } = usePermissions();
-const { call } = useApi();
 const { set: setBreadcrumb } = useBreadcrumb();
 
 setBreadcrumb([{ label: t("nav.postfix") }]);
 
-const realtimeQueue = useRealtimeTopic<PostfixQueueStats>("postfix-queue");
-watch(realtimeQueue, (v) => {
-  if (v) stats.value = v;
-});
-watch(useDataRefresh().tick, load);
+const { stats, listing, queue, loadingMessages, loadStats, loadMessages } = usePostfixQueue();
 
-async function load() {
-  loading.value = true;
-  try {
-    stats.value = await call<PostfixQueueStats>("/postfix/queue");
-  } finally {
-    loading.value = false;
-  }
+const tabs = computed(() =>
+  QUEUE_NAMES.map((name) => ({
+    value: name,
+    label: t(`domainDashboard.postfix.${name}`),
+  }))
+);
+
+function onPurged() {
+  loadStats();
+  loadMessages();
 }
 
-onMounted(load);
+onMounted(() => {
+  loadStats();
+  loadMessages();
+});
 </script>
 
 <template>
@@ -48,47 +64,53 @@ onMounted(load);
       :title="t('domainDashboard.postfix.unavailable')"
     />
 
-    <UCard v-else-if="stats">
+    <UCard v-else>
       <template #header>
         <div class="flex items-center justify-between gap-2">
-          <h2 class="font-semibold">{{ t("domainDashboard.postfix.title") }}</h2>
+          <h2 class="font-semibold">{{ t("postfixPage.messagesTitle") }}</h2>
           <UButton
             v-if="isRoot"
             icon="i-lucide-settings-2"
             color="neutral"
             variant="outline"
             size="sm"
+            class="shrink-0"
+            :aria-label="t('postfixPage.settings')"
             to="/admin/config/postfix"
           >
-            {{ t("postfixPage.settings") }}
+            <span class="hidden sm:inline">{{ t("postfixPage.settings") }}</span>
           </UButton>
         </div>
       </template>
-      <div class="text-sm">
-        <div
-          v-for="dir in QUEUE_DIRS"
-          :key="dir"
-          class="flex items-center justify-between py-2 border-b border-default last:border-0"
-        >
-          <div class="flex items-center gap-2">
-            <span
-              class="w-2 h-2 rounded-full"
-              :class="{
-                'bg-success': dir === 'active',
-                'bg-warning': dir === 'deferred',
-                'bg-error': dir === 'hold',
-                'bg-primary': dir === 'incoming',
-              }"
-            />
-            <span class="text-muted">{{ t(`domainDashboard.postfix.${dir}`) }}</span>
-          </div>
-          <span class="font-semibold">{{ stats.total[dir] }}</span>
+
+      <div class="space-y-4 min-w-0">
+        <div class="@container">
+          <UTabs
+            v-model="queue"
+            :items="tabs"
+            :content="false"
+            class="w-full"
+            :ui="{
+              trigger: 'group flex-1 flex-col justify-center gap-1 py-2',
+              label: 'hidden @md:inline text-xs',
+              indicator: INDICATORS[queue],
+            }"
+          >
+            <template #leading="{ item }">
+              <span class="flex items-center gap-1.5">
+                <UIcon
+                  :name="ICONS[item.value]"
+                  class="size-5 shrink-0 group-data-[state=active]:text-current"
+                  :class="TINTS[item.value]"
+                />
+                <span class="font-semibold tabular-nums">{{ stats ? stats.total[item.value] : "-" }}</span>
+              </span>
+            </template>
+          </UTabs>
         </div>
+
+        <PostfixQueueTable :listing="listing" :loading="loadingMessages" @purged="onPurged" />
       </div>
     </UCard>
-
-    <div v-else class="flex justify-center py-8">
-      <UIcon name="i-lucide-loader-2" class="text-2xl text-primary animate-spin" />
-    </div>
   </div>
 </template>

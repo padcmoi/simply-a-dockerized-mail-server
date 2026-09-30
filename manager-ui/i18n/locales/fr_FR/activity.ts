@@ -81,6 +81,7 @@ export default {
     "dmarc_report-retried": "Rapport DMARC renvoyé",
     "dmarc_inbox-scanned": "Boîtes de rapports DMARC lues",
     "postfix_settings-updated": "Réglages Postfix modifiés",
+    "postfix_message-purged": "Message purgé de la file Postfix",
   },
   event: {
     auth_login: "S'est connecté",
@@ -128,5 +129,6 @@ export default {
     "dmarc_report-retried": "A renvoyé le rapport DMARC destiné à {label}",
     "dmarc_inbox-scanned": "A lancé la lecture des boîtes de rapports DMARC",
     "postfix_settings-updated": "A modifié les réglages de Postfix ({fields})",
+    "postfix_message-purged": "A purgé le message {label} de la file Postfix",
   },
 } satisfies Locales["activity"];

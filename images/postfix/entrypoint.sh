@@ -66,5 +66,6 @@ tail -F /var/log/mail/postfix.log 2>/dev/null &
 /usr/local/bin/log-rotate.sh &
 /usr/local/bin/settings-watcher.sh apply
 /usr/local/bin/settings-watcher.sh &
+/usr/local/bin/command-watcher.sh &
 
 exec "$@"

@@ -12,3 +12,27 @@ export interface PostfixQueueStats {
   domain?: QueueDirStats;
   available: boolean;
 }
+
+export type QueueName = keyof QueueDirStats;
+
+export interface QueueMessageRecipient {
+  address: string;
+  status: string | null;
+  reason: string | null;
+}
+
+export interface QueueMessage {
+  id: string;
+  arrivalTime: string;
+  size: number;
+  sender: string;
+  recipients: QueueMessageRecipient[];
+}
+
+export interface PostfixQueueMessages {
+  queue: QueueName;
+  total: number;
+  limit: number;
+  messages: QueueMessage[];
+  available: boolean;
+}

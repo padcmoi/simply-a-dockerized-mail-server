@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(postfix): the Postfix page lists the messages of each queue in four tabs, active, deferred, on hold and incoming, with their sender, recipients, size and the reason of each deferral, read from the spool and updated live over the websocket, and a message can be purged from its row behind a new `purge-postfix-queue-message` action and a 10-click confirmation, run by a watcher in the Postfix container and recorded in the activity journal (30-09-2026)
 - feat(postfix): root accounts set the sender of bounce notifications, lowercase `mailer-daemon` by default and limited to an active hosted domain, and the delay warning and queue lifetime from a Postfix card in the configuration, also reached from the Postfix queue page, applied all or nothing by a watcher in the Postfix container that revalidates the settings, reloads Postfix without dropping a connection and reports whether the version is in force (29-09-2026)
 - feat(fail2ban): a `recidive` jail bans for a week, on the mail ports only, an address banned 5 times in a day by the other jails, with its own card, its unban buttons and its line on the supervision chart (28-09-2026)
 - feat(mail-logs): the rotated Postfix and Dovecot logs are listed in an Archives menu next to the download button, each downloaded decompressed, so a daily rotation loses nothing from the Logs mail page (28-09-2026)

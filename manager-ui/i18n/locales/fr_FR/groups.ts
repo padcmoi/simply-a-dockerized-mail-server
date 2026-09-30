@@ -158,6 +158,7 @@ export default {
         postfix: {
           access: "Accès",
           "view-postfix-queue": "Voir la file d'attente",
+          "purge-postfix-queue-message": "Purger un message de la file",
         },
         accounts: {
           access: "Accès",

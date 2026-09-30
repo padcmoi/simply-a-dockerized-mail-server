@@ -1714,6 +1714,24 @@ export interface Locales {
   postfixPage: {
     subtitle: string;
     settings: string;
+    messagesTitle: string;
+    reasonDetails: string;
+    purge: string;
+    purgeTitle: string;
+    purgeDescription: string;
+    purged: string;
+    purgeFailed: string;
+    empty: string;
+    truncated: string;
+    nullSender: string;
+    col: {
+      arrival: string;
+      sender: string;
+      recipients: string;
+      reason: string;
+      size: string;
+      id: string;
+    };
   };
   rspamdPage: {
     subtitle: string;
@@ -1984,6 +2002,7 @@ export interface Locales {
           postfix: {
             access: string;
             "view-postfix-queue": string;
+            "purge-postfix-queue-message": string;
           };
           accounts: {
             access: string;
