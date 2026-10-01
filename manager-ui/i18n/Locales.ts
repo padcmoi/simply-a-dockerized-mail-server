@@ -231,6 +231,21 @@ export interface Locales {
     themeCardHint: string;
     passportCardLabel: string;
     passportCardHint: string;
+    adminAlertCardLabel: string;
+    adminAlertCardHint: string;
+    adminAlert: {
+      cardTitle: string;
+      alertTitle: string;
+      alertDescription: string;
+      email: string;
+      emailHint: string;
+      emailInvalid: string;
+      save: string;
+      saved: string;
+      cleared: string;
+      saveFailed: string;
+      loadFailed: string;
+    };
     theme: {
       cardTitle: string;
       alertTitle: string;

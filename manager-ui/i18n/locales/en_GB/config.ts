@@ -145,6 +145,22 @@ export default {
   },
   passportCardLabel: "External sign-in",
   passportCardHint: "The sign-in providers, and what becomes of a sign-in with no account here.",
+  adminAlertCardLabel: "Alert address",
+  adminAlertCardHint: "The email address warned when the server has a problem.",
+  adminAlert: {
+    cardTitle: "Alert address",
+    alertTitle: "Address to alert when something goes wrong.",
+    alertDescription:
+      "The scripts of the server, the backup first, write to this address when something goes wrong. Stored in the database, reserved for root accounts.",
+    email: "Email address",
+    emailHint: "A single address. Empty: nobody is warned by email.",
+    emailInvalid: "Invalid email address.",
+    save: "Save",
+    saved: "Alert address saved",
+    cleared: "Alert address removed",
+    saveFailed: "Failed to save",
+    loadFailed: "Failed to load",
+  },
   theme: {
     cardTitle: "Interface theme",
     alertTitle: "Interface colours.",

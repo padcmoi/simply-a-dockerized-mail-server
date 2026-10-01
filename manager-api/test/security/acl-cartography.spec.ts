@@ -36,6 +36,7 @@ const EXPECTED_PUBLIC = [
   "POST /api/v1/auth/jwt/login/mfa/resend",
   "POST /api/v1/auth/jwt/logout",
   "POST /api/v1/auth/jwt/refresh",
+  "POST /api/v1/internal/alert",
 ].sort();
 
 // Authenticated but intentionally carrying NO ACL requirement: the self-scoped
@@ -68,6 +69,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "GET /api/v1/auth/jwt/me/permissions",
   "GET /api/v1/auth/jwt/me/sessions",
   "GET /api/v1/auth/jwt/me/sessions/history",
+  "GET /api/v1/config/alert",
   "GET /api/v1/config/general",
   "GET /api/v1/config/general/tlds",
   "GET /api/v1/config/login-risk",
@@ -99,6 +101,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "POST /api/v1/notifications/:id/read",
   "POST /api/v1/notifications/:id/unread",
   "POST /api/v1/notifications/read-all",
+  "PUT /api/v1/config/alert",
   "PUT /api/v1/config/general",
   "PUT /api/v1/config/login-risk",
   "PUT /api/v1/config/mail",

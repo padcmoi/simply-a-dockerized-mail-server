@@ -37,7 +37,7 @@ export class MailerService {
     }
     if (this.spooled(input.to, Date.now())) {
       this.log.warn(`Mail to ${input.to} dropped: one send per ${this.appSettings.get().mailMinIntervalMs}ms per recipient`);
-      return;
+      return false;
     }
     const domain = input.fromDomain ?? process.env.MANAGER_MAIL_DOMAIN ?? input.to.split("@")[1];
     const from = cfg.from ?? `postmaster@${domain}`;
@@ -54,6 +54,7 @@ export class MailerService {
       this.log.error(`Failed to send mail to ${input.to}: ${detail}`);
       throw new ApiError(HttpStatus.BAD_GATEWAY, "mail.sendFailed", detail, { detail });
     }
+    return true;
   }
 
   private spooled(to: string, now: number): boolean {
@@ -68,7 +69,7 @@ export class MailerService {
   }
 
   async sendNotification(input: { to: string; subject: string; text: string; html?: string }) {
-    await this.sendWith(await this.settings.toConfig(), input);
+    return this.sendWith(await this.settings.toConfig(), input);
   }
 
   // The code that answers a sign-in from an unusual place. It goes out through

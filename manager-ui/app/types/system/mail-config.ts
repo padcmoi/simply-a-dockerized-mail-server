@@ -24,6 +24,10 @@ export interface CadenceView {
   mailMinIntervalMs: number;
 }
 
+export interface AdminAlertView {
+  adminAlertEmail: string;
+}
+
 export interface GeneralView {
   managerUrl: string;
 }

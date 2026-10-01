@@ -32,6 +32,8 @@ export const API_ERROR_CODES = [
   "mail.notConfigured",
   "mail.otpInvalid",
   "mail.sendFailed",
+  "alert.noAddress",
+  "alert.tooSoon",
   "delegations.quotaExceedsDomain",
   "delegations.ownerNotDelegable",
   "delegations.noDelegation",

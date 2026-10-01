@@ -5,6 +5,7 @@ import { ConfigModule } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AccountsModule } from "./api/accounts/accounts.module";
 import { ConfigApiModule } from "./api/config/config.module";
+import { InternalApiModule } from "./api/internal/internal.module";
 import { DomainsModule } from "./api/domains/domains.module";
 import { GroupsModule } from "./api/groups/groups.module";
 import { HealthModule } from "./api/health/health.module";
@@ -68,6 +69,7 @@ import { ProtectionApiModule } from "./api/protection/protection.module";
     TicketsModule,
     NotificationsApiModule,
     ConfigApiModule,
+    InternalApiModule,
     MySpaceModule,
     SupervisionApiModule,
     ActivityApiModule,

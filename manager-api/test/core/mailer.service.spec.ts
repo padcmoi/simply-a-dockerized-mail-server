@@ -79,10 +79,10 @@ describe("MailerService", () => {
     });
 
     it("spools per recipient: a second send within the window to the same address is dropped, others still go", async () => {
-      await svc.sendWith(SMTP, { to: "dup@y.test", subject: "s", text: "t" });
-      await svc.sendWith(SMTP, { to: "dup@y.test", subject: "s", text: "t" });
+      expect(await svc.sendWith(SMTP, { to: "dup@y.test", subject: "s", text: "t" })).toBe(true);
+      expect(await svc.sendWith(SMTP, { to: "dup@y.test", subject: "s", text: "t" })).toBe(false);
       expect(sendMail).toHaveBeenCalledTimes(1);
-      await svc.sendWith(SMTP, { to: "other@y.test", subject: "s", text: "t" });
+      expect(await svc.sendWith(SMTP, { to: "other@y.test", subject: "s", text: "t" })).toBe(true);
       expect(sendMail).toHaveBeenCalledTimes(2);
     });
   });

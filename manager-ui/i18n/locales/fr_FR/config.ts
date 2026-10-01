@@ -146,6 +146,22 @@ export default {
   },
   passportCardLabel: "Connexion externe",
   passportCardHint: "Les fournisseurs de connexion et le sort d'une connexion sans compte ici.",
+  adminAlertCardLabel: "Adresse d'alerte",
+  adminAlertCardHint: "L'adresse e-mail prévenue quand le serveur a un problème.",
+  adminAlert: {
+    cardTitle: "Adresse d'alerte",
+    alertTitle: "Adresse à alerter en cas de problème.",
+    alertDescription:
+      "Les scripts du serveur, la sauvegarde en premier, écrivent à cette adresse quand quelque chose ne va pas. Stocké en base, réservé aux comptes root.",
+    email: "Adresse e-mail",
+    emailHint: "Une seule adresse. Vide : personne n'est prévenu par e-mail.",
+    emailInvalid: "Adresse e-mail invalide.",
+    save: "Enregistrer",
+    saved: "Adresse d'alerte enregistrée",
+    cleared: "Adresse d'alerte retirée",
+    saveFailed: "Échec de l'enregistrement",
+    loadFailed: "Échec du chargement",
+  },
   theme: {
     cardTitle: "Thème de l'interface",
     alertTitle: "Couleurs de l'interface.",

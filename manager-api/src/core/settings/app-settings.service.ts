@@ -47,6 +47,8 @@ export interface AppSettingsView {
   geoipCacheDays: number;
   loginAddressDays: number;
   loginNetworkDays: number;
+  /** Who the scripts of the host write to when the server has a problem. Empty: nobody. */
+  adminAlertEmail: string;
 }
 
 interface FieldSpec {
@@ -69,6 +71,7 @@ const FIELDS: Record<keyof AppSettingsView, FieldSpec> = {
   geoipCacheDays: { key: "geoip_cache_days", type: "number" },
   loginAddressDays: { key: "login_address_days", type: "number" },
   loginNetworkDays: { key: "login_network_days", type: "number" },
+  adminAlertEmail: { key: "admin_alert_email", type: "string" },
 };
 
 export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
@@ -102,6 +105,7 @@ export const APP_SETTINGS_DEFAULTS: AppSettingsView = {
   geoipCacheDays: 90,
   loginAddressDays: 30,
   loginNetworkDays: 180,
+  adminAlertEmail: "",
 };
 
 @Injectable()
@@ -150,6 +154,7 @@ export class AppSettingsService implements OnModuleInit {
       geoipCacheDays: num(FIELDS.geoipCacheDays, APP_SETTINGS_DEFAULTS.geoipCacheDays),
       loginAddressDays: num(FIELDS.loginAddressDays, APP_SETTINGS_DEFAULTS.loginAddressDays),
       loginNetworkDays: num(FIELDS.loginNetworkDays, APP_SETTINGS_DEFAULTS.loginNetworkDays),
+      adminAlertEmail: str(FIELDS.adminAlertEmail, APP_SETTINGS_DEFAULTS.adminAlertEmail),
     };
     return this.cache;
   }

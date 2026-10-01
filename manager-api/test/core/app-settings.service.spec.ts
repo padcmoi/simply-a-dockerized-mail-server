@@ -37,6 +37,7 @@ describe("AppSettingsService", () => {
       row("geoip_cache_days", "number", "45"),
       row("login_address_days", "number", "15"),
       row("login_network_days", "number", "90"),
+      row("admin_alert_email", "string", "admin@mgr.test"),
     ]);
     await svc.reload();
     expect(svc.get()).toEqual({
@@ -54,6 +55,7 @@ describe("AppSettingsService", () => {
       geoipCacheDays: 45,
       loginAddressDays: 15,
       loginNetworkDays: 90,
+      adminAlertEmail: "admin@mgr.test",
     });
   });
 

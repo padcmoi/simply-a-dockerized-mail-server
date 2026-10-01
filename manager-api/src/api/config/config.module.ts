@@ -6,6 +6,7 @@ import { PostfixSettingsModule } from "../../core/postfix/postfix-settings.modul
 import { SettingsModule } from "../../core/settings/settings.module";
 import { MailConfigController } from "./mail-config.controller";
 import { MailCadenceController } from "./mail-cadence.controller";
+import { AlertController } from "./alert.controller";
 import { GeneralController } from "./general.controller";
 import { LoginRiskController } from "./login-risk.controller";
 import { PassportConfigController } from "./passport-config.controller";
@@ -18,6 +19,7 @@ import { TicketsConfigController } from "./tickets-config.controller";
   controllers: [
     MailConfigController,
     MailCadenceController,
+    AlertController,
     GeneralController,
     LoginRiskController,
     SupervisionRetentionController,
