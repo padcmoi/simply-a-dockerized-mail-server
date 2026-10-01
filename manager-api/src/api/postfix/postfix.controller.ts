@@ -1,10 +1,15 @@
-import { BadRequestException, Controller, Delete, Get, HttpCode, Param, Query, UseGuards } from "@nestjs/common";
+import { BadRequestException, Controller, Delete, Get, HttpCode, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { ActivityLogService } from "../../core/activity/activity-log.service";
-import { PostfixCommandsService, QUEUE_ID_PATTERN } from "../../core/postfix/postfix-commands.service";
+import {
+  PostfixCommandsService,
+  QUEUE_ID_PATTERN,
+  RETRYABLE_QUEUES,
+  type RetryableQueue,
+} from "../../core/postfix/postfix-commands.service";
 import { PostfixService, QUEUE_NAMES, type QueueName } from "../../core/postfix/postfix.service";
 import { GlobalPermissionGuard } from "../../core/custom-permission-guard/global-permission.guard";
 import { RequireGlobalPermissions } from "../../core/custom-permission-guard/require-permissions.decorator";
-import { GetQueueDocs, GetQueueMessagesDocs, PostfixApi, PurgeQueueMessageDocs } from "./postfix.openapi";
+import { GetQueueDocs, GetQueueMessagesDocs, PostfixApi, PurgeQueueMessageDocs, RetryQueueMessageDocs } from "./postfix.openapi";
 
 @PostfixApi()
 @Controller({ path: "postfix", version: "1" })
@@ -42,6 +47,21 @@ export class PostfixController {
       action: "postfix.message-purged",
       entity: { type: "postfix-message", id, label: id },
       details: { queue: name },
+    });
+  }
+
+  @RequireGlobalPermissions([{ resource: "postfix", actions: ["access", "retry-postfix-queue-message"] }])
+  @RetryQueueMessageDocs()
+  @Post("queue/:queue/messages/:id/retry")
+  @HttpCode(204)
+  async retry(@Param("queue") queue: string, @Param("id") id: string) {
+    if (!(RETRYABLE_QUEUES as readonly string[]).includes(queue)) throw new BadRequestException("This queue cannot be retried");
+    if (!QUEUE_ID_PATTERN.test(id)) throw new BadRequestException("Invalid queue id");
+    await this.commands.retryMessage(queue as RetryableQueue, id);
+    await this.activity.record({
+      action: "postfix.message-retried",
+      entity: { type: "postfix-message", id, label: id },
+      details: { queue },
     });
   }
 

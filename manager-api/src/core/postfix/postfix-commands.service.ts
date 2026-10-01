@@ -6,9 +6,14 @@ import { POSTFIX_MANAGED_PATH } from "./postfix-settings.service";
 import type { QueueName } from "./postfix.service";
 
 export const QUEUE_ID_PATTERN = /^[0-9A-Za-z]{6,32}$/;
+export const RETRYABLE_QUEUES = ["deferred", "hold"] as const;
+export type RetryableQueue = (typeof RETRYABLE_QUEUES)[number];
+
+type Command =
+  { action: "delete"; queue: QueueName; queueId: string } | { action: "retry"; queue: RetryableQueue; queueId: string };
 
 interface CommandResult {
-  status: "deleted" | "not-found" | "invalid";
+  status: "deleted" | "retried" | "not-found" | "invalid";
   message: string;
 }
 
@@ -24,7 +29,13 @@ export class PostfixCommandsService {
     if (result.status !== "deleted") throw new ServiceUnavailableException(result.message);
   }
 
-  private async run(command: { action: "delete"; queue: QueueName; queueId: string }): Promise<CommandResult> {
+  async retryMessage(queue: RetryableQueue, queueId: string): Promise<void> {
+    const result = await this.run({ action: "retry", queue, queueId });
+    if (result.status === "not-found") throw new NotFoundException(result.message);
+    if (result.status !== "retried") throw new ServiceUnavailableException(result.message);
+  }
+
+  private async run(command: Command): Promise<CommandResult> {
     const id = randomUUID();
     const request = join(this.dir, `${id}.req.json`);
     const response = join(this.dir, `${id}.res.json`);

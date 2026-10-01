@@ -32,7 +32,7 @@ export const GLOBAL_ACTIONS = {
     "edit-rspamd-thresholds",
     "reset-rspamd-thresholds",
   ],
-  postfix: ["access", "view-postfix-queue", "purge-postfix-queue-message"],
+  postfix: ["access", "view-postfix-queue", "purge-postfix-queue-message", "retry-postfix-queue-message"],
   // `list-account-names` guards GET /accounts/names, the trimmed-down list the
   // group member picker needs; `groups` depends on it for exactly that reason.
   // The heavier routes each carry their own action.

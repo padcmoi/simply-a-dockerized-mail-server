@@ -10,7 +10,7 @@ import { buildHarness, ROOT, USER, type Harness } from "../helpers/e2e";
 describe("PostfixController (e2e: auth + ACL + behavior)", () => {
   let h: Harness;
   const svc = { queueStats: vi.fn(), queueMessages: vi.fn() };
-  const commands = { deleteMessage: vi.fn() };
+  const commands = { deleteMessage: vi.fn(), retryMessage: vi.fn() };
   const activity = { record: vi.fn() };
 
   beforeAll(async () => {
@@ -28,6 +28,7 @@ describe("PostfixController (e2e: auth + ACL + behavior)", () => {
     h.cpg.reset();
     svc.queueMessages.mockReset();
     commands.deleteMessage.mockReset().mockResolvedValue(undefined);
+    commands.retryMessage.mockReset().mockResolvedValue(undefined);
     activity.record.mockReset().mockResolvedValue(undefined);
   });
 
@@ -149,6 +150,67 @@ describe("PostfixController (e2e: auth + ACL + behavior)", () => {
     it("503 when Postfix does not answer, nothing journaled", async () => {
       commands.deleteMessage.mockRejectedValue(new ServiceUnavailableException("late"));
       await api().delete(purgeUrl("deferred", "60CD226AED9")).set("Authorization", auth(ROOT)).expect(503);
+      expect(activity.record).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("POST /queue/:queue/messages/:id/retry", () => {
+    const retryUrl = (queue: string, id: string) => `/api/v1/postfix/queue/${queue}/messages/${id}/retry`;
+
+    it("401 without a token", async () => {
+      await api().post(retryUrl("deferred", "60CD226AED9")).expect(401);
+    });
+    it("403 for a user without the permission", async () => {
+      await api().post(retryUrl("deferred", "60CD226AED9")).set("Authorization", auth(USER)).expect(403);
+      expect(commands.retryMessage).not.toHaveBeenCalled();
+    });
+    it("403 for a user who may view and purge the queue but not retry", async () => {
+      h.cpg.grantGlobal("postfix", "access", "view-postfix-queue", "purge-postfix-queue-message");
+      await api().post(retryUrl("deferred", "60CD226AED9")).set("Authorization", auth(USER)).expect(403);
+      expect(commands.retryMessage).not.toHaveBeenCalled();
+    });
+    it("403 on the purge for a user who may only retry", async () => {
+      h.cpg.grantGlobal("postfix", "access", "retry-postfix-queue-message");
+      await api().delete("/api/v1/postfix/queue/deferred/messages/60CD226AED9").set("Authorization", auth(USER)).expect(403);
+      expect(commands.deleteMessage).not.toHaveBeenCalled();
+    });
+    it("204 for a user granted the retry, sending the command and journaling it", async () => {
+      h.cpg.grantGlobal("postfix", "access", "retry-postfix-queue-message");
+      await api().post(retryUrl("hold", "60CD226AED9")).set("Authorization", auth(USER)).expect(204);
+      expect(commands.retryMessage).toHaveBeenCalledWith("hold", "60CD226AED9");
+      expect(activity.record).toHaveBeenCalledWith({
+        action: "postfix.message-retried",
+        entity: { type: "postfix-message", id: "60CD226AED9", label: "60CD226AED9" },
+        details: { queue: "hold" },
+      });
+    });
+    it("204 for root on the deferred and the hold queues", async () => {
+      for (const queue of ["deferred", "hold"]) {
+        await api().post(retryUrl(queue, "ABCDEF123")).set("Authorization", auth(ROOT)).expect(204);
+      }
+      expect(commands.retryMessage).toHaveBeenCalledTimes(2);
+    });
+    for (const [queue, id] of [
+      ["active", "60CD226AED9"],
+      ["incoming", "60CD226AED9"],
+      ["maildrop", "60CD226AED9"],
+      ["deferred", "ALL"],
+      ["deferred", "60CD2%2F..%2F"],
+      ["hold", "60CD226AED9%20-f"],
+    ]) {
+      it(`400 for ${queue}/${id}, nothing sent`, async () => {
+        await api().post(retryUrl(queue, id)).set("Authorization", auth(ROOT)).expect(400);
+        expect(commands.retryMessage).not.toHaveBeenCalled();
+      });
+    }
+    it("404 when the message is no longer there, nothing journaled", async () => {
+      commands.retryMessage.mockRejectedValue(new NotFoundException("gone"));
+      await api().post(retryUrl("deferred", "60CD226AED9")).set("Authorization", auth(ROOT)).expect(404);
+      expect(activity.record).not.toHaveBeenCalled();
+    });
+    it("503 when Postfix does not answer, nothing journaled", async () => {
+      commands.retryMessage.mockRejectedValue(new ServiceUnavailableException("late"));
+      await api().post(retryUrl("deferred", "60CD226AED9")).set("Authorization", auth(ROOT)).expect(503);
       expect(activity.record).not.toHaveBeenCalled();
     });
   });

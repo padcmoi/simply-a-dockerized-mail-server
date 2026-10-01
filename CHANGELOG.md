@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(postfix): a deferred or held message can be retried from its row or several at once, behind a new `retry-postfix-queue-message` action, the watcher of the Postfix container releasing a held message then asking for its delivery now, each retry recorded in the activity journal (01-10-2026)
 - feat(acl): the default group seeded on a fresh install also grants `accounts:access` and `accounts:list-account-names`, so the owner of a domain can pick the account a mailbox or an alias belongs to (01-10-2026)
 - feat(myspace): a domain owner opens their domain from Mon espace as if picked on the Domaines page, and the domain pages now load for an owner holding no global permission, where they asked for the global list and stayed empty on a 403 (01-10-2026)
 - feat(protection): an account, a mailbox, an alias or a domain can be protected from its row or several at once, after a 10-click confirmation, and can then be neither edited, nor deleted, nor given another owner by anyone until a root account unprotects it; mailboxes and aliases are protected with the `protect-resource` action of a new `misc` permission resource, accounts and domains by root accounts only (01-10-2026)

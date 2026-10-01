@@ -157,6 +157,7 @@ export default {
           access: "Access",
           "view-postfix-queue": "View the mail queue",
           "purge-postfix-queue-message": "Purge a queued message",
+          "retry-postfix-queue-message": "Retry a deferred or held message",
         },
         accounts: {
           access: "Access",

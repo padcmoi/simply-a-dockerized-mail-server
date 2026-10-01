@@ -109,3 +109,25 @@ export const PurgeQueueMessageDocs = () =>
     ApiResponse({ status: 404, description: "The message is not, or no longer, in that queue" }),
     ApiResponse({ status: 503, description: "Postfix did not answer the command in time" })
   );
+
+export const RetryQueueMessageDocs = () =>
+  applyDecorators(
+    ApiOperation({
+      summary: "Retry the delivery of one deferred or held message",
+      description:
+        "Asks Postfix to deliver the message `id` now instead of at its next scheduled attempt, as `postqueue -i` would. " +
+        "A message on hold is first released, as `postsuper -H` would, which puts it back in the deferred queue. " +
+        "A message whose cause of deferral is still there goes back to the deferred queue. " +
+        "Sent to the watcher of the Postfix container like the purge, and recorded in the activity journal.",
+    }),
+    ApiParam({ name: "queue", enum: ["deferred", "hold"] }),
+    ApiParam({ name: "id", example: "60CD226AED9", description: "Postfix queue id, 6 to 32 letters and digits" }),
+    ApiResponse({ status: 204, description: "Delivery attempt requested" }),
+    ApiResponse({ status: 400, description: "Queue that cannot be retried or malformed queue id" }),
+    ApiResponse({
+      status: 403,
+      description: "Missing the `postfix:access` and/or `postfix:retry-postfix-queue-message` global permission",
+    }),
+    ApiResponse({ status: 404, description: "The message is not, or no longer, in that queue" }),
+    ApiResponse({ status: 503, description: "Postfix did not answer the command in time" })
+  );

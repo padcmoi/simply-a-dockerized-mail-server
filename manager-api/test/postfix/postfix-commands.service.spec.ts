@@ -14,7 +14,7 @@ class TestCommandsService extends PostfixCommandsService {
   }
 }
 
-describe("PostfixCommandsService.deleteMessage", () => {
+describe("PostfixCommandsService", () => {
   let dir: string;
   const stops: (() => void)[] = [];
 
@@ -80,5 +80,26 @@ describe("PostfixCommandsService.deleteMessage", () => {
       ServiceUnavailableException
     );
     expect((await readdir(dir)).filter((name) => name.endsWith(".req.json"))).toEqual([]);
+  });
+
+  it("drops a retry command and resolves once the watcher scheduled the delivery, leaving no file behind", async () => {
+    const seen = fakeWatcher(() => ({ status: "retried", message: "ok" }));
+    await new TestCommandsService(dir, 3_000).retryMessage("hold", "60CD226AED9");
+    expect(seen).toEqual([{ action: "retry", queue: "hold", queueId: "60CD226AED9" }]);
+    expect(await readdir(dir)).toEqual([]);
+  });
+
+  it("answers 404 on a retry when the watcher did not find the message", async () => {
+    fakeWatcher(() => ({ status: "not-found", message: "60CD226AED9 is not in the deferred queue" }));
+    await expect(new TestCommandsService(dir, 3_000).retryMessage("deferred", "60CD226AED9")).rejects.toBeInstanceOf(
+      NotFoundException
+    );
+  });
+
+  it("answers 503 on a retry the watcher answered as a deletion", async () => {
+    fakeWatcher(() => ({ status: "deleted", message: "ok" }));
+    await expect(new TestCommandsService(dir, 3_000).retryMessage("deferred", "60CD226AED9")).rejects.toBeInstanceOf(
+      ServiceUnavailableException
+    );
   });
 });

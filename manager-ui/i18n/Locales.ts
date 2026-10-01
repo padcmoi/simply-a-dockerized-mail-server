@@ -1770,6 +1770,10 @@ export interface Locales {
     purgeManyDescription: string;
     purgedMany: string;
     purgeFailedMany: string;
+    retry: string;
+    retrySelection: string;
+    retried: string;
+    retriedMany: string;
     empty: string;
     truncated: string;
     nullSender: string;
@@ -2053,6 +2057,7 @@ export interface Locales {
             access: string;
             "view-postfix-queue": string;
             "purge-postfix-queue-message": string;
+            "retry-postfix-queue-message": string;
           };
           accounts: {
             access: string;

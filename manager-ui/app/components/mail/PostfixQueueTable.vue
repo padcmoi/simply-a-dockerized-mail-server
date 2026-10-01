@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const emit = defineEmits<{ purged: [] }>();
+const emit = defineEmits<{ purged: []; retried: [] }>();
 const props = defineProps<{ listing: PostfixQueueMessages | null; loading: boolean }>();
 
 const { t } = useI18n();
@@ -7,6 +7,10 @@ const { formatDateTime, timeAgo } = useDateTime();
 const { canPurge, confirmOpen, confirmTitle, confirmDescription, purging, ask, purge } = usePostfixPurge(
   () => props.listing?.queue,
   () => emit("purged")
+);
+const { canRetry, retrying, retry } = usePostfixRetry(
+  () => props.listing?.queue,
+  () => emit("retried")
 );
 
 const page = ref(1);
@@ -42,7 +46,15 @@ watch(
 );
 
 async function confirmPurge() {
-  const done = new Set<string | number>(await purge());
+  drop(await purge());
+}
+
+async function retryKeys(keys: (string | number)[]) {
+  drop(await retry(keys));
+}
+
+function drop(keys: (string | number)[]) {
+  const done = new Set<string | number>(keys);
   selected.value = selected.value.filter((key) => !done.has(key));
 }
 
@@ -83,7 +95,7 @@ function reasonsOf(row: QueueMessage) {
         v-model:page="page"
         v-model:selected="selected"
         table-id="postfix-queue-messages"
-        :multiple="canPurge"
+        :multiple="canPurge || canRetry"
         :data="listing.messages"
         :columns="columns"
         :loading="loading"
@@ -118,12 +130,43 @@ function reasonsOf(row: QueueMessage) {
           <span class="font-mono text-xs">{{ row.id }}</span>
         </template>
         <template #selection="{ keys }">
-          <UButton icon="i-lucide-trash-2" color="error" variant="soft" size="sm" :loading="purging" @click="ask(keys)">
+          <UButton
+            v-if="canRetry"
+            icon="i-lucide-rotate-cw"
+            color="primary"
+            variant="soft"
+            size="sm"
+            :loading="retrying"
+            @click="retryKeys(keys)"
+          >
+            {{ t("postfixPage.retrySelection", { count: keys.length }) }}
+          </UButton>
+          <UButton
+            v-if="canPurge"
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="soft"
+            size="sm"
+            :loading="purging"
+            @click="ask(keys)"
+          >
             {{ t("postfixPage.purgeSelection", { count: keys.length }) }}
           </UButton>
         </template>
-        <template v-if="canPurge" #actions="{ row }">
+        <template v-if="canPurge || canRetry" #actions="{ row }">
           <UButton
+            v-if="canRetry"
+            icon="i-lucide-rotate-cw"
+            color="primary"
+            variant="ghost"
+            size="xs"
+            :disabled="retrying"
+            :aria-label="t('postfixPage.retry')"
+            :title="t('postfixPage.retry')"
+            @click="retryKeys([row.id])"
+          />
+          <UButton
+            v-if="canPurge"
             icon="i-lucide-trash-2"
             color="error"
             variant="ghost"

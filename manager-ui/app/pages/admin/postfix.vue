@@ -41,7 +41,7 @@ const tabs = computed(() =>
   }))
 );
 
-function onPurged() {
+function onQueueChanged() {
   loadStats();
   loadMessages();
 }
@@ -109,7 +109,7 @@ onMounted(() => {
           </UTabs>
         </div>
 
-        <PostfixQueueTable :listing="listing" :loading="loadingMessages" @purged="onPurged" />
+        <PostfixQueueTable :listing="listing" :loading="loadingMessages" @purged="onQueueChanged" @retried="onQueueChanged" />
       </div>
     </UCard>
   </div>

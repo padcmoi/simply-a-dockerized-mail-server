@@ -160,6 +160,7 @@ export default {
           access: "Accès",
           "view-postfix-queue": "Voir la file d'attente",
           "purge-postfix-queue-message": "Purger un message de la file",
+          "retry-postfix-queue-message": "Rejouer un message différé ou en attente",
         },
         accounts: {
           access: "Accès",

@@ -57,6 +57,7 @@ export const ACTIVITY_ACTIONS = [
   "dmarc.inbox-scanned",
   "postfix.settings-updated",
   "postfix.message-purged",
+  "postfix.message-retried",
   "protection.enabled",
   "protection.disabled",
 ] as const;

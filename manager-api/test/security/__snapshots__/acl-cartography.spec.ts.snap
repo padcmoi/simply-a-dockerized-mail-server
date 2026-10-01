@@ -196,6 +196,7 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "POST /api/v1/notifications/:id/read  ::  auth=ApiToken+JWT guards=[]",
   "POST /api/v1/notifications/:id/unread  ::  auth=ApiToken+JWT guards=[]",
   "POST /api/v1/notifications/read-all  ::  auth=ApiToken+JWT guards=[]",
+  "POST /api/v1/postfix/queue/:queue/messages/:id/retry  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:postfix[access,retry-postfix-queue-message]",
   "POST /api/v1/sieve/reject-senders  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:sieve[access,create-reject-sender]",
   "POST /api/v1/tickets  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,create-ticket]",
   "POST /api/v1/tickets/:id/messages  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:tickets[access,view-ticket]",
