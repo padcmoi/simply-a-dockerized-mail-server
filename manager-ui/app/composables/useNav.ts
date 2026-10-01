@@ -74,17 +74,17 @@ export function useNav(onSignOut: () => Promise<void>) {
       ? [{ label: t("nav.administration"), icon: "i-lucide-layout-dashboard", to: "/admin", active: route.path === "/admin" }]
       : []),
     ...entry("domains", "nav.domains", "i-lucide-globe", "/admin/domains"),
-    ...entry("tickets", "nav.tickets", "i-lucide-life-buoy", "/admin/tickets"),
+    ...entry("tickets", "nav.tickets", "i-lucide-life-buoy", "/admin/tickets", "list-tickets"),
     ...section("mail", "nav.sectionMail", "i-lucide-mail-check", [
-      ...entry("rspamd", "nav.rspamd", "i-lucide-shield", "/admin/rspamd"),
-      ...entry("postfix", "nav.postfix", "i-lucide-send", "/admin/postfix"),
-      ...entry("sieve", "nav.sieve", "i-lucide-filter", "/admin/sieve"),
+      ...entry("rspamd", "nav.rspamd", "i-lucide-shield", "/admin/rspamd", "view-rspamd-stats"),
+      ...entry("postfix", "nav.postfix", "i-lucide-send", "/admin/postfix", "view-postfix-queue"),
+      ...entry("sieve", "nav.sieve", "i-lucide-filter", "/admin/sieve", "list-reject-senders"),
       ...entry("dmarc", "nav.dmarc", "i-lucide-mail-search", "/admin/dmarc", "view-dmarc-reports"),
     ]),
     ...section("access", "nav.sectionAccess", "i-lucide-shield-check", [
-      ...entry("accounts", "nav.accounts", "i-lucide-user-cog", "/admin/accounts"),
-      ...entry("groups", "nav.groups", "i-lucide-users-round", "/admin/groups"),
-      ...entry("api-tokens", "nav.apiTokens", "i-lucide-key", "/admin/api-tokens"),
+      ...entry("accounts", "nav.accounts", "i-lucide-user-cog", "/admin/accounts", "list-accounts"),
+      ...entry("groups", "nav.groups", "i-lucide-users-round", "/admin/groups", "list-groups"),
+      ...entry("api-tokens", "nav.apiTokens", "i-lucide-key", "/admin/api-tokens", "list-api-tokens"),
     ]),
     ...section("system", "nav.sectionSystem", "i-lucide-settings-2", [
       ...(auth.session?.isRoot === true
@@ -97,7 +97,7 @@ export function useNav(onSignOut: () => Promise<void>) {
             },
           ]
         : []),
-      ...entry("supervision", "nav.supervision", "i-lucide-activity", "/admin/supervision"),
+      ...entry("supervision", "nav.supervision", "i-lucide-activity", "/admin/supervision", "view-machine-metrics"),
       ...entry("supervision", "nav.activity", "i-lucide-scroll-text", "/admin/activity", "view-activity-log"),
       ...entry("supervision", "nav.mailLogs", "i-lucide-file-text", "/admin/mail-logs", "view-mail-logs"),
       ...entry("fail2ban", "nav.fail2ban", "i-lucide-shield-ban", "/admin/fail2ban", "view-fail2ban-jails"),

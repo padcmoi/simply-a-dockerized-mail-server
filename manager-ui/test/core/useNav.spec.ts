@@ -127,12 +127,14 @@ describe("useNav global nav items", () => {
     expect(adminNavItems.value[0]?.children).toBeUndefined();
   });
 
-  it("reveals exactly the admin sections the account holds `access` on", () => {
+  it("reveals exactly the admin pages the account can list", () => {
     asUser();
     usePermissionsStore().data = {
       global: [
         { resource: "accounts", action: "access" },
+        { resource: "accounts", action: "list-accounts" },
         { resource: "groups", action: "access" },
+        { resource: "groups", action: "list-groups" },
       ],
       domain: [],
     };
@@ -141,12 +143,35 @@ describe("useNav global nav items", () => {
     expect(pathsOf(adminNavItems.value)).toEqual(["/admin/accounts", "/admin/groups", "/about"]);
   });
 
-  // The machine is gated like any other section: on `access` alone. A non-root
-  // account sees nothing else under System but the release the server runs,
-  // which follows the machine, so the section folds around the two of them.
-  it("reveals the machine section on supervision access, root or not", () => {
+  it("hides a page whose own action is missing, `access` alone opening nothing", () => {
     asUser();
-    usePermissionsStore().data = { global: [{ resource: "supervision", action: "access" }], domain: [] };
+    usePermissionsStore().data = {
+      global: [
+        { resource: "accounts", action: "access" },
+        { resource: "accounts", action: "list-account-names" },
+        { resource: "groups", action: "access" },
+        { resource: "tickets", action: "access" },
+        { resource: "rspamd", action: "access" },
+        { resource: "postfix", action: "access" },
+        { resource: "sieve", action: "access" },
+        { resource: "api-tokens", action: "access" },
+        { resource: "supervision", action: "access" },
+      ],
+      domain: [],
+    };
+    const { adminNavItems } = useNav(noop);
+    expect(pathsOf(adminNavItems.value)).toEqual(["/about"]);
+  });
+
+  it("reveals the machine section to an account that may view the machine metrics, root or not", () => {
+    asUser();
+    usePermissionsStore().data = {
+      global: [
+        { resource: "supervision", action: "access" },
+        { resource: "supervision", action: "view-machine-metrics" },
+      ],
+      domain: [],
+    };
     const { adminNavItems } = useNav(noop);
     expect(adminNavItems.value.map((i) => i.to ?? i.value)).toEqual(["system"]);
     expect(pathsOf(adminNavItems.value)).toEqual(["/admin/supervision", "/about"]);

@@ -8,6 +8,17 @@ import { useDomainStore } from "~/stores/domain";
 // committed and off-limits to edit; the small duplication of the check itself is an
 // accepted tradeoff. Source of truth is always a fresh `usePermissionsStore` fetch,
 // never the (long-lived) JWT payload; see security-hardening.md "fraîcheur des droits".
+function deny() {
+  if (import.meta.server || useNuxtApp().isHydrating) {
+    showError({ statusCode: 403 });
+    return;
+  }
+  const stop = useRouter().afterEach((_to, _from, failure) => {
+    stop();
+    if (!failure) showError({ statusCode: 403 });
+  });
+}
+
 export default defineNuxtRouteMiddleware(async (to) => {
   const auth = useAuthStore();
   if (!auth.isAuthenticated) return;
@@ -22,13 +33,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const meta = to.meta;
   if (meta.rootOnly) {
-    showError({ statusCode: 403 });
+    deny();
     return;
   }
 
   for (const req of meta.requiredGlobal ?? []) {
     if (!perms.hasGlobal(req.resource, req.action)) {
-      showError({ statusCode: 403 });
+      deny();
       return;
     }
   }
@@ -37,7 +48,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (domain.selected) {
     for (const req of meta.requiredDomain ?? []) {
       if (!perms.hasDomain(domain.selected.id, req.resource, req.action)) {
-        showError({ statusCode: 403 });
+        deny();
         return;
       }
     }
