@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Usage:
-#   ./send-alert.sh "<subject>" "<message>"   mail the alert address set in the manager
-#   ./send-alert.sh --check                   prove the route only answers this machine
+#   scripts/send-alert.sh "<subject>" "<message>"   mail the alert address set in the manager
+#   scripts/send-alert.sh --check                   prove the route only answers this machine
 set -uo pipefail
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 API_CONTAINER=mail-manager-api
 UI_CONTAINER=mail-manager-ui

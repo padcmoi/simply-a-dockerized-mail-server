@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - feat(fail2ban): a `recidive` jail bans for a week, on the mail ports only, an address banned 5 times in a day by the other jails, with its own card, its unban buttons and its line on the supervision chart (28-09-2026)
 - feat(mail-logs): the rotated Postfix and Dovecot logs are listed in an Archives menu next to the download button, each downloaded decompressed, so a daily rotation loses nothing from the Logs mail page (28-09-2026)
 
+### Changed
+
+- refactor(alert): `send-alert.sh` moves to `scripts/` and works from the project root wherever it is called from (01-10-2026)
+
 ### Fixed
 
 - fix(ui): a sidebar entry shows only to an account holding the action its page asks beyond `access`, and a page refused by its permissions shows the 403 screen when reached from inside the app, where it opened on an empty table and a failure toast (01-10-2026)
