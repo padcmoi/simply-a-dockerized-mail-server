@@ -8,7 +8,7 @@ import { useDomainStore } from "~/stores/domain";
 // resolve on its own.
 export function useCurrentDomain() {
   const route = useRoute();
-  const { call } = useApi();
+  const { findDomain } = useDomainLookup();
   const domainStore = useDomainStore();
   const domainFqdn = computed(() => String(route.params.domain));
 
@@ -22,8 +22,7 @@ export function useCurrentDomain() {
     "current-domain-resolve",
     async () => {
       if (domainStore.selected?.domain === domainFqdn.value) return null;
-      const domains = await call<{ id: number; domain: string; quota: string; active: number }[]>("/domains");
-      const found = domains.find((d) => d.domain === domainFqdn.value) ?? null;
+      const found = await findDomain<{ id: number; domain: string; quota: string; active: number }>(domainFqdn.value);
       if (found) domainStore.select(found);
       return null;
     },

@@ -7,6 +7,7 @@ const { call } = useApi();
 const { set: setBreadcrumb } = useBreadcrumb();
 const { tick } = useDataRefresh();
 const route = useRoute();
+const domainStore = useDomainStore();
 
 setBreadcrumb([{ label: t("nav.myspace") }]);
 
@@ -70,6 +71,11 @@ watch(
   },
   { immediate: true }
 );
+
+function openDomain(row: OwnedDomain) {
+  domainStore.select({ id: row.id, domain: row.domain, quota: row.quota, active: row.active ? 1 : 0 });
+  navigateTo(`/admin/domains/${row.domain}`);
+}
 </script>
 
 <template>
@@ -121,7 +127,13 @@ watch(
 
         <template #domain="{ row }">
           <FullTooltip :text="row.domain">
-            <span class="font-medium">{{ truncateChars(row.domain, 40) }}</span>
+            <UButton
+              color="primary"
+              variant="link"
+              class="p-0 font-medium"
+              :label="truncateChars(row.domain, 40)"
+              @click="openDomain(row)"
+            />
           </FullTooltip>
         </template>
 
@@ -137,6 +149,12 @@ watch(
 
         <template #validity="{ row }">
           <ValidityWindowCell :start="row.userStartDate" :end="row.userEndDate" />
+        </template>
+
+        <template #actions="{ row }">
+          <UButton icon="i-lucide-arrow-right" color="primary" variant="outline" size="xs" @click="openDomain(row)">
+            {{ t("common.manage") }}
+          </UButton>
         </template>
       </DataTable>
     </section>

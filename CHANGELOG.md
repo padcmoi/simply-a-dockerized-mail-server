@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(myspace): a domain owner opens their domain from Mon espace as if picked on the Domaines page, and the domain pages now load for an owner holding no global permission, where they asked for the global list and stayed empty on a 403 (01-10-2026)
 - feat(protection): an account, a mailbox, an alias or a domain can be protected from its row or several at once, after a 10-click confirmation, and can then be neither edited, nor deleted, nor given another owner by anyone until a root account unprotects it; mailboxes and aliases are protected with the `protect-resource` action of a new `misc` permission resource, accounts and domains by root accounts only (01-10-2026)
 - feat(ui): a table can offer a multiple selection, off by default, kept across pages, with a slot where the page using it puts its own bulk actions: several Postfix queue messages purged at once, the recipients of a domain enabled, disabled, deleted, given an owner or detached several at once and its aliases deleted, given an owner or detached several at once, system mailboxes left out; assigning an owner now replaces the current one instead of being refused, and a table too wide for its box shows as cards instead of scrolling sideways (30-09-2026)
 - feat(ui): every table remembers in the browser the page size picked in its own toolbar, under its own id, and follows the default of the preferences until one is picked (30-09-2026)

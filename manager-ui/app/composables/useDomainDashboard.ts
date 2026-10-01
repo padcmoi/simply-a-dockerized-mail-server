@@ -14,6 +14,8 @@ function occupancyRate(m: MailboxEntry) {
 export function useDomainDashboard() {
   const route = useRoute();
   const { call } = useApi();
+  const { isRoot, hasGlobal } = usePermissions();
+  const { findDomain } = useDomainLookup();
   const { t } = useI18n();
   const domainStore = useDomainStore();
   const { set: setBreadcrumb } = useBreadcrumb();
@@ -29,8 +31,7 @@ export function useDomainDashboard() {
   const { data: mainData, status: mainStatus } = useAsyncData<DomainDashboardData>(
     "domain-dashboard-main",
     async () => {
-      const domains = await call<Domain[]>("/domains");
-      const found = domains.find((d) => d.domain === domainFqdn.value) ?? null;
+      const found = await findDomain<Domain>(domainFqdn.value);
       if (!found)
         return { domain: null, recipients: [], aliases: [], quota: null, reservedForAccountsBytes: "0", topMailboxes: [] };
       domainStore.select(found);
@@ -84,7 +85,12 @@ export function useDomainDashboard() {
   const rtAliases = useRealtimeTopic<Alias[]>(() => (domainId.value ? `domain-aliases:${domainId.value}` : null));
   const rtQuota = useRealtimeTopic<QuotaPayload>(() => (domainId.value ? `domain-quota:${domainId.value}` : null));
   const rtRspamd = useRealtimeTopic<DomainRspamdStats>(() => (domainId.value ? `domain-rspamd:${domainId.value}` : null));
-  const rtPostfix = useRealtimeTopic<PostfixQueueStats>(() => (domainId.value ? `domain-postfix:${domainId.value}` : null));
+  const canViewPostfix = computed(
+    () => isRoot.value || (hasGlobal("postfix", "access") && hasGlobal("postfix", "view-postfix-queue"))
+  );
+  const rtPostfix = useRealtimeTopic<PostfixQueueStats>(() =>
+    domainId.value && canViewPostfix.value ? `domain-postfix:${domainId.value}` : null
+  );
 
   const recipients = computed(() => rtRecipients.value ?? mainData.value?.recipients ?? []);
   const aliases = computed(() => rtAliases.value ?? mainData.value?.aliases ?? []);
@@ -169,7 +175,7 @@ export function useDomainDashboard() {
   const { data: postfixData, status: postfixStatus } = useAsyncData<PostfixQueueStats | null>(
     "domain-dashboard-postfix",
     async () => {
-      if (!domain.value) return null;
+      if (!domain.value || !canViewPostfix.value) return null;
       try {
         return await call<PostfixQueueStats>(`/postfix/queue?domain=${encodeURIComponent(domain.value.domain)}`);
       } catch {
@@ -380,6 +386,7 @@ export function useDomainDashboard() {
     dkimCheck,
     rspamdStats,
     postfixQueue,
+    canViewPostfix,
     loading,
     dkimLoading,
     postfixLoading,

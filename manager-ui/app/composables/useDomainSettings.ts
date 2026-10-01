@@ -7,6 +7,7 @@ import type { DateRangeValue } from "~/utils/date-range";
 export function useDomainSettings(domainFqdn: () => string) {
   const { t } = useI18n();
   const { call } = useApi();
+  const { findDomain } = useDomainLookup();
   const toast = useToast();
   const { apiErrorMessage } = useApiError();
   const auth = useAuthStore();
@@ -31,8 +32,7 @@ export function useDomainSettings(domainFqdn: () => string) {
   const { data: domainData, refresh: refreshDomain } = useAsyncData<Domain | null>(
     "domain-admin-info",
     async () => {
-      const domains = await call<Domain[]>("/domains");
-      return domains.find((d) => d.domain === domainFqdn()) ?? null;
+      return findDomain<Domain>(domainFqdn());
     },
     { server: false, watch: [domainFqdn], default: () => null }
   );

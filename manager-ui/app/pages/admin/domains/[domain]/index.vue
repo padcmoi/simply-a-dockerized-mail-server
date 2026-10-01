@@ -14,6 +14,7 @@ const {
   dkimCheck,
   rspamdStats,
   postfixQueue,
+  canViewPostfix,
   loading,
   dkimLoading,
   postfixLoading,
@@ -281,7 +282,7 @@ watchEffect(() => {
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <DomainRspamdCard v-if="canViewRspamd" :stats="rspamdStats" :loading="loading" />
-      <DomainPostfixCard :queue="postfixQueue" :loading="postfixLoading" />
+      <DomainPostfixCard v-if="canViewPostfix" :queue="postfixQueue" :loading="postfixLoading" />
     </div>
   </div>
 </template>
