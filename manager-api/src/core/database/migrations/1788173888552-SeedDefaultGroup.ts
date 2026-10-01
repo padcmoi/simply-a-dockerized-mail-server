@@ -20,6 +20,12 @@ import type { MigrationInterface, QueryRunner } from "typeorm";
 // routes reads it. Seeding it would hand every account a foot on the domains
 // section for nothing.
 //
+// `accounts:list-account-names` comes with it, and `accounts:access` because
+// every action is gated behind it: the owner of a domain picks the account a
+// mailbox or an alias belongs to from that list, and without it the picker
+// stays empty. It serves names and addresses only, the accounts page and every
+// other accounts route ask for an action of their own.
+//
 // Owner: none. This runs with the schema, before install.sh seeds the first
 // root account, so there is nobody to own it yet; install.sh attaches that
 // account once it exists.
@@ -29,6 +35,8 @@ import type { MigrationInterface, QueryRunner } from "typeorm";
 // on a server someone has already tuned.
 
 const GLOBAL_PERMISSIONS: [resource: string, action: string][] = [
+  ["accounts", "access"],
+  ["accounts", "list-account-names"],
   ["api-tokens", "access"],
   ["api-tokens", "list-api-tokens"],
   ["api-tokens", "create-api-token"],
