@@ -40,6 +40,8 @@ const auth = useAuthStore();
 const { set: setBreadcrumb } = useBreadcrumb();
 setBreadcrumb([{ label: t("nav.accounts") }]);
 const { isRoot, hasGlobal } = usePermissions();
+const { canProtect, canUnprotect } = useProtectionRights("account");
+const selected = ref<(string | number)[]>([]);
 
 // The API now gates these routes on `accounts:*` rather than IsRootGuard, so the
 // buttons follow the actual permission instead of assuming root. Hiding an entry
@@ -191,7 +193,10 @@ async function onResetTwoFactorConfirmed() {
       v-model:search-by="searchBy"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      v-model:selected="selected"
       table-id="accounts-list"
+      :multiple="canProtect"
+      :row-selectable="(row: ManagerAccount) => row.isProtected !== 1 || canUnprotect"
       :data="accounts"
       :columns="columns"
       :total="total"
@@ -234,9 +239,13 @@ async function onResetTwoFactorConfirmed() {
         </UBadge>
       </template>
 
+      <template #selection="{ rows }">
+        <ProtectionBulkActions type="account" :rows="rows" @done="load" />
+      </template>
+
       <template #actions="{ row }">
         <UButton
-          v-if="row.securityQuestionSet && canResetTwoFactor"
+          v-if="row.securityQuestionSet && canResetTwoFactor && row.isProtected !== 1"
           icon="i-lucide-shield-question-mark"
           size="xs"
           color="warning"
@@ -245,7 +254,7 @@ async function onResetTwoFactorConfirmed() {
           @click="requestResetQuestion(row)"
         />
         <UButton
-          v-if="row.twoFactorEnabled && canResetTwoFactor"
+          v-if="row.twoFactorEnabled && canResetTwoFactor && row.isProtected !== 1"
           icon="i-lucide-shield-off"
           size="xs"
           color="warning"
@@ -262,8 +271,9 @@ async function onResetTwoFactorConfirmed() {
           :title="t('accounts.table.manageGroups')"
           :to="`/admin/accounts/${row.id}/groups`"
         />
+        <ProtectionToggle :id="row.id" type="account" :label="row.email" :protected="row.isProtected === 1" @changed="load" />
         <UButton
-          v-if="!row.isRoot && canEditAccount"
+          v-if="!row.isRoot && canEditAccount && row.isProtected !== 1"
           icon="i-lucide-pencil"
           size="xs"
           color="neutral"
@@ -272,7 +282,7 @@ async function onResetTwoFactorConfirmed() {
           :to="`/admin/accounts/${row.id}/edit`"
         />
         <UButton
-          v-if="!row.isRoot && canRevokeAccount"
+          v-if="!row.isRoot && canRevokeAccount && row.isProtected !== 1"
           icon="i-lucide-trash-2"
           size="xs"
           color="error"

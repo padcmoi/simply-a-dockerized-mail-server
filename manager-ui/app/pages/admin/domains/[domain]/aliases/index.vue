@@ -59,6 +59,7 @@ const { t } = useI18n();
 const { call } = useApi();
 const { formatDateTime } = useDateTime();
 const { isRoot, hasDomain } = usePermissions();
+const { canProtect, canUnprotect } = useProtectionRights("alias");
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 
@@ -141,7 +142,8 @@ function editAlias(alias: AliasRow) {
       v-model:sort-direction="sortDir"
       v-model:selected="selected"
       table-id="aliases-list"
-      :multiple="canDeleteAliases || canAssignOwner || canUnassignOwner"
+      :multiple="canDeleteAliases || canAssignOwner || canUnassignOwner || canProtect"
+      :row-selectable="(row: AliasRow) => row.isProtected !== 1 || canUnprotect"
       :data="items"
       :columns="columns"
       :total="total"
@@ -149,17 +151,19 @@ function editAlias(alias: AliasRow) {
       :row-key="(row: AliasRow) => row.id"
       :empty-label="t('common.noResults')"
     >
-      <template #selection="{ keys }">
-        <OwnerBulkActions
-          v-if="domainId"
-          kind="aliases"
-          :domain-id="domainId"
-          :keys="keys"
-          :can-assign="canAssignOwner"
-          :can-unassign="canUnassignOwner"
-          @done="onBulkDone"
-        />
-        <AliasesBulkActions v-if="domainId && canDeleteAliases" :domain-id="domainId" :keys="keys" @done="onBulkDone" />
+      <template #selection="{ rows }">
+        <template v-if="domainId && unprotectedKeys(rows).length">
+          <OwnerBulkActions
+            kind="aliases"
+            :domain-id="domainId"
+            :keys="unprotectedKeys(rows)"
+            :can-assign="canAssignOwner"
+            :can-unassign="canUnassignOwner"
+            @done="onBulkDone"
+          />
+          <AliasesBulkActions v-if="canDeleteAliases" :domain-id="domainId" :keys="unprotectedKeys(rows)" @done="onBulkDone" />
+        </template>
+        <ProtectionBulkActions type="alias" :rows="rows" @done="load" />
       </template>
 
       <template #createdAt="{ row }">
@@ -169,7 +173,7 @@ function editAlias(alias: AliasRow) {
       <template #source="{ row }">
         <FullTooltip :text="row.source">
           <NuxtLink
-            v-if="canEditAliases"
+            v-if="canEditAliases && row.isProtected !== 1"
             :to="`/admin/domains/${domainFqdn}/aliases/edit/${row.id}`"
             class="font-medium text-primary hover:underline"
           >
@@ -194,23 +198,26 @@ function editAlias(alias: AliasRow) {
       </template>
 
       <template #actions="{ row }">
-        <UButton
-          v-if="canEditAliases"
-          icon="i-lucide-pencil"
-          color="primary"
-          variant="ghost"
-          size="xs"
-          square
-          @click="editAlias(row)"
-        />
-        <UButton
-          icon="i-lucide-trash-2"
-          color="error"
-          variant="ghost"
-          size="xs"
-          square
-          @click="requestDelete(() => remove(row))"
-        />
+        <ProtectionToggle :id="row.id" type="alias" :label="row.source" :protected="row.isProtected === 1" @changed="load" />
+        <template v-if="row.isProtected !== 1">
+          <UButton
+            v-if="canEditAliases"
+            icon="i-lucide-pencil"
+            color="primary"
+            variant="ghost"
+            size="xs"
+            square
+            @click="editAlias(row)"
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="ghost"
+            size="xs"
+            square
+            @click="requestDelete(() => remove(row))"
+          />
+        </template>
       </template>
     </DataTable>
 

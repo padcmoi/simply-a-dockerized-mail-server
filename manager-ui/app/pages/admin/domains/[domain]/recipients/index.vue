@@ -52,6 +52,7 @@ const { t } = useI18n();
 const { call } = useApi();
 const { formatDate, formatDateTime } = useDateTime();
 const { isRoot, hasDomain } = usePermissions();
+const { canProtect, canUnprotect } = useProtectionRights("recipient");
 const { domainId, domainFqdn } = useCurrentDomain();
 const { set: setBreadcrumb } = useBreadcrumb();
 
@@ -175,8 +176,8 @@ async function onDeleteConfirmed() {
       v-model:sort-direction="sortDir"
       v-model:selected="selected"
       table-id="recipients-list"
-      :multiple="canEditRecipients || canDeleteRecipients || canAssignOwner || canUnassignOwner"
-      :row-selectable="(row: RecipientRow) => !isReserved(row)"
+      :multiple="canEditRecipients || canDeleteRecipients || canAssignOwner || canUnassignOwner || canProtect"
+      :row-selectable="(row: RecipientRow) => !isReserved(row) && (row.isProtected !== 1 || canUnprotect)"
       :data="items"
       :columns="columns"
       :total="total"
@@ -184,31 +185,32 @@ async function onDeleteConfirmed() {
       :row-key="(row: RecipientRow) => row.id"
       :empty-label="t('common.noResults')"
     >
-      <template #selection="{ keys }">
-        <RecipientsBulkActions
-          v-if="domainId"
-          :domain-id="domainId"
-          :keys="keys"
-          :can-edit="canEditRecipients"
-          :can-delete="canDeleteRecipients"
-          @done="onBulkDone"
-        />
-        <OwnerBulkActions
-          v-if="domainId"
-          kind="recipients"
-          :domain-id="domainId"
-          :keys="keys"
-          :can-assign="canAssignOwner"
-          :can-unassign="canUnassignOwner"
-          @done="onBulkDone"
-        />
+      <template #selection="{ rows }">
+        <template v-if="domainId && unprotectedKeys(rows).length">
+          <RecipientsBulkActions
+            :domain-id="domainId"
+            :keys="unprotectedKeys(rows)"
+            :can-edit="canEditRecipients"
+            :can-delete="canDeleteRecipients"
+            @done="onBulkDone"
+          />
+          <OwnerBulkActions
+            kind="recipients"
+            :domain-id="domainId"
+            :keys="unprotectedKeys(rows)"
+            :can-assign="canAssignOwner"
+            :can-unassign="canUnassignOwner"
+            @done="onBulkDone"
+          />
+        </template>
+        <ProtectionBulkActions type="recipient" :rows="rows" @done="load" />
       </template>
 
       <template #email="{ row }">
         <div class="flex items-center gap-2 min-w-0">
           <FullTooltip :text="row.email">
             <NuxtLink
-              v-if="canEditRecipients && !isReserved(row)"
+              v-if="canEditRecipients && !isReserved(row) && row.isProtected !== 1"
               :to="editTo(row)"
               class="font-medium text-primary hover:underline"
             >
@@ -252,23 +254,26 @@ async function onDeleteConfirmed() {
 
       <template #actions="{ row }">
         <template v-if="!isReserved(row)">
-          <UButton
-            v-if="canEditRecipients"
-            :to="editTo(row)"
-            icon="i-lucide-pencil"
-            color="primary"
-            variant="ghost"
-            size="xs"
-            square
-          />
-          <UButton
-            icon="i-lucide-trash-2"
-            color="error"
-            variant="ghost"
-            size="xs"
-            square
-            @click="requestDelete(() => remove(row))"
-          />
+          <ProtectionToggle :id="row.id" type="recipient" :label="row.email" :protected="row.isProtected === 1" @changed="load" />
+          <template v-if="row.isProtected !== 1">
+            <UButton
+              v-if="canEditRecipients"
+              :to="editTo(row)"
+              icon="i-lucide-pencil"
+              color="primary"
+              variant="ghost"
+              size="xs"
+              square
+            />
+            <UButton
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="ghost"
+              size="xs"
+              square
+              @click="requestDelete(() => remove(row))"
+            />
+          </template>
         </template>
         <FullTooltip v-else :text="lockedText(row)">
           <UIcon name="i-lucide-lock" class="text-dimmed" />

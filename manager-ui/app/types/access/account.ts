@@ -8,6 +8,7 @@ export interface ManagerAccount {
   // initials of its name.
   avatarUrl: string | null;
   isRoot: boolean;
+  isProtected: number;
   enabled: boolean;
   lastLogin: string | null;
   createdAt: string;

@@ -1,3 +1,4 @@
+import { ProtectionService } from "../../../core/protection/protection.service";
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { paginationQuerySchema, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
@@ -28,7 +29,10 @@ import {
 @Controller({ path: "domains/:domainId/aliases", version: "1" })
 @UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class AliasesController {
-  constructor(private readonly svc: AliasesService) {}
+  constructor(
+    private readonly svc: AliasesService,
+    private readonly protection: ProtectionService
+  ) {}
 
   @Get()
   @RequireDomainPermissions([{ resource: "aliases", actions: ["access", "list-aliases"] }])
@@ -69,6 +73,7 @@ export class AliasesController {
     @Body(new ZodValidationPipe(updateAliasSchema)) body: UpdateAliasDto
   ) {
     const domain = await this.svc.resolveDomain(domainId);
+    await this.protection.assertUnprotected("alias", id);
     return this.svc.update(id, body, domain);
   }
 
@@ -77,6 +82,7 @@ export class AliasesController {
   @RemoveAliasDocs()
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
+    await this.protection.assertUnprotected("alias", id);
     return this.svc.remove(id, domain);
   }
 
@@ -89,6 +95,7 @@ export class AliasesController {
     @Body(new ZodValidationPipe(assignAliasOwnerSchema)) body: AssignAliasOwnerDto
   ) {
     const domain = await this.svc.resolveDomain(domainId);
+    await this.protection.assertUnprotected("alias", id);
     return this.svc.assignOwner(id, domain, body.ownerId);
   }
 
@@ -97,6 +104,7 @@ export class AliasesController {
   @UnassignAliasOwnerDocs()
   async clearOwner(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
+    await this.protection.assertUnprotected("alias", id);
     return this.svc.clearOwner(id, domain);
   }
 }

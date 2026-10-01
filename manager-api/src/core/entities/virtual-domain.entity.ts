@@ -25,6 +25,11 @@ export class VirtualDomain {
   @Column({ name: "active", type: "tinyint", width: 1, default: 0 })
   active!: number;
 
+  // A protected row can be neither edited, nor deleted, nor given another owner,
+  // by anyone, root included, until it is unprotected (ProtectionService).
+  @Column({ name: "is_protected", type: "tinyint", width: 1, default: 0 })
+  isProtected!: number;
+
   @Column({
     name: "user_start_date",
     type: "date",

@@ -57,6 +57,8 @@ export const ACTIVITY_ACTIONS = [
   "dmarc.inbox-scanned",
   "postfix.settings-updated",
   "postfix.message-purged",
+  "protection.enabled",
+  "protection.disabled",
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];

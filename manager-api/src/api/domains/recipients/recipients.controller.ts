@@ -1,3 +1,4 @@
+import { ProtectionService } from "../../../core/protection/protection.service";
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Put, Query, UseGuards } from "@nestjs/common";
 import { paginationQuerySchema, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
@@ -29,7 +30,10 @@ import {
 @Controller({ path: "domains/:domainId/recipients", version: "1" })
 @UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class RecipientsController {
-  constructor(private readonly svc: RecipientsService) {}
+  constructor(
+    private readonly svc: RecipientsService,
+    private readonly protection: ProtectionService
+  ) {}
 
   @Get()
   @RequireDomainPermissions([{ resource: "recipients", actions: ["access", "list-recipients"] }])
@@ -82,6 +86,7 @@ export class RecipientsController {
     body: UpdateRecipientDto
   ) {
     const domain = await this.svc.resolveDomain(domainId);
+    await this.protection.assertUnprotected("recipient", id);
     return this.svc.update(id, body, domain);
   }
 
@@ -90,6 +95,7 @@ export class RecipientsController {
   @RemoveRecipientDocs()
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
+    await this.protection.assertUnprotected("recipient", id);
     return this.svc.remove(id, domain);
   }
 
@@ -102,6 +108,7 @@ export class RecipientsController {
     @Body(new ZodValidationPipe(assignRecipientOwnerSchema)) body: AssignRecipientOwnerDto
   ) {
     const domain = await this.svc.resolveDomain(domainId);
+    await this.protection.assertUnprotected("recipient", id);
     return this.svc.assignOwner(id, domain, body.ownerId);
   }
 
@@ -110,6 +117,7 @@ export class RecipientsController {
   @UnassignRecipientOwnerDocs()
   async clearOwner(@Param("domainId", ParseIntPipe) domainId: number, @Param("id", ParseIntPipe) id: number) {
     const domain = await this.svc.resolveDomain(domainId);
+    await this.protection.assertUnprotected("recipient", id);
     return this.svc.clearOwner(id, domain);
   }
 }

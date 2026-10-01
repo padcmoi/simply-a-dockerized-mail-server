@@ -47,8 +47,10 @@ import { MailLogsController } from "../../src/api/mail-logs/mail-logs.controller
 import { ClamavController } from "../../src/api/clamav/clamav.controller";
 import { DmarcController } from "../../src/api/dmarc/dmarc.controller";
 import { Fail2banController } from "../../src/api/fail2ban/fail2ban.controller";
+import { ProtectionController } from "../../src/api/protection/protection.controller";
 
 export const ALL_CONTROLLERS = [
+  ProtectionController,
   AccountsController,
   AccountsInvitationsController,
   AccountsSessionsController,

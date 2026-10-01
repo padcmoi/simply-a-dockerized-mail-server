@@ -1,6 +1,7 @@
 // An alias, in the shapes the API answers with.
 
 export interface AliasRow {
+  isProtected: number;
   id: number;
   source: string;
   destination: string;

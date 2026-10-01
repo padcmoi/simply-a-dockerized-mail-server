@@ -1,3 +1,4 @@
+import { ProtectionModule } from "../../../core/protection/protection.module";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Account } from "../../../core/entities/account.entity";
@@ -21,6 +22,7 @@ import { ActivityLogModule } from "../../../core/activity/activity-log.module";
 // accounts.module.ts (the aggregator).
 @Module({
   imports: [
+    ProtectionModule,
     TypeOrmModule.forFeature([Account, AccountProfile, Group, GroupMember, VirtualDomain, VirtualUser, VirtualAlias]),
     GeocodingModule,
     // The controller is guarded by GlobalPermissionGuard, which injects

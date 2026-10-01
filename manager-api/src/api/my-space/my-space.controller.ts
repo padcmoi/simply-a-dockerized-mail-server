@@ -1,3 +1,4 @@
+import { ProtectionService } from "../../core/protection/protection.service";
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { ZodValidationPipe } from "../../core/common/zod.pipe";
@@ -27,7 +28,10 @@ type AuthedRequest = Request & {
 @MySpaceApi()
 @Controller({ path: "my-space", version: "1" })
 export class MySpaceController {
-  constructor(private readonly svc: MySpaceService) {}
+  constructor(
+    private readonly svc: MySpaceService,
+    private readonly protection: ProtectionService
+  ) {}
 
   @Get("delegations")
   @ListMyDelegationsDocs()
@@ -63,17 +67,19 @@ export class MySpaceController {
 
   @Patch("recipients/:id")
   @UpdateMyRecipientDocs()
-  updateRecipient(
+  async updateRecipient(
     @Req() req: AuthedRequest,
     @Param("id", ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(updateMyRecipientSchema)) body: UpdateMyRecipientDto
   ) {
+    await this.protection.assertUnprotected("recipient", id);
     return this.svc.updateRecipient(req.user.id, id, body);
   }
 
   @Delete("recipients/:id")
   @DeleteMyRecipientDocs()
-  deleteRecipient(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
+  async deleteRecipient(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
+    await this.protection.assertUnprotected("recipient", id);
     return this.svc.deleteRecipient(req.user.id, id);
   }
 
@@ -85,17 +91,19 @@ export class MySpaceController {
 
   @Patch("aliases/:id")
   @UpdateMyAliasDocs()
-  updateAlias(
+  async updateAlias(
     @Req() req: AuthedRequest,
     @Param("id", ParseIntPipe) id: number,
     @Body(new ZodValidationPipe(updateMyAliasSchema)) body: UpdateMyAliasDto
   ) {
+    await this.protection.assertUnprotected("alias", id);
     return this.svc.updateAlias(req.user.id, id, body);
   }
 
   @Delete("aliases/:id")
   @DeleteMyAliasDocs()
-  deleteAlias(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
+  async deleteAlias(@Req() req: AuthedRequest, @Param("id", ParseIntPipe) id: number) {
+    await this.protection.assertUnprotected("alias", id);
     return this.svc.deleteAlias(req.user.id, id);
   }
 }

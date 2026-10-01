@@ -1,3 +1,4 @@
+import { ProtectionService } from "../../../core/protection/protection.service";
 import { Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Post, UseGuards } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -18,7 +19,8 @@ export class DkimController {
   constructor(
     @InjectRepository(VirtualDomain)
     private readonly domains: Repository<VirtualDomain>,
-    private readonly dkim: DkimService
+    private readonly dkim: DkimService,
+    private readonly protection: ProtectionService
   ) {}
 
   private async resolveDomain(domainId: number): Promise<string> {
@@ -49,6 +51,7 @@ export class DkimController {
   @RotateDkimDocs()
   async rotate(@Param("domainId", ParseIntPipe) domainId: number) {
     const domain = await this.resolveDomain(domainId);
+    await this.protection.assertUnprotected("domain", domainId);
     await this.dkim.removeAll(domain).catch(() => undefined);
     return this.dkim.create(domain);
   }
@@ -62,6 +65,7 @@ export class DkimController {
   @RemoveDkimDocs()
   async remove(@Param("domainId", ParseIntPipe) domainId: number, @Param("selector") selector: string) {
     const domain = await this.resolveDomain(domainId);
+    await this.protection.assertUnprotected("domain", domainId);
     return this.dkim.remove(domain, selector);
   }
 }

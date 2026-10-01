@@ -109,6 +109,7 @@ const EXPECTED_NO_ACL_AUTHED = [
   "PUT /api/v1/config/passport",
   "PUT /api/v1/config/passport/providers/:provider",
   "DELETE /api/v1/config/passport/providers/:provider",
+  "DELETE /api/v1/protection/:type/:id",
   "PUT /api/v1/config/tickets",
   "PUT /api/v1/my-space/theme",
   "PUT /api/v1/notifications/preferences",

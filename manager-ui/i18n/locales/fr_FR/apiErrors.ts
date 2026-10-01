@@ -59,6 +59,10 @@ export default {
   postfix: {
     domainNotHosted: "{domain} n'est pas un domaine actif hébergé sur ce serveur",
   },
+  protection: {
+    locked: "Cet élément est protégé : il ne peut être ni modifié, ni supprimé, ni changer de propriétaire",
+    domainHoldsProtected: "Ce domaine contient {count} boîte(s) ou alias protégé(s) et ne peut pas être supprimé",
+  },
   twoFactor: {
     alreadyEnabled: "L'authentification à deux facteurs est déjà activée",
     notEnabled: "L'authentification à deux facteurs n'est pas activée",

@@ -118,6 +118,9 @@ export const GLOBAL_ACTIONS = {
   // signatures it was given are, which is a reading, not a command.
   clamav: ["access", "view-clamav-status", "update-signatures", "reload-database"],
   dmarc: ["access", "view-dmarc-reports", "send-dmarc-reports", "import-dmarc-reports", "manage-dmarc-settings"],
+  // Actions that belong to no resource of their own: a shared bin rather than
+  // one resource per stray action.
+  misc: ["access", "protect-resource"],
   superadmin: ["access", "resize-any-domain-quota", "delete-any-domain"],
 } as const;
 

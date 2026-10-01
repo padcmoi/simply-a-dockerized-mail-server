@@ -82,6 +82,8 @@ export default {
     "dmarc_inbox-scanned": "Boîtes de rapports DMARC lues",
     "postfix_settings-updated": "Réglages Postfix modifiés",
     "postfix_message-purged": "Message purgé de la file Postfix",
+    protection_enabled: "Protection activée",
+    protection_disabled: "Protection retirée",
   },
   event: {
     auth_login: "S'est connecté",
@@ -130,5 +132,7 @@ export default {
     "dmarc_inbox-scanned": "A lancé la lecture des boîtes de rapports DMARC",
     "postfix_settings-updated": "A modifié les réglages de Postfix ({fields})",
     "postfix_message-purged": "A purgé le message {label} de la file Postfix",
+    protection_enabled: "A protégé {label}",
+    protection_disabled: "A retiré la protection de {label}",
   },
 } satisfies Locales["activity"];

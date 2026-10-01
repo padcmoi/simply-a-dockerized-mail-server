@@ -1,3 +1,4 @@
+import { ProtectionService } from "../../../core/protection/protection.service";
 import { Body, Controller, Delete, Param, ParseIntPipe, Patch, UseGuards } from "@nestjs/common";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
 import { DomainPermissionGuard } from "../../../core/custom-permission-guard/domain-permission.guard";
@@ -22,7 +23,10 @@ import { ResizeDomainQuotaDto, resizeDomainQuotaSchema } from "../domains.valida
 @Controller({ path: "admin/domains", version: "1" })
 @UseGuards(GlobalPermissionGuard, DomainPermissionGuard)
 export class AdminDomainsController {
-  constructor(private readonly svc: DomainsService) {}
+  constructor(
+    private readonly svc: DomainsService,
+    private readonly protection: ProtectionService
+  ) {}
 
   @Patch(":domainId/quota")
   @RequireGlobalPermissions([
@@ -30,10 +34,11 @@ export class AdminDomainsController {
     { resource: "superadmin", actions: ["access", "resize-any-domain-quota"] },
   ])
   @ResizeDomainQuotaDocs()
-  resizeQuota(
+  async resizeQuota(
     @Param("domainId", ParseIntPipe) domainId: number,
     @Body(new ZodValidationPipe(resizeDomainQuotaSchema)) body: ResizeDomainQuotaDto
   ) {
+    await this.protection.assertUnprotected("domain", domainId);
     return this.svc.update(domainId, body);
   }
 
@@ -43,7 +48,8 @@ export class AdminDomainsController {
     { resource: "superadmin", actions: ["access", "delete-any-domain"] },
   ])
   @RemoveDomainDocs()
-  remove(@Param("domainId", ParseIntPipe) domainId: number) {
+  async remove(@Param("domainId", ParseIntPipe) domainId: number) {
+    await this.protection.assertDomainRemovable(domainId);
     return this.svc.remove(domainId);
   }
 }

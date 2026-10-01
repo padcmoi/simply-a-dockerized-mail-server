@@ -1,3 +1,4 @@
+import { ProtectionModule } from "../../../core/protection/protection.module";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { DkimModule } from "../../../core/dkim/dkim.module";
@@ -6,7 +7,7 @@ import { CustomPermissionGuardModule } from "../../../core/custom-permission-gua
 import { DkimController } from "./dkim.controller";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([VirtualDomain]), DkimModule, CustomPermissionGuardModule],
+  imports: [ProtectionModule, TypeOrmModule.forFeature([VirtualDomain]), DkimModule, CustomPermissionGuardModule],
   controllers: [DkimController],
 })
 export class DomainsDkimModule {}

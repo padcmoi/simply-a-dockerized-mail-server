@@ -12,6 +12,8 @@ definePageMeta({
 
 const MIN_QUOTA_MB = 10;
 
+const selected = ref<(string | number)[]>([]);
+
 // `GET /domains` now only needs `access` -- the table always renders (the
 // backend scopes rows to just what the caller owns without `read`, see
 // domains.controller.ts/domains.service.ts). `GET /domains/disk` still
@@ -58,6 +60,7 @@ const { t } = useI18n();
 const domainStore = useDomainStore();
 const auth = useAuthStore();
 const perms = usePermissionsStore();
+const { canProtect, canUnprotect } = useProtectionRights("domain");
 const { set: setBreadcrumb } = useBreadcrumb();
 const { disk, assignableMb, loadDisk } = useDomainDisk();
 const { formatDateTime } = useDateTime();
@@ -136,7 +139,10 @@ onMounted(refreshDisk);
       v-model:search="search"
       v-model:sort-key="sortBy"
       v-model:sort-direction="sortDir"
+      v-model:selected="selected"
       table-id="domains-list"
+      :multiple="canProtect"
+      :row-selectable="(row: DomainRow) => row.isProtected !== 1 || canUnprotect"
       :data="items"
       :columns="columns"
       :total="total"
@@ -170,9 +176,20 @@ onMounted(refreshDisk);
         <ValidityWindowCell :start="row.userStartDate" :end="row.userEndDate" />
       </template>
 
+      <template #selection="{ rows }">
+        <ProtectionBulkActions type="domain" :rows="rows" @done="loadDomains" />
+      </template>
+
       <template #actions="{ row }">
+        <ProtectionToggle
+          :id="row.id"
+          type="domain"
+          :label="row.domain"
+          :protected="row.isProtected === 1"
+          @changed="loadDomains"
+        />
         <UButton
-          v-if="canAdminister()"
+          v-if="canAdminister() && row.isProtected !== 1"
           icon="i-lucide-shield-alert"
           color="warning"
           variant="outline"

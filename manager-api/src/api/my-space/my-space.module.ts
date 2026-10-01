@@ -1,3 +1,4 @@
+import { ProtectionModule } from "../../core/protection/protection.module";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { VirtualAlias } from "../../core/entities/virtual-alias.entity";
@@ -10,6 +11,7 @@ import { MySpaceService } from "./my-space.service";
 
 @Module({
   imports: [
+    ProtectionModule,
     TypeOrmModule.forFeature([VirtualUser, VirtualAlias]),
     DomainsRecipientsModule,
     DomainsAliasesModule,

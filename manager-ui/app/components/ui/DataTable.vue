@@ -192,8 +192,16 @@ watch(
   (rows) => {
     if (!canSelect.value || !props.rowKey) return;
     const next = new Map(seenRows.value);
-    for (const row of rows) next.set(props.rowKey(row), row);
+    const barred = new Set<string | number>();
+    for (const row of rows) {
+      const key = props.rowKey(row);
+      next.set(key, row);
+      if (!(props.rowSelectable?.(row) ?? true)) barred.add(key);
+    }
     seenRows.value = next;
+    if (barred.size && selected.value.some((key) => barred.has(key))) {
+      selected.value = selected.value.filter((key) => !barred.has(key));
+    }
   },
   { immediate: true }
 );

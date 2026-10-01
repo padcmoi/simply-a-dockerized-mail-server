@@ -1,3 +1,4 @@
+import { ProtectionService } from "../../core/protection/protection.service";
 import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import type { Request } from "express";
 import { paginationQuerySchema, type PaginationQuery } from "../../core/common/pagination.validation";
@@ -41,7 +42,8 @@ type AuthedRequest = Request & {
 export class DomainsController {
   constructor(
     private readonly svc: DomainsService,
-    private readonly cpg: CustomPermissionGuardService
+    private readonly cpg: CustomPermissionGuardService,
+    private readonly protection: ProtectionService
   ) {}
 
   // `access` alone is the gate to reach this route at all -- who sees WHICH
@@ -103,10 +105,11 @@ export class DomainsController {
     { resource: "domain", actions: ["access", "toggle-domain-active"] },
   ])
   @SetDomainActiveDocs()
-  setActive(
+  async setActive(
     @Param("domainId", ParseIntPipe) domainId: number,
     @Body(new ZodValidationPipe(setDomainActiveSchema)) body: SetDomainActiveDto
   ) {
+    await this.protection.assertUnprotected("domain", domainId);
     return this.svc.update(domainId, { active: body.active });
   }
 
@@ -116,10 +119,11 @@ export class DomainsController {
     { resource: "domain", actions: ["access", "toggle-domain-active"] },
   ])
   @SetDomainValidityDocs()
-  setValidity(
+  async setValidity(
     @Param("domainId", ParseIntPipe) domainId: number,
     @Body(new ZodValidationPipe(setDomainValiditySchema)) body: SetDomainValidityDto
   ) {
+    await this.protection.assertUnprotected("domain", domainId);
     return this.svc.update(domainId, { userStartDate: body.userStartDate, userEndDate: body.userEndDate });
   }
 
@@ -133,11 +137,12 @@ export class DomainsController {
   @RequireGlobalPermissions([{ resource: "domain_owner_elevated", actions: ["transfer-domain-ownership"] }])
   @RequireDomainPermissions([{ resource: "domain", actions: ["access", "transfer-domain-ownership"] }])
   @TransferDomainOwnerDocs()
-  transferOwner(
+  async transferOwner(
     @Req() req: AuthedRequest,
     @Param("domainId", ParseIntPipe) domainId: number,
     @Body(new ZodValidationPipe(transferDomainOwnerSchema)) body: TransferDomainOwnerDto
   ) {
+    await this.protection.assertUnprotected("domain", domainId);
     return this.svc.transferOwner(domainId, { id: req.user.id, isRoot: req.user.isRoot }, body.newOwnerId);
   }
 }

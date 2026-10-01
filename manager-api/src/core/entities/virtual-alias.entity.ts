@@ -12,6 +12,11 @@ export class VirtualAlias {
   @Column({ name: "owner_id", type: "char", length: 36, nullable: true })
   ownerId!: string | null;
 
+  // A protected row can be neither edited, nor deleted, nor given another owner,
+  // by anyone, root included, until it is unprotected (ProtectionService).
+  @Column({ name: "is_protected", type: "tinyint", width: 1, default: 0 })
+  isProtected!: number;
+
   @Column({ name: "domain", type: "varchar", length: 255 })
   domain!: string;
 

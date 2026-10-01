@@ -32,6 +32,11 @@ export class Account {
   @Column({ name: "is_root", type: "tinyint", width: 1, default: 0 })
   isRoot!: number;
 
+  // A protected row can be neither edited, nor deleted, nor given another owner,
+  // by anyone, root included, until it is unprotected (ProtectionService).
+  @Column({ name: "is_protected", type: "tinyint", width: 1, default: 0 })
+  isProtected!: number;
+
   @Column({ name: "enabled", type: "tinyint", width: 1, default: 1 })
   enabled!: number;
 

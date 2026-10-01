@@ -121,6 +121,7 @@ export default {
         fail2ban: "Fail2ban",
         clamav: "Antivirus",
         dmarc: "DMARC reports",
+        misc: "Miscellaneous",
         superadmin: "Super admin",
         domainOwnerElevated: "Domain owner elevated",
       },
@@ -249,6 +250,10 @@ export default {
           access: "Access",
           "resize-any-domain-quota": "Resize any domain's quota",
           "delete-any-domain": "Delete any domain",
+        },
+        misc: {
+          access: "Access",
+          "protect-resource": "Protect a mailbox or an alias",
         },
         domainOwnerElevated: {
           access: "Access",

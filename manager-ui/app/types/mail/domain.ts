@@ -17,6 +17,7 @@ export interface DomainInfo {
 
 // The domains list's own row: quota plus what the domain actually stores.
 export interface DomainRow {
+  isProtected: number;
   id: number;
   domain: string;
   quota: string;

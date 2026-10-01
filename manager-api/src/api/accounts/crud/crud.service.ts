@@ -167,6 +167,7 @@ export class AccountsService {
       // looks like it lost the picture.
       avatarUrl: avatarByAccount.get(acc.id) ?? null,
       isRoot: acc.isRoot === 1,
+      isProtected: acc.isProtected,
       enabled: acc.enabled === 1,
       lastLogin: acc.lastLogin,
       createdAt: acc.createdAt,

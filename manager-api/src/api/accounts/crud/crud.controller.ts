@@ -1,3 +1,4 @@
+import { ProtectionService } from "../../../core/protection/protection.service";
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { paginationQuerySchema, type PaginationQuery } from "../../../core/common/pagination.validation";
 import { ZodValidationPipe } from "../../../core/common/zod.pipe";
@@ -38,7 +39,10 @@ import { AdminResetSecurityQuestionDocs } from "../../../core/auth/mfa/mfa.opena
 @Controller({ path: "accounts", version: "1" })
 @UseGuards(GlobalPermissionGuard)
 export class AccountsController {
-  constructor(private readonly svc: AccountsService) {}
+  constructor(
+    private readonly svc: AccountsService,
+    private readonly protection: ProtectionService
+  ) {}
 
   // Usernames only, no email/roles: this is what the group member picker reads,
   // hence `groups` depending on it (see permission-catalog.ts).
@@ -76,14 +80,16 @@ export class AccountsController {
   @Patch(":id/edit")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "edit-account"] }])
   @UpdateAccountDocs()
-  update(@Param("id", ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(updateAccountSchema)) body: UpdateAccountDto) {
+  async update(@Param("id", ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(updateAccountSchema)) body: UpdateAccountDto) {
+    await this.protection.assertUnprotected("account", id);
     return this.svc.updateAccount(id, body);
   }
 
   @Delete(":id")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "revoke-account"] }])
   @DeleteAccountDocs()
-  remove(@Param("id", ParseUUIDPipe) id: string) {
+  async remove(@Param("id", ParseUUIDPipe) id: string) {
+    await this.protection.assertUnprotected("account", id);
     return this.svc.deleteAccount(id);
   }
 
@@ -93,7 +99,8 @@ export class AccountsController {
   @Delete(":id/two-factor")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "edit-account"] }])
   @AdminResetTwoFactorDocs()
-  resetTwoFactor(@Param("id", ParseUUIDPipe) id: string) {
+  async resetTwoFactor(@Param("id", ParseUUIDPipe) id: string) {
+    await this.protection.assertUnprotected("account", id);
     return this.svc.resetTwoFactor(id);
   }
 
@@ -102,7 +109,8 @@ export class AccountsController {
   @Delete(":id/security-question")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "edit-account"] }])
   @AdminResetSecurityQuestionDocs()
-  resetSecurityQuestion(@Param("id", ParseUUIDPipe) id: string) {
+  async resetSecurityQuestion(@Param("id", ParseUUIDPipe) id: string) {
+    await this.protection.assertUnprotected("account", id);
     return this.svc.resetSecurityQuestion(id);
   }
 
@@ -150,14 +158,16 @@ export class AccountsController {
   @Post(":id/recipients/:recipientId")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "assign-recipient-owner"] }])
   @AttachResourceDocs()
-  attachRecipient(@Param("id", ParseUUIDPipe) id: string, @Param("recipientId", ParseIntPipe) recipientId: number) {
+  async attachRecipient(@Param("id", ParseUUIDPipe) id: string, @Param("recipientId", ParseIntPipe) recipientId: number) {
+    await this.protection.assertUnprotected("recipient", recipientId);
     return this.svc.attachRecipient(id, recipientId);
   }
 
   @Delete(":id/recipients/:recipientId")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "unassign-recipient-owner"] }])
   @DetachResourceDocs()
-  detachRecipient(@Param("id", ParseUUIDPipe) id: string, @Param("recipientId", ParseIntPipe) recipientId: number) {
+  async detachRecipient(@Param("id", ParseUUIDPipe) id: string, @Param("recipientId", ParseIntPipe) recipientId: number) {
+    await this.protection.assertUnprotected("recipient", recipientId);
     return this.svc.detachRecipient(id, recipientId);
   }
 
@@ -182,14 +192,16 @@ export class AccountsController {
   @Post(":id/aliases/:aliasId")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "assign-alias-owner"] }])
   @AttachResourceDocs()
-  attachAlias(@Param("id", ParseUUIDPipe) id: string, @Param("aliasId", ParseIntPipe) aliasId: number) {
+  async attachAlias(@Param("id", ParseUUIDPipe) id: string, @Param("aliasId", ParseIntPipe) aliasId: number) {
+    await this.protection.assertUnprotected("alias", aliasId);
     return this.svc.attachAlias(id, aliasId);
   }
 
   @Delete(":id/aliases/:aliasId")
   @RequireGlobalPermissions([{ resource: "accounts", actions: ["access", "unassign-alias-owner"] }])
   @DetachResourceDocs()
-  detachAlias(@Param("id", ParseUUIDPipe) id: string, @Param("aliasId", ParseIntPipe) aliasId: number) {
+  async detachAlias(@Param("id", ParseUUIDPipe) id: string, @Param("aliasId", ParseIntPipe) aliasId: number) {
+    await this.protection.assertUnprotected("alias", aliasId);
     return this.svc.detachAlias(id, aliasId);
   }
 }

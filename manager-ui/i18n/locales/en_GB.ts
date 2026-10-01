@@ -25,6 +25,7 @@ import invite from "./en_GB/invite";
 import mailboxOwner from "./en_GB/mailboxOwner";
 import domainDashboard from "./en_GB/domainDashboard";
 import postfixPage from "./en_GB/postfixPage";
+import protection from "./en_GB/protection";
 import rspamdPage from "./en_GB/rspamdPage";
 import apiTokens from "./en_GB/apiTokens";
 import groups from "./en_GB/groups";
@@ -69,6 +70,7 @@ export default {
   mailboxOwner,
   domainDashboard,
   postfixPage,
+  protection,
   rspamdPage,
   apiTokens,
   groups,

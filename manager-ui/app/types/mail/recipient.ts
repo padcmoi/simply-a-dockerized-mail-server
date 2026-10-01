@@ -5,6 +5,7 @@ export type ReservedMailbox = "postmaster" | "dmarc_reports";
 // The administration list's row: quota and usage plus the edit stamp.
 export interface RecipientRow {
   id: number;
+  isProtected: number;
   email: string;
   quota: string;
   usedBytes: string;

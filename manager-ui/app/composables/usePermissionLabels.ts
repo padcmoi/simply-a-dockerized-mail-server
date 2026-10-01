@@ -23,6 +23,7 @@ export function usePermissionLabels() {
     fail2ban: t("groups.permissions.resources.global.fail2ban"),
     clamav: t("groups.permissions.resources.global.clamav"),
     dmarc: t("groups.permissions.resources.global.dmarc"),
+    misc: t("groups.permissions.resources.global.misc"),
     superadmin: t("groups.permissions.resources.global.superadmin"),
     domain_owner_elevated: t("groups.permissions.resources.global.domainOwnerElevated"),
   }));

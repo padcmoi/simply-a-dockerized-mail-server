@@ -23,6 +23,7 @@ const ICONS: [prefix: string, icon: string][] = [
   ["fail2ban", "i-lucide-shield-ban"],
   ["dmarc", "i-lucide-mail-search"],
   ["postfix", "i-lucide-send"],
+  ["protection", "i-lucide-shield-check"],
 ];
 
 // A dot is a path separator for vue-i18n, so the action's dots are written as

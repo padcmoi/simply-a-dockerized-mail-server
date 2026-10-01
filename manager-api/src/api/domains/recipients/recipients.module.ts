@@ -1,3 +1,4 @@
+import { ProtectionModule } from "../../../core/protection/protection.module";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Account } from "../../../core/entities/account.entity";
@@ -13,6 +14,7 @@ import { ActivityLogModule } from "../../../core/activity/activity-log.module";
 
 @Module({
   imports: [
+    ProtectionModule,
     TypeOrmModule.forFeature([VirtualUser, VirtualDomain, VirtualQuotaUser, Account]),
     CustomPermissionGuardModule,
     ActivityLogModule,

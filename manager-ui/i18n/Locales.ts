@@ -52,6 +52,10 @@ export interface Locales {
     postfix: {
       domainNotHosted: string;
     };
+    protection: {
+      locked: string;
+      domainHoldsProtected: string;
+    };
     twoFactor: {
       alreadyEnabled: string;
       notEnabled: string;
@@ -1734,6 +1738,23 @@ export interface Locales {
       saveFailed: string;
     };
   };
+  protection: {
+    bulk: {
+      protect: string;
+      unprotect: string;
+      confirmTitle: string;
+      protected: string;
+      unprotected: string;
+    };
+    protect: string;
+    unprotect: string;
+    protected: string;
+    confirmTitle: string;
+    confirmDescription: string;
+    protectedToast: string;
+    unprotectedToast: string;
+    failed: string;
+  };
   postfixPage: {
     subtitle: string;
     settings: string;
@@ -1992,6 +2013,7 @@ export interface Locales {
           groups: string;
           domains: string;
           tickets: string;
+          misc: string;
           superadmin: string;
           domainOwnerElevated: string;
           supervision: string;
@@ -2124,6 +2146,10 @@ export interface Locales {
             access: string;
             "resize-any-domain-quota": string;
             "delete-any-domain": string;
+          };
+          misc: {
+            access: string;
+            "protect-resource": string;
           };
           domainOwnerElevated: {
             access: string;

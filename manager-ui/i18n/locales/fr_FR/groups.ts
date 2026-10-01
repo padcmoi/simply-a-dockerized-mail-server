@@ -124,6 +124,7 @@ export default {
         fail2ban: "Fail2ban",
         clamav: "Antivirus",
         dmarc: "Rapports DMARC",
+        misc: "Divers",
         superadmin: "Super administrateur",
         domainOwnerElevated: "Propriétaire de domaine élevé",
       },
@@ -252,6 +253,10 @@ export default {
           access: "Accès",
           "resize-any-domain-quota": "Redimensionner le quota de n'importe quel domaine",
           "delete-any-domain": "Supprimer n'importe quel domaine",
+        },
+        misc: {
+          access: "Accès",
+          "protect-resource": "Protéger une boîte ou un alias",
         },
         domainOwnerElevated: {
           access: "Accès",

@@ -12,6 +12,7 @@ import { DomainPermissionGuard } from "../../src/core/custom-permission-guard/do
 import { CustomPermissionGuardService } from "../../src/core/custom-permission-guard/custom-permission-guard.service";
 import { RefreshToken } from "../../src/core/entities/refresh-token.entity";
 import { VirtualDomain } from "../../src/core/entities/virtual-domain.entity";
+import { ProtectionService } from "../../src/core/protection/protection.service";
 
 const SECRET = process.env.MANAGER_JWT_ACCESS_SECRET ?? "test-access-secret";
 
@@ -65,7 +66,31 @@ export interface Harness {
   setDomainOwner(domainId: number, ownerId: string | null): void;
   // Signs a JWT the CombinedAuthGuard accepts; attach as `Bearer <token>`.
   token(user: TestUser): string;
+  // Nothing is protected unless a spec says so: `protection.lock("recipient", 7)`
+  // makes every guarded route on that resource answer 403.
+  protection: ProtectionMock;
   close(): Promise<void>;
+}
+
+export interface ProtectionMock {
+  lock(type: string, id: string | number): void;
+  reset(): void;
+  assertUnprotected: ReturnType<typeof vi.fn>;
+  assertDomainRemovable: ReturnType<typeof vi.fn>;
+}
+
+function makeProtectionMock(): ProtectionMock {
+  const locked = new Set<string>();
+  const refuse = (type: string, id: string | number) => {
+    if (locked.has(`${type}:${id}`))
+      throw new ForbiddenException({ statusCode: 403, code: "protection.locked", message: "protected" });
+  };
+  return {
+    lock: (type, id) => locked.add(`${type}:${id}`),
+    reset: () => locked.clear(),
+    assertUnprotected: vi.fn(async (type: string, id: string | number) => refuse(type, id)),
+    assertDomainRemovable: vi.fn(async (id: number) => refuse("domain", id)),
+  };
 }
 
 // Boots a real HTTP app for one (or more) controllers with the REAL auth +
@@ -74,6 +99,7 @@ export interface Harness {
 // back handles to mint tokens and grant permissions. No database, no network.
 export async function buildHarness(opts: { controllers: Type[]; providers?: ModuleMetadata["providers"] }): Promise<Harness> {
   const cpg = makeCpgMock();
+  const protection = makeProtectionMock();
   const owners = new Map<number, string | null>();
   // Default VirtualDomain repo double. Serves the DomainPermissionGuard's
   // ownership check AND any controller that injects the repo directly (hence the
@@ -100,6 +126,7 @@ export async function buildHarness(opts: { controllers: Type[]; providers?: Modu
       // this findOne is never hit, but the repo must resolve for the guard to build.
       { provide: getRepositoryToken(RefreshToken), useValue: { findOne: vi.fn() } },
       { provide: ApiTokenService, useValue: { validate: vi.fn().mockResolvedValue(null) } },
+      { provide: ProtectionService, useValue: protection },
       ...(opts.providers ?? []),
     ],
   }).compile();
@@ -114,6 +141,7 @@ export async function buildHarness(opts: { controllers: Type[]; providers?: Modu
     app,
     cpg,
     setDomainOwner: (domainId, ownerId) => owners.set(domainId, ownerId),
+    protection,
     token: (user) => jwt.sign({ sub: user.id, email: user.email, isRoot: user.isRoot === true }, { secret: SECRET }),
     close: () => app.close(),
   };

@@ -1,3 +1,4 @@
+import { ProtectionModule } from "../../../core/protection/protection.module";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Account } from "../../../core/entities/account.entity";
@@ -9,7 +10,12 @@ import { AliasesService } from "./aliases.service";
 import { ActivityLogModule } from "../../../core/activity/activity-log.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([VirtualAlias, VirtualDomain, Account]), CustomPermissionGuardModule, ActivityLogModule],
+  imports: [
+    ProtectionModule,
+    TypeOrmModule.forFeature([VirtualAlias, VirtualDomain, Account]),
+    CustomPermissionGuardModule,
+    ActivityLogModule,
+  ],
   providers: [AliasesService],
   controllers: [AliasesController],
   exports: [AliasesService],

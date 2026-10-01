@@ -1,3 +1,4 @@
+import { ProtectionModule } from "../../core/protection/protection.module";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AuditLogModule } from "../../core/audit/audit-log.module";
@@ -24,6 +25,7 @@ import { DomainsRspamdModule } from "./rspamd/rspamd.module";
 
 @Module({
   imports: [
+    ProtectionModule,
     TypeOrmModule.forFeature([VirtualDomain, VirtualUser, Account, VirtualQuotaDomain]),
     CustomPermissionGuardModule,
     AuditLogModule,
