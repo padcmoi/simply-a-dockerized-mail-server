@@ -1,0 +1,18 @@
+# Renders every PlantUML source of this folder, at any depth, to a JPEG next to
+# it, and renders it again each time it changes.
+#
+#   docker compose -f docs/docker-compose.diagram.yml up --build       watch
+#   docker compose -f docs/docker-compose.diagram.yml run --rm diagrams once
+#   docker compose -f docs/docker-compose.diagram.yml run --rm diagrams all
+name: simply-mailserver-docs
+
+services:
+  diagrams:
+    build:
+      context: ../images/diagrams
+    container_name: mail-docs-diagrams
+    command: watch
+    init: true
+    network_mode: none
+    volumes:
+      - .:/docs

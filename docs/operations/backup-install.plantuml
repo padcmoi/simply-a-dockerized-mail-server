@@ -1,0 +1,67 @@
+@startuml backup-install
+title backup.sh install : sets the backup configuration and its cron entry, nothing else
+
+skinparam dpi 110
+skinparam shadowing false
+skinparam ConditionStyle diamond
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam ActivityBackgroundColor #F7F7F7
+skinparam ActivityBorderColor #555555
+skinparam ActivityDiamondBackgroundColor #FFF4D6
+skinparam ActivityDiamondBorderColor #B8860B
+skinparam ArrowColor #555555
+skinparam SwimlaneBorderColor #999999
+skinparam SwimlaneTitleFontStyle bold
+
+|#FAFAFA|1. What is there|
+start
+if (Run as root?) then (no)
+  #FFD9D9:Refuse: the cron entry
+  cannot be written;
+  stop
+else (yes)
+endif
+if (Cron entry already\ninstalled?) then (no)
+else (yes)
+  :Show the current configuration
+  time, backups kept, folders;
+  if (Change it?) then (no, leave it)
+    stop
+  else (yes)
+  endif
+  if (Update or remove?) then (remove)
+    #FFD9D9:Delete the cron entry
+    keep backup.conf and the archives;
+    stop
+  else (update)
+  endif
+endif
+
+|#FFF3E0|2. Ask the configuration|
+#FFE2B8:**Time of the backup, every day**
+(Enter = 02:30);
+#FFE2B8:**Backups kept at most**
+one per day, so 5 days = 5 files
+(Enter = 5);
+#FFE2B8:Folder where the archives go
+(Enter = ./backup);
+#FFE2B8:Off-site destination: a folder
+or user@host:/path (Enter = none);
+note right
+  On an update, Enter keeps
+  the current value
+  Each answer is asked again
+  until it is valid
+end note
+
+|#F1F8F1|3. Write|
+#D9F2D9:Write **backup.conf**
+BACKUP_TIME, BACKUP_KEEP_DAYS,
+BACKUP_DIR, BACKUP_OFFSITE;
+#D9F2D9:Install or replace the cron entry
+/etc/cron.d/simply-mailserver-backup
+MM HH * * * ./backup.sh run;
+:Show what was written;
+stop
+@enduml

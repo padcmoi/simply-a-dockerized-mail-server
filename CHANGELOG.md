@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- docs(operations): two activity diagrams describe the planned `backup.sh`, its install and one cold backup, and a container started by `docs/docker-compose.diagram.yml` renders every PlantUML source under `docs/` to a JPEG next to it and renders it again when it changes, the intermediate PNG never leaving the container (01-10-2026)
 - feat(alert): a root account sets, from a new card of the configuration page, the email address warned when the server has a problem, and the host alone can write to it with `send-alert.sh` through `POST /api/v1/internal/alert`, a route that answers only a connection from inside the API container, never one relayed from the interface or the internet (01-10-2026)
 - feat(postfix): a deferred or held message can be retried from its row or several at once, behind a new `retry-postfix-queue-message` action, the watcher of the Postfix container releasing a held message then asking for its delivery now, each retry recorded in the activity journal (01-10-2026)
 - feat(acl): the default group seeded on a fresh install also grants `accounts:access` and `accounts:list-account-names`, so the owner of a domain can pick the account a mailbox or an alias belongs to (01-10-2026)

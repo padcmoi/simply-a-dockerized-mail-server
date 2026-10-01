@@ -1,0 +1,113 @@
+@startuml backup
+title backup.sh run : one cold backup, read from left to right
+
+skinparam dpi 110
+skinparam shadowing false
+skinparam ConditionStyle diamond
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam ActivityBackgroundColor #F7F7F7
+skinparam ActivityBorderColor #555555
+skinparam ActivityDiamondBackgroundColor #FFF4D6
+skinparam ActivityDiamondBorderColor #B8860B
+skinparam ArrowColor #555555
+skinparam SwimlaneBorderColor #999999
+skinparam SwimlaneTitleFontStyle bold
+
+|#FAFAFA|1. Check\ncontainers still up|
+start
+:Read **backup.conf**, take the lock;
+if (**rsync** available?\n(and tar, docker)) then (no)
+  #FFD9D9:**2.2** Containers **not** stopped
+  **send-alert.sh** mails
+  which tool is missing;
+  stop
+else (yes)
+endif
+:Measure what will be copied:
+volumes/ + .env + INSTALL_INFO.txt;
+if (Room for the staging copy\n**and** the future tar.gz?) then (no)
+  #FFD9D9:**2.2** Containers **not** stopped
+  **send-alert.sh** mails the alert address;
+  stop
+else (yes)
+endif
+
+|#FFF3E0|2.1 Outage\ncontainers down|
+#FFE2B8:Stop the containers;
+#FFE2B8:**Copy with rsync to the staging folder:**
+* the folder **volumes/**
+* the file **.env**
+* the file **INSTALL_INFO.txt**;
+note right
+  **What is copied, and nothing else**
+  volumes/ : database, mailboxes,
+  DKIM keys, queues, rspamd, redis
+  .env : every setting and secret
+  INSTALL_INFO.txt : the install record
+end note
+#FFE2B8:Start the containers again,
+copy done or not;
+if (Every container UP?) then (no)
+  #FFE2B8:Start them once more
+  and wait again;
+  if (Every container UP now?) then (no)
+    if (manager-api UP?\n(send-alert.sh goes through it)) then (yes)
+      #FFD9D9:**send-alert.sh** names
+      the containers still down
+      (best effort);
+    else (no)
+      #FFD9D9:**No mail possible**
+      the alert needs the server
+      that is down;
+    endif
+    #FFD9D9:Write the log and the state
+    of the run, exit in error;
+    stop
+  else (yes)
+  endif
+else (yes)
+endif
+
+|#FAFAFA|3. Compress\nserver up|
+:tar.gz of the staging copy
+(volumes/ + .env + INSTALL_INFO.txt)
+backup-YYYY-MM-DD.tar.gz
+then empty the staging folder;
+
+|#F1F8F1|4. Store|
+#D9F2D9:Move the archive to
+**BACKUP_DIR** of backup.conf;
+
+|#F1F8F1|5. Off-site\nif set|
+if (**BACKUP_OFFSITE** set?) then (no)
+else (yes)
+  if (Where to?) then (a folder)
+    #D9F2D9:Move the archive
+    to that folder;
+  else (user@host:/path)
+    #D9F2D9:Send it over ssh,
+    then delete it here;
+  endif
+endif
+
+|#FAFAFA|6. Rotation\nkeep N days, no more|
+:Read **BACKUP_KEEP_DAYS**
+(5 by default, set by backup.sh install)
+List the archives where they are stored;
+note right
+  One archive per day:
+  5 days kept = 5 archives at most
+  Runs only after a backup that worked
+end note
+while (Another archive\nto look at?) is (yes)
+  if (Older than\nBACKUP_KEEP_DAYS days?) then (yes)
+    #FFD9D9:Delete this archive;
+  else (no)
+    #D9F2D9:Keep this archive;
+  endif
+endwhile (no)
+:Write the log and
+the state of the run;
+stop
+@enduml
