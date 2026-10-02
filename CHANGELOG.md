@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- test(backup): the backup checks write a stand-in `INSTALL_INFO.txt` for the time of their runs on a checkout that was never installed, such as the one of the CI, where its absence made every run refuse before reaching the disk check they exercise (02-10-2026)
 - refactor(alert): `send-alert.sh` moves to `scripts/` and works from the project root wherever it is called from (01-10-2026)
 
 ### Fixed

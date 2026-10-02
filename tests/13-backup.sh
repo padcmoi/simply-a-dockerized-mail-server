@@ -6,6 +6,11 @@
 # files: the real backup.conf and the real cron entry are never touched, no
 # alert is mailed, and the reports go to a stand-in for the manager.
 #
+# A backup copies INSTALL_INFO.txt, which install.sh writes. A checkout that
+# was never installed, like the one of the CI, has none, and every run would
+# refuse for that before reaching what is checked here: a stand-in is written
+# for the time of the runs and removed after. One that exists is not touched.
+#
 # The checks that need root are skipped without passwordless sudo. The full
 # backup stops the whole stack for the time of a copy, so it only runs when
 # BACKUP_TEST_FULL=1 is set.
@@ -262,11 +267,18 @@ t_backup_static
 if sudo -n true 2>/dev/null; then
 	t_backup_install
 	t_backup_apply
+	backup_info_stand_in=0
+	if [[ ! -e "$PROJECT_DIR/INSTALL_INFO.txt" ]]; then
+		echo "stand-in written by tests/13-backup.sh" >"$PROJECT_DIR/INSTALL_INFO.txt" && backup_info_stand_in=1
+	fi
 	t_backup_no_room
 	if [[ "${BACKUP_TEST_FULL:-0}" == "1" ]]; then
 		t_backup_full
 	else
 		skip "backup.full" "stops the whole stack: set BACKUP_TEST_FULL=1 to run it"
+	fi
+	if [[ "$backup_info_stand_in" == "1" ]]; then
+		rm -f "$PROJECT_DIR/INSTALL_INFO.txt"
 	fi
 else
 	skip "backup.root_checks" "passwordless sudo is not available"
