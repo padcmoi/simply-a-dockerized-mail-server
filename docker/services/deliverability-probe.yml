@@ -2,6 +2,9 @@ services:
   deliverability-probe:
     container_name: mail-deliverability-probe
     restart: unless-stopped
+    # python3 runs as PID 1, which ignores SIGTERM: without an init the container
+    # is only stopped by the SIGKILL that follows the whole grace period.
+    init: true
     logging:
       driver: json-file
       options:

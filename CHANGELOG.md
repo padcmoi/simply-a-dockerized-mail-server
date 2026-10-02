@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- fix(deliverability-probe): the container stops as soon as it is asked to, an init process handing it the signal its Python process ignored as PID 1, where every stop of the stack waited for the whole grace period before killing it (02-10-2026)
 - fix(ui): a sidebar entry shows only to an account holding the action its page asks beyond `access`, and a page refused by its permissions shows the 403 screen when reached from inside the app, where it opened on an empty table and a failure toast (01-10-2026)
 - fix(fail2ban): the server's own address kept out of every ban comes from `MAIL_PUBLIC_IP`, the address each installation writes into its `.env`, instead of resolving `MAIL_HOSTNAME` (29-09-2026)
 - fix(fail2ban): postscreen bans on the first pregreet and no longer on a hangup, which goes to a jail tolerating 10 an hour, the server's own address is never banned, and the supervision chart gives each of the 13 jails its own colour (29-09-2026)
