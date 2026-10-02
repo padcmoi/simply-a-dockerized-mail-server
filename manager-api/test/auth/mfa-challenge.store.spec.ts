@@ -14,9 +14,10 @@ describe("MfaChallengeStore", () => {
   });
 
   it("mints an opaque challenge, not a token: nothing in it names the account", () => {
-    const { challenge } = store.mint("a1", "email", "123456");
+    const account = "account-3d9d6415-537d-421a";
+    const { challenge } = store.mint(account, "email", "123456");
     expect(challenge).toMatch(/^[\w-]{20,}$/);
-    expect(challenge).not.toContain("a1");
+    expect(challenge).not.toContain(account);
   });
 
   it("gives two sign-ins two different challenges", () => {
