@@ -102,6 +102,16 @@ export function useNav(onSignOut: () => Promise<void>) {
       ...entry("supervision", "nav.mailLogs", "i-lucide-file-text", "/admin/mail-logs", "view-mail-logs"),
       ...entry("fail2ban", "nav.fail2ban", "i-lucide-shield-ban", "/admin/fail2ban", "view-fail2ban-jails"),
       ...entry("clamav", "nav.clamav", "i-lucide-bug", "/admin/clamav", "view-clamav-status"),
+      ...(auth.session?.isRoot === true
+        ? [
+            {
+              label: t("nav.backups"),
+              icon: "i-lucide-database-backup",
+              to: "/admin/backups",
+              active: isActive("/admin/backups"),
+            },
+          ]
+        : []),
       // The release this server runs, the same tag the login screen shows, last
       // in the section and behind no ACL: the page has none, the login screen
       // names it before anyone has signed in. Its text is drawn by the

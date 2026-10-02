@@ -84,6 +84,9 @@ export default {
     "postfix_message-retried": "Message retried from the Postfix queue",
     protection_enabled: "Protection enabled",
     protection_disabled: "Protection removed",
+    "backup_config-requested": "Backup configuration changed",
+    "backup_download-requested": "Backup archive download",
+    "backup_retrieval-requested": "Backup archive brought back from off-site",
   },
   event: {
     auth_login: "Signed in",
@@ -135,5 +138,8 @@ export default {
     "postfix_message-retried": "Retried message {label} from the Postfix queue",
     protection_enabled: "Protected {label}",
     protection_disabled: "Removed the protection of {label}",
+    "backup_config-requested": "Changed the backup configuration ({time}, {keepDays} kept)",
+    "backup_download-requested": "Asked to download the archive {label}",
+    "backup_retrieval-requested": "Asked the server to bring the archive {label} back from {from}",
   },
 } satisfies Locales["activity"];

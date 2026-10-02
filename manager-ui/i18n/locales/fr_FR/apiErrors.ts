@@ -63,6 +63,11 @@ export default {
     locked: "Cet élément est protégé : il ne peut être ni modifié, ni supprimé, ni changer de propriétaire",
     domainHoldsProtected: "Ce domaine contient {count} boîte(s) ou alias protégé(s) et ne peut pas être supprimé",
   },
+  backup: {
+    notConfigured: "La sauvegarde n'est pas installée sur le serveur",
+    fileUnavailable: "Cette archive n'est plus sur le serveur",
+    retrievalBusy: "Une autre archive est déjà en train d'être rapportée sur le serveur",
+  },
   twoFactor: {
     alreadyEnabled: "L'authentification à deux facteurs est déjà activée",
     notEnabled: "L'authentification à deux facteurs n'est pas activée",

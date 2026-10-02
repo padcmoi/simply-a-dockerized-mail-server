@@ -6,6 +6,7 @@ INSTALL_INFO.txt
 volumes/
 nohup.out
 backup/
+backup.conf
 node_modules/
 dist/
 .trash/

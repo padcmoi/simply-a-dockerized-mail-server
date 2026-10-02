@@ -1,5 +1,5 @@
-@startuml backup
-title backup.sh run : one cold backup, read from left to right
+@startuml backup-run
+title scripts/backup.sh : one cold backup, read from left to right
 
 skinparam dpi 110
 skinparam shadowing false
@@ -16,7 +16,9 @@ skinparam SwimlaneTitleFontStyle bold
 
 |#FAFAFA|1. Check\ncontainers still up|
 start
-:Read **backup.conf**, take the lock;
+:Read **backup.conf**, take the lock
+A run that was interrupted left
+its log behind: report it;
 if (**rsync** available?\n(and tar, docker)) then (no)
   #FFD9D9:**2.2** Containers **not** stopped
   **send-alert.sh** mails
@@ -61,8 +63,8 @@ if (Every container UP?) then (no)
       the alert needs the server
       that is down;
     endif
-    #FFD9D9:Write the log and the state
-    of the run, exit in error;
+    #FFD9D9:Keep the failure as a report
+    for the manager, exit in error;
     stop
   else (yes)
   endif
@@ -80,21 +82,27 @@ then empty the staging folder;
 **BACKUP_DIR** of backup.conf;
 
 |#F1F8F1|5. Off-site\nif set|
-if (**BACKUP_OFFSITE** set?) then (no)
+if (**BACKUP_OFFSITE** set?\n(user@host:/path)) then (no)
 else (yes)
-  if (Where to?) then (a folder)
-    #D9F2D9:Move the archive
-    to that folder;
-  else (user@host:/path)
-    #D9F2D9:Send it over ssh,
-    then delete it here;
+  :Send the archive with
+  **rsync over ssh**, nothing else;
+  if (Sent?) then (no)
+    #FFD9D9:Archive kept here
+    **send-alert.sh**, result "partial";
+    stop
+  else (yes)
+  endif
+  if (Box "delete here\nonce sent" ticked?) then (yes)
+    #D9F2D9:Delete the archive here;
+  else (no)
+    #D9F2D9:Keep it here too;
   endif
 endif
 
 |#FAFAFA|6. Rotation\nkeep N days, no more|
 :Read **BACKUP_KEEP_DAYS**
-(5 by default, set by backup.sh install)
-List the archives where they are stored;
+(5 by default)
+List the archives here and off-site;
 note right
   One archive per day:
   5 days kept = 5 archives at most
@@ -107,7 +115,28 @@ while (Another archive\nto look at?) is (yes)
     #D9F2D9:Keep this archive;
   endif
 endwhile (no)
-:Write the log and
-the state of the run;
+
+|#EEF3FB|7. Report, then\nleave only the archives|
+:Put in one report the result,
+the durations, the log of the run,
+where the archives are and which exist
+Delete **backup.log**;
+note right
+  backup.log and the staging copy
+  only exist while the run lasts
+  Every failure above ends here too
+end note
+:Send the report to the manager, by a
+route only this machine can reach;
+if (Manager took it?) then (yes)
+  #D9F2D9:Stored in the **database**,
+  shown on the Backups page
+  Delete the report;
+else (no)
+  :Keep the report, the one file left,
+  for a later run to deliver;
+endif
+#D9F2D9:The folder holds the archives
+and nothing else;
 stop
 @enduml

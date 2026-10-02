@@ -1,5 +1,5 @@
 @startuml backup-install
-title backup.sh install : sets the backup configuration and its cron entry, nothing else
+title ./backup.sh, at the root of the project : sets the backup configuration and its cron entry, nothing else
 
 skinparam dpi 110
 skinparam shadowing false
@@ -32,23 +32,28 @@ else (yes)
   endif
   if (Update or remove?) then (remove)
     #FFD9D9:Delete the cron entry
-    keep backup.conf and the archives;
+    and **backup.conf**
+    Keep the archives
+    The manager shows nothing anymore;
     stop
   else (update)
   endif
 endif
 
-|#FFF3E0|2. Ask the configuration|
+|#FFF3E0|2. Ask, three questions|
 #FFE2B8:**Time of the backup, every day**
+on this server's clock
 (Enter = 02:30);
 #FFE2B8:**Backups kept at most**
 one per day, so 5 days = 5 files
 (Enter = 5);
-#FFE2B8:Folder where the archives go
+#FFE2B8:**Folder where the archives go**
 (Enter = ./backup);
-#FFE2B8:Off-site destination: a folder
-or user@host:/path (Enter = none);
 note right
+  Nothing else is asked
+  Sending the archives to another
+  server is set from the manager,
+  never here
   On an update, Enter keeps
   the current value
   Each answer is asked again
@@ -57,11 +62,15 @@ end note
 
 |#F1F8F1|3. Write|
 #D9F2D9:Write **backup.conf**
-BACKUP_TIME, BACKUP_KEEP_DAYS,
-BACKUP_DIR, BACKUP_OFFSITE;
+BACKUP_TIME, BACKUP_KEEP_DAYS, BACKUP_DIR
+What the manager set for the off-site
+copy is kept as it is;
 #D9F2D9:Install or replace the cron entry
 /etc/cron.d/simply-mailserver-backup
-MM HH * * * ./backup.sh run;
+every day at HH:MM : scripts/backup.sh
+every minute : scripts/backup.apply.sh;
+#D9F2D9:Publish the configuration
+for the manager to read;
 :Show what was written;
 stop
 @enduml

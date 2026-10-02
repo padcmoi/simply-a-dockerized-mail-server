@@ -40,6 +40,8 @@ import { DmarcOutgoingReport } from "../entities/dmarc-outgoing-report.entity";
 import { DmarcIncomingReport } from "../entities/dmarc-incoming-report.entity";
 import { DmarcIncomingRecord } from "../entities/dmarc-incoming-record.entity";
 import { DmarcInboxMessage } from "../entities/dmarc-inbox-message.entity";
+import { BackupRun } from "../entities/backup-run.entity";
+import { BackupFile } from "../entities/backup-file.entity";
 
 // Stand-alone DataSource used exclusively by the TypeORM CLI (migration:generate,
 // migration:run, migration:revert, migration:show). The Nest runtime keeps its
@@ -107,6 +109,8 @@ export default new DataSource({
     DmarcIncomingReport,
     DmarcIncomingRecord,
     DmarcInboxMessage,
+    BackupRun,
+    BackupFile,
   ],
   migrations: ["src/core/database/migrations/*.ts"],
   migrationsTableName: "migrations",

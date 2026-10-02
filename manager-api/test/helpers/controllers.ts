@@ -9,7 +9,10 @@ import { MailConfigController } from "../../src/api/config/mail-config.controlle
 import { MailCadenceController } from "../../src/api/config/mail-cadence.controller";
 import { PostfixConfigController } from "../../src/api/config/postfix-config.controller";
 import { AlertController } from "../../src/api/config/alert.controller";
+import { BackupDownloadController } from "../../src/api/backups/backup-download.controller";
+import { BackupsController } from "../../src/api/backups/backups.controller";
 import { InternalAlertController } from "../../src/api/internal/internal-alert.controller";
+import { InternalBackupController } from "../../src/api/internal/internal-backup.controller";
 import { GeneralController } from "../../src/api/config/general.controller";
 import { LoginRiskController } from "../../src/api/config/login-risk.controller";
 import { SupervisionRetentionController } from "../../src/api/config/supervision-retention.controller";
@@ -61,6 +64,9 @@ export const ALL_CONTROLLERS = [
   PostfixConfigController,
   AlertController,
   InternalAlertController,
+  InternalBackupController,
+  BackupsController,
+  BackupDownloadController,
   GeneralController,
   LoginRiskController,
   SupervisionRetentionController,

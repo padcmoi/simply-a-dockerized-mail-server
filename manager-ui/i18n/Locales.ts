@@ -56,6 +56,11 @@ export interface Locales {
       locked: string;
       domainHoldsProtected: string;
     };
+    backup: {
+      notConfigured: string;
+      fileUnavailable: string;
+      retrievalBusy: string;
+    };
     twoFactor: {
       alreadyEnabled: string;
       notEnabled: string;
@@ -105,6 +110,7 @@ export interface Locales {
     mailLogs: string;
     fail2ban: string;
     clamav: string;
+    backups: string;
     dmarc: string;
     sectionMail: string;
     sectionAccess: string;
@@ -2347,6 +2353,104 @@ export interface Locales {
     postfix: string;
     postfixWaiting: string;
     postfixUnavailable: string;
+  };
+  backups: {
+    title: string;
+    subtitle: string;
+    loadFailed: string;
+    notConfigured: string;
+    notConfiguredHint: string;
+    result: {
+      success: string;
+      partial: string;
+      failed: string;
+    };
+    summary: {
+      scheduleTitle: string;
+      timeOnServer: string;
+      configure: string;
+      time: string;
+      keepDays: string;
+      keepDaysValue: string;
+      dir: string;
+      offsiteTitle: string;
+      offsite: string;
+      offsiteNone: string;
+      deleteLocal: string;
+      lastRunTitle: string;
+      noRun: string;
+      result: string;
+      when: string;
+      outage: string;
+      duration: string;
+    };
+    request: {
+      pending: string;
+      pendingHint: string;
+      applied: string;
+      appliedAt: string;
+      error: string;
+    };
+    runs: {
+      title: string;
+      empty: string;
+      startedAt: string;
+      result: string;
+      outage: string;
+      duration: string;
+      archive: string;
+      error: string;
+      log: string;
+      logTitle: string;
+      logFailed: string;
+    };
+    files: {
+      title: string;
+      empty: string;
+      name: string;
+      createdAt: string;
+      size: string;
+      location: string;
+      local: string;
+      offsite: string;
+      onServer: string;
+      notThere: string;
+      unverified: string;
+      unverifiedHint: string;
+      offsiteSent: string;
+      offsiteDeleted: string;
+      download: string;
+      downloadFailed: string;
+      retrieving: string;
+      retrievingTitle: string;
+      retrievingHint: string;
+      retrieveHint: string;
+      retrieveFailed: string;
+      unreadable: string;
+    };
+    config: {
+      title: string;
+      alertTitle: string;
+      alertDescription: string;
+      back: string;
+      time: string;
+      timeHint: string;
+      timeInvalid: string;
+      keepDays: string;
+      keepDaysHint: string;
+      keepDaysInvalid: string;
+      offsite: string;
+      offsiteHint: string;
+      offsiteInvalid: string;
+      deleteLocal: string;
+      deleteLocalHint: string;
+      dir: string;
+      dirHint: string;
+      save: string;
+      requested: string;
+      saveFailed: string;
+      loadFailed: string;
+    };
   };
   clamav: {
     title: string;

@@ -60,6 +60,9 @@ export const ACTIVITY_ACTIONS = [
   "postfix.message-retried",
   "protection.enabled",
   "protection.disabled",
+  "backup.config-requested",
+  "backup.download-requested",
+  "backup.retrieval-requested",
 ] as const;
 
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];

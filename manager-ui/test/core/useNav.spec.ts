@@ -107,6 +107,7 @@ describe("useNav global nav items", () => {
       "/admin/mail-logs",
       "/admin/fail2ban",
       "/admin/clamav",
+      "/admin/backups",
       "/about",
     ]);
   });
@@ -161,6 +162,25 @@ describe("useNav global nav items", () => {
     };
     const { adminNavItems } = useNav(noop);
     expect(pathsOf(adminNavItems.value)).toEqual(["/about"]);
+  });
+
+  it("keeps the configuration and the backups for root accounts, whatever a non-root account is granted", () => {
+    asUser();
+    usePermissionsStore().data = {
+      global: [
+        { resource: "supervision", action: "access" },
+        { resource: "supervision", action: "view-machine-metrics" },
+        { resource: "supervision", action: "view-activity-log" },
+        { resource: "clamav", action: "access" },
+        { resource: "clamav", action: "view-clamav-status" },
+        { resource: "superadmin", action: "access" },
+      ],
+      domain: [],
+    };
+    const paths = pathsOf(useNav(noop).adminNavItems.value);
+    expect(paths).toContain("/admin/supervision");
+    expect(paths).not.toContain("/admin/backups");
+    expect(paths).not.toContain("/admin/config");
   });
 
   it("reveals the machine section to an account that may view the machine metrics, root or not", () => {

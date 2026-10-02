@@ -29,8 +29,8 @@ backup method. Quiesce delivery first with
 `docker compose stop postfix dovecot` to avoid catching half-written
 Maildir files.
 
-The daily cold backup that replaces this manual step is described, with its
-activity diagram, in [backup.md](backup.md).
+The daily cold backup that replaces this manual step, `scripts/backup.sh`, is
+described with its activity diagrams in [backup.md](backup.md).
 
 The migration from the docker-managed `redis_data` volume to the
 bind-mount is documented in commit `bf3a373`. Existing installs:

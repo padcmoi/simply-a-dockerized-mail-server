@@ -24,6 +24,7 @@ export default {
   mailLogs: "Mail logs",
   fail2ban: "Fail2ban",
   clamav: "Antivirus",
+  backups: "Backups",
   dmarc: "DMARC reports",
   sectionMail: "Mail",
   sectionAccess: "Access",

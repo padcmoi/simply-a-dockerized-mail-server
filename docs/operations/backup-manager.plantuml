@@ -1,0 +1,119 @@
+@startuml backup-manager
+title What the manager asks of the host: a new configuration, or an archive to bring back
+
+skinparam dpi 110
+skinparam shadowing false
+skinparam ConditionStyle diamond
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam ActivityBackgroundColor #F7F7F7
+skinparam ActivityBorderColor #555555
+skinparam ActivityDiamondBackgroundColor #FFF4D6
+skinparam ActivityDiamondBorderColor #B8860B
+skinparam ArrowColor #555555
+skinparam SwimlaneBorderColor #999999
+skinparam SwimlaneTitleFontStyle bold
+
+|#FAFAFA|1. Manager, root only\nBackups > Configure|
+start
+if (Root account?) then (no)
+  #FFD9D9:403: the Backups page and
+  everything under it are root only
+  No permission opens them;
+  stop
+else (yes)
+endif
+if (Backup installed on the server?\n(configuration published)) then (no)
+  :Nothing to configure:
+  the manager never installs
+  nor removes the backup;
+  stop
+else (yes)
+endif
+:Time, backups kept,
+off-site destination user@host:/path,
+box "delete here once sent";
+note right
+  No script, no command:
+  four values, nothing else
+  The off-site destination is only
+  set here, never at install
+  The archives folder is read only
+end note
+
+|#FFF3E0|2. manager-api|
+if (Values valid?) then (no)
+  #FFD9D9:400, nothing written;
+  stop
+else (yes)
+endif
+#FFE2B8:Write **request.conf** in the folder
+shared with the host
+Record the change in the activity journal;
+:Answer "pending";
+
+|#F1F8F1|3. Host\nbackup.apply.sh, every minute|
+if (request.conf there?) then (no)
+  stop
+else (yes)
+endif
+if (Every value valid\n**again**, backup installed?) then (no)
+  #FFD9D9:Change nothing
+  status.conf = error + reason;
+  stop
+else (yes)
+endif
+#D9F2D9:Rewrite **backup.conf**
+(the archives folder is kept);
+#D9F2D9:Rewrite the **cron entry**
+with the new time;
+#D9F2D9:Publish the configuration again
+status.conf = applied;
+
+|#FAFAFA|4. Manager|
+:The page shows "applied"
+or the reason of the refusal;
+stop
+
+|#FAFAFA|1. Manager, root only\nBackups > Configure|
+start
+:Download an archive that was
+sent off-site and deleted here;
+note right
+  The manager cannot reach the
+  other server: only root on the
+  host holds the ssh key
+end note
+
+|#FFF3E0|2. manager-api|
+if (Archive still kept off-site,\nat the place the database holds?) then (no)
+  #FFD9D9:404, nothing asked;
+  stop
+else (yes)
+endif
+if (Another archive being brought back?) then (yes)
+  #FFD9D9:409, nothing asked;
+  stop
+else (no)
+endif
+#FFE2B8:Write **retrieve.conf**: the name,
+the place, the size
+Record it in the activity journal;
+
+|#F1F8F1|3. Host\nbackup.apply.sh, every minute|
+if (Name of an archive, place\nuser@host:/path, room on the disk?) then (no)
+  #FFD9D9:Bring nothing back
+  retrieve-status.conf = error + reason;
+  stop
+else (yes)
+endif
+#D9F2D9:Copy the archive with **rsync over ssh**
+into the folder of the archives
+It stays off-site too;
+#D9F2D9:retrieve-status.conf = done;
+
+|#FAFAFA|4. Manager|
+:The archive is found at its place:
+the download starts by itself;
+stop
+@enduml

@@ -59,6 +59,9 @@ export const API_ERROR_CODES = [
   "postfix.domainNotHosted",
   "protection.locked",
   "protection.domainHoldsProtected",
+  "backup.notConfigured",
+  "backup.fileUnavailable",
+  "backup.retrievalBusy",
 ] as const;
 
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];

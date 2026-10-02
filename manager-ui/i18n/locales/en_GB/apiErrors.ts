@@ -63,6 +63,11 @@ export default {
     locked: "This item is protected: it can be neither edited, nor deleted, nor given another owner",
     domainHoldsProtected: "This domain holds {count} protected mailbox(es) or alias(es) and cannot be deleted",
   },
+  backup: {
+    notConfigured: "The backup is not installed on the server",
+    fileUnavailable: "This archive is not on the server anymore",
+    retrievalBusy: "Another archive is already being brought back to the server",
+  },
   twoFactor: {
     alreadyEnabled: "Two-factor authentication is already enabled",
     notEnabled: "Two-factor authentication is not enabled",

@@ -42,6 +42,13 @@ services:
       - ${VOLUMES_PATH}/postfix-managed/settings:/var/lib/postfix-managed/settings
       - ${VOLUMES_PATH}/postfix-managed/status:/var/lib/postfix-managed/status:ro
       - ${VOLUMES_PATH}/postfix-managed/commands:/var/lib/postfix-managed/commands
+      # Backups: the folder the manager and the host scripts exchange the
+      # configuration through, and the project itself, read only. The archives
+      # are in its `backup` folder, which the manager looks up by name on every
+      # call. Mounting that folder alone would pin the container to it: moved
+      # away or put back on the server, it would go unnoticed.
+      - ${VOLUMES_PATH}/backup-managed:/var/lib/backup-managed
+      - ../..:/host/project:ro
       # The signature files carry their own version and build date in their
       # header, which is what the Clamav page reads them for.
       - ${VOLUMES_PATH}/clamav:/var/lib/clamav:ro

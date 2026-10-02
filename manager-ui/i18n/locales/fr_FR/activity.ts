@@ -85,6 +85,9 @@ export default {
     "postfix_message-retried": "Message rejoué depuis la file Postfix",
     protection_enabled: "Protection activée",
     protection_disabled: "Protection retirée",
+    "backup_config-requested": "Configuration de la sauvegarde modifiée",
+    "backup_download-requested": "Téléchargement d'une archive de sauvegarde",
+    "backup_retrieval-requested": "Récupération d'une archive de sauvegarde envoyée hors du serveur",
   },
   event: {
     auth_login: "S'est connecté",
@@ -136,5 +139,8 @@ export default {
     "postfix_message-retried": "A rejoué le message {label} de la file Postfix",
     protection_enabled: "A protégé {label}",
     protection_disabled: "A retiré la protection de {label}",
+    "backup_config-requested": "A modifié la configuration de la sauvegarde ({time}, {keepDays} gardées)",
+    "backup_download-requested": "A demandé le téléchargement de l'archive {label}",
+    "backup_retrieval-requested": "A demandé au serveur de rapporter l'archive {label} depuis {from}",
   },
 } satisfies Locales["activity"];

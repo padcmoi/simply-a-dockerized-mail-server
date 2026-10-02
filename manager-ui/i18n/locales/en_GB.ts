@@ -38,6 +38,7 @@ import known from "./en_GB/known";
 import mailLogs from "./en_GB/mailLogs";
 import fail2ban from "./en_GB/fail2ban";
 import clamav from "./en_GB/clamav";
+import backups from "./en_GB/backups";
 import dmarc from "./en_GB/dmarc";
 
 // One file per top-level namespace under ./en_GB/, this file only assembles
@@ -83,5 +84,6 @@ export default {
   mailLogs,
   fail2ban,
   clamav,
+  backups,
   dmarc,
 } satisfies Locales;

@@ -37,6 +37,8 @@ const EXPECTED_PUBLIC = [
   "POST /api/v1/auth/jwt/logout",
   "POST /api/v1/auth/jwt/refresh",
   "POST /api/v1/internal/alert",
+  "POST /api/v1/internal/backup/report",
+  "GET /api/v1/backups/download/:token",
 ].sort();
 
 // Authenticated but intentionally carrying NO ACL requirement: the self-scoped
@@ -46,6 +48,13 @@ const EXPECTED_PUBLIC = [
 // not an ACL permission).
 // Every other authenticated route MUST declare a permission requirement.
 const EXPECTED_NO_ACL_AUTHED = [
+  "GET /api/v1/backups",
+  "GET /api/v1/backups/files",
+  "GET /api/v1/backups/runs",
+  "GET /api/v1/backups/runs/:id/log",
+  "POST /api/v1/backups/files/:name/download-link",
+  "POST /api/v1/backups/files/:name/retrieve",
+  "PUT /api/v1/backups/config",
   "DELETE /api/v1/auth/jwt/me/sessions/:id",
   "DELETE /api/v1/auth/jwt/me/two-factor",
   "GET /api/v1/auth/jwt/me/activity",
