@@ -3,19 +3,23 @@ import { mkdir, mkdtemp, rename, rm, symlink, writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 import type { Repository } from "typeorm";
+import type { BackupOffsiteService } from "../../src/core/backups/backup-offsite.service";
+import type { BackupRetrievalService } from "../../src/core/backups/backup-retrieval.service";
 import { BackupService } from "../../src/core/backups/backup.service";
 import type { BackupReportDto } from "../../src/core/backups/backup.validation";
 import type { BackupFile } from "../../src/core/entities/backup-file.entity";
 import type { BackupRun } from "../../src/core/entities/backup-run.entity";
-import { repoMock, type Loose } from "../helpers/mocks";
+import { providerMock, repoMock, type Loose } from "../helpers/mocks";
 
 class TestBackupService extends BackupService {
   constructor(
     runs: Repository<BackupRun>,
     files: Repository<BackupFile>,
+    retrieval: BackupRetrievalService,
+    offsite: BackupOffsiteService,
     protected readonly projectDir: string
   ) {
-    super(runs, files);
+    super(runs, files, retrieval, offsite);
   }
 }
 
@@ -62,8 +66,14 @@ describe("BackupService", () => {
   let svc: TestBackupService;
   let runs: Loose<Repository<BackupRun>>;
   let files: Loose<Repository<BackupFile>>;
+  const retrieval = providerMock<BackupRetrievalService>({ ready: vi.fn(), take: vi.fn() });
+  const offsite = providerMock<BackupOffsiteService>({ refresh: vi.fn(), listing: vi.fn() });
 
   beforeEach(async () => {
+    retrieval.ready.mockReset().mockResolvedValue(null);
+    retrieval.take.mockReset().mockResolvedValue(null);
+    offsite.refresh.mockReset().mockResolvedValue(undefined);
+    offsite.listing.mockReset().mockResolvedValue(null);
     project = await mkdtemp(join(tmpdir(), "backup-project-"));
     dir = join(project, "backup");
     await mkdir(dir);
@@ -71,7 +81,7 @@ describe("BackupService", () => {
     files = repoMock<BackupFile>();
     files.findOne.mockResolvedValue(null);
     files.find.mockResolvedValue([]);
-    svc = new TestBackupService(runs, files, project);
+    svc = new TestBackupService(runs, files, retrieval, offsite, project);
   });
   afterEach(() => rm(project, { recursive: true, force: true }));
 
@@ -228,7 +238,7 @@ describe("BackupService", () => {
     });
   });
 
-  describe("an archive kept off-site can be brought back", () => {
+  describe("an archive kept off-site is downloaded from there", () => {
     const SENT = {
       offsiteTarget: "bob@backup.example.com:/srv/mail",
       offsiteSentAt: new Date("2026-10-02T02:31:00Z"),
@@ -262,9 +272,63 @@ describe("BackupService", () => {
       ]);
     });
 
-    it("gives the place the database holds for it, and its size", async () => {
+    it("gives the place the database holds for it", async () => {
       files.findOne.mockResolvedValue(row({ bytes: 4242, localPresent: 0, ...SENT }));
-      expect(await svc.retrievalSource(TODAY)).toEqual({ from: SENT.offsiteTarget, bytes: 4242 });
+      expect(await svc.retrievalSource(TODAY)).toEqual({ from: SENT.offsiteTarget });
+    });
+
+    it("asks the host to list the off-site server and says which archives are there", async () => {
+      files.find.mockResolvedValue([
+        row({ localPresent: 0, ...SENT }),
+        row({ name: YESTERDAY, localPresent: 0, ...SENT }),
+        row({ name: "backup-2026-09-30.tar.gz", localPresent: 0, ...SENT, offsiteTarget: "bob@old.example.com:/srv/mail" }),
+        row({ name: "backup-2026-09-29.tar.gz", localPresent: 0, offsiteSentAt: null, offsiteDeletedAt: null, offsiteTarget: "" }),
+      ]);
+      offsite.listing.mockResolvedValue({ target: SENT.offsiteTarget, names: new Set([TODAY]), checkedAt: "2026-10-02T22:31:00Z" });
+      const rows = await svc.listFiles();
+      expect(offsite.refresh).toHaveBeenCalledTimes(1);
+      expect(rows.map((file) => [file.name, file.offsitePresent, file.offsiteCheckedAt, file.retrievable])).toEqual([
+        [TODAY, true, "2026-10-02T22:31:00Z", true],
+        [YESTERDAY, false, "2026-10-02T22:31:00Z", false],
+        ["backup-2026-09-30.tar.gz", null, null, true],
+        ["backup-2026-09-29.tar.gz", null, null, false],
+      ]);
+    });
+
+    it("asks the host for nothing when no archive is kept off-site", async () => {
+      files.find.mockResolvedValue([row({ localPresent: 0 })]);
+      const rows = await svc.listFiles();
+      expect(offsite.refresh).not.toHaveBeenCalled();
+      expect(offsite.listing).not.toHaveBeenCalled();
+      expect(rows[0]).toMatchObject({ offsitePresent: null, offsiteCheckedAt: null });
+    });
+
+    it("signs a link once the host feeds the archive, and reads it from the pipe, once", async () => {
+      const pipe = join(project, "retrieve.pipe");
+      await writeFile(pipe, "from off-site");
+      files.findOne.mockResolvedValue(row({ localPresent: 0, ...SENT }));
+      await expect(svc.downloadLink(TODAY)).rejects.toMatchObject({ status: 404 });
+
+      retrieval.ready.mockResolvedValue({ id: "abc", path: pipe, bytes: 13 });
+      retrieval.take.mockResolvedValueOnce({ id: "abc", path: pipe, bytes: 13 });
+      const { token } = await svc.downloadLink(TODAY);
+      const file = await svc.openDownload(token);
+      expect(file).toMatchObject({ name: TODAY, size: 13 });
+      const chunks: Buffer[] = [];
+      for await (const chunk of file.stream) chunks.push(chunk as Buffer);
+      expect(Buffer.concat(chunks).toString()).toBe("from off-site");
+      expect(retrieval.take).toHaveBeenCalledWith(TODAY);
+      await expect(svc.openDownload(token)).rejects.toMatchObject({ status: 404 });
+    });
+
+    it("reads the archive on the server rather than off-site when it is there", async () => {
+      await writeFile(join(dir, TODAY), "here");
+      files.findOne.mockResolvedValue(row({ ...SENT }));
+      const { token } = await svc.downloadLink(TODAY);
+      const file = await svc.openDownload(token);
+      file.stream.destroy();
+      expect(file.size).toBe(4);
+      expect(retrieval.take).not.toHaveBeenCalled();
     });
 
     for (const [why, over] of [

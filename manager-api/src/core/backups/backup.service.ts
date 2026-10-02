@@ -10,6 +10,8 @@ import { ApiError } from "../common/api-error";
 import { resolveSortColumn, type PaginatedResult, type PaginationQuery } from "../common/pagination.validation";
 import { BackupFile } from "../entities/backup-file.entity";
 import { BackupRun } from "../entities/backup-run.entity";
+import { BackupOffsiteService } from "./backup-offsite.service";
+import { BackupRetrievalService } from "./backup-retrieval.service";
 import { BACKUP_ARCHIVE_PATTERN, BACKUP_OFFSITE_PATTERN, type BackupReportDto } from "./backup.validation";
 
 export const BACKUP_PROJECT_PATH = "/host/project";
@@ -34,6 +36,8 @@ export interface BackupFileView extends BackupFile {
   verifiable: boolean;
   downloadable: boolean;
   retrievable: boolean;
+  offsitePresent: boolean | null;
+  offsiteCheckedAt: string | null;
 }
 
 @Injectable()
@@ -42,7 +46,9 @@ export class BackupService {
 
   constructor(
     @InjectRepository(BackupRun) private readonly runs: Repository<BackupRun>,
-    @InjectRepository(BackupFile) private readonly files: Repository<BackupFile>
+    @InjectRepository(BackupFile) private readonly files: Repository<BackupFile>,
+    private readonly retrieval: BackupRetrievalService,
+    private readonly offsite: BackupOffsiteService
   ) {}
 
   async ingest(report: BackupReportDto) {
@@ -127,15 +133,22 @@ export class BackupService {
     await this.reconcile();
     const mounted = await this.projectMounted();
     const rows = await this.files.find({ order: { name: "DESC" } });
+    const sent = rows.some((row) => this.keptOffsite(row));
+    if (sent) await this.offsite.refresh();
+    const listing = sent ? await this.offsite.listing() : null;
     return Promise.all(
       rows.map(async (row) => {
         const state = mounted && row.localProjectDir ? await this.folderState(row.localProjectDir) : "unknown";
         const downloadable = state === "readable" && (await this.sizeOf(row)) !== null;
+        const listed = listing !== null && this.keptOffsite(row) && listing.target === row.offsiteTarget ? listing : null;
+        const offsitePresent = listed ? listed.names.has(row.name) : null;
         return {
           ...row,
           verifiable: state !== "unknown",
           downloadable,
-          retrievable: !downloadable && state !== "unknown" && this.keptOffsite(row),
+          retrievable: !downloadable && state !== "unknown" && this.keptOffsite(row) && offsitePresent !== false,
+          offsitePresent,
+          offsiteCheckedAt: listed ? listed.checkedAt : null,
         };
       })
     );
@@ -143,7 +156,7 @@ export class BackupService {
 
   async downloadLink(name: string) {
     const row = await this.files.findOne({ where: { name } });
-    if (!row || (await this.sizeOf(row)) === null) {
+    if (!row || ((await this.sizeOf(row)) === null && (await this.retrieval.ready(name)) === null)) {
       throw new ApiError(HttpStatus.NOT_FOUND, "backup.fileUnavailable", "This archive is not on the server anymore");
     }
     const expires = Math.floor(Date.now() / 1000) + DOWNLOAD_LINK_SECONDS;
@@ -161,7 +174,7 @@ export class BackupService {
         "This archive is neither on the server nor kept off-site"
       );
     }
-    return { from: row.offsiteTarget, bytes: row.bytes };
+    return { from: row.offsiteTarget };
   }
 
   async openDownload(token: string): Promise<{ name: string; size: number; stream: Readable }> {
@@ -183,8 +196,10 @@ export class BackupService {
     const row = await this.files.findOne({ where: { name } });
     const path = row?.localProjectDir ? this.pathOf(row.localProjectDir, name) : null;
     const size = row ? await this.sizeOf(row) : null;
-    if (path === null || size === null) throw new NotFoundException("This archive is not on the server anymore");
-    return { name, size, stream: createReadStream(path) };
+    if (path !== null && size !== null) return { name, size, stream: createReadStream(path) };
+    const offsite = row ? await this.retrieval.take(name) : null;
+    if (offsite === null) throw new NotFoundException("This archive is not on the server anymore");
+    return { name, size: offsite.bytes, stream: createReadStream(offsite.path) };
   }
 
   async projectMounted() {

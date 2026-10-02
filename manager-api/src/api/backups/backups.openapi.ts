@@ -48,12 +48,19 @@ export const BackupOverviewDocs = () =>
         "Root only, like every backup route. `configured` is false, and `config` null, until the backup is installed on the server " +
         "with `./backup.sh`: the manager never installs nor removes it. `projectReadable` is false when the manager cannot look at " +
         "the folders of the server, in which case no archive can be checked nor downloaded. `retrieval` tells which archive the server " +
-        "is bringing back from off-site, and how the last one ended.",
+        "is opening on the off-site server, and where the last one stands: `ready` to be downloaded, `done` or `error`. `offsite` tells " +
+        "when the host last listed the off-site server over ssh, whether it could, and whether a new listing is `pending`.",
     }),
     ApiResponse({
       status: 200,
       schema: {
-        example: { ...stateExample, lastRun: runExample, projectReadable: true, retrieval: { pending: null, last: null } },
+        example: {
+          ...stateExample,
+          lastRun: runExample,
+          projectReadable: true,
+          retrieval: { pending: null, last: null },
+          offsite: { pending: false, target: configExample.offsite, listed: true, checkedAt: "2026-10-02T22:31:00Z" },
+        },
       },
     }),
     RootOnly()
@@ -90,7 +97,10 @@ export const BackupFilesDocs = () =>
         "one that is back is recorded as present, and `downloadable` is true only when the file is there. " +
         "`verifiable` is false for an archive kept outside the project, which keeps what the last backup reported. " +
         "`retrievable` is true for an archive that is not on the server anymore but is still kept off-site: " +
-        "`POST /backups/files/:name/retrieve` brings it back.",
+        "`POST /backups/files/:name/retrieve` opens it there, to be downloaded straight from the other server. " +
+        "`offsitePresent` is what the host found when it last listed the off-site server over ssh, at `offsiteCheckedAt`: " +
+        "true when the archive is there, false when it was sent but is not there anymore, null when it was never sent or " +
+        "could not be checked. Listing the archives asks the host for a new listing when the last one is older than a minute.",
     }),
     ApiResponse({
       status: 200,
@@ -110,6 +120,8 @@ export const BackupFilesDocs = () =>
             verifiable: true,
             downloadable: true,
             retrievable: false,
+            offsitePresent: null,
+            offsiteCheckedAt: null,
           },
         ],
       },
@@ -123,7 +135,8 @@ export const BackupDownloadLinkDocs = () =>
       summary: "Get a one-minute link to download a backup archive",
       description:
         "An archive holds every mailbox and every secret of the server. The link is signed, names one archive and " +
-        "expires after a minute; it is opened without a token, so the browser can save the file as it comes. Recorded in the activity journal.",
+        "expires after a minute; it is opened without a token, so the browser can save the file as it comes. An archive that is only " +
+        "kept off-site gets a link once `POST /backups/files/:name/retrieve` is answered `ready`. Recorded in the activity journal.",
     }),
     ApiParam({ name: "name", example: "backup-2026-10-02.tar.gz" }),
     ApiResponse({ status: 201, schema: { example: { token: "YmFja3Vw...", expiresInSeconds: 60 } } }),
@@ -134,13 +147,13 @@ export const BackupDownloadLinkDocs = () =>
 export const RetrieveBackupFileDocs = () =>
   applyDecorators(
     ApiOperation({
-      summary: "Ask the server to bring back an archive that was sent off-site",
+      summary: "Ask the server to open an archive that was sent off-site, to download it from there",
       description:
-        "An archive sent off-site and deleted from the server cannot be downloaded: only root on the host reaches the other server. " +
-        "manager-api writes the request in the folder it shares with the host; `scripts/backup.apply.sh`, started every minute by the " +
-        "backup cron entry, checks the name and the place again, copies the archive back into the folder of the archives with rsync over ssh, " +
-        "and answers. The archive stays off-site too. Until the answer, `pending` names it; once back it is `downloadable`. " +
-        "One archive at a time. Recorded in the activity journal.",
+        "An archive sent off-site and deleted from the server is downloaded straight from the other server, which only root on the host " +
+        "reaches. manager-api writes the request in the folder it shares with the host; `scripts/backup.apply.sh`, started every minute " +
+        "by the backup cron entry, checks the name and the place again, reads the archive on the other server over ssh into a pipe and " +
+        "answers `ready`. The download link then serves that pipe: nothing is written on this server, the archive is not brought back. " +
+        "Until the answer, `pending` names it. One request gives one download, one archive at a time. Recorded in the activity journal.",
     }),
     ApiParam({ name: "name", example: "backup-2026-10-02.tar.gz" }),
     ApiResponse({ status: 201, schema: { example: retrievalExample } }),
@@ -148,7 +161,7 @@ export const RetrieveBackupFileDocs = () =>
     ApiResponse({
       status: 409,
       description:
-        "The backup is not installed on the server (`backup.notConfigured`), or another archive is being brought back (`backup.retrievalBusy`)",
+        "The backup is not installed on the server (`backup.notConfigured`), or another archive is being downloaded from off-site (`backup.retrievalBusy`)",
     }),
     RootOnly()
   );

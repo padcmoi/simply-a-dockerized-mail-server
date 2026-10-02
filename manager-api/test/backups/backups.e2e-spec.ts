@@ -7,6 +7,7 @@ import { BackupsController } from "../../src/api/backups/backups.controller";
 import { ActivityLogService } from "../../src/core/activity/activity-log.service";
 import { RootGuard } from "../../src/core/auth/root.guard";
 import { BackupConfigService } from "../../src/core/backups/backup-config.service";
+import { BackupOffsiteService } from "../../src/core/backups/backup-offsite.service";
 import { BackupRetrievalService } from "../../src/core/backups/backup-retrieval.service";
 import { BackupService } from "../../src/core/backups/backup.service";
 import { ApiError } from "../../src/core/common/api-error";
@@ -36,6 +37,8 @@ describe("BackupsController (e2e: root only + behavior)", () => {
   };
   const configSvc = { state: vi.fn(), request: vi.fn() };
   const retrievalSvc = { state: vi.fn(), request: vi.fn() };
+  const offsiteSvc = { state: vi.fn() };
+  const listed = { pending: false, target: "bob@backup.example.com:/srv/mail", listed: true, checkedAt: "2026-10-02T22:31:00Z" };
   const idle = { pending: null, last: null };
   const asked = { pending: { id: "0b8f6f0e-5a55-4c5e-9d7b-2f3a1c9e7d10", name: ARCHIVE }, last: null };
   const activity = { record: vi.fn() };
@@ -48,6 +51,7 @@ describe("BackupsController (e2e: root only + behavior)", () => {
         { provide: BackupService, useValue: backups },
         { provide: BackupConfigService, useValue: configSvc },
         { provide: BackupRetrievalService, useValue: retrievalSvc },
+        { provide: BackupOffsiteService, useValue: offsiteSvc },
         { provide: ActivityLogService, useValue: activity },
       ],
     });
@@ -62,7 +66,8 @@ describe("BackupsController (e2e: root only + behavior)", () => {
     backups.listFiles.mockReset().mockResolvedValue([{ name: ARCHIVE, downloadable: true }]);
     backups.downloadLink.mockReset().mockResolvedValue({ token: "tok.sig", expiresInSeconds: 60 });
     backups.openDownload.mockReset();
-    backups.retrievalSource.mockReset().mockResolvedValue({ from: config.offsite, bytes: 100 });
+    backups.retrievalSource.mockReset().mockResolvedValue({ from: config.offsite });
+    offsiteSvc.state.mockReset().mockResolvedValue(listed);
     retrievalSvc.state.mockReset().mockResolvedValue(idle);
     retrievalSvc.request.mockReset().mockResolvedValue(asked);
     configSvc.state.mockReset().mockResolvedValue(state);
@@ -114,7 +119,13 @@ describe("BackupsController (e2e: root only + behavior)", () => {
   describe("consultation", () => {
     it("the overview joins the configuration state, the last run and the archives folder", async () => {
       const res = await api().get(base).set("Authorization", root()).expect(200);
-      expect(res.body).toEqual({ ...state, lastRun: { id: 1, result: "success" }, projectReadable: true, retrieval: idle });
+      expect(res.body).toEqual({
+        ...state,
+        lastRun: { id: 1, result: "success" },
+        projectReadable: true,
+        retrieval: idle,
+        offsite: listed,
+      });
     });
 
     it("the runs list forwards the pagination", async () => {
@@ -201,12 +212,12 @@ describe("BackupsController (e2e: root only + behavior)", () => {
     }
   });
 
-  describe("bringing back an archive that was sent off-site", () => {
+  describe("downloading an archive that was sent off-site, from there", () => {
     it("POST retrieve asks the host for the archive, from the place the database holds, and journals it", async () => {
       const res = await api().post(`${base}/files/${ARCHIVE}/retrieve`).set("Authorization", root()).expect(201);
       expect(res.body).toEqual(asked);
       expect(backups.retrievalSource).toHaveBeenCalledWith(ARCHIVE);
-      expect(retrievalSvc.request).toHaveBeenCalledWith(ARCHIVE, config.offsite, 100);
+      expect(retrievalSvc.request).toHaveBeenCalledWith(ARCHIVE, config.offsite);
       expect(activity.record).toHaveBeenCalledWith({
         action: "backup.retrieval-requested",
         entity: { type: "backup-file", id: ARCHIVE, label: ARCHIVE },
@@ -220,7 +231,7 @@ describe("BackupsController (e2e: root only + behavior)", () => {
         .set("Authorization", root())
         .send({ from: "eve@evil.example.com:/tmp", bytes: 1 })
         .expect(201);
-      expect(retrievalSvc.request).toHaveBeenCalledWith(ARCHIVE, config.offsite, 100);
+      expect(retrievalSvc.request).toHaveBeenCalledWith(ARCHIVE, config.offsite);
     });
 
     for (const name of ["..%2F..%2Fetc%2Fpasswd", "backup.log", "backup-2026-10-02.tar.gz.sh", ".env"]) {

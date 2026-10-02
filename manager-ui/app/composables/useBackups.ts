@@ -1,5 +1,7 @@
 const RETRIEVAL_POLL_MS = 3000;
 const RETRIEVAL_POLL_ROUNDS = 400;
+const LISTING_POLL_MS = 5000;
+const LISTING_POLL_ROUNDS = 24;
 
 export function useBackups() {
   const { t } = useI18n();
@@ -14,6 +16,21 @@ export function useBackups() {
   const downloading = ref<string | null>(null);
   const retrieving = ref<string | null>(null);
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let listingTimer: ReturnType<typeof setTimeout> | null = null;
+  let listingRounds = 0;
+
+  function watchListing(pending: boolean) {
+    if (!pending) {
+      listingRounds = 0;
+      return;
+    }
+    if (listingTimer !== null || listingRounds >= LISTING_POLL_ROUNDS) return;
+    listingRounds += 1;
+    listingTimer = setTimeout(() => {
+      listingTimer = null;
+      void load();
+    }, LISTING_POLL_MS);
+  }
 
   async function load() {
     try {
@@ -21,10 +38,11 @@ export function useBackups() {
       overview.value = state;
       files.value = list;
       failed.value = false;
+      watchListing(state.offsite?.pending === true);
       const pending = state.retrieval?.pending;
       if (pending && timer === null) {
         retrieving.value = pending.name;
-        waitForRetrieval(pending.name, pending.id, false);
+        waitForRetrieval(pending.name, pending.id);
       }
     } catch {
       failed.value = true;
@@ -51,26 +69,24 @@ export function useBackups() {
     timer = null;
   }
 
-  function waitForRetrieval(name: string, id: string, thenDownload: boolean, round = 0) {
+  function waitForRetrieval(name: string, id: string, round = 0) {
     stopWaiting();
     timer = setTimeout(async () => {
       await load();
       const retrieval = overview.value?.retrieval;
       if (retrieval?.pending?.id === id && round < RETRIEVAL_POLL_ROUNDS) {
-        waitForRetrieval(name, id, thenDownload, round + 1);
+        waitForRetrieval(name, id, round + 1);
         return;
       }
       timer = null;
       retrieving.value = null;
-      if (files.value.find((file) => file.name === name)?.downloadable) {
-        if (thenDownload) await download(name);
+      const last = retrieval?.last?.id === id ? retrieval.last : null;
+      if (last?.state === "ready") {
+        await download(name);
         return;
       }
-      toast.add({
-        title: t("backups.files.retrieveFailed"),
-        description: retrieval?.last?.id === id ? retrieval.last.error : undefined,
-        color: "error",
-      });
+      if (last?.state === "done") return;
+      toast.add({ title: t("backups.files.retrieveFailed"), description: last?.error, color: "error" });
     }, RETRIEVAL_POLL_MS);
   }
 
@@ -79,14 +95,18 @@ export function useBackups() {
     try {
       const state = await call<BackupRetrieval>(`/backups/files/${encodeURIComponent(name)}/retrieve`, { method: "POST" });
       toast.add({ title: t("backups.files.retrievingTitle"), description: t("backups.files.retrievingHint"), color: "info" });
-      waitForRetrieval(name, state.pending?.id ?? "", true);
+      waitForRetrieval(name, state.pending?.id ?? state.last?.id ?? "");
     } catch (err) {
       retrieving.value = null;
       toast.add({ title: t("backups.files.retrieveFailed"), description: apiErrorMessage(err), color: "error" });
     }
   }
 
-  onBeforeUnmount(stopWaiting);
+  onBeforeUnmount(() => {
+    stopWaiting();
+    if (listingTimer) clearTimeout(listingTimer);
+    listingTimer = null;
+  });
 
   return { overview, files, loaded, failed, downloading, retrieving, load, download, retrieve };
 }

@@ -87,7 +87,7 @@ export default {
     protection_disabled: "Protection retirée",
     "backup_config-requested": "Configuration de la sauvegarde modifiée",
     "backup_download-requested": "Téléchargement d'une archive de sauvegarde",
-    "backup_retrieval-requested": "Récupération d'une archive de sauvegarde envoyée hors du serveur",
+    "backup_retrieval-requested": "Téléchargement d'une archive de sauvegarde depuis le serveur distant",
   },
   event: {
     auth_login: "S'est connecté",
@@ -141,6 +141,6 @@ export default {
     protection_disabled: "A retiré la protection de {label}",
     "backup_config-requested": "A modifié la configuration de la sauvegarde ({time}, {keepDays} gardées)",
     "backup_download-requested": "A demandé le téléchargement de l'archive {label}",
-    "backup_retrieval-requested": "A demandé au serveur de rapporter l'archive {label} depuis {from}",
+    "backup_retrieval-requested": "A demandé le téléchargement de l'archive {label} directement depuis {from}",
   },
 } satisfies Locales["activity"];

@@ -2,6 +2,7 @@ import { Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Post, Pu
 import { ActivityLogService } from "../../core/activity/activity-log.service";
 import { RootGuard } from "../../core/auth/root.guard";
 import { BackupConfigService } from "../../core/backups/backup-config.service";
+import { BackupOffsiteService } from "../../core/backups/backup-offsite.service";
 import { BackupRetrievalService } from "../../core/backups/backup-retrieval.service";
 import { BackupService } from "../../core/backups/backup.service";
 import { BACKUP_ARCHIVE_PATTERN, backupConfigSchema, type BackupConfigDto } from "../../core/backups/backup.validation";
@@ -26,19 +27,21 @@ export class BackupsController {
     private readonly backups: BackupService,
     private readonly config: BackupConfigService,
     private readonly retrieval: BackupRetrievalService,
+    private readonly offsite: BackupOffsiteService,
     private readonly activity: ActivityLogService
   ) {}
 
   @Get()
   @BackupOverviewDocs()
   async overview() {
-    const [state, lastRun, projectReadable, retrieval] = await Promise.all([
+    const [state, lastRun, projectReadable, retrieval, offsite] = await Promise.all([
       this.config.state(),
       this.backups.lastRun(),
       this.backups.projectMounted(),
       this.retrieval.state(),
+      this.offsite.state(),
     ]);
-    return { ...state, lastRun, projectReadable, retrieval };
+    return { ...state, lastRun, projectReadable, retrieval, offsite };
   }
 
   @Get("runs")
@@ -72,8 +75,8 @@ export class BackupsController {
   @RetrieveBackupFileDocs()
   async retrieve(@Param("name") name: string) {
     if (!BACKUP_ARCHIVE_PATTERN.test(name)) throw new NotFoundException("No such archive");
-    const { from, bytes } = await this.backups.retrievalSource(name);
-    const state = await this.retrieval.request(name, from, bytes);
+    const { from } = await this.backups.retrievalSource(name);
+    const state = await this.retrieval.request(name, from);
     await this.activity.record({
       action: "backup.retrieval-requested",
       entity: { type: "backup-file", id: name, label: name },

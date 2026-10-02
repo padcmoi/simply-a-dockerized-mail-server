@@ -1,5 +1,5 @@
 @startuml backup-manager
-title What the manager asks of the host: a new configuration, or an archive to bring back
+title What the manager asks of the host: a new configuration, or an archive to read off-site
 
 skinparam dpi 110
 skinparam shadowing false
@@ -91,29 +91,37 @@ if (Archive still kept off-site,\nat the place the database holds?) then (no)
   stop
 else (yes)
 endif
-if (Another archive being brought back?) then (yes)
+if (Another archive being downloaded\nfrom off-site?) then (yes)
   #FFD9D9:409, nothing asked;
   stop
 else (no)
 endif
 #FFE2B8:Write **retrieve.conf**: the name,
-the place, the size
+the place
 Record it in the activity journal;
 
 |#F1F8F1|3. Host\nbackup.apply.sh, every minute|
-if (Name of an archive, place\nuser@host:/path, room on the disk?) then (no)
-  #FFD9D9:Bring nothing back
+if (Name of an archive, place\nuser@host:/path, archive found there?) then (no)
+  #FFD9D9:Read nothing
   retrieve-status.conf = error + reason;
   stop
 else (yes)
 endif
-#D9F2D9:Copy the archive with **rsync over ssh**
-into the folder of the archives
-It stays off-site too;
-#D9F2D9:retrieve-status.conf = done;
+#D9F2D9:Read the archive there **over ssh**
+into the pipe **retrieve.pipe**
+Nothing is written on this server;
+#D9F2D9:retrieve-status.conf = ready;
 
 |#FAFAFA|4. Manager|
-:The archive is found at its place:
-the download starts by itself;
+:The download starts by itself:
+the browser is handed the pipe;
+
+|#F1F8F1|3. Host\nbackup.apply.sh, every minute|
+if (Read to the end, by a browser\nthat came within two minutes?) then (no)
+  #FFD9D9:retrieve-status.conf = error + reason;
+  stop
+else (yes)
+endif
+#D9F2D9:retrieve-status.conf = done;
 stop
 @enduml

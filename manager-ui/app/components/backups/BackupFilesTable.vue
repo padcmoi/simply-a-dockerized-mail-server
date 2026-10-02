@@ -22,8 +22,33 @@ const columns = computed<DataTableColumn<BackupFile>[]>(() => [
   { key: "offsite", label: t("backups.files.offsite"), value: (row) => row.offsiteTarget },
 ]);
 
+function keptOffsite(row: BackupFile) {
+  return row.offsiteSentAt !== null && row.offsiteDeletedAt === null;
+}
+
 function locationOf(row: BackupFile) {
+  if (!row.localPresent && keptOffsite(row)) return row.offsiteTarget;
   return row.localDir || row.localProjectDir || "";
+}
+
+function offsiteLabel(row: BackupFile) {
+  if (row.offsiteDeletedAt) return t("backups.files.offsiteDeleted");
+  if (row.offsitePresent === true) return t("backups.files.onServer");
+  if (row.offsitePresent === false) return t("backups.files.notThere");
+  return t("backups.files.offsiteSent");
+}
+
+function offsiteColor(row: BackupFile) {
+  if (row.offsiteDeletedAt) return "neutral";
+  if (row.offsitePresent === true) return "success";
+  if (row.offsitePresent === false) return "error";
+  return "info";
+}
+
+function offsiteHint(row: BackupFile) {
+  const sent = `${row.offsiteTarget} · ${row.offsiteSentAt ? formatDateTime(row.offsiteSentAt) : ""}`;
+  if (row.offsiteDeletedAt || !row.offsiteCheckedAt) return sent;
+  return `${sent} · ${t("backups.files.offsiteChecked", { at: formatDateTime(row.offsiteCheckedAt) })}`;
 }
 
 function askDownload(name: string) {
@@ -66,7 +91,13 @@ function askRetrieve(name: string) {
         <span class="font-mono text-xs break-all">{{ locationOf(row) }}</span>
       </template>
       <template #local="{ row }">
-        <FullTooltip v-if="!row.localPresent" :text="row.localDeletedAt ? formatDateTime(row.localDeletedAt) : ''">
+        <FullTooltip
+          v-if="!row.localPresent && keptOffsite(row)"
+          :text="row.localDeletedAt ? formatDateTime(row.localDeletedAt) : ''"
+        >
+          <span class="text-muted">-</span>
+        </FullTooltip>
+        <FullTooltip v-else-if="!row.localPresent" :text="row.localDeletedAt ? formatDateTime(row.localDeletedAt) : ''">
           <UBadge color="neutral" variant="subtle">{{ t("backups.files.notThere") }}</UBadge>
         </FullTooltip>
         <UBadge v-else-if="row.verifiable" color="success" variant="subtle">{{ t("backups.files.onServer") }}</UBadge>
@@ -76,10 +107,8 @@ function askRetrieve(name: string) {
       </template>
       <template #offsite="{ row }">
         <span v-if="!row.offsiteSentAt" class="text-muted">-</span>
-        <FullTooltip v-else :text="`${row.offsiteTarget} · ${formatDateTime(row.offsiteSentAt)}`">
-          <UBadge :color="row.offsiteDeletedAt ? 'neutral' : 'info'" variant="subtle">
-            {{ row.offsiteDeletedAt ? t("backups.files.offsiteDeleted") : t("backups.files.offsiteSent") }}
-          </UBadge>
+        <FullTooltip v-else :text="offsiteHint(row)">
+          <UBadge :color="offsiteColor(row)" variant="subtle">{{ offsiteLabel(row) }}</UBadge>
         </FullTooltip>
       </template>
       <template #actions="{ row }">

@@ -2419,6 +2419,7 @@ export interface Locales {
       unverifiedHint: string;
       offsiteSent: string;
       offsiteDeleted: string;
+      offsiteChecked: string;
       download: string;
       downloadFailed: string;
       retrieving: string;

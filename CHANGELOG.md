@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- feat(backup): an archive kept off-site is downloaded straight from the other server, which the host reads over ssh into a pipe the manager hands to the browser, so it never takes room on the disk of this server, where it used to be brought back into the folder of the archives and stay there; whether such an archive is present or absent is what the host finds when it lists the off-site server over ssh, at most once a minute while the Backups page is open, shown in the off-site column, with a dash in the column of this server and the off-site place as its location (02-10-2026)
+
 ## [2.0.0-rc.15] - 2026-10-02
 
 ### Added

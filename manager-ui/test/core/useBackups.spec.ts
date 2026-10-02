@@ -81,7 +81,7 @@ describe("useBackups", () => {
         return { token: "tok.sig" };
       });
 
-    it("asks the server to bring it back, waits, then downloads it by itself", async () => {
+    it("asks the server to open it off-site, waits, then downloads it from there without it coming back", async () => {
       vi.useFakeTimers();
       const state: Served = { retrieval: asked, downloadable: false };
       server(state);
@@ -95,15 +95,31 @@ describe("useBackups", () => {
       expect(retrieving.value).toBe(ARCHIVE);
       expect(assign).not.toHaveBeenCalled();
 
-      state.retrieval = { pending: null, last: { id: ID, name: ARCHIVE, state: "done", error: "", at: null } };
-      state.downloadable = true;
+      state.retrieval = { pending: null, last: { id: ID, name: ARCHIVE, state: "ready", error: "", at: null } };
       await vi.advanceTimersByTimeAsync(3000);
       expect(retrieving.value).toBeNull();
       expect(call).toHaveBeenCalledWith(`/backups/files/${ARCHIVE}/download-link`, { method: "POST" });
       expect(assign).toHaveBeenCalledWith("/api/v1/backups/download/tok.sig");
     });
 
-    it("says why when the server could not bring it back, and downloads nothing", async () => {
+    it("downloads at once an archive the server already opened off-site", async () => {
+      vi.useFakeTimers();
+      const ready: BackupRetrieval = { pending: null, last: { id: ID, name: ARCHIVE, state: "ready", error: "", at: null } };
+      const state: Served = { retrieval: ready, downloadable: false };
+      server(state);
+      call.mockImplementation(async (path: string) => {
+        if (path === "/backups") return { ...overview, retrieval: ready };
+        if (path === "/backups/files") return [{ name: ARCHIVE, downloadable: false, retrievable: true }];
+        if (path.endsWith("/retrieve")) return ready;
+        return { token: "tok.sig" };
+      });
+      const { retrieve } = useBackups();
+      await retrieve(ARCHIVE);
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(assign).toHaveBeenCalledWith("/api/v1/backups/download/tok.sig");
+    });
+
+    it("says why when the server could not open it off-site, and downloads nothing", async () => {
       vi.useFakeTimers();
       const state: Served = { retrieval: asked, downloadable: false };
       server(state);
@@ -126,19 +142,31 @@ describe("useBackups", () => {
       expect(add).toHaveBeenCalledWith(expect.objectContaining({ title: "backups.files.retrieveFailed", color: "error" }));
     });
 
-    it("shows an archive still being brought back when the page is opened, without downloading it once back", async () => {
+    it("downloads an archive asked before the page was opened again, once it is ready", async () => {
       vi.useFakeTimers();
       const state: Served = { retrieval: asked, downloadable: false };
       server(state);
-      const { retrieving, files, load } = useBackups();
+      const { retrieving, load } = useBackups();
       await load();
       expect(retrieving.value).toBe(ARCHIVE);
-      state.retrieval = { pending: null, last: { id: ID, name: ARCHIVE, state: "done", error: "", at: null } };
-      state.downloadable = true;
+      state.retrieval = { pending: null, last: { id: ID, name: ARCHIVE, state: "ready", error: "", at: null } };
       await vi.advanceTimersByTimeAsync(3000);
       expect(retrieving.value).toBeNull();
-      expect(files.value[0]?.downloadable).toBe(true);
+      expect(assign).toHaveBeenCalledWith("/api/v1/backups/download/tok.sig");
+      expect(add).not.toHaveBeenCalled();
+    });
+
+    it("stays quiet when the download asked before was already taken", async () => {
+      vi.useFakeTimers();
+      const state: Served = { retrieval: asked, downloadable: false };
+      server(state);
+      const { retrieving, load } = useBackups();
+      await load();
+      state.retrieval = { pending: null, last: { id: ID, name: ARCHIVE, state: "done", error: "", at: null } };
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(retrieving.value).toBeNull();
       expect(assign).not.toHaveBeenCalled();
+      expect(add).not.toHaveBeenCalled();
     });
   });
 });

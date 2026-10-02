@@ -34,7 +34,14 @@ export interface BackupRun {
 
 export interface BackupRetrieval {
   pending: { id: string; name: string } | null;
-  last: { id: string; name: string; state: "done" | "error"; error: string; at: string | null } | null;
+  last: { id: string; name: string; state: "ready" | "done" | "error"; error: string; at: string | null } | null;
+}
+
+export interface BackupOffsiteCheck {
+  pending: boolean;
+  target: string;
+  listed: boolean;
+  checkedAt: string | null;
 }
 
 export interface BackupOverview {
@@ -45,6 +52,7 @@ export interface BackupOverview {
   lastRun: BackupRun | null;
   projectReadable: boolean;
   retrieval: BackupRetrieval | null;
+  offsite?: BackupOffsiteCheck | null;
 }
 
 export interface BackupFile {
@@ -61,6 +69,8 @@ export interface BackupFile {
   verifiable: boolean;
   downloadable: boolean;
   retrievable: boolean;
+  offsitePresent: boolean | null;
+  offsiteCheckedAt: string | null;
 }
 
 export interface BackupRunLog {

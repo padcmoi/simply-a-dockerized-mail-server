@@ -86,7 +86,7 @@ export default {
     protection_disabled: "Protection removed",
     "backup_config-requested": "Backup configuration changed",
     "backup_download-requested": "Backup archive download",
-    "backup_retrieval-requested": "Backup archive brought back from off-site",
+    "backup_retrieval-requested": "Backup archive downloaded from off-site",
   },
   event: {
     auth_login: "Signed in",
@@ -140,6 +140,6 @@ export default {
     protection_disabled: "Removed the protection of {label}",
     "backup_config-requested": "Changed the backup configuration ({time}, {keepDays} kept)",
     "backup_download-requested": "Asked to download the archive {label}",
-    "backup_retrieval-requested": "Asked the server to bring the archive {label} back from {from}",
+    "backup_retrieval-requested": "Asked to download the archive {label} straight from {from}",
   },
 } satisfies Locales["activity"];

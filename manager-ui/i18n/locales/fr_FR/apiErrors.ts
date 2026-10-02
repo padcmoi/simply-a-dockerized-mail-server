@@ -66,7 +66,7 @@ export default {
   backup: {
     notConfigured: "La sauvegarde n'est pas installée sur le serveur",
     fileUnavailable: "Cette archive n'est plus sur le serveur",
-    retrievalBusy: "Une autre archive est déjà en train d'être rapportée sur le serveur",
+    retrievalBusy: "Une archive est déjà en cours de téléchargement depuis le serveur distant",
   },
   twoFactor: {
     alreadyEnabled: "L'authentification à deux facteurs est déjà activée",

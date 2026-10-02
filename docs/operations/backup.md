@@ -13,7 +13,7 @@ backup.
 | `backup.sh` (project root)  | shortcut for `scripts/backup.install.sh`, nothing more                    |
 | `scripts/backup.install.sh` | sets the configuration and the cron entry, updates them or removes them   |
 | `scripts/backup.sh`         | one backup; this is what the cron entry starts every day                  |
-| `scripts/backup.apply.sh`   | does what the manager asks: a new configuration, an archive to bring back |
+| `scripts/backup.apply.sh`   | does what the manager asks: a new configuration, an archive read off-site |
 
 The configuration lives in `backup.conf`, at the root of the project and
 ignored by git: it is proper to each server. No key is added to `.env`.
@@ -136,14 +136,25 @@ every mailbox and every secret of the server.
   the manager.
 - A download uses a link signed for one archive and valid one minute, recorded
   in the activity journal.
-- An archive that was sent off-site and deleted from the server can still be
-  downloaded. The manager cannot reach the other server, only root on the host
-  holds the ssh key: so the button first asks the host to bring the archive
-  back. `scripts/backup.apply.sh` checks its name and the place the database
-  holds for it, copies it into the folder of the archives with `rsync` over
-  ssh, and the download then starts by itself, within about a minute. The
-  archive stays off-site too, and the copy brought back is deleted by the
-  rotation like any other. One archive at a time.
+- An archive that was sent off-site and deleted from the server is downloaded
+  from the other server, and is never written on this one: it takes no room on
+  its disk and does not come back into the folder of the archives. The manager
+  cannot reach the other server, only root on the host holds the ssh key: so
+  the button asks the host. `scripts/backup.apply.sh` checks the name of the
+  archive and the place the database holds for it, reads it there over ssh
+  into a pipe of the folder it shares with the manager, and the manager hands
+  that pipe to the browser. The download starts by itself, within about a
+  minute. A request gives one download, one archive at a time; a download
+  nobody takes within two minutes is dropped.
+- For an archive sent off-site, "there" or "not there" is said of the other
+  server: when the list is shown, the manager asks the host to list the
+  off-site destination of `backup.conf` over ssh, at most once a minute, and
+  the column "Off the server" shows what was found there, with the time of the
+  check. "Not there" means the archive was sent and is not on the other server
+  anymore; it can then not be downloaded. Until the host has answered, or when
+  it cannot reach the other server, the archive is only shown as sent. The
+  column "On the server" shows nothing for an archive that is kept off-site
+  and not here.
 - The database holds where each archive is kept: its folder on the server.
   Presence is never remembered, it is looked up there each time the page is
   shown and before each download. An archive, or its whole folder, that was

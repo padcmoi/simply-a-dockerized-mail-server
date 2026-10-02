@@ -138,5 +138,6 @@ publish_config() {
 unpublish_config() {
 	local managed
 	managed=$(managed_dir) || return 0
-	rm -f "$managed/config.conf" "$managed/request.conf" "$managed/status.conf" "$managed/retrieve.conf" "$managed/retrieve-status.conf"
+	rm -f "$managed/config.conf" "$managed/request.conf" "$managed/status.conf" "$managed/retrieve.conf" "$managed/retrieve-status.conf" \
+		"$managed/retrieve.pipe" "$managed/offsite-request.conf" "$managed/offsite.conf"
 }

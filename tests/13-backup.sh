@@ -148,29 +148,38 @@ t_backup_apply() {
 		fail "backup.apply.nothing_executed" "the request executed a command"
 	fi
 
-	section "Backup: an archive sent off-site, brought back for the manager"
+	section "Backup: the off-site server listed for the manager"
+	request "07:00" "9" "nobody@host.invalid:/srv/mail" "no" ""
+	echo "AT=now" | sudo -n tee "$managed/offsite-request.conf" >/dev/null
+	"${env[@]}" "$BACKUP_APPLY" >/dev/null 2>&1
+	status=$(sudo -n cat "$managed/offsite.conf" 2>/dev/null)
+	assert_contains "backup.offsite.lists_the_place_of_backup_conf" "TARGET=nobody@host.invalid:/srv/mail" "$status"
+	assert_contains "backup.offsite.says_when_it_cannot_reach_it" "STATE=error" "$status"
+	assert_contains "backup.offsite.names_no_archive_then" "FILES=" "$status"
+	if [[ ! -e "$managed/offsite-request.conf" ]]; then
+		pass "backup.offsite.request_consumed" "offsite-request.conf removed"
+	else
+		fail "backup.offsite.request_consumed" "offsite-request.conf still there"
+	fi
+
+	section "Backup: an archive sent off-site, read there for the manager"
 	retrieve() {
-		printf 'REQUEST_ID=22222222-2222-2222-2222-222222222222\nNAME=%s\nFROM=%s\nBYTES=%s\n' "$@" |
+		printf 'REQUEST_ID=22222222-2222-2222-2222-222222222222\nNAME=%s\nFROM=%s\n' "$@" |
 			sudo -n tee "$managed/retrieve.conf" >/dev/null
 		"${env[@]}" "$BACKUP_APPLY" >/dev/null 2>&1
 		sudo -n cat "$managed/retrieve-status.conf" 2>/dev/null
 	}
 	assert_contains "backup.retrieve.refuses_a_name_that_is_no_archive" "ERROR=the name is not the one of an archive" \
-		"$(retrieve "../../etc/passwd" "bob@backup.example.com:/srv/mail" "1")"
+		"$(retrieve "../../etc/passwd" "bob@backup.example.com:/srv/mail")"
 	assert_contains "backup.retrieve.refuses_a_hostile_place" "ERROR=the place of the archive is not user@host:/path" \
-		"$(retrieve "backup-2026-01-01.tar.gz" "x@y:/a; touch $work/pwned" "1")"
+		"$(retrieve "backup-2026-01-01.tar.gz" "x@y:/a; touch $work/pwned")"
 	if [[ ! -e "$work/pwned" ]]; then
 		pass "backup.retrieve.nothing_executed" "the request ran nothing"
 	else
 		fail "backup.retrieve.nothing_executed" "the request executed a command"
 	fi
-	assert_contains "backup.retrieve.refuses_without_room" "ERROR=not enough disk space to bring the archive back" \
-		"$(retrieve "backup-2026-01-01.tar.gz" "bob@backup.example.com:/srv/mail" "999999999999999")"
-	assert_contains "backup.retrieve.says_when_it_cannot_reach_the_place" "ERROR=the archive could not be brought back from nobody@host.invalid:/srv/mail" \
-		"$(retrieve "backup-2026-01-01.tar.gz" "nobody@host.invalid:/srv/mail" "1")"
-	sudo -n touch "$work/archives/backup-2026-01-02.tar.gz"
-	status=$(retrieve "backup-2026-01-02.tar.gz" "nobody@host.invalid:/srv/mail" "1")
-	assert_contains "backup.retrieve.already_there_is_done" "STATE=done" "$status"
+	status=$(retrieve "backup-2026-01-02.tar.gz" "nobody@host.invalid:/srv/mail")
+	assert_contains "backup.retrieve.says_when_it_cannot_read_the_place" "ERROR=the archive could not be read at nobody@host.invalid:/srv/mail" "$status"
 	assert_contains "backup.retrieve.answer_names_the_archive" "NAME=backup-2026-01-02.tar.gz" "$status"
 	assert_contains "backup.retrieve.answer_names_the_request" "REQUEST_ID=22222222-2222-2222-2222-222222222222" "$status"
 	if [[ ! -e "$managed/retrieve.conf" ]]; then
@@ -178,7 +187,19 @@ t_backup_apply() {
 	else
 		fail "backup.retrieve.request_consumed" "retrieve.conf still there"
 	fi
-	assert_eq "backup.retrieve.leaves_only_archives" "backup-2026-01-02.tar.gz" "$(sudo -n ls -A "$work/archives" 2>/dev/null)"
+	printf 'REQUEST_ID=33333333-3333-3333-3333-333333333333\nNAME=backup-2026-01-02.tar.gz\nBYTES=5\nSTATE=ready\nERROR=\n' |
+		sudo -n tee "$managed/retrieve-status.conf" >/dev/null
+	sudo -n mkfifo "$managed/retrieve.pipe"
+	"${env[@]}" "$BACKUP_APPLY" >/dev/null 2>&1
+	status=$(sudo -n cat "$managed/retrieve-status.conf" 2>/dev/null)
+	assert_contains "backup.retrieve.ends_a_download_left_open" "ERROR=the download was interrupted" "$status"
+	assert_contains "backup.retrieve.ends_it_under_its_own_request" "REQUEST_ID=33333333-3333-3333-3333-333333333333" "$status"
+	if [[ ! -e "$managed/retrieve.pipe" ]]; then
+		pass "backup.retrieve.leaves_no_pipe" "retrieve.pipe removed"
+	else
+		fail "backup.retrieve.leaves_no_pipe" "retrieve.pipe still there"
+	fi
+	assert_eq "backup.retrieve.writes_no_archive_here" "" "$(sudo -n ls -A "$work/archives" 2>/dev/null)"
 	assert_eq "backup.retrieve.leaves_the_configuration_alone" "BACKUP_TIME=07:00" "$(grep '^BACKUP_TIME=' "$conf")"
 	sudo -n rm -rf "$work"
 }
