@@ -113,7 +113,11 @@ healthcheck to pass.
 
 ## From the manager
 
-![Activity diagram of a configuration change from the manager](backup-manager.jpg)
+![Activity diagram of what the manager asks of the host](backup-manager.jpg)
+
+The diagram holds the three things the manager asks of the host, each from its
+own start: a change of configuration, an archive to download from the off-site
+server, and the list of the archives found there.
 
 The **Backups** page of the manager (System section) shows the schedule, the
 last backup, every run with its log, and every archive with where it is now:

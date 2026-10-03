@@ -1,5 +1,5 @@
 @startuml backup-manager
-title What the manager asks of the host: a new configuration, or an archive to read off-site
+title What the manager asks of the host: a new configuration, an archive to read off-site, the archives found off-site
 
 skinparam dpi 110
 skinparam shadowing false
@@ -14,7 +14,7 @@ skinparam ArrowColor #555555
 skinparam SwimlaneBorderColor #999999
 skinparam SwimlaneTitleFontStyle bold
 
-|#FAFAFA|1. Manager, root only\nBackups > Configure|
+|#FAFAFA|1. Manager, root only\nBackups|
 start
 if (Root account?) then (no)
   #FFD9D9:403: the Backups page and
@@ -30,7 +30,8 @@ if (Backup installed on the server?\n(configuration published)) then (no)
   stop
 else (yes)
 endif
-:Time, backups kept,
+:**Backups > Configure**
+Time, backups kept,
 off-site destination user@host:/path,
 box "delete here once sent";
 note right
@@ -75,14 +76,18 @@ status.conf = applied;
 or the reason of the refusal;
 stop
 
-|#FAFAFA|1. Manager, root only\nBackups > Configure|
+|#FAFAFA|1. Manager, root only\nBackups|
 start
-:Download an archive that was
+:**Backups**, list of the archives
+Download an archive that was
 sent off-site and deleted here;
 note right
   The manager cannot reach the
   other server: only root on the
   host holds the ssh key
+  The archive goes from the other
+  server to the browser: it is never
+  written on this server
 end note
 
 |#FFF3E0|2. manager-api|
@@ -101,27 +106,78 @@ the place
 Record it in the activity journal;
 
 |#F1F8F1|3. Host\nbackup.apply.sh, every minute|
-if (Name of an archive, place\nuser@host:/path, archive found there?) then (no)
+if (Name of an archive, place\nuser@host:/path, archive found\nthere **over ssh**?) then (no)
   #FFD9D9:Read nothing
   retrieve-status.conf = error + reason;
   stop
 else (yes)
 endif
-#D9F2D9:Read the archive there **over ssh**
-into the pipe **retrieve.pipe**
-Nothing is written on this server;
-#D9F2D9:retrieve-status.conf = ready;
+#D9F2D9:Make the pipe **retrieve.pipe**
+retrieve-status.conf = ready,
+with the size found there;
 
 |#FAFAFA|4. Manager|
 :The download starts by itself:
 the browser is handed the pipe;
 
 |#F1F8F1|3. Host\nbackup.apply.sh, every minute|
-if (Read to the end, by a browser\nthat came within two minutes?) then (no)
-  #FFD9D9:retrieve-status.conf = error + reason;
+if (A browser came to read\nwithin two minutes?) then (no)
+  #FFD9D9:Nothing was read off-site
+  Remove the pipe
+  retrieve-status.conf = error + reason;
   stop
 else (yes)
 endif
-#D9F2D9:retrieve-status.conf = done;
+#D9F2D9:Feed the pipe from the other server
+**over ssh**, as the browser reads
+Nothing is written on this server;
+if (Read to the end?) then (no)
+  #FFD9D9:Remove the pipe
+  retrieve-status.conf = error + reason;
+  stop
+else (yes)
+endif
+#D9F2D9:Remove the pipe
+retrieve-status.conf = done;
+stop
+
+|#FAFAFA|1. Manager, root only\nBackups|
+start
+:**Backups**, list of the archives
+Show where each archive is;
+
+|#FFF3E0|2. manager-api|
+if (An archive kept off-site, at the\ndestination of backup.conf?) then (no)
+  :Nothing to check off-site;
+  stop
+else (yes)
+endif
+if (Last listing less than a minute old\n**and** made after the last archive was sent?) then (yes)
+  :Show what that listing found;
+  stop
+else (no)
+endif
+#FFE2B8:Write **offsite-request.conf**
+It names no place
+An archive sent after the last listing
+is shown as being checked,
+never as not there;
+
+|#F1F8F1|3. Host\nbackup.apply.sh, every minute|
+:List the off-site destination
+of **backup.conf** **over ssh**,
+never a place the manager gives;
+if (Reached?) then (no)
+  #FFD9D9:offsite.conf = error;
+else (yes)
+  #D9F2D9:offsite.conf = the archives
+  found there, and when;
+endif
+
+|#FAFAFA|4. Manager|
+:The page loads again by itself
+Each archive sent off-site is shown
+present or not there, as found there
+Only "sent" when it could not be checked;
 stop
 @enduml
