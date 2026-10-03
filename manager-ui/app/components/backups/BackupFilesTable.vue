@@ -35,6 +35,7 @@ function offsiteLabel(row: BackupFile) {
   if (row.offsiteDeletedAt) return t("backups.files.offsiteDeleted");
   if (row.offsitePresent === true) return t("backups.files.onServer");
   if (row.offsitePresent === false) return t("backups.files.notThere");
+  if (row.offsiteChecking) return t("backups.files.offsiteChecking");
   return t("backups.files.offsiteSent");
 }
 
@@ -42,13 +43,15 @@ function offsiteColor(row: BackupFile) {
   if (row.offsiteDeletedAt) return "neutral";
   if (row.offsitePresent === true) return "success";
   if (row.offsitePresent === false) return "error";
+  if (row.offsiteChecking) return "neutral";
   return "info";
 }
 
 function offsiteHint(row: BackupFile) {
   const sent = `${row.offsiteTarget} · ${row.offsiteSentAt ? formatDateTime(row.offsiteSentAt) : ""}`;
-  if (row.offsiteDeletedAt || !row.offsiteCheckedAt) return sent;
-  return `${sent} · ${t("backups.files.offsiteChecked", { at: formatDateTime(row.offsiteCheckedAt) })}`;
+  if (row.offsiteDeletedAt) return sent;
+  if (row.offsiteCheckedAt) return `${sent} · ${t("backups.files.offsiteChecked", { at: formatDateTime(row.offsiteCheckedAt) })}`;
+  return row.offsiteChecking ? `${sent} · ${t("backups.files.offsiteCheckingHint")}` : sent;
 }
 
 function askDownload(name: string) {
@@ -108,7 +111,10 @@ function askRetrieve(name: string) {
       <template #offsite="{ row }">
         <span v-if="!row.offsiteSentAt" class="text-muted">-</span>
         <FullTooltip v-else :text="offsiteHint(row)">
-          <UBadge :color="offsiteColor(row)" variant="subtle">{{ offsiteLabel(row) }}</UBadge>
+          <UBadge :color="offsiteColor(row)" variant="subtle" class="gap-1">
+            <UIcon v-if="row.offsitePresent === null && row.offsiteChecking" name="i-lucide-loader-2" class="animate-spin" />
+            {{ offsiteLabel(row) }}
+          </UBadge>
         </FullTooltip>
       </template>
       <template #actions="{ row }">

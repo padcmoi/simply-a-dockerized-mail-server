@@ -71,6 +71,7 @@ export interface BackupFile {
   retrievable: boolean;
   offsitePresent: boolean | null;
   offsiteCheckedAt: string | null;
+  offsiteChecking: boolean;
 }
 
 export interface BackupRunLog {

@@ -18,11 +18,14 @@ describe("BackupOffsiteService", () => {
   let svc: TestOffsiteService;
 
   const listing = (lines: string[]) => writeFile(join(dir, "offsite.conf"), `${lines.join("\n")}\n`);
+  const listedAt = (at: Date, state = "listed", target = TARGET) =>
+    listing([`TARGET=${target}`, `STATE=${state}`, `FILES=${ARCHIVE}`, `AT=${at.toISOString()}`]);
+  const files = async () => (await readdir(dir)).sort();
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), "backup-managed-"));
     svc = new TestOffsiteService(dir);
-    await writeFile(join(dir, "config.conf"), "BACKUP_TIME=02:30\n");
+    await writeFile(join(dir, "config.conf"), `BACKUP_TIME=02:30\nBACKUP_OFFSITE=${TARGET}\n`);
   });
   afterEach(() => rm(dir, { recursive: true, force: true }));
 
@@ -31,28 +34,59 @@ describe("BackupOffsiteService", () => {
     expect(await svc.listing()).toBeNull();
   });
 
-  it("asks the host for a listing, once", async () => {
-    await svc.refresh();
-    expect(await readFile(join(dir, "offsite-request.conf"), "utf8")).toMatch(/^AT=\d{4}-\d{2}-\d{2}T/);
+  it("reads the place the host sends to, and holds anything else for none", async () => {
+    expect(await svc.target()).toBe(TARGET);
+    await writeFile(join(dir, "config.conf"), "BACKUP_TIME=02:30\nBACKUP_OFFSITE=bob@host:/srv; rm -rf /\n");
+    expect(await svc.target()).toBe("");
+    await rm(join(dir, "config.conf"));
+    expect(await svc.target()).toBe("");
+  });
+
+  it("asks the host for a listing, once, and says it is awaited", async () => {
+    expect(await svc.refresh(null)).toBe(true);
     const asked = await readFile(join(dir, "offsite-request.conf"), "utf8");
-    await svc.refresh();
+    expect(asked).toMatch(/^AT=\d{4}-\d{2}-\d{2}T/);
+    expect(await svc.refresh(null)).toBe(true);
     expect(await readFile(join(dir, "offsite-request.conf"), "utf8")).toBe(asked);
     expect((await svc.state()).pending).toBe(true);
   });
 
-  it("asks for nothing when the backup is not installed on the server", async () => {
+  it("asks for nothing when the backup is not installed on the server, or sends nowhere", async () => {
+    await writeFile(join(dir, "config.conf"), "BACKUP_TIME=02:30\nBACKUP_OFFSITE=\n");
+    expect(await svc.refresh(null)).toBe(false);
+    expect(await files()).toEqual(["config.conf"]);
     await rm(join(dir, "config.conf"));
-    await svc.refresh();
-    expect(await readdir(dir)).toEqual([]);
+    expect(await svc.refresh(null)).toBe(false);
+    expect(await files()).toEqual([]);
   });
 
   it("keeps a listing less than a minute old, and asks again past that", async () => {
-    await listing([`TARGET=${TARGET}`, "STATE=listed", `FILES=${ARCHIVE}`, `AT=${new Date().toISOString()}`]);
-    await svc.refresh();
-    expect((await readdir(dir)).sort()).toEqual(["config.conf", "offsite.conf"]);
-    await listing([`TARGET=${TARGET}`, "STATE=listed", `FILES=${ARCHIVE}`, `AT=${new Date(Date.now() - 61_000).toISOString()}`]);
-    await svc.refresh();
-    expect((await readdir(dir)).sort()).toEqual(["config.conf", "offsite-request.conf", "offsite.conf"]);
+    await listedAt(new Date());
+    expect(await svc.refresh(null)).toBe(false);
+    expect(await files()).toEqual(["config.conf", "offsite.conf"]);
+    await listedAt(new Date(Date.now() - 61_000));
+    expect(await svc.refresh(null)).toBe(true);
+    expect(await files()).toEqual(["config.conf", "offsite-request.conf", "offsite.conf"]);
+  });
+
+  it("asks again at once when an archive was sent after the listing, however recent it is", async () => {
+    const at = new Date(Date.now() - 10_000);
+    await listedAt(at);
+    expect(await svc.refresh(at.getTime() - 1000)).toBe(false);
+    expect(await svc.refresh(at.getTime() + 1000)).toBe(true);
+    expect(await files()).toEqual(["config.conf", "offsite-request.conf", "offsite.conf"]);
+  });
+
+  it("asks again when the listing is the one of another place", async () => {
+    await listedAt(new Date(), "listed", "bob@old.example.com:/srv/mail");
+    expect(await svc.refresh(null)).toBe(true);
+  });
+
+  it("does not ask again within a minute of a listing that failed", async () => {
+    const at = new Date(Date.now() - 10_000);
+    await listedAt(at, "error");
+    expect(await svc.refresh(at.getTime() + 1000)).toBe(false);
+    expect(await files()).toEqual(["config.conf", "offsite.conf"]);
   });
 
   it("reads the archives the host found there, and only names of archives", async () => {

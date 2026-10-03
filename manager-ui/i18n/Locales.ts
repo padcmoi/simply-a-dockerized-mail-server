@@ -2420,6 +2420,8 @@ export interface Locales {
       offsiteSent: string;
       offsiteDeleted: string;
       offsiteChecked: string;
+      offsiteChecking: string;
+      offsiteCheckingHint: string;
       download: string;
       downloadFailed: string;
       retrieving: string;

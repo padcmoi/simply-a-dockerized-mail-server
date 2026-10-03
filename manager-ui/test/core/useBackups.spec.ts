@@ -70,6 +70,24 @@ describe("useBackups", () => {
     expect(add).toHaveBeenCalledWith(expect.objectContaining({ title: "backups.files.downloadFailed", color: "error" }));
   });
 
+  it("loads again by itself while the presence of an archive off-site is being checked, then stops", async () => {
+    vi.useFakeTimers();
+    let checking = true;
+    call.mockImplementation(async (path: string) => {
+      if (path === "/backups") return overview;
+      return [{ name: ARCHIVE, offsitePresent: checking ? null : true, offsiteChecking: checking }];
+    });
+    const { files, load } = useBackups();
+    await load();
+    expect(files.value[0]).toMatchObject({ offsitePresent: null, offsiteChecking: true });
+    checking = false;
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(files.value[0]).toMatchObject({ offsitePresent: true, offsiteChecking: false });
+    const calls = call.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(30000);
+    expect(call.mock.calls.length).toBe(calls);
+  });
+
   describe("an archive that was sent off-site", () => {
     type Served = { retrieval: BackupRetrieval; downloadable: boolean };
     const server = (state: Served) =>

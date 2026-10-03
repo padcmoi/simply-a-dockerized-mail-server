@@ -38,7 +38,7 @@ export function useBackups() {
       overview.value = state;
       files.value = list;
       failed.value = false;
-      watchListing(state.offsite?.pending === true);
+      watchListing(list.some((file) => file.offsiteChecking));
       const pending = state.retrieval?.pending;
       if (pending && timer === null) {
         retrieving.value = pending.name;

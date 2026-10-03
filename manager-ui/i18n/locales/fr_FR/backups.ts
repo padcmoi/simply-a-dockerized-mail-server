@@ -70,6 +70,8 @@ export default {
     offsiteSent: "Envoyée",
     offsiteDeleted: "Supprimée à distance",
     offsiteChecked: "vérifiée en ssh le {at}",
+    offsiteChecking: "Vérification",
+    offsiteCheckingHint: "le serveur vérifie en ssh qu'elle y est, en une minute environ",
     download: "Télécharger",
     downloadFailed: "Téléchargement impossible",
     retrieving: "Ouverture",

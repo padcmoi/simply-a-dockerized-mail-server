@@ -69,6 +69,8 @@ export default {
     offsiteSent: "Sent",
     offsiteDeleted: "Deleted remotely",
     offsiteChecked: "checked over ssh on {at}",
+    offsiteChecking: "Checking",
+    offsiteCheckingHint: "the server is checking over ssh that it is there, in about a minute",
     download: "Download",
     downloadFailed: "Download failed",
     retrieving: "Opening",

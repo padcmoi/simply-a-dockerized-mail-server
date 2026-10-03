@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - feat(backup): an archive kept off-site is downloaded straight from the other server, which the host reads over ssh into a pipe the manager hands to the browser, so it never takes room on the disk of this server, where it used to be brought back into the folder of the archives and stay there; whether such an archive is present or absent is what the host finds when it lists the off-site server over ssh, at most once a minute while the Backups page is open, shown in the off-site column, with a dash in the column of this server and the off-site place as its location (02-10-2026)
 
+### Fixed
+
+- fix(backup): an archive sent off-site after the last listing of the other server is shown as being checked, with a new listing asked at once, until the host has listed that server again, where it was shown as absent for up to a minute because the listing it was looked up in was older than its sending (03-10-2026)
+
 ## [2.0.0-rc.15] - 2026-10-02
 
 ### Added

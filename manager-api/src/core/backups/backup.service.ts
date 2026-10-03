@@ -38,6 +38,7 @@ export interface BackupFileView extends BackupFile {
   retrievable: boolean;
   offsitePresent: boolean | null;
   offsiteCheckedAt: string | null;
+  offsiteChecking: boolean;
 }
 
 @Injectable()
@@ -133,14 +134,18 @@ export class BackupService {
     await this.reconcile();
     const mounted = await this.projectMounted();
     const rows = await this.files.find({ order: { name: "DESC" } });
-    const sent = rows.some((row) => this.keptOffsite(row));
-    if (sent) await this.offsite.refresh();
-    const listing = sent ? await this.offsite.listing() : null;
+    const target = rows.some((row) => this.keptOffsite(row)) ? await this.offsite.target() : "";
+    const sentAt = (row: BackupFile) => row.offsiteSentAt?.getTime() ?? 0;
+    const checkable = (row: BackupFile) => target !== "" && this.keptOffsite(row) && row.offsiteTarget === target;
+    const sent = rows.filter(checkable);
+    const checking = sent.length > 0 && (await this.offsite.refresh(Math.max(...sent.map(sentAt))));
+    const listing = sent.length > 0 ? await this.offsite.listing() : null;
+    const checkedAt = listing?.target === target ? Date.parse(listing.checkedAt) : NaN;
     return Promise.all(
       rows.map(async (row) => {
         const state = mounted && row.localProjectDir ? await this.folderState(row.localProjectDir) : "unknown";
         const downloadable = state === "readable" && (await this.sizeOf(row)) !== null;
-        const listed = listing !== null && this.keptOffsite(row) && listing.target === row.offsiteTarget ? listing : null;
+        const listed = listing !== null && checkable(row) && checkedAt >= sentAt(row) ? listing : null;
         const offsitePresent = listed ? listed.names.has(row.name) : null;
         return {
           ...row,
@@ -149,6 +154,7 @@ export class BackupService {
           retrievable: !downloadable && state !== "unknown" && this.keptOffsite(row) && offsitePresent !== false,
           offsitePresent,
           offsiteCheckedAt: listed ? listed.checkedAt : null,
+          offsiteChecking: checking && checkable(row),
         };
       })
     );

@@ -99,8 +99,10 @@ export const BackupFilesDocs = () =>
         "`retrievable` is true for an archive that is not on the server anymore but is still kept off-site: " +
         "`POST /backups/files/:name/retrieve` opens it there, to be downloaded straight from the other server. " +
         "`offsitePresent` is what the host found when it last listed the off-site server over ssh, at `offsiteCheckedAt`: " +
-        "true when the archive is there, false when it was sent but is not there anymore, null when it was never sent or " +
-        "could not be checked. Listing the archives asks the host for a new listing when the last one is older than a minute.",
+        "true when the archive is there, false when it was sent but is not there anymore, null when it was never sent, " +
+        "could not be checked, or was sent after that listing, which then says nothing of it. Listing the archives asks the host " +
+        "for a new listing when the last one is older than a minute or older than the last archive sent; `offsiteChecking` is true " +
+        "on the archives that listing is awaited for, so null with `offsiteChecking` means not known yet, never absent.",
     }),
     ApiResponse({
       status: 200,
@@ -122,6 +124,7 @@ export const BackupFilesDocs = () =>
             retrievable: false,
             offsitePresent: null,
             offsiteCheckedAt: null,
+            offsiteChecking: false,
           },
         ],
       },

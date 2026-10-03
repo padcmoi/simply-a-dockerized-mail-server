@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { BACKUP_MANAGED_PATH, managedFileExists, readManagedFile, writeManagedFile } from "./backup-managed";
-import { BACKUP_ARCHIVE_PATTERN } from "./backup.validation";
+import { BACKUP_ARCHIVE_PATTERN, BACKUP_OFFSITE_PATTERN } from "./backup.validation";
 
 const LISTING_FRESH_MS = 60_000;
 
@@ -29,6 +29,12 @@ export class BackupOffsiteService {
     return { pending, target: raw?.TARGET ?? "", listed: raw?.STATE === "listed", checkedAt: raw?.AT || null };
   }
 
+  async target(): Promise<string> {
+    const config = await readManagedFile(this.dir, "config.conf");
+    const offsite = config?.BACKUP_OFFSITE ?? "";
+    return BACKUP_OFFSITE_PATTERN.test(offsite) ? offsite : "";
+  }
+
   async listing(): Promise<BackupOffsiteListing | null> {
     const raw = await readManagedFile(this.dir, "offsite.conf");
     if (!raw || raw.STATE !== "listed" || !raw.TARGET || !raw.AT) return null;
@@ -36,14 +42,19 @@ export class BackupOffsiteService {
     return { target: raw.TARGET, names: new Set(names), checkedAt: raw.AT };
   }
 
-  async refresh() {
-    const [configured, pending, raw] = await Promise.all([
-      managedFileExists(this.dir, "config.conf"),
+  async refresh(newestSentAt: number | null): Promise<boolean> {
+    const [target, pending, raw] = await Promise.all([
+      this.target(),
       managedFileExists(this.dir, "offsite-request.conf"),
       readManagedFile(this.dir, "offsite.conf"),
     ]);
-    if (!configured || pending) return;
-    if (raw?.AT && Date.now() - Date.parse(raw.AT) < LISTING_FRESH_MS) return;
+    if (!target) return false;
+    if (pending) return true;
+    const at = raw && raw.TARGET === target && raw.AT ? Date.parse(raw.AT) : NaN;
+    const recent = Date.now() - at < LISTING_FRESH_MS;
+    const covers = raw?.STATE !== "listed" || newestSentAt === null || at >= newestSentAt;
+    if (recent && covers) return false;
     await writeManagedFile(this.dir, "offsite-request.conf", [`AT=${new Date().toISOString()}`]);
+    return true;
   }
 }

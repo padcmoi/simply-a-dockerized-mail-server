@@ -67,12 +67,13 @@ describe("BackupService", () => {
   let runs: Loose<Repository<BackupRun>>;
   let files: Loose<Repository<BackupFile>>;
   const retrieval = providerMock<BackupRetrievalService>({ ready: vi.fn(), take: vi.fn() });
-  const offsite = providerMock<BackupOffsiteService>({ refresh: vi.fn(), listing: vi.fn() });
+  const offsite = providerMock<BackupOffsiteService>({ target: vi.fn(), refresh: vi.fn(), listing: vi.fn() });
 
   beforeEach(async () => {
     retrieval.ready.mockReset().mockResolvedValue(null);
     retrieval.take.mockReset().mockResolvedValue(null);
-    offsite.refresh.mockReset().mockResolvedValue(undefined);
+    offsite.target.mockReset().mockResolvedValue("bob@backup.example.com:/srv/mail");
+    offsite.refresh.mockReset().mockResolvedValue(false);
     offsite.listing.mockReset().mockResolvedValue(null);
     project = await mkdtemp(join(tmpdir(), "backup-project-"));
     dir = join(project, "backup");
@@ -287,20 +288,53 @@ describe("BackupService", () => {
       offsite.listing.mockResolvedValue({ target: SENT.offsiteTarget, names: new Set([TODAY]), checkedAt: "2026-10-02T22:31:00Z" });
       const rows = await svc.listFiles();
       expect(offsite.refresh).toHaveBeenCalledTimes(1);
+      expect(offsite.refresh).toHaveBeenCalledWith(SENT.offsiteSentAt.getTime());
       expect(rows.map((file) => [file.name, file.offsitePresent, file.offsiteCheckedAt, file.retrievable])).toEqual([
         [TODAY, true, "2026-10-02T22:31:00Z", true],
         [YESTERDAY, false, "2026-10-02T22:31:00Z", false],
         ["backup-2026-09-30.tar.gz", null, null, true],
         ["backup-2026-09-29.tar.gz", null, null, false],
       ]);
+      expect(rows.map((file) => file.offsiteChecking)).toEqual([false, false, false, false]);
     });
 
-    it("asks the host for nothing when no archive is kept off-site", async () => {
+    it("says nothing of an archive sent after the last listing, and flags it as being checked", async () => {
+      const sentLater = new Date("2026-10-03T02:34:09Z");
+      files.find.mockResolvedValue([
+        row({ name: "backup-2026-10-03.tar.gz", localPresent: 0, ...SENT, offsiteSentAt: sentLater }),
+        row({ localPresent: 0, ...SENT }),
+        row({ name: "backup-2026-09-30.tar.gz", localPresent: 0, ...SENT, offsiteTarget: "bob@old.example.com:/srv/mail" }),
+      ]);
+      offsite.listing.mockResolvedValue({ target: SENT.offsiteTarget, names: new Set([TODAY]), checkedAt: "2026-10-02T22:31:00Z" });
+      offsite.refresh.mockResolvedValue(true);
+      const rows = await svc.listFiles();
+      expect(offsite.refresh).toHaveBeenCalledWith(sentLater.getTime());
+      expect(rows.map((file) => [file.name, file.offsitePresent, file.offsiteChecking, file.retrievable])).toEqual([
+        ["backup-2026-10-03.tar.gz", null, true, true],
+        [TODAY, true, true, true],
+        ["backup-2026-09-30.tar.gz", null, false, true],
+      ]);
+    });
+
+    it("trusts no listing of another place than the one the host sends to", async () => {
+      files.find.mockResolvedValue([row({ localPresent: 0, ...SENT })]);
+      offsite.listing.mockResolvedValue({ target: "bob@old.example.com:/srv/mail", names: new Set(), checkedAt: "2026-10-02T22:31:00Z" });
+      const rows = await svc.listFiles();
+      expect(rows[0]).toMatchObject({ offsitePresent: null, offsiteCheckedAt: null, offsiteChecking: false, retrievable: true });
+    });
+
+    it("asks the host for nothing when no archive is kept off-site, or when it sends nowhere", async () => {
       files.find.mockResolvedValue([row({ localPresent: 0 })]);
       const rows = await svc.listFiles();
+      expect(offsite.target).not.toHaveBeenCalled();
       expect(offsite.refresh).not.toHaveBeenCalled();
       expect(offsite.listing).not.toHaveBeenCalled();
-      expect(rows[0]).toMatchObject({ offsitePresent: null, offsiteCheckedAt: null });
+      expect(rows[0]).toMatchObject({ offsitePresent: null, offsiteCheckedAt: null, offsiteChecking: false });
+
+      offsite.target.mockResolvedValue("");
+      files.find.mockResolvedValue([row({ localPresent: 0, ...SENT })]);
+      expect((await svc.listFiles())[0]).toMatchObject({ offsitePresent: null, offsiteChecking: false });
+      expect(offsite.refresh).not.toHaveBeenCalled();
     });
 
     it("signs a link once the host feeds the archive, and reads it from the pipe, once", async () => {

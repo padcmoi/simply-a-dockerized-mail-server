@@ -151,10 +151,13 @@ every mailbox and every secret of the server.
   off-site destination of `backup.conf` over ssh, at most once a minute, and
   the column "Off the server" shows what was found there, with the time of the
   check. "Not there" means the archive was sent and is not on the other server
-  anymore; it can then not be downloaded. Until the host has answered, or when
-  it cannot reach the other server, the archive is only shown as sent. The
-  column "On the server" shows nothing for an archive that is kept off-site
-  and not here.
+  anymore; it can then not be downloaded. A listing made before an archive
+  was sent says nothing of that archive: the host is asked for a new one at
+  once, and until it has answered the archive is shown as being checked,
+  never as not there. When the host cannot reach the other server, or for an
+  archive sent to another place than the one of `backup.conf`, the archive is
+  only shown as sent. The column "On the server" shows nothing for an archive
+  that is kept off-site and not here.
 - The database holds where each archive is kept: its folder on the server.
   Presence is never remembered, it is looked up there each time the page is
   shown and before each download. An archive, or its whole folder, that was
