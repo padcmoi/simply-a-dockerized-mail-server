@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- docs(operations): the three backup diagrams show what the scripts really do: the run diagram gains the refusals before anything is stopped, the stops on a copy, an archive or a move that failed and the staging folder deleted after the archive is stored, the install diagram asks one question to leave, update or remove, and the manager diagram tells of a download cut by a stop of the host (03-10-2026)
 - docs(operations): the diagram of what the manager asks of the host shows the listing of the off-site server over ssh, from which an archive sent off-site is shown present, absent or being checked, and draws the download from off-site in its real order, the other server being read only once a browser has come to take the pipe (03-10-2026)
 
 ### Fixed

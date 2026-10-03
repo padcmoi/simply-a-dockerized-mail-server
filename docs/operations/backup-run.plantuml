@@ -16,27 +16,53 @@ skinparam SwimlaneTitleFontStyle bold
 
 |#FAFAFA|1. Check\ncontainers still up|
 start
-:Read **backup.conf**, take the lock
+if (Run as root, **backup.conf** there\nand naming the archives folder?) then (no)
+  #FFD9D9:Refuse and leave
+  Nothing is stopped,
+  nothing is reported;
+  stop
+else (yes)
+endif
+if (Another backup already running?) then (yes)
+  :Nothing done;
+  stop
+else (no)
+endif
+:Take the lock
 A run that was interrupted left
 its log behind: report it;
-if (**rsync** available?\n(and tar, docker)) then (no)
+if (**rsync**, **tar** and **docker**\navailable?) then (no)
   #FFD9D9:**2.2** Containers **not** stopped
   **send-alert.sh** mails
   which tool is missing;
   stop
 else (yes)
 endif
+if (Volumes folder found,\n**.env** and **INSTALL_INFO.txt** there,\narchives folder outside the volumes?) then (no)
+  #FFD9D9:**2.2** Containers **not** stopped
+  **send-alert.sh** mails what is
+  missing or misplaced;
+  stop
+else (yes)
+endif
 :Measure what will be copied:
 volumes/ + .env + INSTALL_INFO.txt;
-if (Room for the staging copy\n**and** the future tar.gz?) then (no)
+if (Room for the staging copy\n**and** the future tar.gz?\n(twice that size, plus 10 %)) then (no)
   #FFD9D9:**2.2** Containers **not** stopped
   **send-alert.sh** mails the alert address;
   stop
 else (yes)
 endif
+if (Staging folder made?) then (no)
+  #FFD9D9:Containers **not** stopped
+  The run ends in error, no mail;
+  stop
+else (yes)
+endif
 
 |#FFF3E0|2.1 Outage\ncontainers down|
-#FFE2B8:Stop the containers;
+#FFE2B8:Stop the containers of this project,
+all together;
 #FFE2B8:**Copy with rsync to the staging folder:**
 * the folder **volumes/**
 * the file **.env**
@@ -50,7 +76,11 @@ note right
 end note
 #FFE2B8:Start the containers again,
 copy done or not;
-if (Every container UP?) then (no)
+note right
+  A run interrupted while they are
+  down starts them again before leaving
+end note
+if (Every container UP?\n(running and healthy,\nwithin 3 minutes)) then (no)
   #FFE2B8:Start them once more
   and wait again;
   if (Every container UP now?) then (no)
@@ -70,16 +100,40 @@ if (Every container UP?) then (no)
   endif
 else (yes)
 endif
+if (Copy done without error?) then (no)
+  #FFD9D9:The server is back up
+  **send-alert.sh**: the copy failed
+  No archive is made, exit in error;
+  stop
+else (yes)
+endif
 
 |#FAFAFA|3. Compress\nserver up|
 :tar.gz of the staging copy
 (volumes/ + .env + INSTALL_INFO.txt)
-backup-YYYY-MM-DD.tar.gz
-then empty the staging folder;
+backup-YYYY-MM-DD.tar.gz,
+made in the staging folder;
+if (Archive made?) then (no)
+  #FFD9D9:**send-alert.sh**: the archive
+  could not be made
+  Staging folder deleted, exit in error;
+  stop
+else (yes)
+endif
 
 |#F1F8F1|4. Store|
-#D9F2D9:Move the archive to
-**BACKUP_DIR** of backup.conf;
+if (Archive moved to **BACKUP_DIR**\nof backup.conf?) then (no)
+  #FFD9D9:Staging folder deleted
+  The run ends in error, no mail;
+  stop
+else (yes)
+endif
+#D9F2D9:Delete the staging folder;
+note right
+  One archive per day: a second run
+  on the same day replaces
+  the archive of that day
+end note
 
 |#F1F8F1|5. Off-site\nif set|
 if (**BACKUP_OFFSITE** set?\n(user@host:/path)) then (no)
@@ -88,7 +142,8 @@ else (yes)
   **rsync over ssh**, nothing else;
   if (Sent?) then (no)
     #FFD9D9:Archive kept here
-    **send-alert.sh**, result "partial";
+    **send-alert.sh**, result "partial"
+    No rotation;
     stop
   else (yes)
   endif
@@ -119,22 +174,26 @@ endwhile (no)
 |#EEF3FB|7. Report, then\nleave only the archives|
 :Put in one report the result,
 the durations, the log of the run,
-where the archives are and which exist
+where the archives are, which exist
+and which were deleted off-site
 Delete **backup.log**;
 note right
   backup.log and the staging copy
   only exist while the run lasts
-  Every failure above ends here too
+  Every failure above ends here too,
+  from the taking of the lock on
 end note
 :Send the report to the manager, by a
 route only this machine can reach;
-if (Manager took it?) then (yes)
-  #D9F2D9:Stored in the **database**,
+if (Manager answered?) then (yes)
+  #D9F2D9:Taken: stored in the **database**,
   shown on the Backups page
+  Refused as invalid: dropped
   Delete the report;
 else (no)
   :Keep the report, the one file left,
-  for a later run to deliver;
+  for a later run to deliver
+  (the last 50 at most);
 endif
 #D9F2D9:The folder holds the archives
 and nothing else;

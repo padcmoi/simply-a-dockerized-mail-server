@@ -39,16 +39,19 @@ staging copy only exist while the run lasts, and the lock lives in `/run/lock`.
 entry. It checks neither the disk nor the tools, which every run does for
 itself.
 
-1. **What is there**: with no cron entry yet, it goes straight to the
-   questions. With one already installed, it shows the current configuration
-   and offers to leave it, update it or remove it. Removing deletes the cron
-   entry and `backup.conf`, and keeps the archives: a later install starts
-   again from the default values.
+1. **What is there**: it refuses to run without root. With no cron entry yet,
+   it goes straight to the questions. With one already installed, it shows the
+   current configuration, the off-site destination set in the manager
+   included, and asks one question: leave it, update it or remove it, Enter
+   leaving it. Removing deletes the cron entry and `backup.conf`, and keeps the
+   archives: a later install starts again from the default values.
 2. **Ask**, three questions and nothing else: the time of the backup, every day
    (02:30 by default); how many backups are kept at most, one per day, so 5
    days means 5 files (5 by default); the folder where the archives go,
-   `./backup` by default and stored relative to the project. On an update,
-   Enter keeps the current value.
+   `./backup` by default and stored relative to the project. That folder
+   cannot be inside the volumes folder it backs up, and is created at once. On
+   an update, Enter keeps the current value. Each answer is asked again until
+   it is valid.
 3. **Write**: `backup.conf`, then the cron entry
    `/etc/cron.d/simply-mailserver-backup`, installed or replaced. It holds two
    lines: `scripts/backup.sh` every day at the chosen time, and
@@ -70,40 +73,56 @@ the manager. An update made with `./backup.sh` keeps what the manager set.
 The diagram follows one run, from left to right. Its settings come from
 `backup.conf`.
 
-1. **Check**, with the containers still up, two things one after the other:
-   `rsync` is available (with `tar` and `docker`), then the disk can hold the
-   staging copy of `volumes/`, `.env` and `INSTALL_INFO.txt` **and** the future
-   `tar.gz`.
+1. **Check**, with the containers still up. A run that is not root, or finds
+   no `backup.conf` naming the folder of the archives, refuses and leaves:
+   nothing is stopped and nothing is reported. A run that finds another backup
+   already running does nothing. Then, one after the other: `rsync`, `tar` and
+   `docker` are available; the volumes folder is found, `.env` and
+   `INSTALL_INFO.txt` are there and the folder of the archives is outside the
+   volumes; the disk can hold the staging copy of `volumes/`, `.env` and
+   `INSTALL_INFO.txt` **and** the future `tar.gz`, that is twice their size
+   plus 10 %.
 2. Then one of two things:
-   - **2.1** both checks pass: the containers are stopped, everything is
-     copied to the staging folder with `rsync`, and the containers are started
-     again whether the copy worked or not. The run goes on only once every
-     container is up; if one stays down after a second start, the run ends
-     there and is reported as failed. A mail is only attempted
-     when the `manager-api` container is up, because `send-alert.sh` goes
-     through it: with the server down, no mail can leave.
+   - **2.1** every check passes: the containers of this project are stopped
+     together, everything is copied to the staging folder with `rsync`, and
+     the containers are started again whether the copy worked or not. The run
+     goes on only once every container is running and healthy, within three
+     minutes; if one stays down after a second start, the run ends there and
+     is reported as failed. A mail is only attempted when the `manager-api`
+     container is up, because `send-alert.sh` goes through it: with the server
+     down, no mail can leave. With the server back up, a copy that failed ends
+     the run too: the alert address is warned and no archive is made. A run
+     interrupted while the containers are down starts them again before
+     leaving.
    - **2.2** one check fails: the containers are **not** stopped, and
      `send-alert.sh` mails the alert address set in the manager, naming the
-     missing tool or the room that is missing.
+     missing tool, what is missing or misplaced, or the room that is missing.
+     A staging folder that cannot be made ends the run the same way, with no
+     mail.
 3. **Compress**, with the server already back up: the staging copy becomes
-   `backup-YYYY-MM-DD.tar.gz`, then the staging folder is emptied.
+   `backup-YYYY-MM-DD.tar.gz`, made in the staging folder. If it cannot be
+   made, the alert address is warned and the run ends in error.
 4. **Store**: the archive is moved to `BACKUP_DIR`, the folder chosen at
-   install.
+   install, then the staging folder is deleted. An archive that cannot be
+   moved ends the run in error, with no mail. There is one archive per day: a
+   second run on the same day replaces the archive of that day.
 5. **Off-site**, if `BACKUP_OFFSITE` is set: the archive is sent to
    `user@host:/path` with `rsync` over ssh, and nothing else. Once sent, it is
    deleted here or kept here too, as `BACKUP_OFFSITE_DELETE_LOCAL` says. If it
-   cannot be sent, it stays here, the result is `partial` and the alert address
-   is warned.
+   cannot be sent, it stays here, the result is `partial`, the alert address
+   is warned and the rotation does not run.
 6. **Rotation**, so there are never more than N backups: every archive, here
    and off-site, is looked at; one older than `BACKUP_KEEP_DAYS` days (5 by
    default) is deleted, the others are kept. With one archive per day, 5 days
    kept means 5 archives at most. It only runs after a backup that worked.
 7. **Report, then leave only the archives**: the result and the log of the run
-   are put in one report and `backup.log` is deleted. The report is sent to the
-   manager by a route only this machine can reach, stored in its database, then
-   deleted too. Every failure above ends the same way. A report the manager did
-   not take is the one file left, in `.reports/`, until a later run delivers
-   it. A run killed before it could end leaves its `backup.log`: the next run
+   are put in one report, with the archives that exist here and those the
+   rotation deleted off-site, and `backup.log` is deleted. The report is sent
+   to the manager by a route only this machine can reach, stored in its
+   database, then deleted too; one the manager refuses as invalid is dropped.
+   Every failure above ends the same way, from the taking of the lock on. A
+   report the manager did not take is the one file left, in `.reports/`, until
+   a later run delivers it, the last 50 at most. A run killed before it could end leaves its `backup.log`: the next run
    reports it as interrupted and deletes it.
 
 The outage only lasts as long as step 2.1: the containers are stopped together,

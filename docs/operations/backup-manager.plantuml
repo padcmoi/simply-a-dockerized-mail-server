@@ -139,6 +139,11 @@ else (yes)
 endif
 #D9F2D9:Remove the pipe
 retrieve-status.conf = done;
+note right
+  A download cut by a stop of the
+  host is said interrupted at the
+  next minute, and its pipe removed
+end note
 stop
 
 |#FAFAFA|1. Manager, root only\nBackups|

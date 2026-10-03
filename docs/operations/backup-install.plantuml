@@ -25,19 +25,22 @@ endif
 if (Cron entry already\ninstalled?) then (no)
 else (yes)
   :Show the current configuration
-  time, backups kept, folders;
-  if (Change it?) then (no, leave it)
+  time, backups kept, archives folder,
+  off-site destination set in the manager,
+  cron entry;
+  switch (Leave it, update it\nor remove it?\n(Enter = leave it))
+  case (leave it)
+    :Nothing changed;
     stop
-  else (yes)
-  endif
-  if (Update or remove?) then (remove)
+  case (remove it)
     #FFD9D9:Delete the cron entry
     and **backup.conf**
     Keep the archives
     The manager shows nothing anymore;
     stop
-  else (update)
-  endif
+  case (update it)
+    :Go on to the questions;
+  endswitch
 endif
 
 |#FFF3E0|2. Ask, three questions|
@@ -58,6 +61,8 @@ note right
   the current value
   Each answer is asked again
   until it is valid
+  The folder cannot be inside the
+  volumes folder; it is created at once
 end note
 
 |#F1F8F1|3. Write|
@@ -71,6 +76,8 @@ every day at HH:MM : scripts/backup.sh
 every minute : scripts/backup.apply.sh;
 #D9F2D9:Publish the configuration
 for the manager to read;
-:Show what was written;
+:Show what was written
+and say that the off-site copy
+is set from the manager;
 stop
 @enduml
