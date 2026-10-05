@@ -40,7 +40,12 @@ cd /var/docker/simply-a-dockerized-mail-server
 ./install.sh
 ```
 
-What it does, in order:
+Before anything else, a fresh install checks the mail ports 25, 465, 587, 993,
+995 and 4190. Each one is shown as `PASS` or `FAIL`. A single port already
+taken, for instance by a mail server the host ships with, stops the install
+there: `.env` is not created and nothing is started.
+
+What it does next, in order:
 
 1. Prompts for `MANAGER_APP_NAME`, the name the manager shows (24 characters
    at most), then `MAIL_HOSTNAME`, `MAIL_PUBLIC_IP`, `TLS_CERT_NAME` and the

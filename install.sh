@@ -19,6 +19,8 @@ c() { printf '\033[1;34m[install]\033[0m %s\n' "$*"; }
 ok() { printf '\033[1;32m[ok]\033[0m %s\n' "$*"; }
 q() { printf '\033[1;36m[?]\033[0m %s ' "$*"; }
 warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*"; }
+pass() { printf '\033[1;32m[PASS]\033[0m %s\n' "$*"; }
+fail() { printf '\033[1;31m[FAIL]\033[0m %s\n' "$*"; }
 die() {
 	printf '\033[1;31m[fatal]\033[0m %s\n' "$*"
 	exit 1
@@ -29,6 +31,30 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 [ -f "$SAMPLE" ] || die ".env.sample missing"
+
+# -----------------------------------------------------------------------------
+# Ports: a fresh install starts by checking the mail ports 25, 465, 587, 993,
+# 995 and 4190. One line per port, PASS or FAIL. A single FAIL stops the
+# install here, before .env or anything else is written.
+# -----------------------------------------------------------------------------
+if [ ! -f "$TARGET" ]; then
+	command -v ss >/dev/null 2>&1 || die "the ss command (package iproute2) is needed to check the ports"
+	c "checking the ports"
+	PORTS_TAKEN=0
+	for port in 25 465 587 993 995 4190; do
+		listeners=$(ss -Hltnp "sport = :$port")
+		if [ -n "$listeners" ]; then
+			holder=$(grep -oE '\(\("[^"]+' <<<"$listeners" | head -1 | cut -d'"' -f2 || true)
+			fail "port $port is taken by ${holder:-another program}"
+			PORTS_TAKEN=$((PORTS_TAKEN + 1))
+		else
+			pass "port $port is free"
+		fi
+	done
+	[ "$PORTS_TAKEN" -eq 0 ] || die "$PORTS_TAKEN port(s) taken on this host. Nothing was written.
+       Free every port marked FAIL, then run ./install.sh again."
+	ok "every port is free"
+fi
 
 # `_INSTALL_STAGE` records the last successfully-completed step so a Ctrl-C
 # mid-install can be resumed with a plain `./install.sh` re-run. The

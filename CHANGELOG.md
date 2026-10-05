@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- feat(install): a fresh install starts by checking the mail ports 25, 465, 587, 993, 995 and 4190, shows each one as PASS or FAIL and stops before `.env` or anything else is written when one is taken, where a mail server already running on the host made `docker compose up` fail halfway through the install (05-10-2026)
+
 ## [2.0.0-rc.15] - 2026-10-03
 
 ### Added
