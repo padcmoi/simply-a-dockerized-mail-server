@@ -57,6 +57,6 @@ describe("ClamavUpdaterService", () => {
   it("falls back to the mail network address when nothing names one", async () => {
     fetchMock.mockResolvedValue(answer(200, { output: [], updated: false }));
     await new ClamavUpdaterService(new ConfigService({})).update();
-    expect(fetchMock).toHaveBeenCalledWith("http://172.200.0.12:8082/update", expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith("http://10.200.0.12:8082/update", expect.anything());
   });
 });

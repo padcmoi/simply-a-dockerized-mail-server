@@ -17,7 +17,7 @@ export class ClamdClient {
   private readonly port: number;
 
   constructor(cfg: ConfigService) {
-    this.host = cfg.get<string>("CLAMAV_HOST") ?? "172.200.0.12";
+    this.host = cfg.get<string>("CLAMAV_HOST") ?? "10.200.0.12";
     this.port = Number(cfg.get<string>("CLAMAV_PORT") ?? 3310);
   }
 

@@ -22,7 +22,7 @@ export class ClamavUpdaterService {
   private readonly baseUrl: string;
 
   constructor(cfg: ConfigService) {
-    this.baseUrl = cfg.get<string>("CLAMAV_API_URL") ?? "http://172.200.0.12:8082";
+    this.baseUrl = cfg.get<string>("CLAMAV_API_URL") ?? "http://10.200.0.12:8082";
   }
 
   async update(): Promise<ClamavUpdateResult> {

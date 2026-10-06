@@ -18,7 +18,7 @@ services:
       - ${VOLUMES_PATH}/mysql:/var/lib/mysql
     networks:
       mail:
-        ipv4_address: 172.200.0.10
+        ipv4_address: 10.200.0.10
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s

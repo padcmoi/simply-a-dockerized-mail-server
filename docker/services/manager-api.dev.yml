@@ -21,16 +21,16 @@ services:
       # The deliverability engine runs outside every docker network, on the
       # host stack, and listens on the bridge gateway. See
       # docker/services/deliverability-probe.yml.
-      DELIVERABILITY_PROBE_URL: http://172.200.0.1:8080
-      FAIL2BAN_API_URL: http://172.200.0.1:8081
-      CLAMAV_HOST: 172.200.0.12
+      DELIVERABILITY_PROBE_URL: http://10.200.0.1:8080
+      FAIL2BAN_API_URL: http://10.200.0.1:8081
+      CLAMAV_HOST: 10.200.0.12
       CLAMAV_PORT: 3310
-      CLAMAV_API_URL: http://172.200.0.12:8082
+      CLAMAV_API_URL: http://10.200.0.12:8082
       DMARC_HISTORY_PATH: /var/lib/opendmarc/opendmarc.dat
       DMARC_PSL_PATH: /var/lib/opendmarc/public_suffix_list.dat
-      DMARC_SMTP_HOST: 172.200.0.17
+      DMARC_SMTP_HOST: 10.200.0.17
       DMARC_SMTP_PORT: 25
-      DMARC_IMAP_HOST: 172.200.0.16
+      DMARC_IMAP_HOST: 10.200.0.16
       DMARC_IMAP_PORT: 993
     volumes:
       # Read-write, see manager-api.yml.
@@ -68,9 +68,9 @@ services:
       - ../../manager-api:/host/manager-api
     networks:
       mail:
-        ipv4_address: 172.200.0.19
+        ipv4_address: 10.200.0.19
     dns:
-      - 172.200.0.9
+      - 10.200.0.9
     depends_on:
       unbound:
         condition: service_started

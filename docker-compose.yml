@@ -5,7 +5,7 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.200.0.0/24
+        - subnet: 10.200.0.0/24
 
 services:
   mariadb:

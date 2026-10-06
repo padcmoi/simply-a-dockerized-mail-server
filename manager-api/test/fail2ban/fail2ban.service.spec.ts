@@ -122,6 +122,6 @@ describe("Fail2banService", () => {
     const other = build({});
     fetchMock.mockResolvedValue(answer(200, { jail: "manager" }));
     await other.ban("203.0.113.9").catch(() => undefined);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("http://172.200.0.1:8081/ban");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("http://10.200.0.1:8081/ban");
   });
 });

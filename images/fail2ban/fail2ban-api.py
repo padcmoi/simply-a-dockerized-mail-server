@@ -7,7 +7,7 @@ import subprocess
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-BIND = os.environ.get("FAIL2BAN_API_BIND", "172.200.0.1")
+BIND = os.environ.get("FAIL2BAN_API_BIND", "10.200.0.1")
 PORT = int(os.environ.get("FAIL2BAN_API_PORT", "8081"))
 TIMEOUT = 10
 MANAGER_JAIL = os.environ.get("FAIL2BAN_MANAGER_JAIL", "manager")

@@ -28,7 +28,7 @@ services:
       - ${VOLUMES_PATH}/fail2ban/roundcube-deny:/var/lib/fail2ban-deny:ro
     networks:
       mail:
-        ipv4_address: 172.200.0.18
+        ipv4_address: 10.200.0.18
     depends_on:
       mariadb:
         condition: service_healthy

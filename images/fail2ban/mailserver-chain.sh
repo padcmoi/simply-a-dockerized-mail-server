@@ -2,7 +2,7 @@
 set -eu
 
 CHAIN="f2b-mailserver"
-SUBNET="172.200.0.0/24"
+SUBNET="10.200.0.0/24"
 PORTS="25,465,587,993"
 LOCK="/var/run/fail2ban/mailserver-chain.lock"
 JUMP="-d ${SUBNET} -p tcp -m multiport --dports ${PORTS} -j ${CHAIN}"

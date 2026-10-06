@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - feat(install): a fresh install starts by checking the mail ports 25, 465, 587, 993, 995 and 4190, shows each one as PASS or FAIL and stops before `.env` or anything else is written when one is taken, where a mail server already running on the host made `docker compose up` fail halfway through the install (05-10-2026)
 
+### Fixed
+
+- fix(network): the `mail` network moves from 172.200.0.0/24, a public range whose address 172.200.0.19 is listed by Spamhaus, to the private 10.200.0.0/24, so a DMARC report sent by the manager is no longer scored by Rspamd as mail from a blocklisted internet host, stamped `X-Spam-Flag: Yes` and filed in Junk by the receiver, and no outgoing mail carries a public address in its internal `Received` hop; an existing install gets the new network on its next `./update.sh full`, and the OpenDKIM container rewrites the former subnet in its persisted `trusted.hosts` so the reports stay signed (06-10-2026)
+
 ## [2.0.0-rc.15] - 2026-10-03
 
 ### Added

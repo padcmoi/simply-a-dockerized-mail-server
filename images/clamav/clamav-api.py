@@ -6,7 +6,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-BIND = os.environ.get("CLAMAV_API_BIND", "172.200.0.12")
+BIND = os.environ.get("CLAMAV_API_BIND", "10.200.0.12")
 PORT = int(os.environ.get("CLAMAV_API_PORT", "8082"))
 CONFIG = os.environ.get("CLAMAV_FRESHCLAM_CONF", "/etc/clamav/freshclam.conf")
 TIMEOUT = int(os.environ.get("CLAMAV_UPDATE_TIMEOUT", "600"))

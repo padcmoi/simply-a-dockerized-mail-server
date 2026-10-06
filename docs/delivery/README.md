@@ -29,7 +29,7 @@ external SMTP client
         v
 +-------------------+
 | postfix LMTP      |   handoff to dovecot's LMTP on the mail bridge.
-| 172.200.0.16:24   |
+| 10.200.0.16:24    |
 +-------------------+
         |
         v

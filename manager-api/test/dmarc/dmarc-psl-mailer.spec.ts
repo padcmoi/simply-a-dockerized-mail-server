@@ -55,7 +55,7 @@ describe("DmarcMailerService", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("hands the report to the local relay, plain and unauthenticated, gzip attached", async () => {
-    vi.stubEnv("DMARC_SMTP_HOST", "172.200.0.17");
+    vi.stubEnv("DMARC_SMTP_HOST", "10.200.0.17");
     vi.stubEnv("DMARC_SMTP_PORT", "25");
     await new DmarcMailerService().send({
       from: "dmarc-reports@example.org",
@@ -66,7 +66,7 @@ describe("DmarcMailerService", () => {
       filename: "r.xml.gz",
       content: Buffer.from([1, 2]),
     });
-    expect(nodemailer.createTransport).toHaveBeenCalledWith({ host: "172.200.0.17", port: 25, secure: false, ignoreTLS: true });
+    expect(nodemailer.createTransport).toHaveBeenCalledWith({ host: "10.200.0.17", port: 25, secure: false, ignoreTLS: true });
     expect(sendMail).toHaveBeenCalledWith({
       from: { name: "example.org", address: "dmarc-reports@example.org" },
       to: "dmarc@partner.example",

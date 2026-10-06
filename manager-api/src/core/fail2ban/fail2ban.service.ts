@@ -23,7 +23,7 @@ export class Fail2banService {
     cfg: ConfigService,
     private readonly db: Fail2banDbService
   ) {
-    this.baseUrl = cfg.get<string>("FAIL2BAN_API_URL") ?? "http://172.200.0.1:8081";
+    this.baseUrl = cfg.get<string>("FAIL2BAN_API_URL") ?? "http://10.200.0.1:8081";
     this.rules = {
       bantime: Number(cfg.get<string>("FAIL2BAN_BANTIME") ?? 3600),
       findtime: Number(cfg.get<string>("FAIL2BAN_FINDTIME") ?? 300),

@@ -12,7 +12,7 @@ biff           = no
 append_dot_mydomain = no
 readme_directory = no
 compatibility_level = 3.6
-mynetworks = 127.0.0.0/8 [::1]/128 172.200.0.0/24
+mynetworks = 127.0.0.0/8 [::1]/128 10.200.0.0/24
 
 # --- Logging -----------------------------------------------------------------
 # File so fail2ban can tail it; entrypoint mirrors it to container stdout.

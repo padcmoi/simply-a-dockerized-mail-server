@@ -30,7 +30,7 @@ submission  inet  n       -       n       -       -       smtpd
 
 # Internal relay for sieve reject/redirect/vacation bounces from dovecot.
 # Bound on the docker bridge only, no milters, no RBL, no SPF, no content
-# filtering. Accepts mail strictly from mynetworks (the 172.200.0.0/24 net).
+# filtering. Accepts mail strictly from mynetworks (the 10.200.0.0/24 net).
 10025       inet  n       -       n       -       -       smtpd
   -o syslog_name=postfix/internal-relay
   -o smtpd_milters=

@@ -15,9 +15,9 @@ services:
       - ${VOLUMES_PATH}/rspamd:/var/lib/rspamd
     networks:
       mail:
-        ipv4_address: 172.200.0.15
+        ipv4_address: 10.200.0.15
     dns:
-      - 172.200.0.9
+      - 10.200.0.9
     depends_on:
       unbound:
         condition: service_started

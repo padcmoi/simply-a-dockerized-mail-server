@@ -15,7 +15,7 @@ services:
       UPLOAD_LIMIT: 256M
     networks:
       mail:
-        ipv4_address: 172.200.0.21
+        ipv4_address: 10.200.0.21
     depends_on:
       mariadb:
         condition: service_healthy

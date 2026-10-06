@@ -22,7 +22,7 @@ fi
 
 [ -f "$DATA_DIR/opendmarc.dat" ] || : >"$DATA_DIR/opendmarc.dat"
 {
-	printf '%s\n' 127.0.0.1 ::1 172.200.0.0/24
+	printf '%s\n' 127.0.0.1 ::1 10.200.0.0/24
 	[ -f "$DATA_DIR/ignore.hosts" ] && cat "$DATA_DIR/ignore.hosts"
 } >"$CONF_DIR/ignore.hosts"
 [ -f "$DATA_DIR/whitelist.domains" ] || : >"$DATA_DIR/whitelist.domains"

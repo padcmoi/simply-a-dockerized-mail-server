@@ -16,9 +16,13 @@ if [ ! -f "$CONF_DIR/trusted.hosts" ]; then
 ::1
 localhost
 ${MAIL_HOSTNAME}
-172.200.0.0/24
+10.200.0.0/24
 EOF
 fi
+# trusted.hosts lives on the data volume and is only written once: an install
+# made while the `mail` network was 172.200.0.0/24 still lists that subnet, and
+# opendkim would stop signing what the other containers submit.
+sed -i 's|^172\.200\.0\.0/24$|10.200.0.0/24|' "$CONF_DIR/trusted.hosts"
 
 chown -R opendkim:opendkim "$CONF_DIR"
 chmod 700 "$CONF_DIR/keys" 2>/dev/null || true

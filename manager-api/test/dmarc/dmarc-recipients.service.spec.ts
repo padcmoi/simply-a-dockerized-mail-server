@@ -16,7 +16,7 @@ import { entity, repoMock } from "../helpers/mocks";
 const NOW = Date.parse("2026-09-21T10:00:00Z");
 
 const delivered = (job: string, to: string, orig?: string) =>
-  `Sep 21 10:00:22 mail postfix/lmtp[145]: ${job}: to=<${to}>, ${orig ? `orig_to=<${orig}>, ` : ""}relay=mail-dovecot[172.200.0.16]:24, delay=1.2, dsn=2.0.0, status=sent (250 2.0.0 Saved)\n`;
+  `Sep 21 10:00:22 mail postfix/lmtp[145]: ${job}: to=<${to}>, ${orig ? `orig_to=<${orig}>, ` : ""}relay=mail-dovecot[10.200.0.16]:24, delay=1.2, dsn=2.0.0, status=sent (250 2.0.0 Saved)\n`;
 const rejected = (job: string, to: string) =>
   `Sep 21 10:00:22 mail postfix/smtpd[99]: ${job}: milter-reject: END-OF-MESSAGE from x.test[203.0.113.5]: 5.7.1 rejected by DMARC policy for partner.example; from=<a@partner.example> to=<${to}> proto=ESMTP helo=<x.test>\n`;
 

@@ -17,6 +17,6 @@ COPY . /probe
 # bridge gateway, which the manager reaches and the internet does not.
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget -qO- "http://${PROBE_BIND:-172.200.0.1}:${PROBE_PORT:-8080}/health" || exit 1
+  CMD wget -qO- "http://${PROBE_BIND:-10.200.0.1}:${PROBE_PORT:-8080}/health" || exit 1
 
 CMD ["python3", "/probe/probe.py"]

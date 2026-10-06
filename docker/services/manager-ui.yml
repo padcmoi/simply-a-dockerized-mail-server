@@ -17,7 +17,7 @@ services:
       NODE_ENV: production
     networks:
       mail:
-        ipv4_address: 172.200.0.20
+        ipv4_address: 10.200.0.20
     depends_on:
       - manager-api
     ports:

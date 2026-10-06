@@ -17,7 +17,7 @@ services:
       - ../../manager-api:/host/manager-api:ro
     networks:
       mail:
-        ipv4_address: 172.200.0.16
+        ipv4_address: 10.200.0.16
     depends_on:
       mariadb:
         condition: service_healthy

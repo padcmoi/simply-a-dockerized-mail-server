@@ -41,7 +41,7 @@ def log(caller, message):
     print(f"{stamp} {caller:>15}  {message}", flush=True)
 
 
-BIND = os.environ.get("PROBE_BIND", "172.200.0.1")
+BIND = os.environ.get("PROBE_BIND", "10.200.0.1")
 PORT = int(os.environ.get("PROBE_PORT", "8080"))
 
 

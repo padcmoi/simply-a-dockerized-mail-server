@@ -152,12 +152,12 @@ describe("DmarcImapService", () => {
 
   it("opens a TLS connection to Dovecot on the internal network, named after the mail host", () => {
     vi.mocked(tlsConnect).mockImplementation(() => new Socket() as TLSSocket);
-    vi.stubEnv("DMARC_IMAP_HOST", "172.200.0.16");
+    vi.stubEnv("DMARC_IMAP_HOST", "10.200.0.16");
     vi.stubEnv("DMARC_IMAP_PORT", "993");
     vi.stubEnv("MAIL_HOSTNAME", "mail.example.org");
     expect(new DmarcImapService()["open"]()).toBeInstanceOf(ImapSession);
     expect(tlsConnect).toHaveBeenLastCalledWith({
-      host: "172.200.0.16",
+      host: "10.200.0.16",
       port: 993,
       servername: "mail.example.org",
       rejectUnauthorized: false,

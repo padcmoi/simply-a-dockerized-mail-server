@@ -12,13 +12,13 @@ services:
     environment:
       # The updater listens on the mail network only, where manager-api already
       # reaches clamd itself. See images/clamav/clamav-api.py.
-      CLAMAV_API_BIND: 172.200.0.12
+      CLAMAV_API_BIND: 10.200.0.12
       CLAMAV_API_PORT: 8082
     volumes:
       - ${VOLUMES_PATH}/clamav:/var/lib/clamav
     networks:
       mail:
-        ipv4_address: 172.200.0.12
+        ipv4_address: 10.200.0.12
     healthcheck:
       test: ["CMD-SHELL", "echo PING | nc -w 2 127.0.0.1 3310 | grep -q PONG"]
       interval: 30s

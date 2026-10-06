@@ -11,4 +11,4 @@ services:
       context: ../../images/unbound
     networks:
       mail:
-        ipv4_address: 172.200.0.9
+        ipv4_address: 10.200.0.9

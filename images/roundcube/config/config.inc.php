@@ -22,7 +22,7 @@ $config['managesieve_vacation']     = 1;
 $config['use_https']             = false;
 $config['force_https']           = false;
 $config['trusted_host_patterns'] = ['.+'];
-$config['proxy_whitelist']       = ['172.200.0.1'];
+$config['proxy_whitelist']       = ['10.200.0.1'];
 $config['log_logins']            = true;
 
 $config['skin']                   = 'elastic';

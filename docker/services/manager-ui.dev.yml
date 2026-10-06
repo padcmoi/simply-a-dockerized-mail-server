@@ -24,7 +24,7 @@ services:
       - ../../manager-ui/nuxt.config.ts:/app/nuxt.config.ts
     networks:
       mail:
-        ipv4_address: 172.200.0.20
+        ipv4_address: 10.200.0.20
     depends_on:
       - manager-api
     ports:
