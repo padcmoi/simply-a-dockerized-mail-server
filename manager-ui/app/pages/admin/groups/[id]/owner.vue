@@ -58,13 +58,15 @@ onMounted(async () => {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-crown"
-      :title="t('groups.detail.alerts.owner.title')"
-      :description="t('groups.detail.alerts.owner.description')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-crown"
+        :title="t('groups.detail.alerts.owner.title')"
+        :description="t('groups.detail.alerts.owner.description')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/groups" size="sm">
       {{ t("groups.backToList") }}

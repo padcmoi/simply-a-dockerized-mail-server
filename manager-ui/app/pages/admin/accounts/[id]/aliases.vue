@@ -26,13 +26,15 @@ watchEffect(() => {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-share-2"
-      :title="t('accounts.ownership.aliasesAlertTitle')"
-      :description="t('accounts.ownership.aliasesAlertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-share-2"
+        :title="t('accounts.ownership.aliasesAlertTitle')"
+        :description="t('accounts.ownership.aliasesAlertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" :to="backTo" size="sm">
       {{ t("accounts.ownership.backToAccount") }}

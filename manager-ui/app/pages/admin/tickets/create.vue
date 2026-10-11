@@ -38,13 +38,15 @@ const visibilityHint = computed(() =>
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-life-buoy"
-      :title="t('tickets.alertTitle')"
-      :description="t('tickets.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-life-buoy"
+        :title="t('tickets.alertTitle')"
+        :description="t('tickets.alertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/tickets" size="sm">
       {{ t("tickets.form.backToList") }}

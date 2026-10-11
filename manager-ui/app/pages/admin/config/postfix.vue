@@ -42,13 +42,15 @@ const domain = computed({
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-send"
-      color="neutral"
-      variant="subtle"
-      :title="t('config.postfix.alertTitle')"
-      :description="t('config.postfix.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-send"
+        color="neutral"
+        variant="subtle"
+        :title="t('config.postfix.alertTitle')"
+        :description="t('config.postfix.alertDescription')"
+      />
+    </PageFold>
 
     <div class="flex flex-wrap items-center justify-between gap-2">
       <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/config" size="sm">

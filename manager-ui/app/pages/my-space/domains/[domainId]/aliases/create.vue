@@ -68,13 +68,15 @@ async function submit() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-at-sign"
-      :title="t('myspace.delegations.createAliasTitle', { domain: delegation?.domain ?? '...' })"
-      :description="t('myspace.delegations.subtitle')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-at-sign"
+        :title="t('myspace.delegations.createAliasTitle', { domain: delegation?.domain ?? '...' })"
+        :description="t('myspace.delegations.subtitle')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" size="sm" to="/my-space">
       {{ t("common.back") }}

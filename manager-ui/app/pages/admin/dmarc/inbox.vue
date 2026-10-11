@@ -27,7 +27,9 @@ watch([status, domain], () => {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <DmarcSections active="inbox" />
+    <PageFold>
+      <DmarcSections active="inbox" />
+    </PageFold>
 
     <ListSkeleton v-if="!hasLoadedOnce" :columns="6" />
 

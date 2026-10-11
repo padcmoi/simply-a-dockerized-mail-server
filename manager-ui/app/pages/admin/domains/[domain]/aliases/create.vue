@@ -116,7 +116,9 @@ async function create() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('aliases.alertTitle')" />
+    <PageFold>
+      <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('aliases.alertTitle')" />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" :to="listPath" size="sm">
       {{ t("aliases.backToList") }}

@@ -124,7 +124,9 @@ function occupancy(row: QuotaRow) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('quotas.alertTitle')" />
+    <PageFold>
+      <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('quotas.alertTitle')" />
+    </PageFold>
 
     <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">
       {{ t("quotas.perDomain") }}

@@ -100,13 +100,15 @@ async function copyLink() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-user-plus"
-      :title="t('domains.delegations.createTitle')"
-      :description="t('domains.delegations.subtitle')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-user-plus"
+        :title="t('domains.delegations.createTitle')"
+        :description="t('domains.delegations.subtitle')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" size="sm" :to="basePath">
       {{ t("common.back") }}

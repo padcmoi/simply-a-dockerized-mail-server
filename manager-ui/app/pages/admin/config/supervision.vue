@@ -12,13 +12,15 @@ await useAsyncData("supervision-retention", () => load(), { server: false });
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-database"
-      color="neutral"
-      variant="subtle"
-      :title="t('config.supervision.alertTitle')"
-      :description="t('config.supervision.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-database"
+        color="neutral"
+        variant="subtle"
+        :title="t('config.supervision.alertTitle')"
+        :description="t('config.supervision.alertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/config" size="sm">
       {{ t("config.backToConfig") }}

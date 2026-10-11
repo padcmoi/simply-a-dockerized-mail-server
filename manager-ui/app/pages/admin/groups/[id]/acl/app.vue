@@ -43,13 +43,15 @@ async function onSaveGlobal(permissions: { resource: string; action: string }[])
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-shield-alert"
-      :title="t('groups.detail.alerts.application.title')"
-      :description="t('groups.detail.alerts.application.description')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-shield-alert"
+        :title="t('groups.detail.alerts.application.title')"
+        :description="t('groups.detail.alerts.application.description')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/groups" size="sm">
       {{ t("groups.backToList") }}

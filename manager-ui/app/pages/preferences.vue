@@ -34,13 +34,15 @@ function setTheme(value: string) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-settings"
-      :title="t('preferences.title')"
-      :description="t('preferences.subtitle')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-settings"
+        :title="t('preferences.title')"
+        :description="t('preferences.subtitle')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <h2 class="font-semibold text-sm text-muted uppercase tracking-wide">{{ t("preferences.language") }}</h2>
     <UCard>

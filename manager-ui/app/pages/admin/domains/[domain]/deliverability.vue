@@ -112,13 +112,15 @@ async function execute(refresh = false) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-mail-check"
-      :title="t('deliverability.title')"
-      :description="t('deliverability.description')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-mail-check"
+        :title="t('deliverability.title')"
+        :description="t('deliverability.description')"
+      />
+    </PageFold>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3 min-w-0">

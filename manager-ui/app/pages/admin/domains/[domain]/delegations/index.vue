@@ -54,13 +54,15 @@ async function revoke() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-user-plus"
-      :title="t('domains.delegations.title')"
-      :description="t('domains.delegations.subtitle')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-user-plus"
+        :title="t('domains.delegations.title')"
+        :description="t('domains.delegations.subtitle')"
+      />
+    </PageFold>
 
     <div class="flex items-center justify-between gap-3 flex-wrap">
       <UButton icon="i-lucide-hourglass" color="info" variant="soft" :to="`${basePath}/invitations`">

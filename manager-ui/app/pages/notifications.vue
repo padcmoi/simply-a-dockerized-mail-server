@@ -68,13 +68,15 @@ const onPurgeConfirmed = () => purgeScope(purgeChoice.value);
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-bell"
-      :title="t('notifications.history.title')"
-      :description="t('notifications.history.description')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-bell"
+        :title="t('notifications.history.title')"
+        :description="t('notifications.history.description')"
+      />
+    </PageFold>
 
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2">

@@ -157,13 +157,15 @@ async function onResetTwoFactorConfirmed() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-users"
-      :title="t('accounts.alertTitle')"
-      :description="t('accounts.alertDescription')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-users"
+        :title="t('accounts.alertTitle')"
+        :description="t('accounts.alertDescription')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <ProfileActionCard
       v-if="canViewSessions"

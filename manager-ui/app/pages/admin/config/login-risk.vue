@@ -34,13 +34,15 @@ await useAsyncData("config-login-risk", () => load(), { server: false });
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-map-pin"
-      color="neutral"
-      variant="subtle"
-      :title="t('config.loginRisk.alertTitle')"
-      :description="t('config.loginRisk.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-map-pin"
+        color="neutral"
+        variant="subtle"
+        :title="t('config.loginRisk.alertTitle')"
+        :description="t('config.loginRisk.alertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/config" size="sm">
       {{ t("config.backToConfig") }}

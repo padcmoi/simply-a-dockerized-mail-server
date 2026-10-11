@@ -92,13 +92,15 @@ function open(row: TicketRow) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-life-buoy"
-      :title="t('tickets.alertTitle')"
-      :description="t('tickets.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-life-buoy"
+        :title="t('tickets.alertTitle')"
+        :description="t('tickets.alertDescription')"
+      />
+    </PageFold>
 
     <div v-if="canCreate" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <UCard :ui="{ root: 'transition hover:shadow-lg cursor-pointer' }" @click="navigateTo('/admin/tickets/create')">

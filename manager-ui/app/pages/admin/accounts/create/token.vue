@@ -13,13 +13,15 @@ setBreadcrumb([{ label: t("nav.accounts"), to: "/admin/accounts" }, { label: t("
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-key-round"
-      :title="t('accounts.invite.tokenAlertTitle')"
-      :description="t('accounts.invite.tokenAlertDescription')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-key-round"
+        :title="t('accounts.invite.tokenAlertTitle')"
+        :description="t('accounts.invite.tokenAlertDescription')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/accounts" size="sm">
       {{ t("accounts.backToList") }}

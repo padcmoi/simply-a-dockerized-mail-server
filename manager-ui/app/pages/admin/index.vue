@@ -11,7 +11,9 @@ const { stats, disk, loading, recentDomains, recentRecipients, recipientsPerDoma
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert color="neutral" variant="subtle" icon="i-lucide-layout-dashboard" :title="t('dashboard.subtitle')" />
+    <PageFold>
+      <UAlert color="neutral" variant="subtle" icon="i-lucide-layout-dashboard" :title="t('dashboard.subtitle')" />
+    </PageFold>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <DomainStatCard

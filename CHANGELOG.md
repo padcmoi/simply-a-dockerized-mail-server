@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(ui): on a small screen, a phone held upright or on its side, the intro and the commands that open a page fold away behind a button of the top bar, so the page starts on its content, the mail logs first, where the log was left four lines; the button unfolds them as a panel under the bar and carries a dot when a hidden filter is set, the DMARC pages fold their section switcher the same way, and a larger screen is left as it was (11-10-2026)
 - feat(install): a fresh install starts by checking the mail ports 25, 465, 587, 993, 995 and 4190, shows each one as PASS or FAIL and stops before `.env` or anything else is written when one is taken, where a mail server already running on the host made `docker compose up` fail halfway through the install (05-10-2026)
 
 ### Fixed

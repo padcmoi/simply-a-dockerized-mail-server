@@ -28,13 +28,15 @@ async function onBan(ip: string) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-shield-ban"
-      :title="t('fail2ban.title')"
-      :description="t('fail2ban.subtitle')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-shield-ban"
+        :title="t('fail2ban.title')"
+        :description="t('fail2ban.subtitle')"
+      />
+    </PageFold>
 
     <UAlert v-if="failed" color="error" variant="subtle" icon="i-lucide-triangle-alert" :title="t('fail2ban.loadFailed')" />
 

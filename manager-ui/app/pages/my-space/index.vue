@@ -80,13 +80,15 @@ function openDomain(row: OwnedDomain) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-house"
-      :title="t('myspace.alertTitle')"
-      :description="t('myspace.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-house"
+        :title="t('myspace.alertTitle')"
+        :description="t('myspace.alertDescription')"
+      />
+    </PageFold>
 
     <UAlert v-if="failed" color="error" variant="subtle" icon="i-lucide-triangle-alert" :title="t('myspace.loadFailed')" />
 

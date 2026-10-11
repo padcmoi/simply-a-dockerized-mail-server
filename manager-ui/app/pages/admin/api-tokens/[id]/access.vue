@@ -79,13 +79,15 @@ function agentIcon(userAgent: string) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-history"
-      :title="tokenLabel"
-      :description="t('apiTokens.access.alertDescription')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-history"
+        :title="tokenLabel"
+        :description="t('apiTokens.access.alertDescription')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <div class="flex items-center justify-between gap-3">
       <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/api-tokens" size="sm">

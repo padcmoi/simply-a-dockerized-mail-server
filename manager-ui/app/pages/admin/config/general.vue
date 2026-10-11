@@ -12,13 +12,15 @@ await useAsyncData("config-general", () => load(), { server: false });
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-globe"
-      color="neutral"
-      variant="subtle"
-      :title="t('config.general.alertTitle')"
-      :description="t('config.general.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-globe"
+        color="neutral"
+        variant="subtle"
+        :title="t('config.general.alertTitle')"
+        :description="t('config.general.alertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/config" size="sm">
       {{ t("config.backToConfig") }}

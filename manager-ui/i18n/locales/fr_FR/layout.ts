@@ -11,6 +11,8 @@ export default {
   dark: "Sombre",
   system: "Système",
   toggleSidebar: "Replier la barre latérale",
+  showPageFold: "Afficher l'en-tête et les commandes de la page",
+  hidePageFold: "Masquer l'en-tête et les commandes de la page",
   refreshData: "Rafraîchir les données",
   rootBadge: "Root",
   noGroupBadge: "Aucun groupe",

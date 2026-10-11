@@ -70,13 +70,15 @@ async function update(source: NotificationSource, channel: "inApp" | "email", va
 
 <template>
   <UContainer class="py-6 space-y-6">
-    <UAlert
-      icon="i-lucide-bell"
-      color="neutral"
-      variant="subtle"
-      :title="t('notifications.title')"
-      :description="t('notifications.pageDescription')"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-bell"
+        color="neutral"
+        variant="subtle"
+        :title="t('notifications.title')"
+        :description="t('notifications.pageDescription')"
+      />
+    </PageFold>
 
     <UAlert
       v-if="!mailEnabled"

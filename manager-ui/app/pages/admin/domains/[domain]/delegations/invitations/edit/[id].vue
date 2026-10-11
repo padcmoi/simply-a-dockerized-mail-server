@@ -94,13 +94,15 @@ async function save() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-pencil"
-      :title="t('domains.delegations.editInviteTitle')"
-      :description="row?.email ?? row?.note ?? t('domains.delegations.tokenBadge')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-pencil"
+        :title="t('domains.delegations.editInviteTitle')"
+        :description="row?.email ?? row?.note ?? t('domains.delegations.tokenBadge')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" size="sm" :to="`${basePath}/invitations`">
       {{ t("common.back") }}

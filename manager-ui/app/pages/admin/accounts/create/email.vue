@@ -40,13 +40,15 @@ const {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-mail"
-      :title="t('accounts.invite.emailAlertTitle')"
-      :description="t('accounts.invite.emailAlertDescription')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-mail"
+        :title="t('accounts.invite.emailAlertTitle')"
+        :description="t('accounts.invite.emailAlertDescription')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <UAlert
       v-if="!mailEnabled"

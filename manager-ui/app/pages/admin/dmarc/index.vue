@@ -24,15 +24,17 @@ const {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-mail-search"
-      :title="t('dmarc.title')"
-      :description="t('dmarc.subtitle')"
-    />
+    <PageFold class="space-y-6">
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-mail-search"
+        :title="t('dmarc.title')"
+        :description="t('dmarc.subtitle')"
+      />
 
-    <DmarcSections active="overview" />
+      <DmarcSections active="overview" />
+    </PageFold>
 
     <UAlert
       v-if="status === 'error'"

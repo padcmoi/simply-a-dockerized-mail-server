@@ -113,7 +113,9 @@ function editAlias(alias: AliasRow) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('aliases.alertTitle')" />
+    <PageFold>
+      <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('aliases.alertTitle')" />
+    </PageFold>
 
     <!-- Same clickable card as the domain dashboard's section links, in the
          slot the create form used to occupy. -->

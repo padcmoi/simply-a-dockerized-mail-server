@@ -68,13 +68,15 @@ async function submit() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-key-round"
-      :title="hasPassword ? t('profile.passwordPage.alertTitle') : t('profile.passwordPage.createTitle')"
-      :description="hasPassword ? t('profile.passwordPage.alertDescription') : t('profile.passwordPage.createDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-key-round"
+        :title="hasPassword ? t('profile.passwordPage.alertTitle') : t('profile.passwordPage.createTitle')"
+        :description="hasPassword ? t('profile.passwordPage.alertDescription') : t('profile.passwordPage.createDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/profile" size="sm">
       {{ t("profile.backToProfile") }}

@@ -40,13 +40,15 @@ watch([action, actorId], () => {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-scroll-text"
-      :title="t('activity.server.title')"
-      :description="t('activity.server.subtitle')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-scroll-text"
+        :title="t('activity.server.title')"
+        :description="t('activity.server.subtitle')"
+      />
+    </PageFold>
 
     <UAlert
       v-if="actorId"

@@ -28,13 +28,15 @@ await useAsyncData("backups-config", () => load(), { server: false });
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-sliders-horizontal"
-      color="neutral"
-      variant="subtle"
-      :title="t('backups.config.alertTitle')"
-      :description="t('backups.config.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-sliders-horizontal"
+        color="neutral"
+        variant="subtle"
+        :title="t('backups.config.alertTitle')"
+        :description="t('backups.config.alertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/backups" size="sm">
       {{ t("backups.config.back") }}

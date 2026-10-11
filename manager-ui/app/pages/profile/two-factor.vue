@@ -132,13 +132,15 @@ async function copyCodes() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-smartphone"
-      :title="t('profile.twoFactorPage.alertTitle')"
-      :description="t('profile.twoFactorPage.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-smartphone"
+        :title="t('profile.twoFactorPage.alertTitle')"
+        :description="t('profile.twoFactorPage.alertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/profile" size="sm">
       {{ t("profile.backToProfile") }}

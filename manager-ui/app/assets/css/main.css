@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* A screen too small to spend on anything but the content: a phone held
+   upright, or held on its side, where the height is what runs out. */
+@custom-variant compact {
+  @media (max-width: 639px), (max-height: 499px) {
+    @slot;
+  }
+}
+
 @layer base {
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

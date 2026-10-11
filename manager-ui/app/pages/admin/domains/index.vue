@@ -108,13 +108,15 @@ onMounted(refreshDisk);
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-info"
-      :title="t('domains.alertTitle')"
-      :description="t('domains.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-info"
+        :title="t('domains.alertTitle')"
+        :description="t('domains.alertDescription')"
+      />
+    </PageFold>
 
     <DomainsCapacityCard v-if="canSeeAllDomains" :disk="disk" />
 

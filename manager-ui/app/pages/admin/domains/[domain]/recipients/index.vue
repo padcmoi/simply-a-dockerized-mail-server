@@ -141,13 +141,15 @@ async function onDeleteConfirmed() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-info"
-      :title="t('recipients.alertTitle')"
-      :description="t('recipients.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-info"
+        :title="t('recipients.alertTitle')"
+        :description="t('recipients.alertDescription')"
+      />
+    </PageFold>
 
     <!-- Same clickable card as the domain dashboard's section links, in the
          slot the create form used to occupy. -->

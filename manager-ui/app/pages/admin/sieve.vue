@@ -74,7 +74,9 @@ async function onDeleteConfirmed() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('sieve.alertTitle')" />
+    <PageFold>
+      <UAlert color="neutral" variant="subtle" icon="i-lucide-info" :title="t('sieve.alertTitle')" />
+    </PageFold>
 
     <UCard>
       <template #header>

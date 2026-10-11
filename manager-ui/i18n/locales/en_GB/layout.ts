@@ -11,6 +11,8 @@ export default {
   dark: "Dark",
   system: "System",
   toggleSidebar: "Toggle sidebar",
+  showPageFold: "Show the heading and the commands of the page",
+  hidePageFold: "Hide the heading and the commands of the page",
   refreshData: "Refresh data",
   rootBadge: "Root",
   noGroupBadge: "No group",

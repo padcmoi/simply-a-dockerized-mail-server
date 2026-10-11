@@ -9,13 +9,15 @@ setBreadcrumb([{ label: t("nav.config") }]);
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-settings-2"
-      :title="t('config.landingAlertTitle')"
-      :description="t('config.landingAlertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-settings-2"
+        :title="t('config.landingAlertTitle')"
+        :description="t('config.landingAlertDescription')"
+      />
+    </PageFold>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <ProfileActionCard

@@ -52,7 +52,9 @@ watch(
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <DmarcSections active="received" />
+    <PageFold>
+      <DmarcSections active="received" />
+    </PageFold>
 
     <UAlert
       v-if="status === 'error'"

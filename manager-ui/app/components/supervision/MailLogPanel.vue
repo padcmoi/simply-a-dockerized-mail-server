@@ -34,49 +34,51 @@ const updated = computed(() => {
 
 <template>
   <div class="flex h-[calc(100dvh-var(--ui-header-height))] min-w-0 flex-col gap-6 p-4 sm:p-6 xl:p-8 select-none">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-file-text"
-      :title="t('mailLogs.title')"
-      :description="t('mailLogs.subtitle')"
-    />
-
-    <UTabs v-model="tab" :items="tabs" :content="false" class="w-full" />
-
-    <div class="flex flex-wrap items-center gap-3">
-      <UInput v-model="search" icon="i-lucide-search" :placeholder="t('mailLogs.search')" class="w-full sm:w-80" />
-      <UBadge color="success" variant="subtle" size="sm">
-        <span class="relative mr-1 flex size-1.5">
-          <span class="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
-          <span class="relative inline-flex size-1.5 rounded-full bg-success" />
-        </span>
-        {{ t("mailLogs.live") }}
-      </UBadge>
-      <UButton
-        icon="i-lucide-download"
+    <PageFold :filtered="search !== ''" class="flex flex-col gap-6">
+      <UAlert
         color="neutral"
         variant="subtle"
-        :loading="downloading"
-        :label="t('mailLogs.download')"
-        @click="download()"
+        icon="i-lucide-file-text"
+        :title="t('mailLogs.title')"
+        :description="t('mailLogs.subtitle')"
       />
-      <UDropdownMenu :items="archiveItems" :disabled="!archiveItems.length">
+
+      <UTabs v-model="tab" :items="tabs" :content="false" class="w-full" />
+
+      <div class="flex flex-wrap items-center gap-3">
+        <UInput v-model="search" icon="i-lucide-search" :placeholder="t('mailLogs.search')" class="w-full sm:w-80" />
+        <UBadge color="success" variant="subtle" size="sm">
+          <span class="relative mr-1 flex size-1.5">
+            <span class="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
+            <span class="relative inline-flex size-1.5 rounded-full bg-success" />
+          </span>
+          {{ t("mailLogs.live") }}
+        </UBadge>
         <UButton
-          icon="i-lucide-archive"
+          icon="i-lucide-download"
           color="neutral"
           variant="subtle"
-          trailing-icon="i-lucide-chevron-down"
-          :disabled="!archiveItems.length"
           :loading="downloading"
-          :label="archiveItems.length ? t('mailLogs.archives', { n: archiveItems.length }) : t('mailLogs.archivesNone')"
+          :label="t('mailLogs.download')"
+          @click="download()"
         />
-      </UDropdownMenu>
-      <span v-if="window" class="ml-auto text-xs text-dimmed">
-        {{ t("mailLogs.summary", { n: window.lines.length, size: formatBytes(window.size) }) }}
-        <template v-if="updated"> · {{ t("mailLogs.updated", { at: updated }) }}</template>
-      </span>
-    </div>
+        <UDropdownMenu :items="archiveItems" :disabled="!archiveItems.length">
+          <UButton
+            icon="i-lucide-archive"
+            color="neutral"
+            variant="subtle"
+            trailing-icon="i-lucide-chevron-down"
+            :disabled="!archiveItems.length"
+            :loading="downloading"
+            :label="archiveItems.length ? t('mailLogs.archives', { n: archiveItems.length }) : t('mailLogs.archivesNone')"
+          />
+        </UDropdownMenu>
+        <span v-if="window" class="ml-auto text-xs text-dimmed">
+          {{ t("mailLogs.summary", { n: window.lines.length, size: formatBytes(window.size) }) }}
+          <template v-if="updated"> · {{ t("mailLogs.updated", { at: updated }) }}</template>
+        </span>
+      </div>
+    </PageFold>
 
     <UAlert
       v-if="downloadFailed"

@@ -31,7 +31,9 @@ function onSaved(settings: DmarcSettings) {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <DmarcSections active="settings" />
+    <PageFold>
+      <DmarcSections active="settings" />
+    </PageFold>
 
     <UAlert
       v-if="status === 'error'"

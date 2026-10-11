@@ -72,13 +72,15 @@ onMounted(load);
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-layout-dashboard"
-      :title="t('accounts.overviewPage.alertTitle')"
-      :description="t('accounts.overviewPage.alertDescription')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-layout-dashboard"
+        :title="t('accounts.overviewPage.alertTitle')"
+        :description="t('accounts.overviewPage.alertDescription')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/admin/accounts" size="sm">
       {{ t("accounts.backToList") }}

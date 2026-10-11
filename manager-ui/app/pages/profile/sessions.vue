@@ -111,13 +111,15 @@ onMounted(loadActive);
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-monitor"
-      :title="t('profile.sessionsPage.alertTitle')"
-      :description="t('profile.sessionsPage.alertDescription')"
-      color="neutral"
-      variant="subtle"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-monitor"
+        :title="t('profile.sessionsPage.alertTitle')"
+        :description="t('profile.sessionsPage.alertDescription')"
+        color="neutral"
+        variant="subtle"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/profile" size="sm">
       {{ t("profile.backToProfile") }}

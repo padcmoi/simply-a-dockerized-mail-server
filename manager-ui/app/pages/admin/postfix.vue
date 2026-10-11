@@ -54,7 +54,9 @@ onMounted(() => {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert color="neutral" variant="subtle" icon="i-lucide-send" :title="t('postfixPage.subtitle')" />
+    <PageFold>
+      <UAlert color="neutral" variant="subtle" icon="i-lucide-send" :title="t('postfixPage.subtitle')" />
+    </PageFold>
 
     <UAlert
       v-if="stats && !stats.available"

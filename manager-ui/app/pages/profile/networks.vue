@@ -9,13 +9,15 @@ setBreadcrumb([{ label: t("layout.profile"), to: "/profile" }, { label: t("known
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      icon="i-lucide-network"
-      color="neutral"
-      variant="subtle"
-      :title="t('known.networksAlertTitle')"
-      :description="t('known.networksAlertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        icon="i-lucide-network"
+        color="neutral"
+        variant="subtle"
+        :title="t('known.networksAlertTitle')"
+        :description="t('known.networksAlertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/profile" size="sm">
       {{ t("profile.backToProfile") }}

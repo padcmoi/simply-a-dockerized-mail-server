@@ -32,6 +32,7 @@ function atBottom(now: number) {
       </template>
     </UBreadcrumb>
     <div class="ml-auto shrink-0 flex items-center gap-1">
+      <HeaderPageFoldButton />
       <HeaderRefreshButton />
       <HeaderNotificationsButton />
     </div>

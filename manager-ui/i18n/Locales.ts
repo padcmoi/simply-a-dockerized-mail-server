@@ -762,6 +762,8 @@ export interface Locales {
     dark: string;
     system: string;
     toggleSidebar: string;
+    showPageFold: string;
+    hidePageFold: string;
     refreshData: string;
     rootBadge: string;
     noGroupBadge: string;

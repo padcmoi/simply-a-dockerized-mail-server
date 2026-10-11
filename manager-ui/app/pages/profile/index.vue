@@ -45,13 +45,15 @@ useAsyncData(
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-user-round"
-      :title="t('profile.overviewAlertTitle')"
-      :description="t('profile.overviewAlertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-user-round"
+        :title="t('profile.overviewAlertTitle')"
+        :description="t('profile.overviewAlertDescription')"
+      />
+    </PageFold>
 
     <UCard>
       <div class="flex items-center gap-4 flex-wrap">

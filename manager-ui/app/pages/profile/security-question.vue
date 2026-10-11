@@ -18,13 +18,15 @@ function askConfirm() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-shield-question-mark"
-      :title="t('profile.securityQuestionPage.alertTitle')"
-      :description="t('profile.securityQuestionPage.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-shield-question-mark"
+        :title="t('profile.securityQuestionPage.alertTitle')"
+        :description="t('profile.securityQuestionPage.alertDescription')"
+      />
+    </PageFold>
 
     <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" to="/profile" size="sm">
       {{ t("profile.backToProfile") }}

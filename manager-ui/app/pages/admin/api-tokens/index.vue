@@ -37,13 +37,15 @@ const {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-key"
-      :title="t('apiTokens.alertTitle')"
-      :description="t('apiTokens.alertDescription')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-key"
+        :title="t('apiTokens.alertTitle')"
+        :description="t('apiTokens.alertDescription')"
+      />
+    </PageFold>
 
     <div class="flex items-center justify-between">
       <h2 class="font-semibold text-lg">{{ t("apiTokens.listTitle") }}</h2>

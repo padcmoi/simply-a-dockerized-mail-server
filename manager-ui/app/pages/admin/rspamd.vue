@@ -71,7 +71,9 @@ async function onResetActions() {
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert color="neutral" variant="subtle" icon="i-lucide-shield" :title="t('rspamdPage.subtitle')" />
+    <PageFold>
+      <UAlert color="neutral" variant="subtle" icon="i-lucide-shield" :title="t('rspamdPage.subtitle')" />
+    </PageFold>
 
     <RspamdStatTiles :stats="stats" :loading="loading" />
 

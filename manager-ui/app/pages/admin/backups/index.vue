@@ -14,13 +14,15 @@ watch(useDataRefresh().tick, load);
 
 <template>
   <div class="p-4 sm:p-6 xl:p-8 space-y-6 min-w-0">
-    <UAlert
-      color="neutral"
-      variant="subtle"
-      icon="i-lucide-database-backup"
-      :title="t('backups.title')"
-      :description="t('backups.subtitle')"
-    />
+    <PageFold>
+      <UAlert
+        color="neutral"
+        variant="subtle"
+        icon="i-lucide-database-backup"
+        :title="t('backups.title')"
+        :description="t('backups.subtitle')"
+      />
+    </PageFold>
 
     <UAlert v-if="failed" color="error" variant="subtle" icon="i-lucide-triangle-alert" :title="t('backups.loadFailed')" />
 
