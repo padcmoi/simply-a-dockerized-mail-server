@@ -11,6 +11,7 @@ const auth = useAuthStore();
 const { isOnline } = usePresence();
 const route = useRoute();
 const appName = useAppName();
+const { icon } = useBranding();
 const { t } = useI18n();
 const isMobile = useMediaQuery("(max-width: 1023px)");
 
@@ -85,7 +86,7 @@ async function onSignOut() {
         :ui="{ label: 'truncate' }"
       >
         <template #leading>
-          <img src="~/assets/favicon.svg" alt="" width="24" height="24" class="size-6 shrink-0" />
+          <img :src="icon" alt="" width="24" height="24" class="size-6 shrink-0" />
         </template>
       </UButton>
     </template>

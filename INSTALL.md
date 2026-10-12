@@ -72,7 +72,43 @@ What it does next, in order:
 
 Idempotent: re-running keeps existing values, only fills what is missing.
 
-## 3. Add a domain
+## 3. Your own icon, logo and favicon (optional)
+
+The manager shows its own mark: a small icon in the sidebar, a logo on the
+sign-in page and a favicon in the browser tab. To show yours instead, replace
+the SVG files found at the root of the volumes folder, the one `VOLUMES_PATH`
+of `.env` points to (`docker/services/volumes` by default), next to `mail/`
+and `mysql/`:
+
+| File                      | Replaces                     |
+| ------------------------- | ---------------------------- |
+| `custom-mail-icon.svg`    | the icon of the sidebar      |
+| `custom-mail-logo.svg`    | the logo of the sign-in page |
+| `custom-mail-favicon.svg` | the icon of the browser tab  |
+
+Each time the manager starts, a file that is missing is put there as a copy of
+the mark the manager ships with, so the three are always there to replace. A
+file that is already there, replaced or not, is never touched. Nobody has to
+replace any: a copy left as it is counts for nothing, and the manager keeps its
+own icon, logo and favicon.
+
+The icon and the logo go together: both files have to be there, and as soon as
+one of them is replaced the manager shows the two files. The favicon stands on
+its own: replaced, it is the icon of the browser tab, whatever the two others
+are.
+
+Each file is a plain SVG of 512 KB at most. The copies are created open to
+everyone (`chmod 777`), so their content can be replaced without being root.
+Kept with the data of the server, the files are not in git, an update never
+touches them, and the daily backup takes them along with the rest of the
+volumes. Nothing has to be rebuilt nor restarted: the manager looks at the
+files itself and shows a replaced one within a minute.
+
+The commands to replace a mark and to go back, what the file has to be, how to
+check what the manager uses and how it all works are in
+[docs/manager/branding.md](docs/manager/branding.md).
+
+## 4. Add a domain
 
 Sign in to the manager UI and create the domain. The DKIM key is already
 loaded for the primary domain you entered in step 2. For other domains,
@@ -93,7 +129,7 @@ generate a key inline:
 Publish the printed TXT record then follow [DOMAIN_DNS.md](DOMAIN_DNS.md) for
 the full DNS record set (MX, SPF, DMARC).
 
-## 4. Migrating from v1
+## 5. Migrating from v1
 
 The v2 schema is byte-for-byte identical to v1 (same column names, types,
 defaults, indexes, FK CASCADE rules), so a v1 dump imports without edits.

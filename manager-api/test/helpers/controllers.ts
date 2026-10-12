@@ -11,6 +11,7 @@ import { PostfixConfigController } from "../../src/api/config/postfix-config.con
 import { AlertController } from "../../src/api/config/alert.controller";
 import { BackupDownloadController } from "../../src/api/backups/backup-download.controller";
 import { BackupsController } from "../../src/api/backups/backups.controller";
+import { BrandingController } from "../../src/api/branding/branding.controller";
 import { InternalAlertController } from "../../src/api/internal/internal-alert.controller";
 import { InternalBackupController } from "../../src/api/internal/internal-backup.controller";
 import { GeneralController } from "../../src/api/config/general.controller";
@@ -67,6 +68,7 @@ export const ALL_CONTROLLERS = [
   InternalBackupController,
   BackupsController,
   BackupDownloadController,
+  BrandingController,
   GeneralController,
   LoginRiskController,
   SupervisionRetentionController,

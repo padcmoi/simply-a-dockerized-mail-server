@@ -14,6 +14,28 @@ t_containers_healthy() {
   done
 }
 
+# The icon, the logo and the favicon a company can replace live at the root of
+# the volumes folder. manager-api puts a copy of its own marks there when it
+# starts, where one is missing, through its mount of that folder: the three
+# files have to be in place, and the public route that tells the interface
+# about them has to answer.
+t_branding_files() {
+  local name out
+  for name in custom-mail-icon.svg custom-mail-logo.svg custom-mail-favicon.svg; do
+    if docker exec mail-manager-api test -f "/host/volumes/$name"; then
+      pass "branding.file.$name" "in the volumes folder, seen by manager-api"
+    else
+      fail "branding.file.$name" "missing from the volumes folder, or not seen by manager-api"
+    fi
+  done
+  out=$(docker exec mail-manager-api node -e 'fetch("http://127.0.0.1:" + (process.env.MANAGER_API_PORT || 3000) + "/api/v1/branding").then(async (r) => console.log(r.status, await r.text())).catch((e) => console.log("failed", e.message))' 2>&1)
+  if grep -q '^200 .*"custom":.*"favicon":' <<<"$out"; then
+    pass "branding.route_answers" "$out"
+  else
+    fail "branding.route_answers" "$out"
+  fi
+}
+
 t_redis_pong() {
   local r; r=$(redis_get PING)
   assert_eq "redis.ping" "PONG" "$r"
@@ -80,6 +102,7 @@ t_resolver_answers() {
 
 t_containers_healthy
 t_resolver_answers
+t_branding_files
 t_redis_pong
 t_clamav_responds
 t_mariadb_schema

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- feat(branding): a company shows its own marks by replacing three SVG files at the root of the volumes folder, where they are kept and backed up with the data of the server: `custom-mail-icon.svg` for the icon of the sidebar and `custom-mail-logo.svg` for the logo of the sign-in page, shown together as soon as one of the two is replaced, and `custom-mail-favicon.svg`, on its own, for the icon of the browser tab; the manager puts a copy of its own marks under these names each time it starts where one is missing, a copy left as it is changes nothing, and a replaced file is shown within a minute without a rebuild (12-10-2026)
 - feat(ui): on a small screen, a phone held upright or on its side, the intro and the commands that open a page fold away behind a button of the top bar, so the page starts on its content, the mail logs first, where the log was left four lines; the button unfolds them as a panel under the bar and carries a dot when a hidden filter is set, the DMARC pages fold their section switcher the same way, and a larger screen is left as it was (11-10-2026)
 - feat(install): a fresh install starts by checking the mail ports 25, 465, 587, 993, 995 and 4190, shows each one as PASS or FAIL and stops before `.env` or anything else is written when one is taken, where a mail server already running on the host made `docker compose up` fail halfway through the install (05-10-2026)
 

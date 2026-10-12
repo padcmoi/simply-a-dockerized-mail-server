@@ -133,6 +133,8 @@ Root is exempt (`rawSetGroupGlobalPermissions`).
 | `PATCH`  | `/auth/jwt/me`                           | _no ACL: the caller's own profile_                                                                                                                    |
 | `GET`    | `/auth/jwt/me/permissions`               | _no ACL: the caller's own permissions_                                                                                                                |
 | `POST`   | `/auth/jwt/refresh`                      | _no ACL: authentication itself_                                                                                                                       |
+| `GET`    | `/branding`                              | _public: the sign-in screen shows these marks_                                                                                                        |
+| `GET`    | `/branding/:kind`                        | _public: the sign-in screen shows these marks_                                                                                                        |
 | `GET`    | `/domains`                               | `global:domains` [access]                                                                                                                             |
 | `POST`   | `/domains`                               | `global:domains` [access, create-domain]                                                                                                              |
 | `GET`    | `/domains/:domainId`                     | `domain:domain` [access, view-domain]                                                                                                                 |
@@ -183,7 +185,7 @@ Root is exempt (`rawSetGroupGlobalPermissions`).
 | `PATCH`  | `/sieve/reject-senders/:id`              | `global:sieve` [access, edit-reject-sender]                                                                                                           |
 | `DELETE` | `/sieve/reject-senders/:id`              | `global:sieve` [access, delete-reject-sender]                                                                                                         |
 
-### The nine routes with no ACL, and why
+### The eleven routes with no ACL, and why
 
 `POST /auth/jwt/login`, `/refresh` and `/logout` are authentication itself: demanding a
 permission to obtain a token makes no sense. `GET`/`PATCH /auth/jwt/me` and
@@ -191,6 +193,9 @@ permission to obtain a token makes no sense. `GET`/`PATCH /auth/jwt/me` and
 `GET /health` is a liveness probe. `GET /accounts/invite/:token` and
 `POST /accounts/invite/:token/accept` are `@Public()` by construction: the invitee has
 no account yet, and the invitation token **is** their credential.
+`GET /branding` and `GET /branding/:kind` are `@Public()` too: they serve the icon, the
+logo and the favicon of the server, which the sign-in screen shows before anyone is
+authenticated, and nothing else ([manager/branding.md](../manager/branding.md)).
 
 ## Why some actions are what they are
 

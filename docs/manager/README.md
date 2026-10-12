@@ -35,9 +35,12 @@ this app is down. Nothing here is in the delivery path.
 10. [configuration.md](configuration.md) -- the root-only Configuration area:
     outbound mail provider, email cadence, the public interface address, and the
     machine-history retention.
-11. [profile.md](profile.md) -- your own account: profile, owned resources,
+11. [branding.md](branding.md) -- the icon, the logo and the favicon a company
+    shows in place of the manager's own: three SVG files kept in the volumes
+    folder, the copies made at start, and the rules that decide what is shown.
+12. [profile.md](profile.md) -- your own account: profile, owned resources,
     sessions, notification channels, device preferences.
-12. [realtime.md](realtime.md) -- the WebSocket layer underneath all of it:
+13. [realtime.md](realtime.md) -- the WebSocket layer underneath all of it:
     topics, presence, typing, read receipts, reconnection.
 
 ## Where the code lives

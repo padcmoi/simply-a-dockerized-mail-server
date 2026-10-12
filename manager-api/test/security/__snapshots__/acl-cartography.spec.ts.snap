@@ -73,6 +73,8 @@ exports[`auth/ACL cartography (security contract) > locks the full auth/ACL cart
   "GET /api/v1/backups/files  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "GET /api/v1/backups/runs  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "GET /api/v1/backups/runs/:id/log  ::  auth=ApiToken+JWT guards=[RootGuard]",
+  "GET /api/v1/branding  ::  auth=PUBLIC guards=[]",
+  "GET /api/v1/branding/:kind  ::  auth=PUBLIC guards=[]",
   "GET /api/v1/clamav/status  ::  auth=ApiToken+JWT guards=[GlobalPermissionGuard] global:clamav[access,view-clamav-status]",
   "GET /api/v1/config/alert  ::  auth=ApiToken+JWT guards=[RootGuard]",
   "GET /api/v1/config/general  ::  auth=ApiToken+JWT guards=[RootGuard]",

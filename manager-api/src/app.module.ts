@@ -34,6 +34,7 @@ import { ClamavApiModule } from "./api/clamav/clamav.module";
 import { Fail2banApiModule } from "./api/fail2ban/fail2ban.module";
 import { DmarcApiModule } from "./api/dmarc/dmarc.module";
 import { ProtectionApiModule } from "./api/protection/protection.module";
+import { BrandingApiModule } from "./api/branding/branding.module";
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { ProtectionApiModule } from "./api/protection/protection.module";
     ConfigApiModule,
     InternalApiModule,
     BackupsApiModule,
+    BrandingApiModule,
     MySpaceModule,
     SupervisionApiModule,
     ActivityApiModule,

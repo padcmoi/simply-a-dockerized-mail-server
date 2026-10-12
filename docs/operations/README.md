@@ -22,7 +22,13 @@ ${VOLUMES_PATH}/
   clamav/       -- signature database (freshclam keeps it updated)
   fail2ban/     -- ban state
   log/          -- dovecot.log + postfix.log (shared, bind-mounted r/w in dovecot/postfix, r/o in fail2ban)
+  custom-mail-icon.svg, custom-mail-logo.svg, custom-mail-favicon.svg
+                -- the icon, the logo and the favicon the manager shows. Copies of its own marks, made by manager-api at its start where one is missing, to replace with a company's own.
 ```
+
+The three `custom-mail-*.svg` files are the only files at the root of the
+folder, and the reason `manager-api` mounts the folder itself, at
+`/host/volumes`: see [manager/branding.md](../manager/branding.md).
 
 Snapshotting `${VOLUMES_PATH}` (e.g. via LVM or restic) is the supported
 backup method. Quiesce delivery first with

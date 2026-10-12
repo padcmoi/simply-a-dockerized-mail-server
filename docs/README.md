@@ -47,6 +47,11 @@ or test it.
     generic `read`/`create`/`modify`/`delete` anywhere), the root and
     domain-owner bypasses, and a generated table of every API route with
     the exact permissions it demands.
+13. [manager/](manager/) -- the web console, page by page: how you get in,
+    the shell every page renders inside, domains, mailboxes, accounts,
+    groups, support, the server-wide tools and the configuration. It also
+    holds [manager/branding.md](manager/branding.md): the icon, the logo and
+    the favicon a company shows in place of the manager's own.
 
 ## Conventions used throughout the docs
 

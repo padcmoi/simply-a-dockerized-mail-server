@@ -17,11 +17,15 @@ const routes = scanAll(ALL_CONTROLLERS);
 // is the whole point: a silently public route is exactly the vulnerability this
 // suite exists to catch. `GET /config/theme` is here deliberately: the login
 // screen is painted with the server theme, and the interface's own server reads
-// it before it has anyone to be authenticated as. It exposes colours.
+// it before it has anyone to be authenticated as. It exposes colours. The two
+// `GET /branding` routes are here for the same reason: the sign-in screen shows
+// the logo of the server, and they expose that logo and nothing else.
 const EXPECTED_PUBLIC = [
   "GET /api/v1/accounts/invite/:token",
   "GET /api/v1/accounts/invite/:token/email-exists",
   "GET /api/v1/config/theme",
+  "GET /api/v1/branding",
+  "GET /api/v1/branding/:kind",
   "GET /api/v1/health",
   "GET /api/v1",
   "POST /api/v1/accounts/invite/:token/accept",

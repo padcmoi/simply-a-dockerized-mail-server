@@ -12,6 +12,8 @@ own vitest suite.
 The script (790 lines, [test-mailservers.sh](../../test-mailservers.sh)) covers:
 
 - **infra** (12 containers + 4 healthchecks + 8 tables BDD + 5 triggers quota)
+- **resolver** (the stack's own DNS resolver answers a name, and validates a signed one with the root keys it ships)
+- **branding** (the three `custom-mail-*.svg` files are in the volumes folder as manager-api sees it, and the public `GET /branding` route answers)
 - **réseau** (5 ports -- 25/465/587/993 host + 4190 bridge)
 - **auth** (SMTP 587/465, IMAPS 993, ManageSieve)
 - **delivery** (SMTP -> IMAP + DKIM-Signature header + DKIM API sidecar)

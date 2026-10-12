@@ -6,6 +6,7 @@ definePageMeta({ layout: "auth" });
 
 const route = useRoute();
 const appName = useAppName();
+const { logo } = useBranding();
 
 const loading = ref(false);
 // Read synchronously, before the first render: coming back from a provider the
@@ -207,7 +208,7 @@ onMounted(resumeProviderSignIn);
   <UCard class="w-full max-w-md">
     <template #header>
       <div class="flex flex-col items-center text-center">
-        <img src="~/assets/naskot-mail-logo.svg" alt="" width="72" height="72" class="size-16 mb-3" />
+        <img :src="logo" alt="" width="72" height="72" class="size-16 mb-3" />
         <h1 class="text-lg font-semibold">{{ appName }}</h1>
         <p class="text-sm text-muted mt-1">{{ t("login.subtitle") }}</p>
       </div>

@@ -14,6 +14,11 @@ toggle drives the same value. Under 1024px the sidebar becomes a slideover and
 closes itself on every route change, because a click that navigates would
 otherwise leave it covering the page.
 
+The mark at the top of the sidebar, next to the name of the manager, is the one
+the manager ships with unless the server carries its own. The same goes for the
+logo of the sign-in page and for the favicon of the browser tab: three SVG files
+in the volumes folder replace them, as [branding.md](branding.md) explains.
+
 ### Global section
 
 Built by [`useNav`](../../manager-ui/app/composables/useNav.ts). Dashboard is

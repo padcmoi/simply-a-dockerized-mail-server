@@ -48,6 +48,14 @@ services:
       # away or put back on the server, it would go unnoticed.
       - ${VOLUMES_PATH}/backup-managed:/var/lib/backup-managed
       - ../..:/host/project:ro
+      # The marks a company shows in place of the manager's own live at the
+      # root of the volumes folder: `custom-mail-icon.svg`,
+      # `custom-mail-logo.svg` and `custom-mail-favicon.svg`. Each one may or
+      # may not be there, which a mount of the file itself cannot express, so
+      # the folder is mounted. Read-write, because the manager puts a copy of
+      # its own marks under these names when it starts and one is missing. It
+      # opens these three names in it and nothing else.
+      - ${VOLUMES_PATH}:/host/volumes
       # The signature files carry their own version and build date in their
       # header, which is what the Clamav page reads them for.
       - ${VOLUMES_PATH}/clamav:/var/lib/clamav:ro
