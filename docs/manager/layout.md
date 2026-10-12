@@ -65,9 +65,20 @@ and Sign out. Collapsed to the rail, only the avatar remains.
 ## Header
 
 [`AppHeader.vue`](../../manager-ui/app/components/layout/AppHeader.vue): the
-sidebar toggle, a title derived from the route (the FQDN when inside a domain),
-then two buttons pinned right.
+sidebar toggle, the breadcrumb, then the buttons pinned right. The bar has no
+title of its own: the trail already names the page and the section it belongs
+to. It slides out of the way while the page scrolls down and comes back as soon
+as it scrolls up, or at either end of the page; whether it is away is shared
+through [`useHeadroom`](../../manager-ui/app/composables/useHeadroom.ts), so
+anything pinned under it follows.
 
+- **Fold** ([`HeaderPageFoldButton`](../../manager-ui/app/components/layout/HeaderPageFoldButton.vue))
+  shows on a small screen only, a width under 640px or a height under 500px,
+  and only on a page that folds something. There the intro and the commands
+  that open a page are folded away
+  ([`PageFold`](../../manager-ui/app/components/layout/PageFold.vue)) so the
+  page starts on its content, and this button unfolds them as a panel under the
+  bar. It carries a dot when a filter is set while the fold hides it.
 - **Refresh** ([`HeaderRefreshButton`](../../manager-ui/app/components/layout/HeaderRefreshButton.vue))
   re-verifies the session and permissions and bumps the shared data tick, so
   every page reloads its own data too.
@@ -77,9 +88,10 @@ then two buttons pinned right.
 
 ## Breadcrumb
 
-[`BreadcrumbProvider`](../../manager-ui/app/components/ui/BreadcrumbProvider.vue)
-provides a ref; each page fills it through
-[`useBreadcrumb`](../../manager-ui/app/composables/useBreadcrumb.ts):
+The layout provides the trail
+([`provideBreadcrumb`](../../manager-ui/app/composables/useBreadcrumb.ts), called
+in [`layouts/default.vue`](../../manager-ui/app/layouts/default.vue)) and each
+page fills it through `useBreadcrumb`:
 
 ```ts
 setBreadcrumb([
@@ -88,24 +100,38 @@ setBreadcrumb([
 ]);
 ```
 
-`set` always prepends a Home crumb, so no page has to remember it. The error
-page renders its own copy through
+The trail is words only and starts where the page's own section starts: no Home
+crumb is put ahead of it. It is the one thing that names the page. The header
+draws it in place of a title, and the browser tab is built from it too, as the
+name of the manager followed by the trail (`Simply Mail Server :: Tickets >
+Subject`), so a page declares where it is once.
+
+The error page feeds the same trail through
 [`ErrorBreadcrumb`](../../manager-ui/app/components/layout/ErrorBreadcrumb.vue),
-which is why a 403 still looks like a page of the app rather than a dead end.
+with the section of the navigation the failed address belongs to, which is why a
+403 still looks like a page of the app rather than a dead end.
 
 ## The shared list furniture
 
-Four components and one composable back every table in the console.
+One component, three helpers and one composable back the tables of the console.
 
+- [`DataTable`](../../manager-ui/app/components/ui/DataTable.vue) is the list
+  itself: a toolbar (search, the column the search applies to, an optional
+  `#filters` slot, the page size), the rows, and the pager. A caller declares
+  its columns once and gets two renderings of them: a real table with clickable
+  headers to sort, and a block per row. Only one is in the page at a time, and
+  the choice follows the width of the box the table was given, not the width of
+  the window ([`useTableLayout`](../../manager-ui/app/composables/useTableLayout.ts)),
+  so a table squeezed next to a sidebar shows as blocks even on a wide screen.
+  It can also offer a multiple selection, kept across pages, with a `#selection`
+  slot where the page puts its own bulk actions.
 - [`usePaginatedList`](../../manager-ui/app/composables/usePaginatedList.ts)
-  builds `?limit=&offset=&search=&sortBy=&sortDir=` plus any page-specific
-  filters, unwraps `{ items, total }`, and exposes `page`, `limit`, `search`,
-  `sortBy`, `sortDir`, `loading`, `hasLoadedOnce` and `load`. Search is
-  debounced by one second and resets to page 1. The list re-fetches on any of
-  those, and on the shared refresh tick.
-- [`ListToolbar`](../../manager-ui/app/components/ui/ListToolbar.vue) --
-  search input, an optional `#filters` slot, a sort select that only shows below
-  `xl` (above it the column headers are clickable), and the page-size select.
+  serves the lists that are fetched a page at a time: it builds
+  `?limit=&offset=&search=&sortBy=&sortDir=` plus any page-specific filters,
+  unwraps `{ items, total }`, and exposes `page`, `limit`, `search`, `sortBy`,
+  `sortDir`, `loading`, `hasLoadedOnce` and `load`. Search is debounced by one
+  second and resets to page 1. The list re-fetches on any of those, and on the
+  shared refresh tick.
 - [`ListSkeleton`](../../manager-ui/app/components/ui/ListSkeleton.vue) --
   shown while `hasLoadedOnce` is false. It is gated on that flag and not on
   `items.length === 0`, otherwise a genuinely empty list would re-show its
@@ -115,13 +141,12 @@ Four components and one composable back every table in the console.
 - [`ConfirmModal`](../../manager-ui/app/components/ui/ConfirmModal.vue) --
   every destructive action routes through it.
 
-The page size is one preference for the whole console, stored per device under
-`manager-list-limit`, and settable either from any toolbar or from
-`/preferences`. Choices are 10, 25 and 50.
-
-Above `lg` or `xl` (per page) lists render as a `UTable` with sticky headers;
-below it the same rows render as cards. Neither is a truncated version of the
-other.
+Each table remembers its own page size in the browser, under
+`manager-table-page-size:<its id>`
+([`useTablePageSize`](../../manager-ui/app/composables/useTablePageSize.ts)).
+Until one is picked in its toolbar, a table follows the default of the device,
+stored under `manager-list-limit` and set from `/preferences`. Choices are 10,
+25 and 50.
 
 ## Formatting
 

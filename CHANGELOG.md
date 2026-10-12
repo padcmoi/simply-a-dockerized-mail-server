@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - feat(ui): on a small screen, a phone held upright or on its side, the intro and the commands that open a page fold away behind a button of the top bar, so the page starts on its content, the mail logs first, where the log was left four lines; the button unfolds them as a panel under the bar and carries a dot when a hidden filter is set, the DMARC pages fold their section switcher the same way, and a larger screen is left as it was (11-10-2026)
 - feat(install): a fresh install starts by checking the mail ports 25, 465, 587, 993, 995 and 4190, shows each one as PASS or FAIL and stops before `.env` or anything else is written when one is taken, where a mail server already running on the host made `docker compose up` fail halfway through the install (05-10-2026)
 
+### Changed
+
+- docs(manager): the layout page describes the top bar, the breadcrumb and the shared table as they are today: the fold button of a small screen, the trail that names both the page and the browser tab, one table component with two renderings and a page size kept per table, where it still pointed to two components that no longer exist (12-10-2026)
+
 ### Fixed
 
 - fix(unbound): the resolver of the stack ships both DNS root keys and keeps them up to date by itself, where it only held the root key retired on 11 October 2026 and answered SERVFAIL to every name once its cache ran out, which made manager-api fail the Google sign-in on a name it could not resolve and Postfix refuse incoming mail with a temporary error; the infrastructure tests now ask the resolver for a name and for a validated one (12-10-2026)
