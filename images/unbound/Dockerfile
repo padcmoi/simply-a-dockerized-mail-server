@@ -1,7 +1,6 @@
 FROM alpine:3.20
 
 RUN apk add --no-cache \
-      dnssec-root \
       tini \
       tzdata \
       unbound \
@@ -10,6 +9,7 @@ RUN apk add --no-cache \
     && chown unbound:unbound /var/lib/unbound
 
 COPY conf/unbound.conf /etc/unbound/unbound.conf
+COPY --chown=unbound:unbound conf/root.key /var/lib/unbound/root.key
 RUN unbound-checkconf /etc/unbound/unbound.conf
 
 EXPOSE 53/udp 53/tcp

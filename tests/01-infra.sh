@@ -57,7 +57,29 @@ t_ports_open() {
   fi
 }
 
+# The resolver postfix, rspamd, opendmarc and manager-api ask validates DNSSEC.
+# With a root key that is out of date it answers SERVFAIL to every name while
+# its container still reports healthy, so its answers are checked here: a plain
+# name resolves through the running resolver, and a signed one comes back
+# validated with the trust anchor it is configured with.
+t_resolver_answers() {
+  local out
+  out=$(docker exec mail-unbound nslookup www.googleapis.com 127.0.0.1 2>&1)
+  if grep -q "Name:" <<<"$out" && ! grep -q "can't find" <<<"$out"; then
+    pass "resolver.answers" "www.googleapis.com resolves"
+  else
+    fail "resolver.answers" "$(grep -E "can't find|SERVFAIL" <<<"$out" | tail -1)"
+  fi
+  out=$(docker exec mail-unbound unbound-host -C /etc/unbound/unbound.conf -v -t A iana.org 2>&1)
+  if grep -q "(secure)" <<<"$out"; then
+    pass "resolver.validates_a_signed_name" "iana.org is secure"
+  else
+    fail "resolver.validates_a_signed_name" "$(tail -1 <<<"$out")"
+  fi
+}
+
 t_containers_healthy
+t_resolver_answers
 t_redis_pong
 t_clamav_responds
 t_mariadb_schema
