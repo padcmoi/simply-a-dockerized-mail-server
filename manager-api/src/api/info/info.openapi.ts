@@ -9,12 +9,12 @@ export const GetInfoDocs = () =>
       summary: "What this deployment is",
       description:
         "The API root. Public and unauthenticated (no API key required), so the login screen can name the " +
-        "running release before anyone has signed in. `code_version` is the `version` field of the API's own " +
-        "package.json, read once at start-up.",
+        "running release before anyone has signed in. `code_version` is the last tag of the repository, " +
+        "`git describe --tags --abbrev=0`, found by the entrypoint when the container starts and read once.",
     }),
     ApiResponse({
       status: 200,
       description: "This deployment",
-      schema: { example: { code_version: "2.0.0" } },
+      schema: { example: { code_version: "v2.0.0" } },
     })
   );
