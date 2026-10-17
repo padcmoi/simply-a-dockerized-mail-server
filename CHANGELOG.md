@@ -5,13 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.0.0] - 2026-10-17
 
 ### Changed
 
-- docs(info): the description of the API root says that `code_version` is the last tag of the repository, found by the entrypoint when the container starts, where it named the `version` field of package.json, which nothing reads (17-10-2026)
-- docs(contributing): the contributing guide opens on the roadmap board of the project, where every new issue lands in Ideas and a task is taken from Planned, so that a contributor sees what is already under way before starting (17-10-2026)
-- docs(readme): the README warns that a server whose code was changed by hand no longer receives the updates of the repository, says what can be changed without leaving the update path, and invites contributions, described in a new CONTRIBUTING.md: issues, branches, conventions, git hooks and tests (17-10-2026)
+- The README warns that a server whose code was changed by hand no longer receives the updates of the repository, says what can be changed without leaving the update path, and invites contributions, described in a new CONTRIBUTING.md: issues, branches, conventions, git hooks and tests _(readme)_ [e02a85d](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/e02a85dfbab0365210768953bb3fa468bea4c5a3) (17-10-2026)
+- The contributing guide opens on the roadmap board of the project, where every new issue lands in Ideas and a task is taken from Planned, so that a contributor sees what is already under way before starting _(contributing)_ [ef78af6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/ef78af6b7b866a6629df6142c0844cea4549304c) (17-10-2026)
+- The description of the API root says that `code_version` is the last tag of the repository, found by the entrypoint when the container starts, where it named the `version` field of package.json, which nothing reads _(info)_ [fca1ba6](https://github.com/padcmoi/simply-a-dockerized-mail-server/commit/fca1ba6a2d40821aca614ba3a300518fd9fbde85) (17-10-2026)
 
 ## [2.0.0-rc.16] - 2026-10-17
 
