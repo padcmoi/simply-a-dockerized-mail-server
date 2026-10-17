@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- docs(readme): the README warns that a server whose code was changed by hand no longer receives the updates of the repository, says what can be changed without leaving the update path, and invites contributions, described in a new CONTRIBUTING.md: issues, branches, conventions, git hooks and tests (17-10-2026)
+
 ## [2.0.0-rc.16] - 2026-10-17
 
 ### Added

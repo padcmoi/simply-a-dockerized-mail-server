@@ -66,6 +66,42 @@ $EDITOR .env              # set MAIL_HOSTNAME, MAIL_PUBLIC_IP, TLS_CERT_NAME, MA
 See [INSTALL.md](INSTALL.md) for a full step-by-step and [DOMAIN_DNS.md](DOMAIN_DNS.md)
 for the DNS records per hosted domain.
 
+## Updating
+
+```bash
+./update.sh full     # every image rebuilt, every container recreated
+./update.sh ui api   # only the manager, when the release notes say so
+```
+
+`update.sh` runs `git pull` on the branch the server is on, then rebuilds. It is
+the only way a server receives the fixes and the features of this repository.
+
+> [!IMPORTANT]
+> **A server whose code was modified no longer receives the updates of this
+> repository.** Git refuses to pull over a file changed by hand that the
+> update changes too, and `update.sh` stops there, leaving the server on its
+> old version. Where the pull does go through, the server builds the update
+> mixed with the local change, a combination nobody has tested, which the next
+> update can break.
+>
+> What is meant to change on a server lives outside the code, and no update
+> touches it: `.env`, the volumes folder (mailboxes, database, backups, your
+> own icon, logo and favicon) and the settings of the manager. On a server
+> whose code is as this repository ships it, `git status --short` prints
+> nothing.
+>
+> A change that would be useful to others belongs here: propose it as
+> described in [CONTRIBUTING.md](CONTRIBUTING.md). Once merged, every server
+> gets it with its next update.
+
+## Contributing
+
+Simply Mail Server is an open project, built to become a complete mail platform
+that anyone can install and run. Contributions are welcome: a fix, a feature, a
+translation, documentation, a test or a bug report. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md), and open an issue or a pull request on
+[GitHub](https://github.com/padcmoi/simply-a-dockerized-mail-server).
+
 ## License
 
 [MIT](LICENSE.md)
