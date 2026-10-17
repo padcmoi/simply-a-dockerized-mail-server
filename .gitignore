@@ -7,3 +7,4 @@ volumes
 nohup.out
 backup/*.tar*
 .env.menu
+.trash/
