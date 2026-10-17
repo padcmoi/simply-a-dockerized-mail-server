@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- docs(contributing): the contributing guide opens on the roadmap board of the project, where every new issue lands in Ideas and a task is taken from Planned, so that a contributor sees what is already under way before starting (17-10-2026)
 - docs(readme): the README warns that a server whose code was changed by hand no longer receives the updates of the repository, says what can be changed without leaving the update path, and invites contributions, described in a new CONTRIBUTING.md: issues, branches, conventions, git hooks and tests (17-10-2026)
 
 ## [2.0.0-rc.16] - 2026-10-17

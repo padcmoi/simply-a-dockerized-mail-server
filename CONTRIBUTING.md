@@ -15,6 +15,10 @@ keeps working through the updates that follow.
 
 ## Before you start
 
+The [roadmap](https://github.com/users/padcmoi/projects/4) shows what is
+proposed, planned, in progress and done. Every new issue lands there in Ideas.
+To take a task, pick a card in Planned and say so in a comment of its issue.
+
 - **A bug**: open an issue with what you did, what you expected, what happened,
   and the logs of the containers involved. Remove any address, domain or
   secret of your own server first.
